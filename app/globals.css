@@ -39,6 +39,17 @@
     -webkit-overflow-scrolling: touch;
     /* Prevent overscroll */
     overscroll-behavior: none;
+    /* Force mobile view - max width constraint */
+    max-width: 430px;
+    margin: 0 auto;
+    position: relative;
+  }
+  
+  /* Desktop view - add border to mobile container */
+  @media (min-width: 431px) {
+    body {
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
+    }
   }
   
   * {

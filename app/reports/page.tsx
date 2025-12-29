@@ -3,7 +3,6 @@
 import BottomNav from '@/components/navigation/BottomNav'
 import ExpenseCard from '@/components/expense/ExpenseCard'
 import CategoryPill from '@/components/ui/CategoryPill'
-import FAB from '@/components/ui/FAB'
 import { Search, SlidersHorizontal } from 'lucide-react'
 import { useState } from 'react'
 
@@ -89,7 +88,7 @@ export default function ReportsPage() {
         </div>
       </div>
       
-      <FAB onClick={() => alert('Opening camera...')} />
+
       <BottomNav />
     </div>
   )
