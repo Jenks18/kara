@@ -30,7 +30,7 @@ export default function HomePage() {
   ]
   
   return (
-    <div className="min-h-screen pb-20">
+    <div className="min-h-screen pb-20" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
       {/* Header */}
       <div className="sticky top-0 z-30 bg-dark-200/95 backdrop-blur-lg border-b border-gray-800">
         <div className="px-4 py-4 max-w-md mx-auto">
@@ -38,7 +38,7 @@ export default function HomePage() {
             <div>
               <h1 className="text-2xl font-bold text-gray-100">Inbox</h1>
             </div>
-            <button className="p-2 hover:bg-dark-100 rounded-full transition-colors">
+            <button className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center active:bg-dark-100 rounded-full transition-colors touch-manipulation">
               <Search size={24} className="text-gray-400" />
             </button>
           </div>

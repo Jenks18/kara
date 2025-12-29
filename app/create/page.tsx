@@ -40,7 +40,7 @@ export default function CreatePage() {
   ]
   
   return (
-    <div className="min-h-screen pb-20">
+    <div className="min-h-screen pb-20" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
       {/* Header */}
       <div className="sticky top-0 z-30 bg-dark-200/95 backdrop-blur-lg border-b border-gray-800">
         <div className="px-4 py-4 max-w-md mx-auto">

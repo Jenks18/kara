@@ -30,29 +30,30 @@ export default function ReportsPage() {
   ]
   
   return (
-    <div className="min-h-screen pb-20">
+    <div className="min-h-screen pb-20" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
       {/* Header */}
       <div className="sticky top-0 z-30 bg-dark-200/95 backdrop-blur-lg border-b border-gray-800">
         <div className="px-4 py-4 max-w-md mx-auto">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold text-gray-100">Reports</h1>
-            <button className="p-2 hover:bg-dark-100 rounded-full transition-colors">
+            <button className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center active:bg-dark-100 rounded-full transition-colors touch-manipulation">
               <SlidersHorizontal size={24} className="text-gray-400" />
             </button>
           </div>
           
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
             <input
               type="text"
               placeholder="Search for something"
               className="
-                w-full pl-10 pr-4 py-3
+                w-full pl-10 pr-4 py-3.5
                 bg-dark-100 border border-gray-800
                 rounded-xl
                 text-gray-200 placeholder-gray-500
                 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
+                touch-manipulation
               "
             />
           </div>

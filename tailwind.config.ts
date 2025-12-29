@@ -63,6 +63,10 @@ const config: Config = {
         'card': '0 1px 3px 0 rgb(0 0 0 / 0.05)',
         'float': '0 10px 25px -5px rgb(0 0 0 / 0.1)',
       },
+      spacing: {
+        'safe': 'env(safe-area-inset-bottom)',
+        'safe-top': 'env(safe-area-inset-top)',
+      },
     },
   },
   plugins: [],

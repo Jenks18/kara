@@ -55,7 +55,7 @@ export default function AccountPage() {
   ]
   
   return (
-    <div className="min-h-screen pb-20">
+    <div className="min-h-screen pb-20" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
       {/* Header */}
       <div className="sticky top-0 z-30 bg-dark-200/95 backdrop-blur-lg border-b border-gray-800">
         <div className="px-4 py-6 max-w-md mx-auto">
@@ -91,11 +91,12 @@ export default function AccountPage() {
                     key={itemIdx}
                     className="
                       w-full flex items-center justify-between
-                      px-4 py-4
-                      bg-dark-100 hover:bg-dark-300
+                      px-4 py-4 min-h-[60px]
+                      bg-dark-100 active:bg-dark-300
                       border border-gray-800
                       rounded-xl
                       transition-colors duration-200
+                      touch-manipulation
                       group
                     "
                   >
@@ -126,11 +127,12 @@ export default function AccountPage() {
         {/* Sign Out */}
         <button className="
           w-full flex items-center gap-3
-          px-4 py-4
-          bg-dark-100 hover:bg-dark-300
+          px-4 py-4 min-h-[60px]
+          bg-dark-100 active:bg-dark-300
           border border-gray-800
           rounded-xl
           transition-colors duration-200
+          touch-manipulation
         ">
           <LogOut size={24} className="text-danger-500" />
           <span className="font-medium text-danger-500">Sign out</span>
