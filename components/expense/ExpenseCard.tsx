@@ -1,6 +1,6 @@
 import React from 'react'
 import Card from '../ui/Card'
-import { Fuel, MapPin, Calendar } from 'lucide-react'
+import { Fuel, MapPin, Calendar, Clock, CheckCircle, AlertCircle } from 'lucide-react'
 
 interface ExpenseCardProps {
   id: string
@@ -10,7 +10,9 @@ interface ExpenseCardProps {
   category: string
   distance?: string
   imageUrl?: string
-  status?: 'pending' | 'approved' | 'rejected'
+  status?: 'pending' | 'approved' | 'rejected' | 'processing' | 'needs_review'
+  litres?: number
+  pricePerLitre?: number
   onClick?: () => void
 }
 
@@ -22,21 +24,35 @@ export default function ExpenseCard({
   distance,
   imageUrl,
   status = 'approved',
+  litres,
+  pricePerLitre,
   onClick 
 }: ExpenseCardProps) {
-  const statusColors = {
-    pending: 'text-warning-500',
-    approved: 'text-success-500',
-    rejected: 'text-danger-500',
+  const statusConfig = {
+    pending: { color: 'text-warning-500', icon: Clock, label: 'Pending' },
+    approved: { color: 'text-success-500', icon: CheckCircle, label: 'Approved' },
+    rejected: { color: 'text-danger-500', icon: AlertCircle, label: 'Rejected' },
+    processing: { color: 'text-primary-400', icon: Clock, label: 'Processing...' },
+    needs_review: { color: 'text-warning-500', icon: AlertCircle, label: 'Needs Review' },
   }
   
+  const config = statusConfig[status]
+  const StatusIcon = config.icon
+  
   return (
-    <Card hoverable onClick={onClick}>
+    <Card hoverable onClick={onClick} className={status === 'processing' ? 'opacity-75' : ''}>
       <div className="flex items-start justify-between">
         <div className="flex gap-3 flex-1">
           {/* Icon */}
-          <div className="w-12 h-12 rounded-xl bg-primary-500/10 flex items-center justify-center flex-shrink-0">
-            <Fuel className="text-primary-400" size={24} />
+          <div className={`
+            w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0
+            ${status === 'processing' ? 'bg-primary-500/10' : 'bg-primary-500/10'}
+          `}>
+            {status === 'processing' ? (
+              <div className="w-6 h-6 border-3 border-primary-400 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Fuel className="text-primary-400" size={24} />
+            )}
           </div>
           
           {/* Details */}
@@ -55,17 +71,25 @@ export default function ExpenseCard({
                 <span>{distance}</span>
               </div>
             )}
+            {litres && pricePerLitre && (
+              <div className="flex items-center gap-2 mt-2 text-xs">
+                <span className="text-gray-400">{litres}L</span>
+                <span className="text-gray-600">•</span>
+                <span className="text-gray-400">KES {pricePerLitre.toFixed(2)}/L</span>
+              </div>
+            )}
           </div>
         </div>
         
-        {/* Amount */}
+        {/* Amount & Status */}
         <div className="text-right flex-shrink-0 ml-3">
-          <span className="font-mono font-semibold text-lg text-gray-100">
+          <span className="font-mono font-semibold text-lg text-gray-100 block">
             KES {amount.toFixed(2)}
           </span>
-          {status && status !== 'approved' && (
-            <div className={`text-xs mt-1 ${statusColors[status]}`}>
-              {status}
+          {status && (status !== 'approved' || litres) && (
+            <div className={`flex items-center gap-1 justify-end mt-1 text-xs ${config.color}`}>
+              <StatusIcon size={12} />
+              <span>{config.label}</span>
             </div>
           )}
         </div>
