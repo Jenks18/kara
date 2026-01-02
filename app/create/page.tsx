@@ -16,47 +16,58 @@ export default function CreatePage() {
   const [processingStatus, setProcessingStatus] = useState<'uploading' | 'processing' | 'verified' | 'needs_review'>('uploading')
   const [progress, setProgress] = useState(0)
   
-  const handleCaptureReceipt = (imageData: string) => {
+  const handleCaptureReceipt = async (imageData: string) => {
     setShowCapture(false)
     setShowProcessing(true)
     setProcessingStatus('uploading')
-    setProgress(0)
+    setProgress(10)
     
-    // Simulate upload progress
-    const uploadInterval = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 30) {
-          clearInterval(uploadInterval)
-          // Start processing
-          setProcessingStatus('processing')
-          simulateProcessing()
-          return 30
-        }
-        return prev + 10
+    try {
+      // Convert base64 to blob
+      const base64Response = await fetch(imageData)
+      const blob = await base64Response.blob()
+      
+      // Create form data
+      const formData = new FormData()
+      formData.append('image', blob, 'receipt.jpg')
+      
+      setProgress(20)
+      
+      // Upload to API
+      const response = await fetch('/api/receipts/upload', {
+        method: 'POST',
+        body: formData,
       })
-    }, 200)
-  }
-  
-  const simulateProcessing = () => {
-    const processInterval = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(processInterval)
-          // Random outcome - 70% success, 30% needs review
-          if (Math.random() > 0.3) {
-            setProcessingStatus('verified')
-            setTimeout(() => {
-              setShowProcessing(false)
-              // Would redirect to expense details
-            }, 2000)
-          } else {
-            setProcessingStatus('needs_review')
-          }
-          return 100
-        }
-        return prev + 10
-      })
-    }, 300)
+      
+      setProgress(40)
+      setProcessingStatus('processing')
+      
+      const result = await response.json()
+      
+      setProgress(100)
+      
+      if (!response.ok) {
+        alert(`Error: ${result.message || result.error}`)
+        setShowProcessing(false)
+        return
+      }
+      
+      // Check if needs review
+      if (result.transaction.status === 'needs_review') {
+        setProcessingStatus('needs_review')
+      } else {
+        setProcessingStatus('verified')
+        setTimeout(() => {
+          setShowProcessing(false)
+          alert(`✓ Receipt verified!\n${result.transaction.litres}L ${result.transaction.fuelType} @ ${result.transaction.pricePerLitre?.toFixed(2)} KES/L`)
+        }, 2000)
+      }
+      
+    } catch (error: any) {
+      console.error('Upload failed:', error)
+      alert('Failed to process receipt: ' + error.message)
+      setShowProcessing(false)
+    }
   }
   
   const handleReviewSubmit = (data: any) => {
