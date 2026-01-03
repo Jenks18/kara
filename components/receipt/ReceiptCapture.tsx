@@ -54,22 +54,29 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
       }
       
       console.log('Camera stream obtained:', stream)
+      console.log('Video ref exists:', !!videoRef.current)
       
       if (videoRef.current && stream) {
         videoRef.current.srcObject = stream
         streamRef.current = stream
+        console.log('Stream attached to video element')
         
-        // Set camera active immediately
+        // Set camera active immediately - this will trigger re-render
         setCameraActive(true)
-        console.log('Camera activated, video should display')
+        console.log('setCameraActive(true) called')
         
-        // Try to play video
-        try {
-          await videoRef.current.play()
-          console.log('Video playing successfully')
-        } catch (playError) {
-          console.log('Autoplay might be blocked, but video should still show')
-        }
+        // Wait a tick for state to update
+        setTimeout(() => {
+          console.log('Camera active state after update:', true)
+          // Try to play video
+          if (videoRef.current) {
+            videoRef.current.play()
+              .then(() => console.log('Video playing successfully'))
+              .catch(e => console.log('Video play error (might be autoplay policy):', e))
+          }
+        }, 100)
+      } else {
+        console.error('Missing videoRef or stream:', { hasVideoRef: !!videoRef.current, hasStream: !!stream })
       }
     } catch (error) {
       console.error('Camera access error:', error)
@@ -296,7 +303,7 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
               <canvas ref={canvasRef} className="hidden" />
               
               {/* Camera/Content Area */}
-              {cameraActive && !preview && selectedImages.length === 0 ? (
+              {cameraActive && !preview ? (
                 // LIVE CAMERA VIEW
                 <div className="flex-1 relative bg-black">
                   <video
@@ -305,6 +312,8 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                     playsInline
                     muted
                     className="absolute inset-0 w-full h-full object-cover"
+                    onLoadedMetadata={() => console.log('Video metadata loaded')}
+                    onPlay={() => console.log('Video started playing')}
                   />
                 </div>
               ) : selectedImages.length > 0 && continuousMode ? (
