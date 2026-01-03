@@ -173,17 +173,19 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
   }
 
   const startContinuousMode = () => {
+    console.log('Starting continuous mode')
     setContinuousMode(true)
     setSelectedImages([])
+    // Don't stop camera if already active
     if (!cameraActive) {
       startCamera()
     }
   }
 
   const exitContinuousMode = () => {
+    console.log('Exiting continuous mode')
     setContinuousMode(false)
-    setSelectedImages([])
-    stopCamera()
+    // Don't clear images yet - user might want to process them
   }
 
   return (
@@ -403,10 +405,12 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
         {/* Bottom Controls - Only show in Scan mode */}
         {activeTab === 'scan' && (
           <div className="px-6 py-4 bg-dark-300 border-t border-gray-800">
-            {selectedImages.length > 0 && continuousMode ? (
-              // Multi-select mode controls
-              <div className="space-y-4">
+            {continuousMode ? (
+              // CONTINUOUS MODE - Show thumbnail bar
+              <div className="space-y-3">
+                {/* Thumbnail strip */}
                 <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                  {/* Show captured images */}
                   {selectedImages.map((img, index) => (
                     <div key={index} className="relative flex-shrink-0">
                       <img
@@ -416,35 +420,50 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                       />
                       <button
                         onClick={() => handleRemoveImage(index)}
-                        className="absolute -top-2 -right-2 w-6 h-6 bg-danger rounded-full flex items-center justify-center"
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-danger rounded-full flex items-center justify-center shadow-lg"
                       >
                         <X size={14} className="text-white" />
                       </button>
                     </div>
                   ))}
                   
-                  {cameraActive && (
-                    <div className="w-16 h-20 rounded-lg border-2 border-dashed border-primary/50 flex items-center justify-center flex-shrink-0">
-                      <Camera size={20} className="text-primary/50" />
+                  {/* Empty placeholder squares (show 5 total slots) */}
+                  {Array.from({ length: Math.max(0, 5 - selectedImages.length) }).map((_, index) => (
+                    <div
+                      key={`empty-${index}`}
+                      className="w-16 h-20 rounded-lg border-2 border-dashed border-gray-600 flex items-center justify-center flex-shrink-0 bg-dark-100/30"
+                    >
+                      <Camera size={20} className="text-gray-600" />
                     </div>
-                  )}
+                  ))}
                 </div>
 
-                <div className="flex gap-3">
-                  <button
-                    onClick={exitContinuousMode}
-                    className="flex-1 bg-dark-100 hover:bg-dark-100/80 active:scale-[0.98] text-gray-300 font-semibold py-4 rounded-full transition-all"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleProcessMultiple}
-                    className="flex-1 bg-primary hover:bg-primary/90 active:scale-[0.98] text-dark-300 font-semibold py-4 rounded-full transition-all flex items-center justify-center gap-2"
-                  >
-                    Process {selectedImages.length}
-                    <ChevronRight size={20} />
-                  </button>
-                </div>
+                {/* Action buttons */}
+                {selectedImages.length > 0 ? (
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => {
+                        setContinuousMode(false)
+                        setSelectedImages([])
+                      }}
+                      className="flex-1 bg-dark-100 hover:bg-dark-100/80 active:scale-[0.98] text-gray-300 font-semibold py-4 rounded-full transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleProcessMultiple}
+                      className="flex-1 bg-primary hover:bg-primary/90 active:scale-[0.98] text-dark-300 font-semibold py-4 rounded-full transition-all flex items-center justify-center gap-2"
+                    >
+                      Process {selectedImages.length}
+                      <ChevronRight size={20} />
+                    </button>
+                  </div>
+                ) : (
+                  // Show capture button when in continuous mode but no photos yet
+                  <div className="text-center text-gray-500 text-sm py-2">
+                    Take multiple photos of your receipt
+                  </div>
+                )}
               </div>
             ) : preview ? (
               // Preview mode
@@ -466,7 +485,7 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                 </button>
               </div>
             ) : cameraActive ? (
-              // Camera active controls
+              // Camera active controls - Show capture button
               <div className="flex items-center justify-between">
                 <input
                   ref={fileInputRef}
@@ -476,13 +495,19 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                   className="hidden"
                 />
                 
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-14 h-14 rounded-xl bg-dark-100/50 backdrop-blur hover:bg-dark-100 active:scale-95 transition-all flex items-center justify-center"
-                >
-                  <ImageIcon size={24} className="text-gray-400" />
-                </button>
+                {/* Gallery button - hide in continuous mode */}
+                {!continuousMode && (
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-14 h-14 rounded-xl bg-dark-100/50 backdrop-blur hover:bg-dark-100 active:scale-95 transition-all flex items-center justify-center"
+                  >
+                    <ImageIcon size={24} className="text-gray-400" />
+                  </button>
+                )}
+                
+                {continuousMode && <div className="w-14" />}
 
+                {/* Capture button */}
                 <button
                   onClick={capturePhoto}
                   className="w-20 h-20 rounded-full bg-primary hover:bg-primary/90 transition-colors flex items-center justify-center active:scale-95 shadow-lg shadow-primary/50"
@@ -490,8 +515,15 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                   <div className="w-16 h-16 rounded-full border-4 border-dark-300" />
                 </button>
 
+                {/* Multi-receipt mode button */}
                 <button
-                  onClick={startContinuousMode}
+                  onClick={() => {
+                    if (continuousMode) {
+                      setContinuousMode(false)
+                    } else {
+                      startContinuousMode()
+                    }
+                  }}
                   className={`w-14 h-14 rounded-xl backdrop-blur active:scale-95 transition-all flex items-center justify-center ${
                     continuousMode 
                       ? 'bg-primary text-dark-300' 
