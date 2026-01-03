@@ -499,12 +499,12 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                     <div className="w-14" />
                   )}
 
-                  {/* Capture button - ALWAYS visible */}
+                  {/* Capture button - ALWAYS visible - Enhanced visual impact */}
                   <button
                     onClick={capturePhoto}
-                    className="w-20 h-20 rounded-full bg-primary hover:bg-primary/90 transition-colors flex items-center justify-center active:scale-95 shadow-lg shadow-primary/50"
+                    className="w-24 h-24 rounded-full bg-primary hover:bg-primary active:bg-primary transition-all flex items-center justify-center active:scale-90 shadow-2xl shadow-primary/60 ring-4 ring-primary/20 hover:ring-primary/30"
                   >
-                    <div className="w-16 h-16 rounded-full border-4 border-dark-300" />
+                    <div className="w-20 h-20 rounded-full border-[5px] border-dark-300" />
                   </button>
 
                   {/* Multi-receipt toggle button - ALWAYS visible */}
@@ -519,7 +519,7 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                     }}
                     className={`w-14 h-14 rounded-xl backdrop-blur active:scale-95 transition-all flex items-center justify-center ${
                       continuousMode 
-                        ? 'bg-primary text-dark-300' 
+                        ? 'bg-primary text-dark-300 ring-2 ring-primary/40 shadow-lg shadow-primary/30' 
                         : 'bg-dark-100/50 hover:bg-dark-100 text-gray-400'
                     }`}
                   >
