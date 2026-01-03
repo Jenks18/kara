@@ -458,22 +458,6 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                         </div>
                       ))}
                     </div>
-                    
-                    {/* Helper text */}
-                    <div className="text-center text-gray-500 text-sm mb-3">
-                      Take multiple photos of your receipt
-                    </div>
-                    
-                    {/* Process button - only show if have images */}
-                    {selectedImages.length > 0 && (
-                      <button
-                        onClick={handleProcessMultiple}
-                        className="w-full bg-primary hover:bg-primary/90 active:scale-[0.98] text-dark-300 font-semibold py-4 rounded-full transition-all flex items-center justify-center gap-2 mb-3"
-                      >
-                        Process {selectedImages.length} photo{selectedImages.length > 1 ? 's' : ''}
-                        <ChevronRight size={20} />
-                      </button>
-                    )}
                   </div>
                 )}
                 
@@ -507,24 +491,35 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                     <div className="w-20 h-20 rounded-full border-[5px] border-dark-300" />
                   </button>
 
-                  {/* Multi-receipt toggle button - ALWAYS visible */}
-                  <button
-                    onClick={() => {
-                      if (continuousMode) {
-                        setContinuousMode(false)
-                        setSelectedImages([])
-                      } else {
-                        startContinuousMode()
-                      }
-                    }}
-                    className={`w-14 h-14 rounded-xl backdrop-blur active:scale-95 transition-all flex items-center justify-center ${
-                      continuousMode 
-                        ? 'bg-primary text-dark-300 ring-2 ring-primary/40 shadow-lg shadow-primary/30' 
-                        : 'bg-dark-100/50 hover:bg-dark-100 text-gray-400'
-                    }`}
-                  >
-                    <Receipt size={24} />
-                  </button>
+                  {/* Right button: Multi-receipt toggle OR Chevron to process */}
+                  {continuousMode && selectedImages.length > 0 ? (
+                    // Show chevron button when have photos in continuous mode
+                    <button
+                      onClick={handleProcessMultiple}
+                      className="w-16 h-16 rounded-full bg-primary hover:bg-primary active:bg-primary/90 transition-all flex items-center justify-center active:scale-90 shadow-xl shadow-primary/50"
+                    >
+                      <ChevronRight size={32} className="text-dark-300" strokeWidth={3} />
+                    </button>
+                  ) : (
+                    // Show multi-receipt toggle button
+                    <button
+                      onClick={() => {
+                        if (continuousMode) {
+                          setContinuousMode(false)
+                          setSelectedImages([])
+                        } else {
+                          startContinuousMode()
+                        }
+                      }}
+                      className={`w-16 h-16 rounded-xl backdrop-blur active:scale-95 transition-all flex items-center justify-center border-2 ${
+                        continuousMode 
+                          ? 'bg-primary text-dark-300 border-primary ring-2 ring-primary/40 shadow-lg shadow-primary/30' 
+                          : 'bg-dark-100/50 hover:bg-dark-100 text-gray-400 border-gray-600 hover:border-gray-500'
+                      }`}
+                    >
+                      <Receipt size={28} strokeWidth={2.5} />
+                    </button>
+                  )}
                 </div>
               </div>
             ) : (
