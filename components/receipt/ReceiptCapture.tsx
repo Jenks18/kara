@@ -15,6 +15,8 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
   const [selectedImages, setSelectedImages] = useState<string[]>([])
   const [continuousMode, setContinuousMode] = useState(false)
   const [showPermissionPrompt, setShowPermissionPrompt] = useState(false)
+  const [cameraPermissionGranted, setCameraPermissionGranted] = useState(false)
+  const [pendingStream, setPendingStream] = useState<MediaStream | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -25,12 +27,15 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
     console.log('Camera state:', { cameraActive, preview, imagesCount: selectedImages.length, continuousMode })
   }, [cameraActive, preview, selectedImages.length, continuousMode])
 
-  // Show permission prompt when switching to scan tab
+  // Show permission prompt when switching to scan tab (only if never granted)
   useEffect(() => {
-    if (activeTab === 'scan' && !cameraActive && !preview && selectedImages.length === 0) {
+    if (activeTab === 'scan' && !cameraActive && !preview && selectedImages.length === 0 && !cameraPermissionGranted) {
       setShowPermissionPrompt(true)
+    } else if (activeTab === 'scan' && cameraPermissionGranted && !cameraActive && !preview) {
+      // Auto-start camera if permission was granted before
+      startCamera()
     }
-  }, [activeTab, cameraActive, preview, selectedImages.length])
+  }, [activeTab, cameraActive, preview, selectedImages.length, cameraPermissionGranted])
 
   // Start camera
   const startCamera = async () => {
@@ -54,36 +59,37 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
       }
       
       console.log('Camera stream obtained:', stream)
-      console.log('Video ref exists:', !!videoRef.current)
+      setCameraPermissionGranted(true)
       
-      if (videoRef.current && stream) {
-        videoRef.current.srcObject = stream
-        streamRef.current = stream
-        console.log('Stream attached to video element')
-        
-        // Set camera active immediately - this will trigger re-render
-        setCameraActive(true)
-        console.log('setCameraActive(true) called')
-        
-        // Wait a tick for state to update
-        setTimeout(() => {
-          console.log('Camera active state after update:', true)
-          // Try to play video
-          if (videoRef.current) {
-            videoRef.current.play()
-              .then(() => console.log('Video playing successfully'))
-              .catch(e => console.log('Video play error (might be autoplay policy):', e))
-          }
-        }, 100)
-      } else {
-        console.error('Missing videoRef or stream:', { hasVideoRef: !!videoRef.current, hasStream: !!stream })
-      }
+      // Set camera active FIRST to render the video element
+      setCameraActive(true)
+      console.log('setCameraActive(true) called - video element should render now')
+      
+      // Store stream temporarily
+      setPendingStream(stream)
+      
     } catch (error) {
       console.error('Camera access error:', error)
       setShowPermissionPrompt(true)
+      setCameraPermissionGranted(false)
       alert('Camera access denied. Please enable camera permissions in your browser settings.')
     }
   }
+  
+  // Attach stream to video element after it renders
+  useEffect(() => {
+    if (cameraActive && pendingStream && videoRef.current) {
+      console.log('Attaching stream to video element')
+      videoRef.current.srcObject = pendingStream
+      streamRef.current = pendingStream
+      setPendingStream(null)
+      
+      // Play video
+      videoRef.current.play()
+        .then(() => console.log('Video playing successfully'))
+        .catch(e => console.log('Video play error:', e))
+    }
+  }, [cameraActive, pendingStream])
 
   // Stop camera
   const stopCamera = () => {
@@ -93,6 +99,10 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
     }
     if (videoRef.current) {
       videoRef.current.srcObject = null
+    }
+    if (pendingStream) {
+      pendingStream.getTracks().forEach(track => track.stop())
+      setPendingStream(null)
     }
     setCameraActive(false)
   }
