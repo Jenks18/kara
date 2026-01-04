@@ -231,7 +231,7 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
                 className="w-full bg-dark-200 hover:bg-dark-100 active:scale-[0.99] transition-all rounded-2xl p-4 flex items-center justify-between border border-gray-700"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-xl">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white font-bold text-xl shadow-emerald-md">
                     T
                   </div>
                   <div className="text-left">

@@ -7,10 +7,11 @@ import Image from 'next/image'
 interface ExpenseReportViewProps {
   images: string[]
   workspace: string
+  reportId?: string
   onBack: () => void
 }
 
-export default function ExpenseReportView({ images, workspace, onBack }: ExpenseReportViewProps) {
+export default function ExpenseReportView({ images, workspace, reportId, onBack }: ExpenseReportViewProps) {
   const [message, setMessage] = useState('')
   const currentDate = new Date().toLocaleDateString('en-US', { 
     month: 'short', 
@@ -35,7 +36,7 @@ export default function ExpenseReportView({ images, workspace, onBack }: Expense
           </button>
           
           <div className="flex-1 flex items-center justify-center gap-2">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center shadow-emerald-md">
               <span className="text-white font-bold text-lg">T</span>
               <div className="absolute bottom-0 right-0 w-4 h-4 bg-amber-500 rounded-full border-2 border-dark-300"></div>
             </div>
@@ -72,7 +73,7 @@ export default function ExpenseReportView({ images, workspace, onBack }: Expense
               <div className="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center">
                 <span className="text-white font-bold text-sm">👤</span>
               </div>
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center">
+              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-br from-emerald-500 to-green-600 rounded-lg flex items-center justify-center shadow-emerald-sm">
                 <span className="text-white font-bold text-xs">T</span>
               </div>
             </div>
@@ -90,7 +91,7 @@ export default function ExpenseReportView({ images, workspace, onBack }: Expense
                     Expense Report {reportDate}
                   </h3>
                   <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center px-3 py-1 bg-blue-500/20 text-blue-400 text-xs font-semibold rounded-full">
+                    <span className="inline-flex items-center px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-semibold rounded-full">
                       Draft
                     </span>
                     <span className="text-gray-400 text-sm">

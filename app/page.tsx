@@ -1,13 +1,30 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import BottomNav from '@/components/navigation/BottomNav'
 import StatsCard from '@/components/expense/StatsCard'
 import ExpenseCard from '@/components/expense/ExpenseCard'
 import FAB from '@/components/ui/FAB'
-import { Search, Bell } from 'lucide-react'
+import { Search, Bell, FileText } from 'lucide-react'
+import { getExpenseReports, type ExpenseReport } from '@/lib/api/expense-reports'
+import Image from 'next/image'
 
 export default function HomePage() {
-  // Mock data
+  const [expenseReports, setExpenseReports] = useState<ExpenseReport[]>([])
+  const [loading, setLoading] = useState(true)
+  
+  // Fetch expense reports on mount
+  useEffect(() => {
+    async function fetchReports() {
+      setLoading(true)
+      const reports = await getExpenseReports('injenga@terpmail.umd.edu', 10)
+      setExpenseReports(reports)
+      setLoading(false)
+    }
+    fetchReports()
+  }, [])
+  
+  // Mock data (keep for now)
   const expenses = [
     {
       id: '1',
@@ -55,7 +72,89 @@ export default function HomePage() {
           period="This Month"
         />
         
-        {/* Recent Section */}
+        {/* Expense Reports Section */}
+        {expenseReports.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-200">Expense Reports</h2>
+              <button className="text-sm text-primary-400 hover:text-primary-300 font-medium">
+                View All
+              </button>
+            </div>
+            
+            <div className="space-y-3">
+              {expenseReports.map((report) => (
+                <div 
+                  key={report.id}
+                  className="bg-dark-100 rounded-2xl p-4 border border-gray-800 hover:border-gray-700 transition-colors cursor-pointer"
+                >
+                  {/* Report Header */}
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <FileText size={16} className="text-emerald-500" />
+                        <h3 className="text-white font-semibold">{report.title}</h3>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-gray-400">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full font-medium ${
+                          report.status === 'draft' ? 'bg-emerald-500/20 text-emerald-400' :
+                          report.status === 'submitted' ? 'bg-amber-500/20 text-amber-400' :
+                          report.status === 'approved' ? 'bg-success-500/20 text-success-400' :
+                          'bg-danger-500/20 text-danger-400'
+                        }`}>
+                          {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
+                        </span>
+                        <span>•</span>
+                        <span>{report.items.length} expense{report.items.length > 1 ? 's' : ''}</span>
+                        <span>•</span>
+                        <span>{new Date(report.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Receipt Thumbnails */}
+                  {report.items.length > 0 && (
+                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                      {report.items.slice(0, 4).map((item, idx) => (
+                        <div key={item.id} className="flex-shrink-0">
+                          <div className="relative w-20 h-24 rounded-lg overflow-hidden bg-dark-200 border border-gray-700">
+                            <Image
+                              src={item.image_url}
+                              alt={`Receipt ${idx + 1}`}
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                      {report.items.length > 4 && (
+                        <div className="flex-shrink-0">
+                          <div className="w-20 h-24 rounded-lg bg-dark-200 border border-gray-700 flex items-center justify-center">
+                            <span className="text-gray-400 text-sm font-medium">
+                              +{report.items.length - 4}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Report Footer */}
+                  <div className="mt-3 pt-3 border-t border-gray-800 flex items-center justify-between">
+                    <div className="text-sm text-gray-400">
+                      {report.workspace_name}
+                    </div>
+                    <div className="text-white font-semibold font-mono">
+                      ${report.total_amount.toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Recent Expenses (Mock Data) */}
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-200">Recent Expenses</h2>

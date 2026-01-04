@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Camera, X, Image as ImageIcon, Receipt, ChevronRight, Zap, Pen } from 'lucide-react'
 import ConfirmExpenses from './ConfirmExpenses'
 import ExpenseReportView from './ExpenseReportView'
+import { createExpenseReport } from '@/lib/api/expense-reports'
 
 interface ReceiptCaptureProps {
   onCapture: (imageData: string) => void
@@ -200,6 +201,7 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
       <ExpenseReportView
         images={submittedImages}
         workspace="Terpmail's Workspace"
+        reportId={submittedImages[0]} // Pass a temp ID
         onBack={() => {
           // In production, this would navigate to the inbox/home
           setShowExpenseReport(false)
@@ -214,12 +216,51 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
     return (
       <ConfirmExpenses
         images={selectedImages}
-        onConfirm={(expenses) => {
+        onConfirm={async (expenses) => {
           console.log('Expenses confirmed:', expenses)
-          // Store the images and navigate to expense report view
-          setSubmittedImages(selectedImages)
-          setShowConfirmExpenses(false)
-          setShowExpenseReport(true)
+          
+          // Get location from first expense (they all have same workspace/description)
+          const firstExpense = expenses[0]
+          
+          // Get user's current position (if permission already granted)
+          let latitude: number | undefined
+          let longitude: number | undefined
+          try {
+            const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+              navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 })
+            })
+            latitude = position.coords.latitude
+            longitude = position.coords.longitude
+          } catch (error) {
+            console.log('Location not available:', error)
+          }
+          
+          // Create report in database
+          const result = await createExpenseReport({
+            userEmail: 'injenga@terpmail.umd.edu', // TODO: Get from auth
+            workspaceName: firstExpense.workspace,
+            workspaceAvatar: 'T',
+            title: `Expense Report ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' })}`,
+            items: expenses.map(exp => ({
+              imageData: exp.imageData,
+              description: exp.description,
+              category: exp.category,
+              reimbursable: exp.reimbursable,
+              latitude,
+              longitude,
+            }))
+          })
+          
+          if (result.success) {
+            console.log('Report created successfully:', result.reportId)
+            // Store the images and navigate to expense report view
+            setSubmittedImages(selectedImages)
+            setShowConfirmExpenses(false)
+            setShowExpenseReport(true)
+          } else {
+            console.error('Failed to create report:', result.error)
+            alert('Failed to save expense report. Please try again.')
+          }
         }}
         onCancel={() => {
           setShowConfirmExpenses(false)
