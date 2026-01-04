@@ -113,9 +113,13 @@ export default function ExpenseReportView({ images, workspace, reportId, onBack 
                             className="object-cover"
                           />
                         </div>
-                        <div className="mt-2 text-center">
-                          <p className="text-xs text-gray-400">{currentDate} • Receipt</p>
-                          <p className="text-xs text-gray-500 mt-1">Scanning...</p>
+                        <div className="mt-2">
+                          <p className="text-xs text-gray-400 text-center">{currentDate} • Cash</p>
+                          <p className="text-xs text-gray-400 mt-1 text-center font-mono">$0.00</p>
+                          <div className="mt-1 flex items-center justify-center gap-1">
+                            <div className="w-1.5 h-1.5 rounded-full bg-orange-500"></div>
+                            <p className="text-xs text-orange-500">Review required</p>
+                          </div>
                         </div>
                       </div>
                     ))}
