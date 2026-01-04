@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Camera, X, Image as ImageIcon, Receipt, ChevronRight, Zap, Pen } from 'lucide-react'
 import ConfirmExpenses from './ConfirmExpenses'
+import ExpenseReportView from './ExpenseReportView'
 
 interface ReceiptCaptureProps {
   onCapture: (imageData: string) => void
@@ -19,6 +20,8 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
   const [cameraPermissionGranted, setCameraPermissionGranted] = useState(false)
   const [pendingStream, setPendingStream] = useState<MediaStream | null>(null)
   const [showConfirmExpenses, setShowConfirmExpenses] = useState(false)
+  const [showExpenseReport, setShowExpenseReport] = useState(false)
+  const [submittedImages, setSubmittedImages] = useState<string[]>([])
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -191,6 +194,21 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
     // Don't clear images yet - user might want to process them
   }
 
+  // Show expense report view
+  if (showExpenseReport) {
+    return (
+      <ExpenseReportView
+        images={submittedImages}
+        workspace="Terpmail's Workspace"
+        onBack={() => {
+          // In production, this would navigate to the inbox/home
+          setShowExpenseReport(false)
+          onCancel()
+        }}
+      />
+    )
+  }
+
   // Show confirm expenses screen
   if (showConfirmExpenses) {
     return (
@@ -198,11 +216,10 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
         images={selectedImages}
         onConfirm={(expenses) => {
           console.log('Expenses confirmed:', expenses)
-          // For now, just pass the first image
-          // In production, you'd handle multiple expenses
-          if (expenses.length > 0) {
-            onCapture(expenses[0].imageData)
-          }
+          // Store the images and navigate to expense report view
+          setSubmittedImages(selectedImages)
+          setShowConfirmExpenses(false)
+          setShowExpenseReport(true)
         }}
         onCancel={() => {
           setShowConfirmExpenses(false)
