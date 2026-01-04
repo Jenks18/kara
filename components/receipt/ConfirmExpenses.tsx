@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { X, ChevronLeft, Trash2, MapPin, Globe } from 'lucide-react'
+import { X, ChevronLeft, ChevronRight, Trash2, MapPin, Globe } from 'lucide-react'
 import Image from 'next/image'
 
 interface ConfirmExpensesProps {
@@ -20,22 +20,15 @@ interface ExpenseData {
 
 export default function ConfirmExpenses({ images, onConfirm, onCancel }: ConfirmExpensesProps) {
   const [showLocationPrompt, setShowLocationPrompt] = useState(false)
-  const [expenses, setExpenses] = useState<ExpenseData[]>(
-    images.map((imageData) => ({
-      workspace: '',
-      description: '',
-      category: 'Fuel',
-      reimbursable: false,
-      imageData,
-    }))
-  )
-
-  const handleRemoveExpense = (index: number) => {
-    setExpenses(expenses.filter((_, i) => i !== index))
-    if (expenses.length === 1) {
-      onCancel()
-    }
-  }
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  
+  // Single expense data that applies to all images
+  const [expenseData, setExpenseData] = useState({
+    workspace: '',
+    description: '',
+    category: 'Fuel',
+    reimbursable: false,
+  })
 
   const handleContinue = () => {
     setShowLocationPrompt(true)
@@ -47,20 +40,41 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
       navigator.geolocation.getCurrentPosition(
         (position) => {
           console.log('Location:', position.coords)
+          // Create expense data for all images with same details
+          const expenses = images.map(imageData => ({
+            ...expenseData,
+            imageData
+          }))
           onConfirm(expenses)
         },
         (error) => {
           console.log('Location denied:', error)
+          const expenses = images.map(imageData => ({
+            ...expenseData,
+            imageData
+          }))
           onConfirm(expenses)
         }
       )
     } else {
+      const expenses = images.map(imageData => ({
+        ...expenseData,
+        imageData
+      }))
       onConfirm(expenses)
     }
   }
 
-  const updateExpense = (index: number, field: keyof ExpenseData, value: any) => {
-    setExpenses(expenses.map((exp, i) => (i === index ? { ...exp, [field]: value } : exp)))
+  const updateField = (field: keyof typeof expenseData, value: any) => {
+    setExpenseData(prev => ({ ...prev, [field]: value }))
+  }
+
+  const goToPrevImage = () => {
+    setCurrentImageIndex(prev => Math.max(0, prev - 1))
+  }
+
+  const goToNextImage = () => {
+    setCurrentImageIndex(prev => Math.min(images.length - 1, prev + 1))
   }
 
   if (showLocationPrompt) {
@@ -93,7 +107,13 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
                 Continue
               </button>
               <button
-                onClick={() => onConfirm(expenses)}
+                onClick={() => {
+                  const expenses = images.map(imageData => ({
+                    ...expenseData,
+                    imageData
+                  }))
+                  onConfirm(expenses)
+                }}
                 className="w-full bg-transparent hover:bg-dark-100/50 active:scale-[0.98] text-gray-400 font-medium py-4 rounded-full transition-all"
               >
                 Not now
@@ -116,7 +136,40 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
           >
             <ChevronLeft size={24} className="text-gray-400" />
           </button>
-          <h1 className="text-lg font-semibold text-white">Confirm expenses</h1>
+          
+          <div className="flex flex-col items-center">
+            <h1 className="text-lg font-semibold text-white">Confirm details</h1>
+            {images.length > 1 && (
+              <div className="flex items-center gap-3 mt-1">
+                <button
+                  onClick={goToPrevImage}
+                  disabled={currentImageIndex === 0}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                    currentImageIndex === 0
+                      ? 'bg-dark-100/30 text-gray-600 cursor-not-allowed'
+                      : 'bg-dark-100/50 hover:bg-dark-100 text-gray-400 active:scale-95'
+                  }`}
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                <span className="text-sm text-gray-400">
+                  {currentImageIndex + 1} of {images.length}
+                </span>
+                <button
+                  onClick={goToNextImage}
+                  disabled={currentImageIndex === images.length - 1}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                    currentImageIndex === images.length - 1
+                      ? 'bg-dark-100/30 text-gray-600 cursor-not-allowed'
+                      : 'bg-dark-100/50 hover:bg-dark-100 text-gray-400 active:scale-95'
+                  }`}
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+            )}
+          </div>
+          
           <button
             onClick={onCancel}
             className="w-10 h-10 rounded-full bg-dark-100/50 hover:bg-dark-100 active:scale-95 transition-all flex items-center justify-center"
@@ -126,91 +179,91 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {expenses.map((expense, index) => (
-            <div key={index} className="bg-dark-200 rounded-2xl p-4 space-y-4">
-              {/* Receipt Image */}
-              <div className="relative w-full aspect-[3/4] rounded-xl overflow-hidden bg-dark-100">
-                <Image
-                  src={expense.imageData}
-                  alt={`Receipt ${index + 1}`}
-                  fill
-                  className="object-cover"
-                />
-              </div>
-
-              {/* Form Fields */}
-              <div className="space-y-3">
-                {/* Workspace */}
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">To</label>
-                  <input
-                    type="text"
-                    value={expense.workspace}
-                    onChange={(e) => updateExpense(index, 'workspace', e.target.value)}
-                    placeholder="Select workspace"
-                    className="w-full bg-dark-100 text-white px-4 py-3 rounded-xl border border-gray-700 focus:border-primary focus:outline-none transition-colors"
-                  />
+        <div className="flex-1 overflow-y-auto p-4">
+          <div className="space-y-4">
+            {/* Workspace Section */}
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">To</label>
+              <button
+                onClick={() => {/* TODO: Open workspace selector */}}
+                className="w-full bg-dark-200 hover:bg-dark-100 active:scale-[0.99] transition-all rounded-2xl p-4 flex items-center justify-between"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-xl">
+                    T
+                  </div>
+                  <div className="text-left">
+                    <div className="text-white font-medium">Terpmail's Workspace</div>
+                    <div className="text-sm text-gray-400">Submits to injenga@terpmail.umd.edu</div>
+                  </div>
                 </div>
-
-                {/* Description */}
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">Description</label>
-                  <input
-                    type="text"
-                    value={expense.description}
-                    onChange={(e) => updateExpense(index, 'description', e.target.value)}
-                    placeholder="Add description"
-                    className="w-full bg-dark-100 text-white px-4 py-3 rounded-xl border border-gray-700 focus:border-primary focus:outline-none transition-colors"
-                  />
-                </div>
-
-                {/* Category */}
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">Category</label>
-                  <select
-                    value={expense.category}
-                    onChange={(e) => updateExpense(index, 'category', e.target.value)}
-                    className="w-full bg-dark-100 text-white px-4 py-3 rounded-xl border border-gray-700 focus:border-primary focus:outline-none transition-colors appearance-none cursor-pointer"
-                  >
-                    <option value="Fuel">Fuel</option>
-                    <option value="Food">Food</option>
-                    <option value="Transport">Transport</option>
-                    <option value="Accommodation">Accommodation</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-
-                {/* Reimbursable Toggle */}
-                <div className="flex items-center justify-between">
-                  <span className="text-white">Reimbursable</span>
-                  <button
-                    onClick={() => updateExpense(index, 'reimbursable', !expense.reimbursable)}
-                    className={`w-14 h-8 rounded-full transition-all ${
-                      expense.reimbursable ? 'bg-primary' : 'bg-gray-700'
-                    }`}
-                  >
-                    <div
-                      className={`w-6 h-6 bg-white rounded-full transition-transform ${
-                        expense.reimbursable ? 'translate-x-7' : 'translate-x-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-              </div>
-
-              {/* Remove button */}
-              {expenses.length > 1 && (
-                <button
-                  onClick={() => handleRemoveExpense(index)}
-                  className="w-full flex items-center justify-center gap-2 text-red-400 hover:text-red-300 py-3 transition-colors"
-                >
-                  <Trash2 size={18} />
-                  <span className="font-medium">Remove this expense</span>
-                </button>
-              )}
+                <ChevronRight size={20} className="text-gray-400" />
+              </button>
             </div>
-          ))}
+
+            {/* Receipt Image */}
+            <div className="relative w-full aspect-[3/4] rounded-xl overflow-hidden bg-dark-100">
+              <Image
+                src={images[currentImageIndex]}
+                alt={`Receipt ${currentImageIndex + 1}`}
+                fill
+                className="object-cover"
+              />
+            </div>
+
+            {/* Description */}
+            <button
+              onClick={() => {/* TODO: Open description input */}}
+              className="w-full bg-transparent hover:bg-dark-200/50 active:scale-[0.99] transition-all rounded-2xl p-4 flex items-center justify-between border-b border-gray-800"
+            >
+              <span className="text-white">Description</span>
+              <ChevronRight size={20} className="text-gray-400" />
+            </button>
+
+            {/* Category */}
+            <button
+              onClick={() => {/* TODO: Open category selector */}}
+              className="w-full bg-transparent hover:bg-dark-200/50 active:scale-[0.99] transition-all rounded-2xl p-4 flex items-center justify-between border-b border-gray-800"
+            >
+              <span className="text-white">Category</span>
+              <div className="flex items-center gap-2">
+                <span className="text-gray-400">Required</span>
+                <ChevronRight size={20} className="text-gray-400" />
+              </div>
+            </button>
+
+            {/* Reimbursable Toggle */}
+            <div className="flex items-center justify-between py-2">
+              <span className="text-white">Reimbursable</span>
+              <button
+                onClick={() => updateField('reimbursable', !expenseData.reimbursable)}
+                className={`w-14 h-8 rounded-full transition-all ${
+                  expenseData.reimbursable ? 'bg-primary' : 'bg-gray-700'
+                }`}
+              >
+                <div
+                  className={`w-6 h-6 bg-white rounded-full transition-transform ${
+                    expenseData.reimbursable ? 'translate-x-7' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Report Section */}
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Report</label>
+              <div className="text-white text-lg">New report</div>
+            </div>
+
+            {/* Remove button */}
+            <button
+              onClick={onCancel}
+              className="w-full flex items-center justify-center gap-2 text-gray-400 hover:text-red-400 py-3 transition-colors mt-8"
+            >
+              <Trash2 size={18} />
+              <span className="font-medium">Remove this expense</span>
+            </button>
+          </div>
         </div>
 
         {/* Footer */}
@@ -219,7 +272,7 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
             onClick={handleContinue}
             className="w-full bg-primary hover:bg-primary/90 active:scale-[0.98] text-dark-300 font-semibold py-4 rounded-full transition-all"
           >
-            Create {expenses.length} expense{expenses.length > 1 ? 's' : ''}
+            Create {images.length} expense{images.length > 1 ? 's' : ''}
           </button>
         </div>
       </div>
