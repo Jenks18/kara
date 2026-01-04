@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Camera, X, Image as ImageIcon, Receipt, ChevronRight, Zap, Pen } from 'lucide-react'
+import ConfirmExpenses from './ConfirmExpenses'
 
 interface ReceiptCaptureProps {
   onCapture: (imageData: string) => void
@@ -17,6 +18,7 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
   const [showPermissionPrompt, setShowPermissionPrompt] = useState(false)
   const [cameraPermissionGranted, setCameraPermissionGranted] = useState(false)
   const [pendingStream, setPendingStream] = useState<MediaStream | null>(null)
+  const [showConfirmExpenses, setShowConfirmExpenses] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -157,7 +159,8 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
 
   const handleProcessMultiple = () => {
     if (selectedImages.length > 0) {
-      onCapture(selectedImages[0])
+      stopCamera()
+      setShowConfirmExpenses(true)
     }
   }
 
@@ -186,6 +189,28 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
     console.log('Exiting continuous mode')
     setContinuousMode(false)
     // Don't clear images yet - user might want to process them
+  }
+
+  // Show confirm expenses screen
+  if (showConfirmExpenses) {
+    return (
+      <ConfirmExpenses
+        images={selectedImages}
+        onConfirm={(expenses) => {
+          console.log('Expenses confirmed:', expenses)
+          // For now, just pass the first image
+          // In production, you'd handle multiple expenses
+          if (expenses.length > 0) {
+            onCapture(expenses[0].imageData)
+          }
+        }}
+        onCancel={() => {
+          setShowConfirmExpenses(false)
+          setSelectedImages([])
+          setContinuousMode(false)
+        }}
+      />
+    )
   }
 
   return (
@@ -483,25 +508,17 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                     <div className="w-14" />
                   )}
 
-                  {/* Capture button - ALWAYS visible - Enhanced visual impact */}
+                  {/* Capture button - ALWAYS visible - Enhanced with gradient and strong borders */}
                   <button
                     onClick={capturePhoto}
-                    className="w-24 h-24 rounded-full bg-primary hover:bg-primary active:bg-primary transition-all flex items-center justify-center active:scale-90 shadow-2xl shadow-primary/60 ring-4 ring-primary/20 hover:ring-primary/30"
+                    className="w-24 h-24 rounded-full bg-gradient-to-br from-primary via-primary to-emerald-400 hover:from-emerald-400 hover:to-primary transition-all flex items-center justify-center active:scale-90 shadow-2xl shadow-primary/80 ring-[6px] ring-primary/30 hover:ring-primary/50 border-4 border-dark-300"
                   >
-                    <div className="w-20 h-20 rounded-full border-[5px] border-dark-300" />
+                    <div className="w-[72px] h-[72px] rounded-full border-[6px] border-white/90 shadow-inner" />
                   </button>
 
-                  {/* Right button: Multi-receipt toggle OR Chevron to process */}
-                  {continuousMode && selectedImages.length > 0 ? (
-                    // Show chevron button when have photos in continuous mode
-                    <button
-                      onClick={handleProcessMultiple}
-                      className="w-16 h-16 rounded-full bg-primary hover:bg-primary active:bg-primary/90 transition-all flex items-center justify-center active:scale-90 shadow-xl shadow-primary/50"
-                    >
-                      <ChevronRight size={32} className="text-dark-300" strokeWidth={3} />
-                    </button>
-                  ) : (
-                    // Show multi-receipt toggle button
+                  {/* Right side: Multi-receipt button + optional Chevron */}
+                  <div className="flex items-center gap-2">
+                    {/* Multi-receipt toggle button - ALWAYS visible */}
                     <button
                       onClick={() => {
                         if (continuousMode) {
@@ -513,13 +530,23 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                       }}
                       className={`w-16 h-16 rounded-xl backdrop-blur active:scale-95 transition-all flex items-center justify-center border-2 ${
                         continuousMode 
-                          ? 'bg-primary text-dark-300 border-primary ring-2 ring-primary/40 shadow-lg shadow-primary/30' 
-                          : 'bg-dark-100/50 hover:bg-dark-100 text-gray-400 border-gray-600 hover:border-gray-500'
+                          ? 'bg-primary/90 text-dark-300 border-primary ring-2 ring-primary/40 shadow-lg shadow-primary/30' 
+                          : 'bg-dark-100/80 hover:bg-dark-100 text-gray-300 border-gray-600 hover:border-primary/50'
                       }`}
                     >
                       <Receipt size={28} strokeWidth={2.5} />
                     </button>
-                  )}
+                    
+                    {/* Chevron button - show when have photos in continuous mode */}
+                    {continuousMode && selectedImages.length > 0 && (
+                      <button
+                        onClick={handleProcessMultiple}
+                        className="w-16 h-16 rounded-full bg-gradient-to-br from-primary via-emerald-400 to-primary hover:from-emerald-300 hover:to-primary transition-all flex items-center justify-center active:scale-90 shadow-2xl shadow-primary/80 ring-4 ring-primary/40 border-4 border-dark-300"
+                      >
+                        <ChevronRight size={36} className="text-dark-300" strokeWidth={4} />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ) : (
