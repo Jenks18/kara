@@ -1,0 +1,4 @@
+This is a placeholder. To add a proper PWA icon:
+1. Create a 192x192px PNG image
+2. Name it icon-192.png
+3. Place in /public folder

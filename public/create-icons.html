@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate Kara Icons</title>
+</head>
+<body>
+    <canvas id="canvas" width="512" height="512"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Emerald gradient background
+        const gradient = ctx.createLinearGradient(0, 0, 512, 512);
+        gradient.addColorStop(0, '#059669');
+        gradient.addColorStop(0.5, '#10b981');
+        gradient.addColorStop(1, '#34d399');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 512, 512);
+        
+        // White "K" letter
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 320px -apple-system, BlinkMacSystemFont, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('K', 256, 256);
+        
+        // Download 512x512
+        canvas.toBlob(blob => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'icon-512.png';
+            a.click();
+        });
+        
+        // Create 192x192
+        setTimeout(() => {
+            const canvas2 = document.createElement('canvas');
+            canvas2.width = 192;
+            canvas2.height = 192;
+            const ctx2 = canvas2.getContext('2d');
+            ctx2.drawImage(canvas, 0, 0, 192, 192);
+            canvas2.toBlob(blob => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'icon-192.png';
+                a.click();
+            });
+        }, 500);
+    </script>
+</body>
+</html>

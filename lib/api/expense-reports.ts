@@ -1,4 +1,4 @@
-import { supabase } from '../supabase/client'
+import { supabase, isSupabaseConfigured } from '../supabase/client'
 
 export interface ExpenseReportInput {
   userEmail: string
@@ -49,6 +49,12 @@ export interface ExpenseItem {
 export async function createExpenseReport(
   data: ExpenseReportInput
 ): Promise<{ success: boolean; reportId?: string; error?: string }> {
+  if (!isSupabaseConfigured) {
+    console.warn('⚠️ Supabase not configured. Report will not be saved to database.')
+    console.log('💡 To enable database: Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local')
+    return { success: false, error: 'Supabase not configured' }
+  }
+  
   try {
     // 1. Create the expense report
     const { data: report, error: reportError } = await supabase
@@ -167,6 +173,10 @@ export async function getExpenseReports(
   userEmail: string,
   limit = 50
 ): Promise<ExpenseReport[]> {
+  if (!isSupabaseConfigured) {
+    return []
+  }
+  
   try {
     const { data: reports, error: reportsError } = await supabase
       .from('expense_reports')
@@ -211,6 +221,10 @@ export async function getExpenseReports(
 export async function getExpenseReport(
   reportId: string
 ): Promise<ExpenseReport | null> {
+  if (!isSupabaseConfigured) {
+    return null
+  }
+  
   try {
     const { data: report, error: reportError } = await supabase
       .from('expense_reports')
