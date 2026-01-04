@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { X, ChevronLeft, ChevronRight, Trash2, MapPin, Globe } from 'lucide-react'
 import Image from 'next/image'
 
@@ -21,6 +21,7 @@ interface ExpenseData {
 export default function ConfirmExpenses({ images, onConfirm, onCancel }: ConfirmExpensesProps) {
   const [showLocationPrompt, setShowLocationPrompt] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [locationPermissionGranted, setLocationPermissionGranted] = useState(false)
   
   // Single expense data that applies to all images
   const [expenseData, setExpenseData] = useState({
@@ -30,7 +31,45 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
     reimbursable: false,
   })
 
-  const handleContinue = () => {
+  // Check if location permission was already granted
+  useEffect(() => {
+    const checkLocationPermission = async () => {
+      if ('permissions' in navigator) {
+        try {
+          const result = await navigator.permissions.query({ name: 'geolocation' as PermissionName })
+          if (result.state === 'granted') {
+            setLocationPermissionGranted(true)
+          }
+        } catch (error) {
+          // If permission API not available, check localStorage
+          const hasPermission = localStorage.getItem('locationPermissionGranted')
+          if (hasPermission === 'true') {
+            setLocationPermissionGranted(true)
+          }
+        }
+      } else {
+        // Fallback to localStorage
+        const hasPermission = localStorage.getItem('locationPermissionGranted')
+        if (hasPermission === 'true') {
+          setLocationPermissionGranted(true)
+        }
+      }
+    }
+    checkLocationPermission()
+  }, [])
+
+  const handleContinue = async () => {
+    // If location permission already granted, submit directly
+    if (locationPermissionGranted) {
+      const expenses = images.map(imageData => ({
+        ...expenseData,
+        imageData
+      }))
+      onConfirm(expenses)
+      return
+    }
+
+    // Otherwise, show location permission prompt
     setShowLocationPrompt(true)
   }
 
@@ -40,6 +79,9 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
       navigator.geolocation.getCurrentPosition(
         (position) => {
           console.log('Location:', position.coords)
+          // Save permission state
+          localStorage.setItem('locationPermissionGranted', 'true')
+          setLocationPermissionGranted(true)
           // Create expense data for all images with same details
           const expenses = images.map(imageData => ({
             ...expenseData,
