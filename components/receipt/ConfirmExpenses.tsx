@@ -81,13 +81,13 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
     return (
       <div className="fixed inset-0 bg-dark-300 z-50">
         <div className="h-full flex flex-col items-center justify-center p-6">
-          <div className="max-w-[430px] w-full bg-dark-200 rounded-3xl p-8 text-center">
+          <div className="max-w-[430px] w-full bg-dark-200 rounded-3xl p-8 text-center border border-gray-700">
             {/* Icon */}
-            <div className="w-24 h-24 rounded-full bg-primary/10 mx-auto mb-6 flex items-center justify-center">
+            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-500/10 to-emerald-400/10 mx-auto mb-6 flex items-center justify-center ring-2 ring-emerald-500/20">
               <div className="relative">
-                <Globe size={40} className="text-primary" strokeWidth={2} />
-                <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-dark-200 rounded-full flex items-center justify-center border-2 border-primary">
-                  <MapPin size={16} className="text-primary" />
+                <Globe size={40} className="text-emerald-500" strokeWidth={2} />
+                <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-dark-200 rounded-full flex items-center justify-center border-2 border-emerald-500">
+                  <MapPin size={16} className="text-emerald-500" />
                 </div>
               </div>
             </div>
@@ -102,7 +102,7 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
             <div className="space-y-3">
               <button
                 onClick={handleLocationContinue}
-                className="w-full bg-primary hover:bg-primary/90 active:scale-[0.98] text-dark-300 font-semibold py-4 rounded-full transition-all"
+                className="w-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-400 hover:from-emerald-700 hover:via-emerald-600 hover:to-emerald-500 active:scale-[0.98] text-white font-semibold py-4 rounded-full transition-all duration-300 shadow-emerald-md hover:shadow-emerald-lg"
               >
                 Continue
               </button>
@@ -114,7 +114,7 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
                   }))
                   onConfirm(expenses)
                 }}
-                className="w-full bg-transparent hover:bg-dark-100/50 active:scale-[0.98] text-gray-400 font-medium py-4 rounded-full transition-all"
+                className="w-full bg-transparent hover:bg-dark-200/50 active:scale-[0.98] text-gray-300 hover:text-white font-medium py-4 rounded-full transition-all duration-200 border border-gray-600 hover:border-gray-500"
               >
                 Not now
               </button>
@@ -129,12 +129,12 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
     <div className="fixed inset-0 bg-dark-300 z-50 overflow-hidden">
       <div className="h-full flex flex-col max-w-[430px] mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-800">
+        <div className="flex items-center justify-between p-4 border-b border-gray-700">
           <button
             onClick={onCancel}
-            className="w-10 h-10 rounded-full bg-dark-100/50 hover:bg-dark-100 active:scale-95 transition-all flex items-center justify-center"
+            className="w-10 h-10 rounded-full bg-dark-200 hover:bg-dark-100 active:scale-95 transition-all flex items-center justify-center border border-gray-600"
           >
-            <ChevronLeft size={24} className="text-gray-400" />
+            <ChevronLeft size={24} className="text-gray-300" />
           </button>
           
           <div className="flex flex-col items-center">
@@ -144,24 +144,24 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
                 <button
                   onClick={goToPrevImage}
                   disabled={currentImageIndex === 0}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${
                     currentImageIndex === 0
                       ? 'bg-dark-100/30 text-gray-600 cursor-not-allowed'
-                      : 'bg-dark-100/50 hover:bg-dark-100 text-gray-400 active:scale-95'
+                      : 'bg-gradient-to-br from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white active:scale-95 shadow-emerald-sm'
                   }`}
                 >
                   <ChevronLeft size={18} />
                 </button>
-                <span className="text-sm text-gray-400">
+                <span className="text-sm text-gray-300 font-medium">
                   {currentImageIndex + 1} of {images.length}
                 </span>
                 <button
                   onClick={goToNextImage}
                   disabled={currentImageIndex === images.length - 1}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${
                     currentImageIndex === images.length - 1
                       ? 'bg-dark-100/30 text-gray-600 cursor-not-allowed'
-                      : 'bg-dark-100/50 hover:bg-dark-100 text-gray-400 active:scale-95'
+                      : 'bg-gradient-to-br from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white active:scale-95 shadow-emerald-sm'
                   }`}
                 >
                   <ChevronRight size={18} />
@@ -172,9 +172,9 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
           
           <button
             onClick={onCancel}
-            className="w-10 h-10 rounded-full bg-dark-100/50 hover:bg-dark-100 active:scale-95 transition-all flex items-center justify-center"
+            className="w-10 h-10 rounded-full bg-dark-200 hover:bg-dark-100 active:scale-95 transition-all flex items-center justify-center border border-gray-600"
           >
-            <X size={20} className="text-gray-400" />
+            <X size={20} className="text-gray-300" />
           </button>
         </div>
 
@@ -183,10 +183,10 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
           <div className="space-y-4">
             {/* Workspace Section */}
             <div>
-              <label className="block text-sm text-gray-400 mb-2">To</label>
+              <label className="block text-sm text-gray-400 font-medium mb-2">To</label>
               <button
                 onClick={() => {/* TODO: Open workspace selector */}}
-                className="w-full bg-dark-200 hover:bg-dark-100 active:scale-[0.99] transition-all rounded-2xl p-4 flex items-center justify-between"
+                className="w-full bg-dark-200 hover:bg-dark-100 active:scale-[0.99] transition-all rounded-2xl p-4 flex items-center justify-between border border-gray-700"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-xl">
@@ -202,7 +202,7 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
             </div>
 
             {/* Receipt Image */}
-            <div className="relative w-full aspect-[3/4] rounded-xl overflow-hidden bg-dark-100">
+            <div className="relative w-full aspect-[3/4] rounded-xl overflow-hidden bg-dark-100 border border-gray-700">
               <Image
                 src={images[currentImageIndex]}
                 alt={`Receipt ${currentImageIndex + 1}`}
@@ -214,7 +214,7 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
             {/* Description */}
             <button
               onClick={() => {/* TODO: Open description input */}}
-              className="w-full bg-transparent hover:bg-dark-200/50 active:scale-[0.99] transition-all rounded-2xl p-4 flex items-center justify-between border-b border-gray-800"
+              className="w-full bg-transparent hover:bg-dark-200/50 active:scale-[0.99] transition-all rounded-2xl p-4 flex items-center justify-between border-b border-gray-700"
             >
               <span className="text-white">Description</span>
               <ChevronRight size={20} className="text-gray-400" />
@@ -223,7 +223,7 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
             {/* Category */}
             <button
               onClick={() => {/* TODO: Open category selector */}}
-              className="w-full bg-transparent hover:bg-dark-200/50 active:scale-[0.99] transition-all rounded-2xl p-4 flex items-center justify-between border-b border-gray-800"
+              className="w-full bg-transparent hover:bg-dark-200/50 active:scale-[0.99] transition-all rounded-2xl p-4 flex items-center justify-between border-b border-gray-700"
             >
               <span className="text-white">Category</span>
               <div className="flex items-center gap-2">
@@ -237,12 +237,12 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
               <span className="text-white">Reimbursable</span>
               <button
                 onClick={() => updateField('reimbursable', !expenseData.reimbursable)}
-                className={`w-14 h-8 rounded-full transition-all ${
-                  expenseData.reimbursable ? 'bg-primary' : 'bg-gray-700'
+                className={`w-14 h-8 rounded-full transition-all duration-200 ${
+                  expenseData.reimbursable ? 'bg-gradient-to-r from-emerald-600 to-emerald-500' : 'bg-gray-600'
                 }`}
               >
                 <div
-                  className={`w-6 h-6 bg-white rounded-full transition-transform ${
+                  className={`w-6 h-6 bg-white rounded-full shadow-md transition-transform duration-200 ${
                     expenseData.reimbursable ? 'translate-x-7' : 'translate-x-1'
                   }`}
                 />
@@ -251,7 +251,7 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
 
             {/* Report Section */}
             <div>
-              <label className="block text-sm text-gray-400 mb-2">Report</label>
+              <label className="block text-sm text-gray-400 font-medium mb-2">Report</label>
               <div className="text-white text-lg">New report</div>
             </div>
 
@@ -267,10 +267,10 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-800">
+        <div className="p-4 border-t border-gray-700">
           <button
             onClick={handleContinue}
-            className="w-full bg-primary hover:bg-primary/90 active:scale-[0.98] text-dark-300 font-semibold py-4 rounded-full transition-all"
+            className="w-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-400 hover:from-emerald-700 hover:via-emerald-600 hover:to-emerald-500 active:scale-[0.98] text-white font-semibold py-4 rounded-full transition-all duration-300 shadow-emerald-md hover:shadow-emerald-lg"
           >
             Create {images.length} expense{images.length > 1 ? 's' : ''}
           </button>

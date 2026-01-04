@@ -10,16 +10,29 @@ const config: Config = {
     extend: {
       colors: {
         primary: {
-          50: '#f0f9ff',
-          100: '#e0f2fe',
-          200: '#bae6fd',
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0ea5e9',
-          600: '#0284c7',
-          700: '#0369a1',
-          800: '#075985',
-          900: '#0c4a6e',
+          DEFAULT: '#10b981', // Emerald green - main brand color
+          50: '#ecfdf5',
+          100: '#d1fae5',
+          200: '#a7f3d0',
+          300: '#6ee7b7',
+          400: '#34d399',
+          500: '#10b981',
+          600: '#059669',
+          700: '#047857',
+          800: '#065f46',
+          900: '#064e3b',
+        },
+        emerald: {
+          50: '#ecfdf5',
+          100: '#d1fae5',
+          200: '#a7f3d0',
+          300: '#6ee7b7',
+          400: '#34d399',
+          500: '#10b981',
+          600: '#059669',
+          700: '#047857',
+          800: '#065f46',
+          900: '#064e3b',
         },
         success: {
           50: '#f0fdf4',
@@ -39,10 +52,10 @@ const config: Config = {
         },
         dark: {
           50: '#f9fafb',
-          100: '#1a2e1f',
-          200: '#162519',
-          300: '#121f16',
-          400: '#0f1b13',
+          100: '#27272a', // Neutral zinc-800 for cards/surfaces
+          200: '#1f2937', // Neutral gray-800 for slightly darker surfaces
+          300: '#111827', // Neutral gray-900 for main background
+          400: '#0f172a', // Neutral slate-900 for darkest elements
           500: '#0c1710',
           600: '#09130d',
           700: '#060f0a',
@@ -62,6 +75,15 @@ const config: Config = {
       boxShadow: {
         'card': '0 1px 3px 0 rgb(0 0 0 / 0.05)',
         'float': '0 10px 25px -5px rgb(0 0 0 / 0.1)',
+        'emerald-sm': '0 4px 12px rgba(5, 150, 105, 0.15)',
+        'emerald-md': '0 8px 25px rgba(5, 150, 105, 0.25)',
+        'emerald-lg': '0 12px 35px rgba(5, 150, 105, 0.35)',
+        'emerald-xl': '0 20px 50px rgba(5, 150, 105, 0.4)',
+      },
+      backgroundImage: {
+        'gradient-emerald': 'linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%)',
+        'gradient-emerald-dark': 'linear-gradient(135deg, #047857 0%, #059669 50%, #10b981 100%)',
+        'gradient-emerald-light': 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 50%, #6ee7b7 100%)',
       },
       spacing: {
         'safe': 'env(safe-area-inset-bottom)',
