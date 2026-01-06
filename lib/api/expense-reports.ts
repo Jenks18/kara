@@ -78,8 +78,15 @@ export async function createExpenseReport(
     // 2. Upload images and create expense items
     const itemsWithUrls = await Promise.all(
       data.items.map(async (item) => {
-        // Upload image to Supabase Storage
-        const imageUrl = await uploadReceiptImage(item.imageData, report.id)
+        // Try to upload image to Supabase Storage, fallback to base64 if fails
+        let imageUrl: string
+        try {
+          imageUrl = await uploadReceiptImage(item.imageData, report.id)
+        } catch (error) {
+          console.warn('Image upload failed, using base64 fallback:', error)
+          // Store base64 data directly if storage upload fails (RLS issue)
+          imageUrl = item.imageData
+        }
         
         return {
           report_id: report.id,

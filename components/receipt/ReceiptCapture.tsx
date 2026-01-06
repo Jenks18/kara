@@ -113,12 +113,21 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
     setCameraActive(false)
   }
 
-  // Cleanup on unmount
+  // Cleanup on unmount or when leaving the component
   useEffect(() => {
     return () => {
+      console.log('🧹 Cleaning up camera resources')
       stopCamera()
     }
   }, [])
+
+  // Also cleanup when navigating away from capture screens
+  useEffect(() => {
+    if (showConfirmExpenses || showExpenseReport) {
+      console.log('🧹 Stopping camera - moved to next screen')
+      stopCamera()
+    }
+  }, [showConfirmExpenses, showExpenseReport])
 
   // Capture photo from camera
   const capturePhoto = () => {
@@ -140,6 +149,8 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
       setSelectedImages(prev => [...prev, imageData])
     } else {
       setPreview(imageData)
+      // Stop camera immediately after capture
+      console.log('📸 Photo captured, stopping camera')
       stopCamera()
     }
   }
@@ -170,7 +181,11 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
 
   const handleConfirm = () => {
     if (preview) {
-      onCapture(preview)
+      // Single receipt flow: advance to confirm expenses screen
+      console.log('📄 Single receipt confirmed, advancing to expense confirmation')
+      setSelectedImages([preview])
+      setPreview(null)
+      setShowConfirmExpenses(true)
     }
   }
 

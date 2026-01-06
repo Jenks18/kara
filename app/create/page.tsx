@@ -2,80 +2,16 @@
 
 import { useState } from 'react'
 import BottomNav from '@/components/navigation/BottomNav'
-import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
 import ReceiptCapture from '@/components/receipt/ReceiptCapture'
-import ReceiptProcessingStatus from '@/components/receipt/ReceiptProcessingStatus'
-import ReceiptReviewModal from '@/components/receipt/ReceiptReviewModal'
 import { Receipt, MapPin, MessageSquare, Eye, Briefcase } from 'lucide-react'
 
 export default function CreatePage() {
   const [showCapture, setShowCapture] = useState(false)
-  const [showProcessing, setShowProcessing] = useState(false)
-  const [showReview, setShowReview] = useState(false)
-  const [processingStatus, setProcessingStatus] = useState<'uploading' | 'processing' | 'verified' | 'needs_review'>('uploading')
-  const [progress, setProgress] = useState(0)
   
-  const handleCaptureReceipt = async (imageData: string) => {
-    setShowCapture(false)
-    setShowProcessing(true)
-    setProcessingStatus('uploading')
-    setProgress(10)
-    
-    try {
-      // Convert base64 to blob
-      const base64Response = await fetch(imageData)
-      const blob = await base64Response.blob()
-      
-      // Create form data
-      const formData = new FormData()
-      formData.append('image', blob, 'receipt.jpg')
-      
-      setProgress(20)
-      
-      // Upload to API
-      const response = await fetch('/api/receipts/upload', {
-        method: 'POST',
-        body: formData,
-      })
-      
-      setProgress(40)
-      setProcessingStatus('processing')
-      
-      const result = await response.json()
-      
-      setProgress(100)
-      
-      if (!response.ok) {
-        alert(`Error: ${result.message || result.error}`)
-        setShowProcessing(false)
-        return
-      }
-      
-      // Check if needs review
-      if (result.transaction.status === 'needs_review') {
-        setProcessingStatus('needs_review')
-      } else {
-        setProcessingStatus('verified')
-        setTimeout(() => {
-          setShowProcessing(false)
-          alert(`✓ Receipt verified!\n${result.transaction.litres}L ${result.transaction.fuelType} @ ${result.transaction.pricePerLitre?.toFixed(2)} KES/L`)
-        }, 2000)
-      }
-      
-    } catch (error: any) {
-      console.error('Upload failed:', error)
-      alert('Failed to process receipt: ' + error.message)
-      setShowProcessing(false)
-    }
-  }
-  
-  const handleReviewSubmit = (data: any) => {
-    setShowReview(false)
-    setShowProcessing(false)
-    // Would save the completed transaction
-    console.log('Review submitted:', data)
-  }
+  // ReceiptCapture component now handles the entire workflow:
+  // capture → confirm → save to DB → show report view
+  // No need for separate processing/review state here
   const options = [
     {
       id: 'expense',
@@ -122,15 +58,6 @@ export default function CreatePage() {
         
         {/* Content */}
         <div className="px-4 py-6 max-w-md mx-auto">
-          {/* Processing Status */}
-          {showProcessing && (
-            <ReceiptProcessingStatus
-              status={processingStatus}
-              progress={progress}
-              onReview={() => setShowReview(true)}
-            />
-          )}
-          
           <div className="space-y-3">
             {options.map((option) => {
               const Icon = option.icon
@@ -158,26 +85,11 @@ export default function CreatePage() {
         <BottomNav />
       </div>
       
-      {/* Receipt Capture Modal */}
+      {/* Receipt Capture Modal - handles entire flow internally */}
       {showCapture && (
         <ReceiptCapture
-          onCapture={handleCaptureReceipt}
+          onCapture={() => {}} // Not used - component handles everything
           onCancel={() => setShowCapture(false)}
-        />
-      )}
-      
-      {/* Review Modal */}
-      {showReview && (
-        <ReceiptReviewModal
-          receiptData={{
-            imageUrl: '/receipt-preview.jpg',
-            merchant: 'Mascot Petroleum',
-            totalAmount: 5700,
-            date: 'Dec 20, 2025',
-            missingFields: ['litres', 'fuelType'],
-          }}
-          onSubmit={handleReviewSubmit}
-          onCancel={() => setShowReview(false)}
         />
       )}
     </>

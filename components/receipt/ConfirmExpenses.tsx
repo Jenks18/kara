@@ -74,6 +74,9 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
   }
 
   const handleLocationContinue = () => {
+    // Hide the prompt immediately
+    setShowLocationPrompt(false)
+    
     // Request location permission
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
