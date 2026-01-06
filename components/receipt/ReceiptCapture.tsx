@@ -35,13 +35,18 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
 
   // Show permission prompt when switching to scan tab (only if never granted)
   useEffect(() => {
+    // Don't auto-start camera if we're in confirm or report view
+    if (showConfirmExpenses || showExpenseReport) {
+      return
+    }
+    
     if (activeTab === 'scan' && !cameraActive && !preview && selectedImages.length === 0 && !cameraPermissionGranted) {
       setShowPermissionPrompt(true)
-    } else if (activeTab === 'scan' && cameraPermissionGranted && !cameraActive && !preview) {
-      // Auto-start camera if permission was granted before
+    } else if (activeTab === 'scan' && cameraPermissionGranted && !cameraActive && !preview && selectedImages.length === 0) {
+      // Auto-start camera if permission was granted before AND not in a multi-select flow
       startCamera()
     }
-  }, [activeTab, cameraActive, preview, selectedImages.length, cameraPermissionGranted])
+  }, [activeTab, cameraActive, preview, selectedImages.length, cameraPermissionGranted, showConfirmExpenses, showExpenseReport])
 
   // Start camera
   const startCamera = async () => {
