@@ -18,7 +18,13 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
   const [selectedImages, setSelectedImages] = useState<string[]>([])
   const [continuousMode, setContinuousMode] = useState(false)
   const [showPermissionPrompt, setShowPermissionPrompt] = useState(false)
-  const [cameraPermissionGranted, setCameraPermissionGranted] = useState(false)
+  const [cameraPermissionGranted, setCameraPermissionGranted] = useState(() => {
+    // Check localStorage on initial load
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('cameraPermissionGranted') === 'true'
+    }
+    return false
+  })
   const [pendingStream, setPendingStream] = useState<MediaStream | null>(null)
   const [showConfirmExpenses, setShowConfirmExpenses] = useState(false)
   const [showExpenseReport, setShowExpenseReport] = useState(false)
@@ -71,6 +77,11 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
       
       console.log('Camera stream obtained:', stream)
       setCameraPermissionGranted(true)
+      // Persist permission to localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('cameraPermissionGranted', 'true')
+        console.log('✅ Camera permission saved to localStorage')
+      }
       
       // Set camera active FIRST to render the video element
       setCameraActive(true)
@@ -83,6 +94,10 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
       console.error('Camera access error:', error)
       setShowPermissionPrompt(true)
       setCameraPermissionGranted(false)
+      // Clear localStorage on denial
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('cameraPermissionGranted')
+      }
       alert('Camera access denied. Please enable camera permissions in your browser settings.')
     }
   }
