@@ -81,7 +81,6 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          console.log('Location:', position.coords)
           // Save permission state
           localStorage.setItem('locationPermissionGranted', 'true')
           setLocationPermissionGranted(true)
@@ -93,7 +92,6 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
           onConfirm(expenses)
         },
         (error) => {
-          console.log('Location denied:', error)
           const expenses = images.map(imageData => ({
             ...expenseData,
             imageData

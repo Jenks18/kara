@@ -34,11 +34,6 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
   const fileInputRef = useRef<HTMLInputElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
-  // Debug state changes
-  useEffect(() => {
-    console.log('Camera state:', { cameraActive, preview, imagesCount: selectedImages.length, continuousMode })
-  }, [cameraActive, preview, selectedImages.length, continuousMode])
-
   // Show permission prompt when switching to scan tab (only if never granted)
   useEffect(() => {
     // Don't auto-start camera if we're in confirm or report view
@@ -57,7 +52,6 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
   // Start camera
   const startCamera = async () => {
     try {
-      console.log('Requesting camera access...')
       setShowPermissionPrompt(false)
       
       // Try with rear camera first, fallback to any camera
@@ -68,24 +62,20 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
           audio: false,
         })
       } catch (e) {
-        console.log('Rear camera not available, using default camera')
         stream = await navigator.mediaDevices.getUserMedia({
           video: true,
           audio: false,
         })
       }
       
-      console.log('Camera stream obtained:', stream)
       setCameraPermissionGranted(true)
       // Persist permission to localStorage
       if (typeof window !== 'undefined') {
         localStorage.setItem('cameraPermissionGranted', 'true')
-        console.log('✅ Camera permission saved to localStorage')
       }
       
       // Set camera active FIRST to render the video element
       setCameraActive(true)
-      console.log('setCameraActive(true) called - video element should render now')
       
       // Store stream temporarily
       setPendingStream(stream)
@@ -105,15 +95,12 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
   // Attach stream to video element after it renders
   useEffect(() => {
     if (cameraActive && pendingStream && videoRef.current) {
-      console.log('Attaching stream to video element')
       videoRef.current.srcObject = pendingStream
       streamRef.current = pendingStream
       setPendingStream(null)
       
       // Play video
-      videoRef.current.play()
-        .then(() => console.log('Video playing successfully'))
-        .catch(e => console.log('Video play error:', e))
+      videoRef.current.play().catch(e => console.error('Video play error:', e))
     }
   }, [cameraActive, pendingStream])
 
@@ -136,7 +123,6 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
   // Cleanup on unmount or when leaving the component
   useEffect(() => {
     return () => {
-      console.log('🧹 Cleaning up camera resources')
       stopCamera()
     }
   }, [])
@@ -144,7 +130,6 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
   // Also cleanup when navigating away from capture screens
   useEffect(() => {
     if (showConfirmExpenses || showExpenseReport) {
-      console.log('🧹 Stopping camera - moved to next screen')
       stopCamera()
     }
   }, [showConfirmExpenses, showExpenseReport])
@@ -170,7 +155,6 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
     } else {
       setPreview(imageData)
       // Stop camera immediately after capture
-      console.log('📸 Photo captured, stopping camera')
       stopCamera()
     }
   }
@@ -202,7 +186,6 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
   const handleConfirm = () => {
     if (preview) {
       // Single receipt flow: advance to confirm expenses screen
-      console.log('📄 Single receipt confirmed, advancing to expense confirmation')
       setSelectedImages([preview])
       setPreview(null)
       setShowConfirmExpenses(true)
@@ -215,7 +198,6 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
   }
 
   const startContinuousMode = () => {
-    console.log('Starting continuous mode')
     setContinuousMode(true)
     setSelectedImages([])
     // Don't stop camera if already active
@@ -225,7 +207,6 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
   }
 
   const exitContinuousMode = () => {
-    console.log('Exiting continuous mode')
     setContinuousMode(false)
     // Don't clear images yet - user might want to process them
   }
@@ -252,8 +233,6 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
       <ConfirmExpenses
         images={selectedImages}
         onConfirm={async (expenses) => {
-          console.log('Expenses confirmed:', expenses)
-          
           // Get location from first expense (they all have same workspace/description)
           const firstExpense = expenses[0]
           
@@ -267,7 +246,7 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
             latitude = position.coords.latitude
             longitude = position.coords.longitude
           } catch (error) {
-            console.log('Location not available:', error)
+            // Location not available - continue without it
           }
           
           // Create report in database
@@ -287,7 +266,6 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
           })
           
           if (result.success) {
-            console.log('✅ Report created successfully:', result.reportId)
             // Store the images and navigate to expense report view
             setSubmittedImages(selectedImages)
             setShowConfirmExpenses(false)
@@ -295,12 +273,11 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
           } else {
             // If Supabase not configured, still show the report view (demo mode)
             if (result.error === 'Supabase not configured') {
-              console.log('📋 Demo mode: Report not saved to database')
               setSubmittedImages(selectedImages)
               setShowConfirmExpenses(false)
               setShowExpenseReport(true)
             } else {
-              console.error('❌ Failed to create report:', result.error)
+              console.error('Failed to create report:', result.error)
               // Still proceed to show report view
               setSubmittedImages(selectedImages)
               setShowConfirmExpenses(false)
@@ -453,8 +430,6 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                     playsInline
                     muted
                     className="absolute inset-0 w-full h-full object-cover"
-                    onLoadedMetadata={() => console.log('Video metadata loaded')}
-                    onPlay={() => console.log('Video started playing')}
                   />
                 </div>
               ) : selectedImages.length > 0 && continuousMode ? (
