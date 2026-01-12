@@ -1,6 +1,7 @@
 import { supabase, isSupabaseConfigured } from '../supabase/client'
 
 export interface ExpenseReportInput {
+  userId: string // Clerk user ID
   userEmail: string
   workspaceName: string
   workspaceAvatar?: string
@@ -21,6 +22,7 @@ export interface ExpenseItemInput {
 export interface ExpenseReport {
   id: string
   created_at: string
+  user_id: string
   user_email: string
   workspace_name: string
   workspace_avatar: string | null
@@ -56,10 +58,11 @@ export async function createExpenseReport(
   }
   
   try {
-    // 1. Create the expense report
+    // 1. Create the expense report with user_id
     const { data: report, error: reportError } = await supabase
       .from('expense_reports')
       .insert({
+        user_id: data.userId,
         user_email: data.userEmail,
         workspace_name: data.workspaceName,
         workspace_avatar: data.workspaceAvatar,
@@ -177,8 +180,8 @@ async function uploadReceiptImage(
  * Get all expense reports for a user
  */
 export async function getExpenseReports(
-  userEmail: string,
-  limit = 50
+  userId: string,
+  limit: number = 50
 ): Promise<ExpenseReport[]> {
   if (!isSupabaseConfigured) {
     return []
@@ -188,7 +191,7 @@ export async function getExpenseReports(
     const { data: reports, error: reportsError } = await supabase
       .from('expense_reports')
       .select('*')
-      .eq('user_email', userEmail)
+      .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(limit)
 

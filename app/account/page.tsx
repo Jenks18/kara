@@ -1,5 +1,8 @@
 'use client'
 
+import { useUser, useClerk } from '@clerk/nextjs'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 import BottomNav from '@/components/navigation/BottomNav'
 import Card from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
@@ -18,12 +21,35 @@ import {
 } from 'lucide-react'
 
 export default function AccountPage() {
+  const { user, isLoaded, isSignedIn } = useUser()
+  const { signOut } = useClerk()
+  const router = useRouter()
+
+  // Redirect unauthenticated users
+  useEffect(() => {
+    if (isLoaded && !isSignedIn) {
+      router.push('/sign-in')
+    }
+  }, [isLoaded, isSignedIn, router])
+
+  const handleSignOut = async () => {
+    await signOut()
+    router.push('/sign-in')
+  }
+
+  if (!isLoaded || !isSignedIn) {
+    return <div className="min-h-screen bg-dark-300 flex items-center justify-center">
+      <div className="text-gray-400">Loading...</div>
+    </div>
+  }
+
   interface AccountItem {
     icon: any
     label: string
     href: string
     badge?: string
     external?: boolean
+    onClick?: () => void
   }
   
   interface AccountSection {
@@ -50,6 +76,7 @@ export default function AccountPage() {
         { icon: Info, label: 'About', href: '#' },
         { icon: Lightbulb, label: 'Troubleshoot', href: '#' },
         { icon: Gift, label: 'Save the world', href: '#' },
+        { icon: LogOut, label: 'Sign Out', href: '#', onClick: handleSignOut },
       ],
     },
   ]
@@ -65,11 +92,11 @@ export default function AccountPage() {
               <span className="text-2xl">🦁</span>
             </div>
             <div className="flex-1">
-              <h1 className="text-xl font-bold text-gray-100">injenga@terpmail.umd.edu</h1>
-              <p className="text-sm text-gray-400">injenga@terpmail.umd.edu</p>
+              <h1 className="text-xl font-bold text-gray-100">{user?.fullName || 'User'}</h1>
+              <p className="text-sm text-gray-400">{user?.emailAddresses[0]?.emailAddress}</p>
             </div>
             <button className="w-10 h-10 rounded-full bg-dark-100 flex items-center justify-center border border-gray-800">
-              <span className="text-xl">😊</span>
+              <span className="text-xl">{user?.imageUrl ? '😊' : '👤'}</span>
             </button>
           </div>
         </div>
@@ -89,6 +116,7 @@ export default function AccountPage() {
                 return (
                   <button
                     key={itemIdx}
+                    onClick={item.onClick || (() => {})}
                     className="
                       w-full flex items-center justify-between
                       px-4 py-4 min-h-[60px]
@@ -101,8 +129,8 @@ export default function AccountPage() {
                     "
                   >
                     <div className="flex items-center gap-3">
-                      <Icon size={24} className="text-gray-400 group-hover:text-gray-300" />
-                      <span className="font-medium text-gray-200">{item.label}</span>
+                      <Icon size={24} className={item.label === 'Sign Out' ? 'text-danger-500' : 'text-gray-400 group-hover:text-gray-300'} />
+                      <span className={`font-medium ${item.label === 'Sign Out' ? 'text-danger-500' : 'text-gray-200'}`}>{item.label}</span>
                     </div>
                     
                     <div className="flex items-center gap-2">
@@ -113,7 +141,7 @@ export default function AccountPage() {
                         <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                         </svg>
-                      ) : (
+                      ) : item.label !== 'Sign Out' && (
                         <ChevronRight size={20} className="text-gray-500" />
                       )}
                     </div>
@@ -123,20 +151,6 @@ export default function AccountPage() {
             </div>
           </div>
         ))}
-        
-        {/* Sign Out */}
-        <button className="
-          w-full flex items-center gap-3
-          px-4 py-4 min-h-[60px]
-          bg-dark-100 active:bg-dark-300
-          border border-gray-800
-          rounded-xl
-          transition-colors duration-200
-          touch-manipulation
-        ">
-          <LogOut size={24} className="text-danger-500" />
-          <span className="font-medium text-danger-500">Sign out</span>
-        </button>
       </div>
       
       <BottomNav />

@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useUser } from '@clerk/nextjs'
+import { useRouter } from 'next/navigation'
 import BottomNav from '@/components/navigation/BottomNav'
 import StatsCard from '@/components/expense/StatsCard'
 import ExpenseCard from '@/components/expense/ExpenseCard'
@@ -10,19 +12,30 @@ import { getExpenseReports, type ExpenseReport } from '@/lib/api/expense-reports
 import Image from 'next/image'
 
 export default function HomePage() {
+  const { user, isLoaded, isSignedIn } = useUser()
+  const router = useRouter()
   const [expenseReports, setExpenseReports] = useState<ExpenseReport[]>([])
   const [loading, setLoading] = useState(true)
+  
+  // Redirect unauthenticated users
+  useEffect(() => {
+    if (isLoaded && !isSignedIn) {
+      router.push('/sign-in')
+    }
+  }, [isLoaded, isSignedIn, router])
   
   // Fetch expense reports on mount
   useEffect(() => {
     async function fetchReports() {
+      if (!user?.id) return
+      
       setLoading(true)
-      const reports = await getExpenseReports('injenga@terpmail.umd.edu', 10)
+      const reports = await getExpenseReports(user.id, 10)
       setExpenseReports(reports)
       setLoading(false)
     }
     fetchReports()
-  }, [])
+  }, [user?.id])
   
   // Mock data (keep for now)
   const expenses = [
