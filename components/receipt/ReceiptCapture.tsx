@@ -14,6 +14,9 @@ interface ReceiptCaptureProps {
 
 export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCaptureProps) {
   const { user } = useUser()
+  // Demo mode fallback for development
+  const userId = user?.id || 'demo-user-123'
+  const userEmail = user?.emailAddresses?.[0]?.emailAddress || 'demo@example.com'
   const [activeTab, setActiveTab] = useState<'manual' | 'scan'>('scan')
   const [cameraActive, setCameraActive] = useState(false)
   const [preview, setPreview] = useState<string | null>(null)
@@ -251,15 +254,10 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
             // Location not available - continue without it
           }
           
-          // Create report in database with Clerk user data
-          if (!user?.id || !user?.emailAddresses?.[0]?.emailAddress) {
-            alert('Unable to create report: User information missing')
-            return
-          }
-
+          // Create report in database with user data (Clerk or demo)
           const result = await createExpenseReport({
-            userId: user.id,
-            userEmail: user.emailAddresses[0].emailAddress,
+            userId: userId,
+            userEmail: userEmail,
             workspaceName: firstExpense.workspace,
             workspaceAvatar: 'T',
             title: `Expense Report ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' })}`,

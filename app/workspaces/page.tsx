@@ -9,6 +9,9 @@ import EmptyState from '@/components/ui/EmptyState'
 import { Briefcase, Search, Shield } from 'lucide-react'
 import { getWorkspaces, type Workspace } from '@/lib/api/workspaces'
 
+// Force dynamic rendering to avoid Clerk prerender issues
+export const dynamic = 'force-dynamic'
+
 export default function WorkspacesPage() {
   const router = useRouter()
   const { user, isLoaded } = useUser()

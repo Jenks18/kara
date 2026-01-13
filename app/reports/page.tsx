@@ -7,6 +7,9 @@ import CategoryPill from '@/components/ui/CategoryPill'
 import { Search, SlidersHorizontal } from 'lucide-react'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client'
 
+// Force dynamic rendering to avoid Clerk prerender issues
+export const dynamic = 'force-dynamic'
+
 interface ExpenseItem {
   id: string
   image_url: string

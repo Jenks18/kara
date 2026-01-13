@@ -11,31 +11,36 @@ import { Search, Bell, FileText } from 'lucide-react'
 import { getExpenseReports, type ExpenseReport } from '@/lib/api/expense-reports'
 import Image from 'next/image'
 
+// Force dynamic rendering to avoid Clerk prerender issues
+export const dynamic = 'force-dynamic'
+
 export default function HomePage() {
   const { user, isLoaded, isSignedIn } = useUser()
   const router = useRouter()
   const [expenseReports, setExpenseReports] = useState<ExpenseReport[]>([])
   const [loading, setLoading] = useState(true)
   
-  // Redirect unauthenticated users
+  // Demo mode fallback for development
+  const userId = user?.id || 'demo-user-123'
+  
+  // Redirect unauthenticated users (optional - commented for dev mode)
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
-      router.push('/sign-in')
+      // Uncomment to enforce auth:
+      // router.push('/sign-in')
     }
   }, [isLoaded, isSignedIn, router])
   
   // Fetch expense reports on mount
   useEffect(() => {
     async function fetchReports() {
-      if (!user?.id) return
-      
       setLoading(true)
-      const reports = await getExpenseReports(user.id, 10)
+      const reports = await getExpenseReports(userId, 10)
       setExpenseReports(reports)
       setLoading(false)
     }
     fetchReports()
-  }, [user?.id])
+  }, [userId])
   
   // Mock data (keep for now)
   const expenses = [

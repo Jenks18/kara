@@ -6,6 +6,9 @@ import { useUser } from '@clerk/nextjs'
 import { ChevronLeft, Camera } from 'lucide-react'
 import { createWorkspace } from '@/lib/api/workspaces'
 
+// Force dynamic rendering to avoid Clerk prerender issues
+export const dynamic = 'force-dynamic'
+
 export default function NewWorkspacePage() {
   const router = useRouter()
   const { user } = useUser()

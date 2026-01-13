@@ -6,6 +6,9 @@ import Card from '@/components/ui/Card'
 import ReceiptCapture from '@/components/receipt/ReceiptCapture'
 import { Receipt, MapPin, MessageSquare, Eye, Briefcase } from 'lucide-react'
 
+// Force dynamic rendering to avoid Clerk prerender issues
+export const dynamic = 'force-dynamic'
+
 export default function CreatePage() {
   const [showCapture, setShowCapture] = useState(false)
   
