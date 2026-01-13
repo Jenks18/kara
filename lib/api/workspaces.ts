@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured } from '../supabase/client'
+import { supabaseAdmin, isAdminConfigured } from '../supabase/admin'
 
 export interface Workspace {
   id: string
@@ -26,12 +26,12 @@ export interface CreateWorkspaceInput {
 export async function createWorkspace(
   data: CreateWorkspaceInput
 ): Promise<{ success: boolean; workspace?: Workspace; error?: string }> {
-  if (!isSupabaseConfigured) {
+  if (!isAdminConfigured) {
     return { success: false, error: 'Supabase not configured' }
   }
 
   try {
-    const { data: workspace, error } = await supabase
+    const { data: workspace, error } = await supabaseAdmin
       .from('workspaces')
       .insert({
         user_id: data.userId,
@@ -61,12 +61,12 @@ export async function createWorkspace(
 export async function getWorkspaces(
   userId: string
 ): Promise<Workspace[]> {
-  if (!isSupabaseConfigured) {
+  if (!isAdminConfigured) {
     return []
   }
 
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('workspaces')
       .select('*')
       .eq('user_id', userId)
@@ -92,12 +92,12 @@ export async function getWorkspace(
   workspaceId: string,
   userId: string
 ): Promise<Workspace | null> {
-  if (!isSupabaseConfigured) {
+  if (!isAdminConfigured) {
     return null
   }
 
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('workspaces')
       .select('*')
       .eq('id', workspaceId)
@@ -124,12 +124,12 @@ export async function updateWorkspace(
   userId: string,
   updates: Partial<Pick<Workspace, 'name' | 'avatar' | 'currency' | 'currency_symbol'>>
 ): Promise<{ success: boolean; error?: string }> {
-  if (!isSupabaseConfigured) {
+  if (!isAdminConfigured) {
     return { success: false, error: 'Supabase not configured' }
   }
 
   try {
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('workspaces')
       .update({
         ...updates,
@@ -157,12 +157,12 @@ export async function deleteWorkspace(
   workspaceId: string,
   userId: string
 ): Promise<{ success: boolean; error?: string }> {
-  if (!isSupabaseConfigured) {
+  if (!isAdminConfigured) {
     return { success: false, error: 'Supabase not configured' }
   }
 
   try {
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('workspaces')
       .update({ is_active: false })
       .eq('id', workspaceId)
