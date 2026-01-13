@@ -63,11 +63,11 @@ export default function AccountPage() {
     {
       title: 'Account',
       items: [
-        { icon: User, label: 'Profile', href: '#' },
+        { icon: User, label: 'Profile', href: '/account/profile' },
         { icon: CreditCard, label: 'Subscription', badge: 'Trial: 30 days left!', href: '#' },
-        { icon: Wallet, label: 'Wallet', href: '#' },
-        { icon: Settings, label: 'Preferences', href: '#' },
-        { icon: Shield, label: 'Security', href: '#' },
+        { icon: Wallet, label: 'Wallet', href: '/account/wallet' },
+        { icon: Settings, label: 'Preferences', href: '/account/preferences' },
+        { icon: Shield, label: 'Security', href: '/account/security' },
       ],
     },
     {
@@ -75,7 +75,7 @@ export default function AccountPage() {
       items: [
         { icon: HelpCircle, label: 'Help', external: true, href: '#' },
         { icon: Gift, label: "What's new", external: true, href: '#' },
-        { icon: Info, label: 'About', href: '#' },
+        { icon: Info, label: 'About', href: '/account/about' },
         { icon: Lightbulb, label: 'Troubleshoot', href: '#' },
         { icon: Gift, label: 'Save the world', href: '#' },
         { icon: LogOut, label: 'Sign Out', href: '#', onClick: handleSignOut },
@@ -118,7 +118,7 @@ export default function AccountPage() {
                 return (
                   <button
                     key={itemIdx}
-                    onClick={item.onClick || (() => {})}
+                    onClick={item.onClick || (() => router.push(item.href))}
                     className="
                       w-full flex items-center justify-between
                       px-4 py-4 min-h-[60px]
