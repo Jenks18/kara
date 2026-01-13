@@ -3,18 +3,38 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
-import { ChevronLeft, Camera } from 'lucide-react'
+import { ChevronLeft, Camera, Search, X } from 'lucide-react'
 
 // Force dynamic rendering to avoid Clerk prerender issues
 export const dynamic = 'force-dynamic'
+
+const currencies = [
+  { code: 'KSH', symbol: 'KSh', name: 'Kenyan Shilling' },
+  { code: 'USD', symbol: '$', name: 'US Dollar' },
+  { code: 'EUR', symbol: '€', name: 'Euro' },
+  { code: 'GBP', symbol: '£', name: 'British Pound' },
+  { code: 'JPY', symbol: '¥', name: 'Japanese Yen' },
+  { code: 'AUD', symbol: 'A$', name: 'Australian Dollar' },
+  { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar' },
+  { code: 'CHF', symbol: 'CHF', name: 'Swiss Franc' },
+  { code: 'CNY', symbol: '¥', name: 'Chinese Yuan' },
+  { code: 'INR', symbol: '₹', name: 'Indian Rupee' },
+  { code: 'ZAR', symbol: 'R', name: 'South African Rand' },
+  { code: 'NGN', symbol: '₦', name: 'Nigerian Naira' },
+  { code: 'GHS', symbol: '₵', name: 'Ghanaian Cedi' },
+  { code: 'TZS', symbol: 'TSh', name: 'Tanzanian Shilling' },
+  { code: 'UGX', symbol: 'USh', name: 'Ugandan Shilling' },
+]
 
 export default function NewWorkspacePage() {
   const router = useRouter()
   const { user } = useUser()
   const [workspaceName, setWorkspaceName] = useState('')
-  const [currency, setCurrency] = useState('USD - $')
+  const [currency, setCurrency] = useState('KSH - KSh')
   const [avatar, setAvatar] = useState('')
   const [isCreating, setIsCreating] = useState(false)
+  const [showCurrencyPicker, setShowCurrencyPicker] = useState(false)
+  const [currencySearch, setCurrencySearch] = useState('')
 
   // Set default avatar to first letter of workspace name
   const displayAvatar = avatar || workspaceName.charAt(0).toUpperCase() || 'W'
@@ -51,6 +71,17 @@ export default function NewWorkspacePage() {
       setIsCreating(false)
     }
   }
+
+  const handleCurrencySelect = (currencyCode: string, symbol: string) => {
+    setCurrency(`${currencyCode} - ${symbol}`)
+    setShowCurrencyPicker(false)
+    setCurrencySearch('')
+  }
+
+  const filteredCurrencies = currencies.filter(c =>
+    c.code.toLowerCase().includes(currencySearch.toLowerCase()) ||
+    c.name.toLowerCase().includes(currencySearch.toLowerCase())
+  )
 
   return (
     <div className="min-h-screen bg-dark-300 flex flex-col">
@@ -110,7 +141,7 @@ export default function NewWorkspacePage() {
 
         {/* Currency Selector */}
         <button
-          onClick={() => {/* TODO: Open currency picker */}}
+          onClick={() => setShowCurrencyPicker(true)}
           className="
             w-full flex items-center justify-between
             px-4 py-4
@@ -147,6 +178,71 @@ export default function NewWorkspacePage() {
           {isCreating ? 'Creating...' : 'Confirm'}
         </button>
       </div>
+
+      {/* Currency Picker Modal */}
+      {showCurrencyPicker && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-end sm:items-center justify-center">
+          <div className="w-full max-w-md bg-dark-300 rounded-t-3xl sm:rounded-3xl max-h-[80vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-800">
+              <h2 className="text-xl font-bold text-white">Select Currency</h2>
+              <button
+                onClick={() => {
+                  setShowCurrencyPicker(false)
+                  setCurrencySearch('')
+                }}
+                className="p-2 active:scale-95 transition-transform"
+              >
+                <X size={24} className="text-gray-400" />
+              </button>
+            </div>
+
+            {/* Search */}
+            <div className="p-4 border-b border-gray-800">
+              <div className="relative">
+                <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  value={currencySearch}
+                  onChange={(e) => setCurrencySearch(e.target.value)}
+                  placeholder="Search currency..."
+                  className="w-full pl-12 pr-4 py-3 bg-dark-200 border border-gray-800 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-gray-700"
+                />
+              </div>
+            </div>
+
+            {/* Currency List */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+              {filteredCurrencies.map((curr) => {
+                const isSelected = currency.startsWith(curr.code)
+                return (
+                  <button
+                    key={curr.code}
+                    onClick={() => handleCurrencySelect(curr.code, curr.symbol)}
+                    className={`w-full p-4 rounded-xl border transition-colors text-left ${
+                      isSelected
+                        ? 'bg-primary/10 border-primary'
+                        : 'bg-dark-200 border-gray-800 active:bg-dark-100'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-white font-semibold">{curr.code} - {curr.symbol}</div>
+                        <div className="text-sm text-gray-400">{curr.name}</div>
+                      </div>
+                      {isSelected && (
+                        <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
