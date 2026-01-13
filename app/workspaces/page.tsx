@@ -7,10 +7,17 @@ import BottomNav from '@/components/navigation/BottomNav'
 import Button from '@/components/ui/Button'
 import EmptyState from '@/components/ui/EmptyState'
 import { Briefcase, Search, Shield } from 'lucide-react'
-import { getWorkspaces, type Workspace } from '@/lib/api/workspaces'
 
 // Force dynamic rendering to avoid Clerk prerender issues
 export const dynamic = 'force-dynamic'
+
+interface Workspace {
+  id: string
+  name: string
+  avatar: string
+  currency: string
+  currency_symbol: string
+}
 
 export default function WorkspacesPage() {
   const router = useRouter()
@@ -20,12 +27,20 @@ export default function WorkspacesPage() {
 
   useEffect(() => {
     async function fetchWorkspaces() {
-      // Use Clerk user ID if available, otherwise use demo user ID
-      const userId = user?.id || 'demo-user-123'
+      if (!isLoaded) return
       
       setLoading(true)
-      const data = await getWorkspaces(userId)
-      setWorkspaces(data)
+      try {
+        const response = await fetch('/api/workspaces')
+        if (response.ok) {
+          const data = await response.json()
+          setWorkspaces(data.workspaces || [])
+        } else {
+          console.error('Failed to fetch workspaces')
+        }
+      } catch (error) {
+        console.error('Error fetching workspaces:', error)
+      }
       setLoading(false)
     }
 

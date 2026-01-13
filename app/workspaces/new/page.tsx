@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
 import { ChevronLeft, Camera } from 'lucide-react'
-import { createWorkspace } from '@/lib/api/workspaces'
 
 // Force dynamic rendering to avoid Clerk prerender issues
 export const dynamic = 'force-dynamic'
@@ -21,24 +20,26 @@ export default function NewWorkspacePage() {
   const displayAvatar = avatar || workspaceName.charAt(0).toUpperCase() || 'W'
 
   const handleConfirm = async () => {
-    // Use Clerk user ID if available, otherwise use demo user ID
-    const userId = user?.id || 'demo-user-123'
-    
     if (!workspaceName.trim()) return
 
     setIsCreating(true)
     try {
       const [currencyCode, symbol] = currency.split(' - ')
       
-      const result = await createWorkspace({
-        userId,
-        name: workspaceName.trim(),
-        avatar: displayAvatar,
-        currency: currencyCode,
-        currencySymbol: symbol,
+      const response = await fetch('/api/workspaces', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: workspaceName.trim(),
+          avatar: displayAvatar,
+          currency: currencyCode,
+          currencySymbol: symbol,
+        })
       })
 
-      if (result.success) {
+      const result = await response.json()
+
+      if (response.ok) {
         router.push('/workspaces')
       } else {
         alert(`Failed to create workspace: ${result.error}`)
