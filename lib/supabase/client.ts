@@ -6,12 +6,18 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 // Check if Supabase is properly configured
 export const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey && !supabaseUrl.includes('placeholder'))
 
-if (typeof window !== 'undefined' && !isSupabaseConfigured) {
-  console.warn('⚠️ Supabase not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY')
+if (typeof window !== 'undefined') {
+  if (!isSupabaseConfigured) {
+    console.error('⚠️ Supabase not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY')
+    console.error('URL:', supabaseUrl || 'missing')
+    console.error('Key:', supabaseAnonKey ? 'present' : 'missing')
+  } else {
+    console.log('✅ Supabase configured')
+  }
 }
 
-// Create client with fallback for development
-const url = supabaseUrl || 'https://placeholder.supabase.co'
-const key = supabaseAnonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsYWNlaG9sZGVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NDUxOTI4MDAsImV4cCI6MTk2MDc2ODgwMH0.placeholder'
-
-export const supabase = createClient(url, key)
+// Create client - ensure valid values
+export const supabase = createClient(
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseAnonKey || 'placeholder-key'
+)
