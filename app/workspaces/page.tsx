@@ -24,6 +24,7 @@ export default function WorkspacesPage() {
   const { user, isLoaded } = useUser()
   const [workspaces, setWorkspaces] = useState<Workspace[]>([])
   const [loading, setLoading] = useState(true)
+  const [activeMenu, setActiveMenu] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchWorkspaces() {
@@ -51,6 +52,58 @@ export default function WorkspacesPage() {
 
   const handleNewWorkspace = () => {
     router.push('/workspaces/new')
+  }
+
+  const handleDeleteWorkspace = async (workspaceId: string) => {
+    if (!confirm('Are you sure you want to delete this workspace?')) return
+    
+    try {
+      const response = await fetch(`/api/workspaces/${workspaceId}`, {
+        method: 'DELETE'
+      })
+      
+      if (response.ok) {
+        setWorkspaces(workspaces.filter(w => w.id !== workspaceId))
+        setActiveMenu(null)
+      } else {
+        alert('Failed to delete workspace')
+      }
+    } catch (error) {
+      console.error('Error deleting workspace:', error)
+      alert('Failed to delete workspace')
+    }
+  }
+
+  const handleGoToWorkspace = (workspaceId: string) => {
+    // TODO: Navigate to workspace detail view
+    router.push(`/workspaces/${workspaceId}`)
+    setActiveMenu(null)
+  }
+
+  const handleDuplicateWorkspace = async (workspace: Workspace) => {
+    try {
+      const response = await fetch('/api/workspaces', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: `${workspace.name} (Copy)`,
+          avatar: workspace.avatar,
+          currency: workspace.currency,
+          currencySymbol: workspace.currency_symbol,
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setWorkspaces([...workspaces, data.workspace])
+        setActiveMenu(null)
+      } else {
+        alert('Failed to duplicate workspace')
+      }
+    } catch (error) {
+      console.error('Error duplicating workspace:', error)
+      alert('Failed to duplicate workspace')
+    }
   }
 
   if (loading) {
@@ -130,26 +183,81 @@ export default function WorkspacesPage() {
           // Workspaces List (when we have workspaces)
           <div className="space-y-4">
             {workspaces.map((workspace) => (
-              <button
-                key={workspace.id}
-                onClick={() => {/* TODO: Navigate to workspace */}}
-                className="
-                  w-full p-4 bg-dark-200 rounded-xl border border-gray-800
-                  active:bg-dark-100 transition-colors
-                  flex items-center gap-4
-                "
-              >
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center flex-shrink-0">
-                  <span className="text-xl font-bold text-white">{workspace.avatar}</span>
-                </div>
-                <div className="flex-1 text-left">
-                  <h3 className="text-white font-semibold">{workspace.name}</h3>
-                  <p className="text-sm text-gray-400">{workspace.currency} - {workspace.currency_symbol}</p>
-                </div>
-                <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
+              <div key={workspace.id} className="relative">
+                <button
+                  onClick={() => handleGoToWorkspace(workspace.id)}
+                  className="
+                    w-full p-4 bg-dark-200 rounded-xl border border-gray-800
+                    active:bg-dark-100 transition-colors
+                    flex items-center gap-4
+                  "
+                >
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center flex-shrink-0">
+                    <span className="text-xl font-bold text-white">{workspace.avatar}</span>
+                  </div>
+                  <div className="flex-1 text-left">
+                    <h3 className="text-white font-semibold">{workspace.name}</h3>
+                    <p className="text-sm text-gray-400">{workspace.currency} - {workspace.currency_symbol}</p>
+                  </div>
+                </button>
+                
+                {/* Three-dot menu button */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setActiveMenu(activeMenu === workspace.id ? null : workspace.id)
+                  }}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2 active:scale-95 transition-transform"
+                >
+                  <svg className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="5" r="2" />
+                    <circle cx="12" cy="12" r="2" />
+                    <circle cx="12" cy="19" r="2" />
+                  </svg>
+                </button>
+
+                {/* Dropdown menu */}
+                {activeMenu === workspace.id && (
+                  <>
+                    {/* Backdrop to close menu */}
+                    <div 
+                      className="fixed inset-0 z-40"
+                      onClick={() => setActiveMenu(null)}
+                    />
+                    
+                    {/* Menu panel */}
+                    <div className="absolute right-0 top-full mt-2 w-64 bg-dark-100 rounded-xl border border-gray-800 shadow-xl z-50 overflow-hidden">
+                      <button
+                        onClick={() => handleGoToWorkspace(workspace.id)}
+                        className="w-full px-4 py-4 flex items-center gap-3 text-left text-white hover:bg-dark-200 transition-colors"
+                      >
+                        <Briefcase size={20} className="text-gray-400" />
+                        <span className="font-medium">Go to workspace</span>
+                      </button>
+                      
+                      <button
+                        onClick={() => handleDuplicateWorkspace(workspace)}
+                        className="w-full px-4 py-4 flex items-center gap-3 text-left text-white hover:bg-dark-200 transition-colors border-t border-gray-800"
+                      >
+                        <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        <span className="font-medium">Duplicate Workspace</span>
+                      </button>
+                      
+                      <button
+                        onClick={() => handleDeleteWorkspace(workspace.id)}
+                        className="w-full px-4 py-4 flex items-center gap-3 text-left text-red-400 hover:bg-dark-200 transition-colors border-t border-gray-800"
+                      >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        <span className="font-medium">Delete workspace</span>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             ))}
             
             {/* Add New Workspace Button */}
