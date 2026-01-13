@@ -1,18 +1,46 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useUser } from '@clerk/nextjs'
 import BottomNav from '@/components/navigation/BottomNav'
 import Button from '@/components/ui/Button'
 import EmptyState from '@/components/ui/EmptyState'
 import { Briefcase, Search, Shield } from 'lucide-react'
+import { getWorkspaces, type Workspace } from '@/lib/api/workspaces'
 
 export default function WorkspacesPage() {
   const router = useRouter()
-  const [workspaces, setWorkspaces] = useState<any[]>([]) // TODO: Type this properly
+  const { user, isLoaded } = useUser()
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchWorkspaces() {
+      // Use Clerk user ID if available, otherwise use demo user ID
+      const userId = user?.id || 'demo-user-123'
+      
+      setLoading(true)
+      const data = await getWorkspaces(userId)
+      setWorkspaces(data)
+      setLoading(false)
+    }
+
+    if (isLoaded || !user) {
+      fetchWorkspaces()
+    }
+  }, [user?.id, isLoaded])
 
   const handleNewWorkspace = () => {
     router.push('/workspaces/new')
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-dark-300 flex items-center justify-center">
+        <div className="text-gray-400">Loading...</div>
+      </div>
+    )
   }
 
   return (
@@ -84,16 +112,44 @@ export default function WorkspacesPage() {
           // Workspaces List (when we have workspaces)
           <div className="space-y-4">
             {workspaces.map((workspace) => (
-              <div
+              <button
                 key={workspace.id}
+                onClick={() => {/* TODO: Navigate to workspace */}}
                 className="
-                  p-4 bg-dark-200 rounded-xl border border-gray-800
+                  w-full p-4 bg-dark-200 rounded-xl border border-gray-800
                   active:bg-dark-100 transition-colors
+                  flex items-center gap-4
                 "
               >
-                <h3 className="text-white font-semibold">{workspace.name}</h3>
-              </div>
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center flex-shrink-0">
+                  <span className="text-xl font-bold text-white">{workspace.avatar}</span>
+                </div>
+                <div className="flex-1 text-left">
+                  <h3 className="text-white font-semibold">{workspace.name}</h3>
+                  <p className="text-sm text-gray-400">{workspace.currency} - {workspace.currency_symbol}</p>
+                </div>
+                <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
             ))}
+            
+            {/* Add New Workspace Button */}
+            <button
+              onClick={handleNewWorkspace}
+              className="
+                w-full py-4 rounded-xl
+                border-2 border-dashed border-gray-700
+                text-gray-400 font-medium
+                active:bg-dark-100 transition-colors
+                flex items-center justify-center gap-2
+              "
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add workspace
+            </button>
           </div>
         )}
         

@@ -2,18 +2,50 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useUser } from '@clerk/nextjs'
 import { ChevronLeft, Camera } from 'lucide-react'
+import { createWorkspace } from '@/lib/api/workspaces'
 
 export default function NewWorkspacePage() {
   const router = useRouter()
+  const { user } = useUser()
   const [workspaceName, setWorkspaceName] = useState('')
   const [currency, setCurrency] = useState('USD - $')
-  const [avatar, setAvatar] = useState('T')
+  const [avatar, setAvatar] = useState('')
+  const [isCreating, setIsCreating] = useState(false)
 
-  const handleConfirm = () => {
-    // TODO: Save workspace to database
-    console.log('Creating workspace:', { workspaceName, currency, avatar })
-    router.push('/workspaces')
+  // Set default avatar to first letter of workspace name
+  const displayAvatar = avatar || workspaceName.charAt(0).toUpperCase() || 'W'
+
+  const handleConfirm = async () => {
+    // Use Clerk user ID if available, otherwise use demo user ID
+    const userId = user?.id || 'demo-user-123'
+    
+    if (!workspaceName.trim()) return
+
+    setIsCreating(true)
+    try {
+      const [currencyCode, symbol] = currency.split(' - ')
+      
+      const result = await createWorkspace({
+        userId,
+        name: workspaceName.trim(),
+        avatar: displayAvatar,
+        currency: currencyCode,
+        currencySymbol: symbol,
+      })
+
+      if (result.success) {
+        router.push('/workspaces')
+      } else {
+        alert(`Failed to create workspace: ${result.error}`)
+      }
+    } catch (error) {
+      console.error('Error creating workspace:', error)
+      alert('Failed to create workspace')
+    } finally {
+      setIsCreating(false)
+    }
   }
 
   return (
@@ -42,7 +74,7 @@ export default function NewWorkspacePage() {
         <div className="flex justify-center mb-8">
           <div className="relative">
             <div className="w-32 h-32 rounded-3xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center">
-              <span className="text-5xl font-bold text-white">{avatar}</span>
+              <span className="text-5xl font-bold text-white">{displayAvatar}</span>
             </div>
             <button className="absolute bottom-0 right-0 w-12 h-12 rounded-full bg-dark-100 border-4 border-dark-300 flex items-center justify-center active:scale-95 transition-transform">
               <Camera size={20} className="text-gray-300" />
@@ -99,7 +131,7 @@ export default function NewWorkspacePage() {
       <div className="sticky bottom-0 p-4 bg-dark-300 border-t border-gray-800">
         <button
           onClick={handleConfirm}
-          disabled={!workspaceName.trim()}
+          disabled={!workspaceName.trim() || isCreating}
           className="
             w-full py-4 rounded-2xl
             bg-gradient-to-r from-emerald-500 to-emerald-600
@@ -108,7 +140,7 @@ export default function NewWorkspacePage() {
             disabled:opacity-50 disabled:cursor-not-allowed
           "
         >
-          Confirm
+          {isCreating ? 'Creating...' : 'Confirm'}
         </button>
       </div>
     </div>

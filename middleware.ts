@@ -6,6 +6,12 @@ const isProtectedRoute = createRouteMatcher([
   '/api/expense(.*)',
 ])
 
+// Workspace and account routes are NOT protected during development
+// Uncomment these when ready to enforce auth:
+// '/workspaces(.*)',
+// '/account(.*)',
+// '/api/workspaces(.*)',
+
 export default clerkMiddleware(async (auth, req) => {
   if (isProtectedRoute(req)) {
     await auth.protect()
