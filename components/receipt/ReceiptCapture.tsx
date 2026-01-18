@@ -5,7 +5,6 @@ import { useUser } from '@clerk/nextjs'
 import { Camera, X, Image as ImageIcon, Receipt, ChevronRight, Zap, Pen } from 'lucide-react'
 import ConfirmExpenses from './ConfirmExpenses'
 import ExpenseReportView from './ExpenseReportView'
-import { createExpenseReport } from '@/lib/api/expense-reports'
 
 interface ReceiptCaptureProps {
   onCapture: (imageData: string) => void
@@ -254,41 +253,51 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
             // Location not available - continue without it
           }
           
-          // Create report in database with user data (Clerk or demo)
-          const result = await createExpenseReport({
-            userId: userId,
-            userEmail: userEmail,
-            workspaceName: firstExpense.workspace,
-            workspaceAvatar: 'T',
-            title: `Expense Report ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' })}`,
-            items: expenses.map(exp => ({
-              imageData: exp.imageData,
-              description: exp.description,
-              category: exp.category,
-              reimbursable: exp.reimbursable,
-              latitude,
-              longitude,
-            }))
+          // Process each receipt through the enhanced processing API
+          const uploadPromises = expenses.map(async (exp) => {
+            // Convert base64 to blob
+            const base64Data = exp.imageData.split(',')[1]
+            const byteString = atob(base64Data)
+            const ab = new ArrayBuffer(byteString.length)
+            const ia = new Uint8Array(ab)
+            for (let i = 0; i < byteString.length; i++) {
+              ia[i] = byteString.charCodeAt(i)
+            }
+            const blob = new Blob([ab], { type: 'image/jpeg' })
+            
+            // Upload to enhanced receipt processing API
+            const formData = new FormData()
+            formData.append('image', blob, 'receipt.jpg')
+            formData.append('userEmail', userEmail)
+            if (latitude) formData.append('latitude', latitude.toString())
+            if (longitude) formData.append('longitude', longitude.toString())
+            
+            try {
+              const response = await fetch('/api/receipts/upload', {
+                method: 'POST',
+                body: formData,
+              })
+              return await response.json()
+            } catch (error) {
+              console.error('Receipt upload failed:', error)
+              return { success: false, error: String(error) }
+            }
           })
           
-          if (result.success) {
+          const results = await Promise.all(uploadPromises)
+          const allSuccess = results.every(r => r.success || r.receiptId)
+          
+          if (allSuccess) {
             // Store the images and navigate to expense report view
             setSubmittedImages(selectedImages)
             setShowConfirmExpenses(false)
             setShowExpenseReport(true)
           } else {
-            // If Supabase not configured, still show the report view (demo mode)
-            if (result.error === 'Supabase not configured') {
-              setSubmittedImages(selectedImages)
-              setShowConfirmExpenses(false)
-              setShowExpenseReport(true)
-            } else {
-              console.error('Failed to create report:', result.error)
-              // Still proceed to show report view
-              setSubmittedImages(selectedImages)
-              setShowConfirmExpenses(false)
-              setShowExpenseReport(true)
-            }
+            console.error('Some receipts failed to process:', results)
+            // Still proceed to show report view (demo mode fallback)
+            setSubmittedImages(selectedImages)
+            setShowConfirmExpenses(false)
+            setShowExpenseReport(true)
           }
         }}
         onCancel={() => {
