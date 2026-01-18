@@ -9,11 +9,5 @@
       "maxDuration": 60,
       "memory": 2048
     }
-  },
-  "env": {
-    "GEMINI_API_KEY": "@gemini-api-key",
-    "NEXT_PUBLIC_SUPABASE_URL": "@supabase-url",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@supabase-anon-key",
-    "SUPABASE_SERVICE_ROLE_KEY": "@supabase-service-role-key"
   }
 }
