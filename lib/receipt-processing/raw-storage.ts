@@ -77,7 +77,7 @@ export class SupabaseRawReceiptStorage implements RawReceiptStorage {
   private supabaseClient = supabase;
   
   async save(data: RawReceiptData): Promise<string> {
-    const { data: result, error } = await this.supabase
+    const { data: result, error } = await this.supabaseClient
       .from('raw_receipts')
       .insert({
         user_email: data.userEmail,
@@ -109,7 +109,7 @@ export class SupabaseRawReceiptStorage implements RawReceiptStorage {
   }
   
   async get(id: string): Promise<RawReceiptData | null> {
-    const { data, error } = await this.supabase
+    const { data, error } = await this.supabaseClient
       .from('raw_receipts')
       .select('*')
       .eq('id', id)
@@ -121,7 +121,7 @@ export class SupabaseRawReceiptStorage implements RawReceiptStorage {
   }
   
   async updateStatus(id: string, status: string, metadata?: any): Promise<void> {
-    await this.supabase
+    await this.supabaseClient
       .from('raw_receipts')
       .update({
         processing_status: status,
@@ -132,7 +132,7 @@ export class SupabaseRawReceiptStorage implements RawReceiptStorage {
   }
   
   async findDuplicates(imageHash: string): Promise<RawReceiptData[]> {
-    const { data, error } = await this.supabase
+    const { data, error } = await this.supabaseClient
       .from('raw_receipts')
       .select('*')
       .eq('image_hash', imageHash)
@@ -143,7 +143,7 @@ export class SupabaseRawReceiptStorage implements RawReceiptStorage {
   }
   
   async getByUser(userEmail: string, limit = 50): Promise<RawReceiptData[]> {
-    const { data, error } = await this.supabase
+    const { data, error } = await this.supabaseClient
       .from('raw_receipts')
       .select('*')
       .eq('user_email', userEmail)
@@ -155,7 +155,7 @@ export class SupabaseRawReceiptStorage implements RawReceiptStorage {
   }
   
   async getByStore(storeId: string, limit = 100): Promise<RawReceiptData[]> {
-    const { data, error } = await this.supabase
+    const { data, error } = await this.supabaseClient
       .from('raw_receipts')
       .select('*')
       .eq('recognized_store_id', storeId)
@@ -167,7 +167,7 @@ export class SupabaseRawReceiptStorage implements RawReceiptStorage {
   }
   
   async getUnprocessed(limit = 10): Promise<RawReceiptData[]> {
-    const { data, error } = await this.supabase
+    const { data, error } = await this.supabaseClient
       .from('raw_receipts')
       .select('*')
       .eq('processing_status', 'raw')

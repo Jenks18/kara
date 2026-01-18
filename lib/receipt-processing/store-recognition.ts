@@ -152,7 +152,7 @@ export class StoreRecognizer {
     const cached = Array.from(this.storeCache.values()).find(s => s.kraPin === pin);
     if (cached) return cached;
     
-    const { data } = await this.supabase
+    const { data } = await this.supabaseClient
       .from('stores')
       .select('*')
       .eq('kra_pin', pin)
@@ -172,7 +172,7 @@ export class StoreRecognizer {
     const cached = Array.from(this.storeCache.values()).find(s => s.tillNumber === tillNumber);
     if (cached) return cached;
     
-    const { data } = await this.supabase
+    const { data } = await this.supabaseClient
       .from('stores')
       .select('*')
       .eq('till_number', tillNumber)
@@ -202,7 +202,7 @@ export class StoreRecognizer {
     
     if (!data) {
       // Fallback: Get all stores and filter in memory
-      const { data: allStores } = await this.supabase
+      const { data: allStores } = await this.supabaseClient
         .from('stores')
         .select('*')
         .not('latitude', 'is', null)
@@ -230,7 +230,7 @@ export class StoreRecognizer {
    */
   private async findStoreByName(name: string): Promise<Store | undefined> {
     // Try exact match first
-    const { data: exactMatch } = await this.supabase
+    const { data: exactMatch } = await this.supabaseClient
       .from('stores')
       .select('*')
       .ilike('name', name)
@@ -241,7 +241,7 @@ export class StoreRecognizer {
     // Try fuzzy match on chain name
     const chainName = this.extractChainName(name);
     if (chainName) {
-      const { data: chainMatch } = await this.supabase
+      const { data: chainMatch } = await this.supabaseClient
         .from('stores')
         .select('*')
         .ilike('chain_name', `%${chainName}%`)
