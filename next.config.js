@@ -10,6 +10,14 @@ const nextConfig = {
       },
     ],
   },
+  // Increase API route timeout for receipt processing
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb',
+    },
+  },
+  // Configure serverless function size
+  serverComponentsExternalPackages: ['tesseract.js', 'sharp'],
 }
 
 module.exports = nextConfig

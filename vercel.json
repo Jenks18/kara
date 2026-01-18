@@ -3,5 +3,17 @@
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "outputDirectory": ".next"
+  "outputDirectory": ".next",
+  "functions": {
+    "app/api/receipts/upload/route.ts": {
+      "maxDuration": 60,
+      "memory": 3008
+    }
+  },
+  "env": {
+    "GEMINI_API_KEY": "@gemini-api-key",
+    "NEXT_PUBLIC_SUPABASE_URL": "@supabase-url",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@supabase-anon-key",
+    "SUPABASE_SERVICE_ROLE_KEY": "@supabase-service-role-key"
+  }
 }

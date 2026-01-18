@@ -1,19 +1,34 @@
 import Tesseract from 'tesseract.js';
 
-export interface FuelOCRResult {
+export interface ReceiptOCRResult {
+  // Financial data (from receipt image)
+  totalAmount: number | null;
+  subtotal: number | null;
+  vatAmount: number | null;
+  
+  // Fuel-specific data
   litres: number | null;
   fuelType: 'PETROL' | 'DIESEL' | 'SUPER' | 'GAS' | null;
   pricePerLitre: number | null;
+  
+  // Station/transaction data
+  merchantName: string | null;
+  location: string | null;
   pumpNumber: string | null;
+  attendantName: string | null;
   vehicleNumber: string | null;
+  transactionDate: string | null;
+  transactionTime: string | null;
+  
+  // Metadata
   confidence: number;
   source: string;
+  rawText: string; // Full extracted text for debugging
 }
 
 export async function extractWithTesseract(
-  imageBuffer: Buffer,
-  totalAmount: number
-): Promise<FuelOCRResult> {
+  imageBuffer: Buffer
+): Promise<ReceiptOCRResult> {
   try {
     // Convert buffer to base64
     const base64 = imageBuffer.toString('base64');
@@ -34,22 +49,83 @@ export async function extractWithTesseract(
     console.log('✓ Tesseract extracted text (first 200 chars):', text.substring(0, 200));
 
     // Parse the extracted text
-    return parseReceiptText(text, totalAmount);
+    return parseReceiptText(text);
   } catch (error: any) {
     console.error('Tesseract failed:', error);
     return {
+      totalAmount: null,
+      subtotal: null,
+      vatAmount: null,
       litres: null,
       fuelType: null,
       pricePerLitre: null,
+      merchantName: null,
+      location: null,
       pumpNumber: null,
+      attendantName: null,
       vehicleNumber: null,
+      transactionDate: null,
+      transactionTime: null,
       confidence: 0,
       source: 'tesseract_failed',
+      rawText: '',
     };
   }
 }
 
-function parseReceiptText(text: string, totalAmount: number): FuelOCRResult {
+function parseReceiptText(text: string): ReceiptOCRResult {
+  const textUpper = text.toUpperCase();
+  
+  // Extract merchant name (usually at top)
+  const merchantPatterns = [
+    /^([A-Z\s&]+(?:PETROL|DIESEL|ENERGY|OIL|FUEL|STATION))/m,
+    /^([A-Z\s&]{3,40})/m, // First line, 3-40 chars
+  ];
+  
+  let merchantName: string | null = null;
+  for (const pattern of merchantPatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      merchantName = match[1].trim();
+      break;
+    }
+  }
+  
+  // Extract location
+  const locationMatch = text.match(/(?:BRANCH|LOCATION|STATION)[:\s]*([A-Z\s,]+)/i);
+  const location = locationMatch ? locationMatch[1].trim() : null;
+  
+  // Extract date
+  const datePatterns = [
+    /(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})/,
+    /(\d{4}[-/]\d{1,2}[-/]\d{1,2})/,
+  ];
+  let transactionDate: string | null = null;
+  for (const pattern of datePatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      transactionDate = match[1];
+      break;
+    }
+  }
+  
+  // Extract time
+  const timeMatch = text.match(/(\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AP]M)?)/i);
+  const transactionTime = timeMatch ? timeMatch[1] : null;
+  
+  // Extract amounts
+  const amountPattern = /(?:TOTAL|AMOUNT|GROSS)[:\s]*(?:KES|KSH)?\s*(\d+(?:,\d{3})*(?:\.\d{2})?)/i;
+  const totalMatch = text.match(amountPattern);
+  const totalAmount = totalMatch ? parseFloat(totalMatch[1].replace(/,/g, '')) : null;
+  
+  const vatPattern = /(?:VAT|TAX)[:\s]*(?:KES|KSH)?\s*(\d+(?:,\d{3})*(?:\.\d{2})?)/i;
+  const vatMatch = text.match(vatPattern);
+  const vatAmount = vatMatch ? parseFloat(vatMatch[1].replace(/,/g, '')) : null;
+  
+  const subtotalPattern = /(?:SUBTOTAL|SUB-TOTAL)[:\s]*(?:KES|KSH)?\s*(\d+(?:,\d{3})*(?:\.\d{2})?)/i;
+  const subtotalMatch = text.match(subtotalPattern);
+  const subtotal = subtotalMatch ? parseFloat(subtotalMatch[1].replace(/,/g, '')) : null;
+
   // Detect fuel type
   const fuelPatterns: Record<string, RegExp> = {
     PETROL: /\b(PETROL|PMS|SUPER)\b/i,
@@ -57,10 +133,10 @@ function parseReceiptText(text: string, totalAmount: number): FuelOCRResult {
     GAS: /\b(GAS|LPG)\b/i,
   };
 
-  let fuelType: FuelOCRResult['fuelType'] = null;
+  let fuelType: ReceiptOCRResult['fuelType'] = null;
   for (const [type, pattern] of Object.entries(fuelPatterns)) {
     if (pattern.test(text)) {
-      fuelType = type as FuelOCRResult['fuelType'];
+      fuelType = type as ReceiptOCRResult['fuelType'];
       break;
     }
   }
@@ -68,85 +144,63 @@ function parseReceiptText(text: string, totalAmount: number): FuelOCRResult {
   // Find pump number
   const pumpMatch = text.match(/PUMP\s*[:#]?\s*(\d+)/i);
   const pumpNumber = pumpMatch ? pumpMatch[1] : null;
+  
+  // Find attendant
+  const attendantMatch = text.match(/(?:ATTENDANT|SERVED BY|CASHIER)[:\s]*([A-Z\s]+)/i);
+  const attendantName = attendantMatch ? attendantMatch[1].trim() : null;
 
   // Find vehicle number (Kenyan format: ABC 123X)
   const vehicleMatch = text.match(/\b([A-Z]{3}\s*\d{3}[A-Z])\b/i);
   const vehicleNumber = vehicleMatch ? vehicleMatch[1].replace(/\s+/g, ' ') : null;
 
-  // Find all numbers in text
-  const numbers = Array.from(text.matchAll(/\d+\.?\d*/g)).map((m) =>
-    parseFloat(m[0])
-  );
-
-  // Find litres by price validation
-  const candidates = numbers
-    .filter((n) => n >= 5 && n <= 100) // Reasonable tank size
-    .map((litres) => {
-      const pricePerLitre = totalAmount / litres;
-
-      if (pricePerLitre >= 160 && pricePerLitre <= 250) {
-        return {
-          litres,
-          pricePerLitre,
-          confidence: calculateConfidence(pricePerLitre, fuelType),
-        };
+  // Extract litres (look for volume-related keywords)
+  const litresPatterns = [
+    /(?:LITRES?|LTRS?|L|VOL|VOLUME|QTY|QUANTITY)[:\s]*(\d+\.?\d*)/i,
+    /(\d+\.?\d*)\s*(?:LITRES?|LTRS?|L)/i,
+  ];
+  
+  let litres: number | null = null;
+  for (const pattern of litresPatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      const value = parseFloat(match[1]);
+      if (value >= 1 && value <= 200) { // Reasonable fuel range
+        litres = value;
+        break;
       }
-      return null;
-    })
-    .filter(Boolean) as Array<{
-    litres: number;
-    pricePerLitre: number;
-    confidence: number;
-  }>;
-
-  if (candidates.length > 0) {
-    // Pick candidate with highest confidence
-    const best = candidates.sort((a, b) => b.confidence - a.confidence)[0];
-
-    return {
-      litres: best.litres,
-      pricePerLitre: best.pricePerLitre,
-      fuelType,
-      pumpNumber,
-      vehicleNumber,
-      confidence: best.confidence,
-      source: 'tesseract_ocr',
-    };
-  }
-
-  return {
-    litres: null,
-    fuelType,
-    pricePerLitre: null,
-    pumpNumber,
-    vehicleNumber,
-    confidence: 0,
-    source: 'tesseract_ocr',
-  };
-}
-
-function calculateConfidence(
-  pricePerLitre: number,
-  fuelType: string | null
-): number {
-  // Fuel-specific price ranges (Kenya 2025)
-  const ranges: Record<string, [number, number]> = {
-    PETROL: [170, 230],
-    DIESEL: [160, 220],
-    GAS: [100, 150],
-  };
-
-  if (fuelType && ranges[fuelType]) {
-    const [min, max] = ranges[fuelType];
-    if (pricePerLitre >= min && pricePerLitre <= max) {
-      return 95; // High confidence
     }
   }
-
-  // Generic fuel price range
-  if (pricePerLitre >= 160 && pricePerLitre <= 250) {
-    return 75; // Medium confidence
+  
+  // Calculate price per litre if we have both values
+  let pricePerLitre: number | null = null;
+  if (litres && totalAmount) {
+    pricePerLitre = totalAmount / litres;
   }
+  
+  // Calculate confidence based on what we extracted
+  let confidence = 0;
+  if (merchantName) confidence += 15;
+  if (totalAmount) confidence += 25;
+  if (litres) confidence += 30;
+  if (fuelType) confidence += 15;
+  if (pricePerLitre && pricePerLitre >= 160 && pricePerLitre <= 250) confidence += 15;
 
-  return 30; // Low confidence
+  return {
+    totalAmount,
+    subtotal,
+    vatAmount,
+    litres,
+    fuelType,
+    pricePerLitre,
+    merchantName,
+    location,
+    pumpNumber,
+    attendantName,
+    vehicleNumber,
+    transactionDate,
+    transactionTime,
+    confidence,
+    source: 'tesseract_ocr',
+    rawText: text,
+  };
 }

@@ -1,11 +1,20 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { KRAInvoiceData } from './kra-scraper';
-import type { FuelOCRResult } from './ocr-free';
+
+export interface GeminiFuelResult {
+  litres: number | null;
+  fuelType: 'PETROL' | 'DIESEL' | 'SUPER' | 'GAS' | null;
+  pricePerLitre: number | null;
+  pumpNumber: string | null;
+  vehicleNumber: string | null;
+  confidence: number;
+  source: string;
+}
 
 export async function extractWithGemini(
   imageBuffer: Buffer,
   kraData: KRAInvoiceData
-): Promise<FuelOCRResult> {
+): Promise<GeminiFuelResult> {
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
   const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
@@ -59,7 +68,7 @@ IMPORTANT:
       throw new Error('Gemini did not return valid JSON');
     }
 
-    const extracted: FuelOCRResult = JSON.parse(jsonMatch[0]);
+    const extracted: GeminiFuelResult = JSON.parse(jsonMatch[0]);
 
     // Validate price calculation
     if (extracted.litres && extracted.litres > 0) {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { decodeQRFromImage } from '@/lib/receipt-processing/qr-decoder';
+import { decodeQRFromImage, type QRCodeData } from '@/lib/receipt-processing/qr-decoder';
 import { scrapeKRAInvoice } from '@/lib/receipt-processing/kra-scraper';
-import { extractWithTesseract } from '@/lib/receipt-processing/ocr-free';
+import { extractWithTesseract, type ReceiptOCRResult } from '@/lib/receipt-processing/ocr-free';
 import { extractWithGemini } from '@/lib/receipt-processing/ocr-ai';
 
 export async function POST(request: NextRequest) {
@@ -21,93 +21,176 @@ export async function POST(request: NextRequest) {
     // Convert to buffer
     const imageBuffer = Buffer.from(await imageFile.arrayBuffer());
 
-    // Step 1: Decode QR code
+    // ============================================
+    // DATA SOURCE 1: QR CODE (Structured Data)
+    // ============================================
     console.log('📱 Step 1: Decoding QR code...');
-    let qrUrl: string;
+    let qrData: QRCodeData;
+    let kraData = null;
+    
     try {
-      qrUrl = await decodeQRFromImage(imageBuffer);
-      console.log('✓ QR decoded:', qrUrl);
+      qrData = await decodeQRFromImage(imageBuffer);
+      console.log('✓ QR decoded:', {
+        hasURL: !!qrData.url,
+        hasInvoice: !!qrData.invoiceNumber,
+        hasMerchant: !!qrData.merchantName,
+        hasAmount: !!qrData.totalAmount,
+      });
+      
+      // If QR contains a URL, try to scrape additional data from KRA
+      if (qrData.url) {
+        console.log('🌐 Step 1b: Verifying with KRA website...');
+        kraData = await scrapeKRAInvoice(qrData.url);
+        if (kraData) {
+          console.log('✓ KRA verified:', {
+            merchant: kraData.merchantName,
+            amount: kraData.totalAmount,
+            invoice: kraData.invoiceNumber,
+          });
+        }
+      }
     } catch (error) {
       return NextResponse.json(
         {
           error: 'No QR code found',
-          message: 'Could not find KRA QR code on receipt. Please ensure the QR code is visible and clear.',
+          message: 'Could not find QR code on receipt. Please ensure the QR code is visible and clear.',
         },
         { status: 400 }
       );
     }
 
-    // Step 2: Scrape KRA website
-    console.log('🌐 Step 2: Verifying with KRA...');
-    const kraData = await scrapeKRAInvoice(qrUrl);
-
-    if (!kraData) {
-      return NextResponse.json(
-        {
-          error: 'KRA verification failed',
-          message: 'Could not verify invoice with KRA. The invoice may be invalid or KRA servers are down.',
-        },
-        { status: 400 }
-      );
-    }
-
-    console.log('✓ KRA verified:', {
-      merchant: kraData.merchantName,
-      amount: kraData.totalAmount,
-      invoice: kraData.invoiceNumber,
-    });
-
-    // Step 3: Try Tesseract OCR (free)
-    console.log('🔍 Step 3: Extracting fuel data with Tesseract...');
-    let fuelData = await extractWithTesseract(imageBuffer, kraData.totalAmount);
+    // ============================================
+    // DATA SOURCE 2: RECEIPT IMAGE (Visual OCR)
+    // ============================================
+    console.log('🔍 Step 2: Extracting data from receipt image with Tesseract...');
+    let receiptData = await extractWithTesseract(imageBuffer);
 
     console.log('Tesseract result:', {
-      litres: fuelData.litres,
-      confidence: fuelData.confidence,
-      source: fuelData.source,
+      merchant: receiptData.merchantName,
+      amount: receiptData.totalAmount,
+      litres: receiptData.litres,
+      confidence: receiptData.confidence,
     });
 
-    // Step 4: If Tesseract confidence is low, try Gemini
-    if (fuelData.confidence < 80) {
+    // Try Gemini if Tesseract confidence is low and we have QR/KRA data to help
+    if (receiptData.confidence < 60 && (qrData.totalAmount || kraData)) {
       console.log('⚠️ Tesseract confidence low, trying Gemini AI...');
       try {
-        fuelData = await extractWithGemini(imageBuffer, kraData);
-        console.log('✓ Gemini result:', {
-          litres: fuelData.litres,
-          confidence: fuelData.confidence,
+        const geminiResult = await extractWithGemini(imageBuffer, kraData || {
+          merchantName: qrData.merchantName || '',
+          totalAmount: qrData.totalAmount || 0,
+          invoiceDate: qrData.dateTime || '',
+          invoiceNumber: qrData.invoiceNumber || '',
+        } as any);
+        
+        // Merge Gemini fuel data with receipt OCR
+        receiptData = {
+          ...receiptData,
+          litres: geminiResult.litres || receiptData.litres,
+          fuelType: geminiResult.fuelType || receiptData.fuelType,
+          pricePerLitre: geminiResult.pricePerLitre || receiptData.pricePerLitre,
+          pumpNumber: geminiResult.pumpNumber || receiptData.pumpNumber,
+          vehicleNumber: geminiResult.vehicleNumber || receiptData.vehicleNumber,
+          confidence: Math.max(receiptData.confidence, geminiResult.confidence),
+          source: 'tesseract_ocr + gemini_vision',
+        };
+        
+        console.log('✓ Enhanced with Gemini:', {
+          litres: receiptData.litres,
+          confidence: receiptData.confidence,
         });
       } catch (error) {
         console.error('Gemini failed:', error);
-        // Continue with Tesseract results
       }
     }
 
-    // Combine results
+    // ============================================
+    // MERGE DATA SOURCES (QR + KRA + OCR)
+    // ============================================
     const transaction = {
-      // From KRA (100% confidence)
-      invoiceNumber: kraData.invoiceNumber,
-      merchantName: kraData.merchantName,
-      totalAmount: kraData.totalAmount,
-      invoiceDate: kraData.invoiceDate,
-      vatAmount: kraData.vatAmount,
-
-      // From OCR (variable confidence)
-      litres: fuelData.litres,
-      fuelType: fuelData.fuelType,
-      pricePerLitre: fuelData.pricePerLitre,
-      pumpNumber: fuelData.pumpNumber,
-      vehicleNumber: fuelData.vehicleNumber,
-
-      // Processing metadata
-      confidence: fuelData.confidence,
-      ocrSource: fuelData.source,
-      status: fuelData.confidence > 80 ? 'verified' : 'needs_review',
+      // QR Code Data (100% confidence if present)
+      qrData: {
+        invoiceNumber: qrData.invoiceNumber,
+        merchantPIN: qrData.merchantPIN,
+        merchantName: qrData.merchantName,
+        totalAmount: qrData.totalAmount,
+        dateTime: qrData.dateTime,
+        tillNumber: qrData.tillNumber,
+        receiptNumber: qrData.receiptNumber,
+        rawQRText: qrData.rawText,
+        source: 'qr_code',
+        confidence: 100,
+      },
+      
+      // KRA Website Data (100% confidence if scraped)
+      kraData: kraData ? {
+        invoiceNumber: kraData.invoiceNumber,
+        traderInvoiceNo: kraData.traderInvoiceNo,
+        merchantName: kraData.merchantName,
+        totalAmount: kraData.totalAmount,
+        taxableAmount: kraData.taxableAmount,
+        vatAmount: kraData.vatAmount,
+        invoiceDate: kraData.invoiceDate,
+        verified: kraData.verified,
+        source: 'kra_website',
+        confidence: 100,
+      } : null,
+      
+      // Receipt OCR Data (variable confidence)
+      receiptData: {
+        merchantName: receiptData.merchantName,
+        location: receiptData.location,
+        totalAmount: receiptData.totalAmount,
+        subtotal: receiptData.subtotal,
+        vatAmount: receiptData.vatAmount,
+        litres: receiptData.litres,
+        fuelType: receiptData.fuelType,
+        pricePerLitre: receiptData.pricePerLitre,
+        pumpNumber: receiptData.pumpNumber,
+        attendantName: receiptData.attendantName,
+        vehicleNumber: receiptData.vehicleNumber,
+        transactionDate: receiptData.transactionDate,
+        transactionTime: receiptData.transactionTime,
+        source: receiptData.source,
+        confidence: receiptData.confidence,
+      },
+      
+      // Merged "best guess" transaction
+      mergedTransaction: {
+        // Prefer KRA > QR > OCR for financial data
+        invoiceNumber: kraData?.invoiceNumber || qrData.invoiceNumber || null,
+        merchantName: kraData?.merchantName || qrData.merchantName || receiptData.merchantName,
+        totalAmount: kraData?.totalAmount || qrData.totalAmount || receiptData.totalAmount,
+        vatAmount: kraData?.vatAmount || receiptData.vatAmount || null,
+        date: kraData?.invoiceDate || qrData.dateTime || receiptData.transactionDate,
+        time: receiptData.transactionTime,
+        
+        // Only from OCR
+        litres: receiptData.litres,
+        fuelType: receiptData.fuelType,
+        pricePerLitre: receiptData.pricePerLitre,
+        pumpNumber: receiptData.pumpNumber,
+        attendantName: receiptData.attendantName,
+        vehicleNumber: receiptData.vehicleNumber,
+        location: receiptData.location,
+        
+        // Status determination
+        status: (receiptData.litres && receiptData.confidence > 70) ? 'verified' : 'needs_review',
+        overallConfidence: Math.round(
+          (100 + // QR always 100%
+           (kraData ? 100 : 0) + // KRA 100% if available
+           receiptData.confidence) / (kraData ? 3 : 2) // Average
+        ),
+      },
+      
       processedAt: new Date().toISOString(),
     };
 
     console.log('✅ Processing complete:', {
-      status: transaction.status,
-      confidence: transaction.confidence,
+      qrFound: true,
+      kraVerified: !!kraData,
+      ocrConfidence: receiptData.confidence,
+      overallStatus: transaction.mergedTransaction.status,
     });
 
     return NextResponse.json({
@@ -115,9 +198,11 @@ export async function POST(request: NextRequest) {
       transaction,
       processing: {
         qrDecoded: true,
-        kraVerified: true,
-        ocrMethod: fuelData.source,
-        confidence: fuelData.confidence,
+        qrHasStructuredData: !!(qrData.invoiceNumber || qrData.totalAmount),
+        kraVerified: !!kraData,
+        ocrMethod: receiptData.source,
+        ocrConfidence: receiptData.confidence,
+        overallConfidence: transaction.mergedTransaction.overallConfidence,
       },
     });
   } catch (error: any) {
