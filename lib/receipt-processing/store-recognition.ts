@@ -5,7 +5,7 @@
  * Uses multiple signals: location, QR data, OCR text, and historical patterns.
  */
 
-import { supabase as createClient } from '@/lib/supabase/client';
+import { supabase } from '@/lib/supabase/client';
 import { templateRegistry, type ReceiptTemplate } from './template-registry';
 
 export interface Store {
@@ -34,7 +34,7 @@ export interface StoreRecognitionResult {
  * Store Recognition Engine
  */
 export class StoreRecognizer {
-  private supabase = createClient;
+  private supabaseClient = supabase;
   private storeCache: Map<string, Store> = new Map();
   
   /**
@@ -194,7 +194,7 @@ export class StoreRecognizer {
     radiusMeters: number
   ): Promise<Store[]> {
     // Using PostGIS or basic distance calculation
-    const { data } = await this.supabase.rpc('find_stores_nearby', {
+    const { data } = await this.supabaseClient.rpc('find_stores_nearby', {
       lat: latitude,
       lng: longitude,
       radius_m: radiusMeters,

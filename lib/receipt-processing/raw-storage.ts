@@ -5,7 +5,7 @@
  * Think of this as a "digital shoebox" - everything goes in as-is.
  */
 
-import { supabase as createClient } from '@/lib/supabase/client';
+import { supabase } from '@/lib/supabase/client';
 
 export interface RawReceiptData {
   id?: string;
@@ -74,7 +74,7 @@ export interface RawReceiptStorage {
  * Supabase implementation of raw receipt storage
  */
 export class SupabaseRawReceiptStorage implements RawReceiptStorage {
-  private supabase = createClient;
+  private supabaseClient = supabase;
   
   async save(data: RawReceiptData): Promise<string> {
     const { data: result, error } = await this.supabase
