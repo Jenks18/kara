@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
               amount: result.parsedData?.totalAmount || 0,
               processing_status: result.status === 'success' ? 'processed' : 'scanning',
               merchant_name: result.parsedData?.merchantName || result.store?.name,
-              date: result.parsedData?.transactionDate || new Date().toISOString(),
+              transaction_date: result.parsedData?.transactionDate || new Date().toISOString().split('T')[0],
             });
 
           if (itemError) {
