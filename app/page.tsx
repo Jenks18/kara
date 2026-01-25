@@ -20,8 +20,8 @@ export default function HomePage() {
   const [expenseReports, setExpenseReports] = useState<ExpenseReport[]>([])
   const [loading, setLoading] = useState(true)
   
-  // Demo mode fallback for development
-  const userId = user?.id || 'demo-user-123'
+  // Use email for querying (schema uses user_email not user_id)
+  const userEmail = user?.primaryEmailAddress?.emailAddress || 'demo@example.com'
   
   // Redirect unauthenticated users (optional - commented for dev mode)
   useEffect(() => {
@@ -35,12 +35,12 @@ export default function HomePage() {
   useEffect(() => {
     async function fetchReports() {
       setLoading(true)
-      const reports = await getExpenseReports(userId, 10)
+      const reports = await getExpenseReports(userEmail, 10)
       setExpenseReports(reports)
       setLoading(false)
     }
     fetchReports()
-  }, [userId])
+  }, [userEmail])
   
   // Mock data (keep for now)
   const expenses = [

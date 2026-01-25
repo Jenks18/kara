@@ -180,7 +180,7 @@ async function uploadReceiptImage(
  * Get all expense reports for a user
  */
 export async function getExpenseReports(
-  userId: string,
+  userEmailOrId: string,
   limit: number = 50
 ): Promise<ExpenseReport[]> {
   if (!isSupabaseConfigured) {
@@ -191,7 +191,7 @@ export async function getExpenseReports(
     const { data: reports, error: reportsError } = await supabase
       .from('expense_reports')
       .select('*')
-      .eq('user_id', userId)
+      .eq('user_email', userEmailOrId)
       .order('created_at', { ascending: false })
       .limit(limit)
 
