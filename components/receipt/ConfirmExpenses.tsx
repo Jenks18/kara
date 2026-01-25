@@ -22,6 +22,7 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
   const [showLocationPrompt, setShowLocationPrompt] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [locationPermissionGranted, setLocationPermissionGranted] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   
   // Single expense data that applies to all images
   const [expenseData, setExpenseData] = useState({
@@ -59,6 +60,9 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
   }, [])
 
   const handleContinue = async () => {
+    if (isSubmitting) return; // Prevent double-click
+    setIsSubmitting(true);
+    
     // If location permission already granted, submit directly
     if (locationPermissionGranted) {
       const expenses = images.map(imageData => ({
@@ -313,9 +317,12 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
         <div className="p-4 border-t border-gray-700">
           <button
             onClick={handleContinue}
-            className="w-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-400 hover:from-emerald-700 hover:via-emerald-600 hover:to-emerald-500 active:scale-[0.98] text-white font-semibold py-4 rounded-full transition-all duration-300 shadow-emerald-md hover:shadow-emerald-lg"
+            disabled={isSubmitting}
+            className={`w-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-400 hover:from-emerald-700 hover:via-emerald-600 hover:to-emerald-500 active:scale-[0.98] text-white font-semibold py-4 rounded-full transition-all duration-300 shadow-emerald-md hover:shadow-emerald-lg ${
+              isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
           >
-            Create {images.length} expense{images.length > 1 ? 's' : ''}
+            {isSubmitting ? 'Creating...' : `Create ${images.length} expense${images.length > 1 ? 's' : ''}`}
           </button>
         </div>
       </div>
