@@ -28,16 +28,19 @@ export default async function ReportsPage() {
     redirect('/sign-in')
   }
   
+  const userEmail = user.emailAddresses[0].emailAddress
+  
   // Create Supabase client with Clerk JWT - RLS auto-filters by user!
   const supabase = await createServerClient()
   
-  // No need to filter by user_email - RLS does it automatically!
+  // Filter by user_email as fallback (in case JWT template not configured yet)
   const { data: expenseItems, error } = await supabase
     .from('expense_items')
     .select(`
       *,
       report:expense_reports!inner(user_email)
     `)
+    .eq('expense_reports.user_email', userEmail)
     .order('created_at', { ascending: false })
     .limit(50)
 

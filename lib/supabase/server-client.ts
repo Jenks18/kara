@@ -13,13 +13,23 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
  * Security: Uses anon key + JWT (not service_role) - RLS is enforced
  */
 export async function createServerClient() {
-  const { getToken } = await auth()
+  const { getToken, userId } = await auth()
   
   // Get Clerk's JWT token configured for Supabase
   const supabaseAccessToken = await getToken({ template: 'supabase' })
 
   if (!supabaseAccessToken) {
-    throw new Error('Authentication required. No Clerk session found.')
+    // If JWT template not configured, fall back to basic anon client
+    // This allows the app to work while you set up production JWT
+    console.warn('⚠️  Clerk JWT template "supabase" not found. Using basic auth.')
+    console.warn('⚠️  Configure JWT template: https://dashboard.clerk.com/last-active?path=jwt-templates')
+    
+    if (!userId) {
+      throw new Error('Authentication required. No Clerk session found.')
+    }
+    
+    // Return basic client - RLS policies may not work without JWT!
+    return createClient(supabaseUrl, supabaseAnonKey)
   }
 
   // Create Supabase client with Clerk JWT
