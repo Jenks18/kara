@@ -90,7 +90,7 @@ export default function ReportsClient({ initialItems }: ReportsClientProps) {
             <CategoryPill
               key={category.id}
               label={category.label}
-              isActive={selectedCategory === category.id}
+              selected={selectedCategory === category.id}
               onClick={() => setSelectedCategory(category.id)}
             />
           ))}
