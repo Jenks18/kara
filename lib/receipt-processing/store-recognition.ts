@@ -5,7 +5,7 @@
  * Uses multiple signals: location, QR data, OCR text, and historical patterns.
  */
 
-import { supabase } from '@/lib/supabase/client';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { templateRegistry, type ReceiptTemplate } from './template-registry';
 
 export interface Store {
@@ -34,7 +34,7 @@ export interface StoreRecognitionResult {
  * Store Recognition Engine
  */
 export class StoreRecognizer {
-  private supabaseClient = supabase;
+  private supabaseClient = supabaseAdmin;
   private storeCache: Map<string, Store> = new Map();
   
   /**

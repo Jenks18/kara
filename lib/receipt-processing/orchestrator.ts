@@ -13,7 +13,7 @@ import { rawReceiptStorage, type RawReceiptData } from './raw-storage';
 import { storeRecognizer } from './store-recognition';
 import { templateRegistry } from './template-registry';
 import { aiReceiptEnhancer } from './ai-enhancement';
-import { supabase } from '@/lib/supabase/client';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 
 // Use Web Crypto API instead of Node crypto for Vercel compatibility
 function calculateHash(buffer: Buffer): string {
@@ -411,12 +411,12 @@ export class ReceiptProcessor {
    * Upload image to storage
    */
   private async uploadImage(buffer: Buffer, filename: string): Promise<string> {
-    // Upload to Supabase Storage
+    // Upload to Supabase Storage using admin client (bypasses RLS)
     const timestamp = Date.now();
     const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
     const path = `receipts/${timestamp}-${sanitizedFilename}`;
     
-    const { data, error } = await supabase.storage
+    const { data, error } = await supabaseAdmin.storage
       .from('receipt-images')
       .upload(path, buffer, {
         contentType: 'image/jpeg',
@@ -429,7 +429,7 @@ export class ReceiptProcessor {
     }
     
     // Get public URL
-    const { data: urlData } = supabase.storage
+    const { data: urlData } = supabaseAdmin.storage
       .from('receipt-images')
       .getPublicUrl(path);
     
