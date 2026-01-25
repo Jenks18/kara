@@ -116,9 +116,11 @@ export async function POST(request: NextRequest) {
     // ==========================================
     // CREATE EXPENSE ITEM FOR APP DISPLAY
     // ==========================================
+    let finalReportId: string | undefined = undefined;
+    
     if (uploadSucceeded) {
       try {
-        let finalReportId = reportId; // Use provided reportId if available
+        finalReportId = reportId; // Use provided reportId if available
         
         if (!finalReportId) {
           // Create a NEW report only if reportId not provided
