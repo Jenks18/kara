@@ -254,32 +254,34 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
           }
           
           // Process each receipt through the enhanced processing API
-          // First upload creates report, subsequent uploads use the same reportId
+          // SEQUENTIAL upload: First creates report, rest use the same reportId
           let sharedReportId: string | null = null;
+          const results = [];
           
-          const uploadPromises = expenses.map(async (exp, index) => {
+          for (let i = 0; i < expenses.length; i++) {
+            const exp = expenses[i];
+            
             // Convert base64 to blob
             const base64Data = exp.imageData.split(',')[1]
             const byteString = atob(base64Data)
             const ab = new ArrayBuffer(byteString.length)
             const ia = new Uint8Array(ab)
-            for (let i = 0; i < byteString.length; i++) {
-              ia[i] = byteString.charCodeAt(i)
+            for (let j = 0; j < byteString.length; j++) {
+              ia[j] = byteString.charCodeAt(j)
             }
             const blob = new Blob([ab], { type: 'image/jpeg' })
             
-            // Wait for previous upload to get reportId (for batching)
-            if (index > 0) {
-              await new Promise(resolve => setTimeout(resolve, 100 * index)) // Stagger requests
-            }
-            
             // Upload to enhanced receipt processing API
-            // Server will get userEmail from Clerk authentication
             const formData = new FormData()
             formData.append('image', blob, 'receipt.jpg')
             if (latitude) formData.append('latitude', latitude.toString())
             if (longitude) formData.append('longitude', longitude.toString())
-            if (sharedReportId) formData.append('reportId', sharedReportId) // Batch into same report
+            if (sharedReportId) {
+              formData.append('reportId', sharedReportId) // Batch into same report
+              console.log(`📦 Adding receipt ${i + 1}/${expenses.length} to report:`, sharedReportId)
+            } else {
+              console.log(`📦 Creating new report for receipt 1/${expenses.length}`)
+            }
             
             try {
               const response = await fetch('/api/receipts/upload', {
@@ -291,17 +293,17 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
               // Store reportId from first successful upload for batching
               if (!sharedReportId && result.reportId) {
                 sharedReportId = result.reportId
-                console.log('📦 Batching receipts into report:', sharedReportId)
+                console.log('✅ Created report for batch:', sharedReportId)
               }
               
-              return result
+              results.push(result)
             } catch (error) {
               console.error('Receipt upload failed:', error)
-              return { success: false, error: String(error) }
+              results.push({ success: false, error: String(error) })
             }
-          })
+          }
           
-          const results = await Promise.all(uploadPromises)
+          // All uploads complete
           const allSuccess = results.every(r => r.success || r.receiptId)
           
           if (allSuccess) {
