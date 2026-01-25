@@ -17,7 +17,7 @@ const nextConfig = {
     },
   },
   // Configure serverless function size
-  serverComponentsExternalPackages: ['tesseract.js', 'sharp'],
+  serverComponentsExternalPackages: ['sharp'],
 }
 
 module.exports = nextConfig

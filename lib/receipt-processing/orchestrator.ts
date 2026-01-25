@@ -7,7 +7,7 @@
 
 import { decodeQRFromImage } from './qr-decoder';
 import { scrapeKRAInvoice } from './kra-scraper';
-import { extractWithTesseract } from './ocr-free';
+// import { extractWithTesseract } from './ocr-free'; // Disabled: causes worker issues in Vercel
 import { extractWithGemini } from './ocr-ai';
 import { rawReceiptStorage, type RawReceiptData } from './raw-storage';
 import { storeRecognizer } from './store-recognition';
@@ -315,11 +315,14 @@ export class ReceiptProcessor {
   
   /**
    * Extract OCR data
+   * NOTE: Tesseract disabled for Vercel serverless - using Gemini AI instead
    */
   private async extractOCRData(imageBuffer: Buffer): Promise<any> {
     try {
-      const result = await extractWithTesseract(imageBuffer);
-      return result;
+      // Tesseract.js causes worker issues in Vercel serverless
+      // Skip free OCR and rely on Gemini AI
+      console.log('⏭️  Skipping Tesseract (using Gemini AI instead)');
+      return null;
     } catch (error) {
       console.error('OCR extraction failed:', error);
       return null;

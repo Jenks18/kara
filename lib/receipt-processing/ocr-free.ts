@@ -36,15 +36,20 @@ export async function extractWithTesseract(
 
     console.log('Running Tesseract OCR...');
 
+    // Create worker without web workers (for Vercel serverless)
+    const worker = await Tesseract.createWorker('eng', 1, {
+      workerPath: undefined,
+      corePath: undefined,
+      // Disable worker threads for serverless
+      legacyCore: true,
+      legacyLang: true,
+    });
+
     const {
       data: { text },
-    } = await Tesseract.recognize(dataUrl, 'eng', {
-      logger: (m) => {
-        if (m.status === 'recognizing text') {
-          console.log(`Tesseract: ${Math.round(m.progress * 100)}%`);
-        }
-      },
-    });
+    } = await worker.recognize(dataUrl);
+
+    await worker.terminate();
 
     console.log('✓ Tesseract extracted text (first 200 chars):', text.substring(0, 200));
 
