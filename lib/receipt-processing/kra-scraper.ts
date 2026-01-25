@@ -41,51 +41,48 @@ export async function scrapeKRAInvoice(
 
       const $ = cheerio.load(response.data);
 
-      // Extract data from table rows (KRA uses label-value pairs)
-      const data: Record<string, string> = {};
+      // Get the full text content
+      const fullText = $('body').text();
 
-      $('tr').each((_, row) => {
-        const cells = $(row).find('td');
+      // Extract data using regex patterns (more reliable than table parsing)
+      const patterns = {
+        invoiceNumber: /Control Unit Invoice Number\s+(\S+)/,
+        traderInvoiceNo: /Trader System Invoice No\s+(\S+)/,
+        invoiceDate: /Invoice Date\s+([\d\/]+)/,
+        totalTaxableAmount: /Total Taxable Amount\s+([\d.,]+)/,
+        totalTaxAmount: /Total Tax Amount\s+([\d.,]+)/,
+        totalInvoiceAmount: /Total Invoice Amount\s+([\d.,]+)/,
+        supplierName: /Supplier Name\s+([^\n]+)/,
+      };
 
-        // KRA uses 2 or 4 column layout
-        if (cells.length === 2) {
-          const label = $(cells[0]).text().trim();
-          const value = $(cells[1]).text().trim();
-          if (label && value) {
-            data[label] = value;
-          }
-        } else if (cells.length === 4) {
-          // Two label-value pairs per row
-          const label1 = $(cells[0]).text().trim();
-          const value1 = $(cells[1]).text().trim();
-          const label2 = $(cells[2]).text().trim();
-          const value2 = $(cells[3]).text().trim();
-
-          if (label1 && value1) data[label1] = value1;
-          if (label2 && value2) data[label2] = value2;
+      const extractedData: Record<string, string> = {};
+      for (const [key, pattern] of Object.entries(patterns)) {
+        const match = fullText.match(pattern);
+        if (match) {
+          extractedData[key] = match[1].trim();
         }
-      });
+      }
 
       // Validate we got real data
-      if (!data['Control Unit Invoice Number'] && !data['Supplier Name']) {
+      if (!extractedData.invoiceNumber && !extractedData.supplierName) {
         throw new Error('KRA page returned no invoice data');
       }
 
-      console.log('✓ KRA data extracted:', Object.keys(data));
+      console.log('✓ KRA data extracted:', Object.keys(extractedData));
 
       return {
-        invoiceNumber: data['Control Unit Invoice Number'] || '',
-        traderInvoiceNo: data['Trader System Invoice No'] || '',
-        invoiceDate: data['Invoice Date'] || '',
-        merchantName: data['Supplier Name'] || '',
+        invoiceNumber: extractedData.invoiceNumber || '',
+        traderInvoiceNo: extractedData.traderInvoiceNo || '',
+        invoiceDate: extractedData.invoiceDate || '',
+        merchantName: extractedData.supplierName || '',
         totalAmount: parseFloat(
-          (data['Total Invoice Amount'] || '0').replace(/[^\d.]/g, '')
+          (extractedData.totalInvoiceAmount || '0').replace(/[^\d.]/g, '')
         ),
         taxableAmount: parseFloat(
-          (data['Total Taxable Amount'] || '0').replace(/[^\d.]/g, '')
+          (extractedData.totalTaxableAmount || '0').replace(/[^\d.]/g, '')
         ),
         vatAmount: parseFloat(
-          (data['Total Tax Amount'] || '0').replace(/[^\d.]/g, '')
+          (extractedData.totalTaxAmount || '0').replace(/[^\d.]/g, '')
         ),
         verified: true,
         scrapedAt: new Date().toISOString(),

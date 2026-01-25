@@ -230,59 +230,74 @@ export default function QRTestPage() {
                 {/* KRA Invoice Data */}
                 {kraData && (
                   <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border-2 border-green-200">
-                    <h3 className="text-lg font-semibold mb-4 text-green-900">
-                      🇰🇪 KRA Verified Invoice Data
+                    <h3 className="text-lg font-semibold mb-4 text-green-900 flex items-center gap-2">
+                      🇰🇪 KRA Official Data <span className="text-xs font-normal text-green-700">(Source of Truth #1)</span>
                     </h3>
                     {kraData.error ? (
                       <div className="p-3 bg-red-100 rounded text-red-800 text-sm">
                         ❌ {kraData.error}
                       </div>
                     ) : (
-                      <div className="grid grid-cols-2 gap-4">
-                        {kraData.invoiceNumber && (
-                          <div className="col-span-2">
-                            <p className="text-xs font-medium text-gray-600">Invoice Number</p>
-                            <p className="text-lg font-bold text-gray-900">{kraData.invoiceNumber}</p>
-                          </div>
-                        )}
-                        {kraData.merchantName && (
-                          <div className="col-span-2">
-                            <p className="text-xs font-medium text-gray-600">Merchant</p>
-                            <p className="text-base font-semibold text-gray-900">{kraData.merchantName}</p>
-                          </div>
-                        )}
-                        {kraData.totalAmount !== undefined && (
-                          <div>
-                            <p className="text-xs font-medium text-gray-600">Total Amount</p>
-                            <p className="text-2xl font-bold text-green-700">
-                              KES {kraData.totalAmount.toFixed(2)}
-                            </p>
-                          </div>
-                        )}
-                        {kraData.vatAmount !== undefined && (
-                          <div>
-                            <p className="text-xs font-medium text-gray-600">VAT</p>
-                            <p className="text-lg font-semibold text-gray-700">
-                              KES {kraData.vatAmount.toFixed(2)}
-                            </p>
-                          </div>
-                        )}
-                        {kraData.invoiceDate && (
-                          <div>
-                            <p className="text-xs font-medium text-gray-600">Date</p>
-                            <p className="text-sm text-gray-900">{kraData.invoiceDate}</p>
-                          </div>
-                        )}
-                        {kraData.traderInvoiceNo && (
-                          <div>
-                            <p className="text-xs font-medium text-gray-600">Trader Invoice #</p>
-                            <p className="text-sm text-gray-900">{kraData.traderInvoiceNo}</p>
-                          </div>
-                        )}
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          {kraData.invoiceNumber && (
+                            <div className="col-span-2">
+                              <p className="text-xs font-medium text-gray-600">Control Unit Invoice Number</p>
+                              <p className="text-lg font-bold text-gray-900">{kraData.invoiceNumber}</p>
+                            </div>
+                          )}
+                          {kraData.traderInvoiceNo && (
+                            <div>
+                              <p className="text-xs font-medium text-gray-600">Trader Invoice No</p>
+                              <p className="text-base font-semibold text-gray-900">{kraData.traderInvoiceNo}</p>
+                            </div>
+                          )}
+                          {kraData.invoiceDate && (
+                            <div>
+                              <p className="text-xs font-medium text-gray-600">Invoice Date</p>
+                              <p className="text-base font-semibold text-gray-900">{kraData.invoiceDate}</p>
+                            </div>
+                          )}
+                          {kraData.merchantName && (
+                            <div className="col-span-2">
+                              <p className="text-xs font-medium text-gray-600">Supplier Name</p>
+                              <p className="text-base font-semibold text-gray-900">{kraData.merchantName}</p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Financial Data - Highlighted */}
+                        <div className="grid grid-cols-3 gap-3 p-4 bg-white rounded-lg border border-green-300">
+                          {kraData.taxableAmount !== undefined && kraData.taxableAmount > 0 && (
+                            <div className="text-center">
+                              <p className="text-xs font-medium text-gray-600 mb-1">Taxable Amount</p>
+                              <p className="text-lg font-bold text-gray-800">
+                                {kraData.taxableAmount.toFixed(2)}
+                              </p>
+                            </div>
+                          )}
+                          {kraData.vatAmount !== undefined && kraData.vatAmount > 0 && (
+                            <div className="text-center">
+                              <p className="text-xs font-medium text-gray-600 mb-1">VAT (Tax)</p>
+                              <p className="text-lg font-bold text-orange-600">
+                                {kraData.vatAmount.toFixed(2)}
+                              </p>
+                            </div>
+                          )}
+                          {kraData.totalAmount !== undefined && kraData.totalAmount > 0 && (
+                            <div className="text-center">
+                              <p className="text-xs font-medium text-gray-600 mb-1">Total Amount</p>
+                              <p className="text-2xl font-bold text-green-700">
+                                {kraData.totalAmount.toFixed(2)}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
                         {kraData.verified && (
-                          <div className="col-span-2 mt-2 p-2 bg-green-200 rounded text-center">
+                          <div className="p-2 bg-green-200 rounded text-center">
                             <p className="text-green-900 font-medium text-sm">
-                              ✓ Verified with KRA
+                              ✓ Verified with KRA Government Portal
                             </p>
                           </div>
                         )}
@@ -292,14 +307,16 @@ export default function QRTestPage() {
                 )}
 
                 {/* OCR Text Section */}
-                <div className="p-6 bg-blue-50 rounded-lg">
-                  <h3 className="text-lg font-semibold mb-3">📝 OCR Results</h3>
+                <div className="p-6 bg-blue-50 rounded-lg border-2 border-blue-200">
+                  <h3 className="text-lg font-semibold mb-3 text-blue-900 flex items-center gap-2">
+                    📝 OCR Extracted Data <span className="text-xs font-normal text-blue-700">(Source of Truth #2)</span>
+                  </h3>
                   <p className="text-sm text-gray-700 mb-2 font-medium">
                     Confidence: {result.confidence?.toFixed(1)}%
                   </p>
                   {result.confidence < 50 && (
                     <div className="mb-3 p-2 bg-yellow-100 rounded text-yellow-800 text-xs">
-                      ⚠️ Low confidence - Image quality may be poor. KRA data above is more reliable.
+                      ⚠️ Low confidence - Image quality may affect accuracy. Use KRA data for official records.
                     </div>
                   )}
                   <pre className="text-sm text-gray-900 bg-white p-4 rounded overflow-x-auto max-h-96 border border-gray-200 whitespace-pre-wrap break-words">
@@ -309,8 +326,9 @@ export default function QRTestPage() {
 
                 {/* Extracted Fields */}
                 {result.extractedFields && (
-                  <div className="p-6 bg-purple-50 rounded-lg">
-                    <h3 className="text-lg font-semibold mb-3">🧠 Extracted Data</h3>
+                  <div className="p-6 bg-purple-50 rounded-lg border-2 border-purple-200">
+                    <h3 className="text-lg font-semibold mb-3 text-purple-900">🧠 OCR Parsed Fields</h3>
+                    <p className="text-xs text-purple-700 mb-3">Structured data extracted from OCR text (may be less accurate than KRA data)</p>
                     <div className="space-y-2">
                       {result.extractedFields.merchantName && (
                         <div>
