@@ -117,10 +117,16 @@ export async function POST(request: NextRequest) {
       try {
         console.log('📧 Creating expense report/item for user:', userEmail)
         // Get or create expense report for this user (RLS auto-filters!)
-        const { data: existingReports } = await supabase
+        const { data: existingReports, error: fetchError } = await supabase
           .from('expense_reports')
           .select('id')
+          .order('created_at', { ascending: false })
           .limit(1);
+
+        if (fetchError) {
+          console.error('❌ Error fetching reports:', fetchError);
+        }
+        console.log('📊 Found existing reports:', existingReports?.length || 0);
 
         let reportId: string;
         if (existingReports && existingReports.length > 0) {
@@ -133,14 +139,15 @@ export async function POST(request: NextRequest) {
             .insert({
               user_email: userEmail,
               workspace_name: 'Default Workspace',
-              title: 'Expense Report',
+              title: `Expense Report - ${new Date().toLocaleDateString()}`,
               status: 'draft',
+              total_amount: 0,
             })
             .select('id')
             .single();
 
           if (reportError) {
-            console.error('Failed to create expense report:', reportError);
+            console.error('❌ Failed to create expense report:', reportError);
             result.warnings.push('Could not create expense report');
           }
           reportId = newReport?.id || '';

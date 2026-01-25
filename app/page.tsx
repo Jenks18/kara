@@ -55,6 +55,11 @@ export default async function HomePage() {
     .order('created_at', { ascending: false })
     .limit(10)
 
+  if (error) {
+    console.error('❌ Error fetching reports:', error);
+  }
+  console.log('📊 Fetched reports count:', reports?.length || 0);
+
   const expenseReports: ExpenseReport[] = []
   
   if (reports && !error) {
