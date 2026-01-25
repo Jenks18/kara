@@ -12,6 +12,31 @@ export default function QRTestPage() {
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [kraData, setKraData] = useState<any>(null);
+  const [scrapingKRA, setScrapingKRA] = useState(false);
+
+  async function scrapeKRAInvoice(url: string) {
+    setScrapingKRA(true);
+    try {
+      const response = await fetch('/api/receipts/scrape-kra', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to scrape KRA invoice');
+      }
+
+      const result = await response.json();
+      setKraData(result.data);
+    } catch (error) {
+      console.error('KRA scraping error:', error);
+      setKraData({ error: 'Failed to fetch invoice data from KRA' });
+    } finally {
+      setScrapingKRA(false);
+    }
+  }
 
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -19,6 +44,7 @@ export default function QRTestPage() {
 
     setLoading(true);
     setResult(null);
+    setKraData(null);
     
     // Show preview
     const url = URL.createObjectURL(file);
@@ -53,7 +79,7 @@ export default function QRTestPage() {
       const totalTime = Date.now() - startTime;
 
       // Transform Python response to match UI expectations
-      setResult({
+      const processedResult = {
         fullText: data.ocr.full_text,
         confidence: data.ocr.confidence,
         lines: data.ocr.lines,
@@ -72,7 +98,14 @@ export default function QRTestPage() {
         },
         tables: data.tables,
         processingNotes: data.processing_notes,
-      });
+      };
+
+      setResult(processedResult);
+
+      // If KRA QR code detected, automatically scrape the invoice
+      if (processedResult.qrCode.found && processedResult.qrCode.isKRA && processedResult.qrCode.url) {
+        await scrapeKRAInvoice(processedResult.qrCode.url);
+      }
     } catch (error) {
       setResult({
         error: error instanceof Error ? error.message : 'Processing failed',
@@ -177,10 +210,79 @@ export default function QRTestPage() {
                             {result.qrCode.data}
                           </pre>
                         </div>
-                        {result.qrCode.url?.includes('kra.go.ke') && (
-                          <div className="p-2 bg-yellow-50 rounded border border-yellow-200">
-                            <p className="text-yellow-800 text-sm font-medium">
-                              🇰🇪 KRA Invoice - Ready to scrape
+                        {result.qrCode.isKRA && (
+                          <div className="p-3 bg-green-100 rounded border border-green-300">
+                            <p className="text-green-900 text-sm font-medium mb-1">
+                              🇰🇪 KRA Invoice Detected
+                            </p>
+                            {scrapingKRA && (
+                              <p className="text-green-700 text-sm">
+                                🔄 Fetching invoice data from KRA...
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* KRA Invoice Data */}
+                {kraData && (
+                  <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border-2 border-green-200">
+                    <h3 className="text-lg font-semibold mb-4 text-green-900">
+                      🇰🇪 KRA Verified Invoice Data
+                    </h3>
+                    {kraData.error ? (
+                      <div className="p-3 bg-red-100 rounded text-red-800 text-sm">
+                        ❌ {kraData.error}
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-4">
+                        {kraData.invoiceNumber && (
+                          <div className="col-span-2">
+                            <p className="text-xs font-medium text-gray-600">Invoice Number</p>
+                            <p className="text-lg font-bold text-gray-900">{kraData.invoiceNumber}</p>
+                          </div>
+                        )}
+                        {kraData.merchantName && (
+                          <div className="col-span-2">
+                            <p className="text-xs font-medium text-gray-600">Merchant</p>
+                            <p className="text-base font-semibold text-gray-900">{kraData.merchantName}</p>
+                          </div>
+                        )}
+                        {kraData.totalAmount !== undefined && (
+                          <div>
+                            <p className="text-xs font-medium text-gray-600">Total Amount</p>
+                            <p className="text-2xl font-bold text-green-700">
+                              KES {kraData.totalAmount.toFixed(2)}
+                            </p>
+                          </div>
+                        )}
+                        {kraData.vatAmount !== undefined && (
+                          <div>
+                            <p className="text-xs font-medium text-gray-600">VAT</p>
+                            <p className="text-lg font-semibold text-gray-700">
+                              KES {kraData.vatAmount.toFixed(2)}
+                            </p>
+                          </div>
+                        )}
+                        {kraData.invoiceDate && (
+                          <div>
+                            <p className="text-xs font-medium text-gray-600">Date</p>
+                            <p className="text-sm text-gray-900">{kraData.invoiceDate}</p>
+                          </div>
+                        )}
+                        {kraData.traderInvoiceNo && (
+                          <div>
+                            <p className="text-xs font-medium text-gray-600">Trader Invoice #</p>
+                            <p className="text-sm text-gray-900">{kraData.traderInvoiceNo}</p>
+                          </div>
+                        )}
+                        {kraData.verified && (
+                          <div className="col-span-2 mt-2 p-2 bg-green-200 rounded text-center">
+                            <p className="text-green-900 font-medium text-sm">
+                              ✓ Verified with KRA
                             </p>
                           </div>
                         )}
@@ -195,6 +297,11 @@ export default function QRTestPage() {
                   <p className="text-sm text-gray-700 mb-2 font-medium">
                     Confidence: {result.confidence?.toFixed(1)}%
                   </p>
+                  {result.confidence < 50 && (
+                    <div className="mb-3 p-2 bg-yellow-100 rounded text-yellow-800 text-xs">
+                      ⚠️ Low confidence - Image quality may be poor. KRA data above is more reliable.
+                    </div>
+                  )}
                   <pre className="text-sm text-gray-900 bg-white p-4 rounded overflow-x-auto max-h-96 border border-gray-200 whitespace-pre-wrap break-words">
                     {result.fullText}
                   </pre>
@@ -258,10 +365,11 @@ export default function QRTestPage() {
         <div className="mt-8 p-4 bg-blue-50 rounded-lg">
           <h3 className="font-semibold text-blue-900 mb-2">ℹ️ How it works</h3>
           <ul className="text-sm text-blue-800 space-y-1">
-            <li>• Android Chrome: Uses native BarcodeDetector API (instant)</li>
-            <li>• iOS Safari: Uses jsQR library (browser-based)</li>
-            <li>• All processing happens on your device (no server upload)</li>
-            <li>• Works offline after page load</li>
+            <li>• Scans QR code using pyzbar (Python)</li>
+            <li>• Extracts text using Tesseract OCR</li>
+            <li>• Detects KRA invoices automatically</li>
+            <li>• Scrapes verified data from KRA website</li>
+            <li>• Combines QR + OCR for complete receipt data</li>
           </ul>
         </div>
       </div>
