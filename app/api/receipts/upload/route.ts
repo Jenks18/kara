@@ -53,8 +53,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`🔐 Authenticated: ${userEmail} (${userId})`);
-
     // ==========================================
     // CREATE SUPABASE CLIENT WITH CLERK JWT
     // RLS will automatically filter by authenticated user!

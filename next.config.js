@@ -10,14 +10,11 @@ const nextConfig = {
       },
     ],
   },
-  // Increase API route timeout for receipt processing
   experimental: {
     serverActions: {
       bodySizeLimit: '10mb',
     },
   },
-  // Configure serverless function size
-  serverComponentsExternalPackages: ['sharp'],
 }
 
 module.exports = nextConfig
