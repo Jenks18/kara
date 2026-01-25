@@ -71,7 +71,14 @@ export default async function HomePage() {
         .eq('report_id', report.id)
         .order('created_at', { ascending: true })
       
-      expenseReports.push({ ...report, items: items || [] })
+      // Calculate total amount from all items
+      const totalAmount = items?.reduce((sum, item) => sum + (item.amount || 0), 0) || 0
+      
+      expenseReports.push({ 
+        ...report, 
+        items: items || [],
+        total_amount: totalAmount
+      })
     }
   }
   
@@ -163,11 +170,11 @@ export default async function HomePage() {
                     </div>
                   </div>
                   
-                  {/* Receipt Thumbnails */}
+                  {/* Receipt Thumbnails - Show ALL images with horizontal scroll */}
                   {report.items.length > 0 && (
-                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                      {report.items.slice(0, 4).map((item, idx) => (
-                        <div key={item.id} className="flex-shrink-0">
+                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
+                      {report.items.map((item, idx) => (
+                        <div key={item.id} className="flex-shrink-0 snap-start">
                           <div className="relative w-20 h-24 rounded-lg overflow-hidden bg-dark-200 border border-gray-700">
                             <Image
                               src={item.image_url}
@@ -178,15 +185,6 @@ export default async function HomePage() {
                           </div>
                         </div>
                       ))}
-                      {report.items.length > 4 && (
-                        <div className="flex-shrink-0">
-                          <div className="w-20 h-24 rounded-lg bg-dark-200 border border-gray-700 flex items-center justify-center">
-                            <span className="text-gray-400 text-sm font-medium">
-                              +{report.items.length - 4}
-                            </span>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   )}
                   
