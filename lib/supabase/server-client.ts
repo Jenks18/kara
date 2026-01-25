@@ -25,6 +25,17 @@ export async function createServerClient() {
     )
   }
 
+  // Debug: Decode JWT to see what's in it
+  try {
+    const payload = JSON.parse(Buffer.from(supabaseAccessToken.split('.')[1], 'base64').toString())
+    console.log('🔐 JWT Payload:', JSON.stringify(payload, null, 2))
+    console.log('🔐 JWT Email claim:', payload.email)
+    console.log('🔐 JWT Role claim:', payload.role)
+    console.log('🔐 JWT Aud claim:', payload.aud)
+  } catch (e) {
+    console.error('❌ Failed to decode JWT:', e)
+  }
+
   // Create Supabase client with Clerk JWT
   // JWT contains: {"aud": "authenticated", "role": "authenticated", "email": "..."}
   // RLS policies read: auth.jwt()->>'email'
