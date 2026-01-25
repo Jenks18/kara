@@ -2,98 +2,58 @@
 -- PROPER RLS POLICIES FOR PRODUCTION
 -- ========================================
 -- Run this to replace the wide-open policies with proper user-scoped ones
+-- 
+-- NOTE: Since we use service_role key with x-user-email headers,
+-- we keep policies open but rely on application-level filtering.
+-- For true RLS, you'd need to set up Supabase Auth integration with Clerk.
 
 -- Drop existing overly permissive policies
 DROP POLICY IF EXISTS "Enable all access for expense_reports" ON expense_reports;
 DROP POLICY IF EXISTS "Enable all access for expense_items" ON expense_items;
 
 -- ========================================
--- EXPENSE_REPORTS POLICIES
+-- TEMPORARY OPEN POLICIES
+-- (Application handles auth via createAuthenticatedClient)
 -- ========================================
 
--- Users can only read their own expense reports
-CREATE POLICY "Users can view own expense_reports"
+-- Allow authenticated service role to access all expense_reports
+-- Application filters by user_email in queries
+CREATE POLICY "Service role can access expense_reports"
   ON expense_reports
-  FOR SELECT
-  USING (user_email = current_setting('request.jwt.claims', true)::json->>'email');
+  FOR ALL
+  TO authenticated, service_role
+  USING (true)
+  WITH CHECK (true);
 
--- Users can only insert their own expense reports
-CREATE POLICY "Users can create own expense_reports"
-  ON expense_reports
-  FOR INSERT
-  WITH CHECK (user_email = current_setting('request.jwt.claims', true)::json->>'email');
-
--- Users can only update their own expense reports
-CREATE POLICY "Users can update own expense_reports"
-  ON expense_reports
-  FOR UPDATE
-  USING (user_email = current_setting('request.jwt.claims', true)::json->>'email')
-  WITH CHECK (user_email = current_setting('request.jwt.claims', true)::json->>'email');
-
--- Users can only delete their own expense reports
-CREATE POLICY "Users can delete own expense_reports"
-  ON expense_reports
-  FOR DELETE
-  USING (user_email = current_setting('request.jwt.claims', true)::json->>'email');
+-- Allow authenticated service role to access all expense_items  
+-- Application filters via join to expense_reports.user_email
+CREATE POLICY "Service role can access expense_items"
+  ON expense_items
+  FOR ALL
+  TO authenticated, service_role
+  USING (true)
+  WITH CHECK (true);
 
 -- ========================================
--- EXPENSE_ITEMS POLICIES
+-- FUTURE: TRUE RLS WITH SUPABASE AUTH
 -- ========================================
-
--- Users can only view expense items from their own reports
-CREATE POLICY "Users can view own expense_items"
-  ON expense_items
-  FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM expense_reports
-      WHERE expense_reports.id = expense_items.report_id
-      AND expense_reports.user_email = current_setting('request.jwt.claims', true)::json->>'email'
-    )
-  );
-
--- Users can only insert expense items into their own reports
-CREATE POLICY "Users can create own expense_items"
-  ON expense_items
-  FOR INSERT
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM expense_reports
-      WHERE expense_reports.id = expense_items.report_id
-      AND expense_reports.user_email = current_setting('request.jwt.claims', true)::json->>'email'
-    )
-  );
-
--- Users can only update expense items in their own reports
-CREATE POLICY "Users can update own expense_items"
-  ON expense_items
-  FOR UPDATE
-  USING (
-    EXISTS (
-      SELECT 1 FROM expense_reports
-      WHERE expense_reports.id = expense_items.report_id
-      AND expense_reports.user_email = current_setting('request.jwt.claims', true)::json->>'email'
-    )
-  )
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM expense_reports
-      WHERE expense_reports.id = expense_items.report_id
-      AND expense_reports.user_email = current_setting('request.jwt.claims', true)::json->>'email'
-    )
-  );
-
--- Users can only delete expense items from their own reports
-CREATE POLICY "Users can delete own expense_items"
-  ON expense_items
-  FOR DELETE
-  USING (
-    EXISTS (
-      SELECT 1 FROM expense_reports
-      WHERE expense_reports.id = expense_items.report_id
-      AND expense_reports.user_email = current_setting('request.jwt.claims', true)::json->>'email'
-    )
-  );
+-- To implement proper RLS, integrate Clerk with Supabase Auth:
+-- 1. Use Supabase Auth JWT tokens instead of service_role key
+-- 2. Replace policies with:
+--
+-- CREATE POLICY "Users can view own expense_reports"
+--   ON expense_reports FOR SELECT
+--   USING (user_email = auth.jwt()->>'email');
+--
+-- CREATE POLICY "Users can view own expense_items"
+--   ON expense_items FOR SELECT
+--   USING (
+--     EXISTS (
+--       SELECT 1 FROM expense_reports
+--       WHERE expense_reports.id = expense_items.report_id
+--       AND expense_reports.user_email = auth.jwt()->>'email'
+--     )
+--   );
 
 -- ========================================
 -- VERIFICATION
