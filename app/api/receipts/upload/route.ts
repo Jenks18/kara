@@ -115,12 +115,13 @@ export async function POST(request: NextRequest) {
     // ==========================================
     if (uploadSucceeded) {
       try {
-        console.log('📧 Creating new expense report/item for user:', userEmail)
+        console.log('📧 Creating new expense report/item for user:', userEmail, 'userId:', userId)
         
         // Always create a NEW report for each receipt upload
         const { data: newReport, error: reportError } = await supabase
           .from('expense_reports')
           .insert({
+            user_id: userId,
             user_email: userEmail,
             workspace_name: 'Default Workspace',
             title: `Receipt - ${new Date().toLocaleString()}`,
