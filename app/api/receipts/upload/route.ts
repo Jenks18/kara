@@ -115,44 +115,28 @@ export async function POST(request: NextRequest) {
     // ==========================================
     if (uploadSucceeded) {
       try {
-        console.log('📧 Creating expense report/item for user:', userEmail)
-        // Get or create expense report for this user (RLS auto-filters!)
-        const { data: existingReports, error: fetchError } = await supabase
+        console.log('📧 Creating new expense report/item for user:', userEmail)
+        
+        // Always create a NEW report for each receipt upload
+        const { data: newReport, error: reportError } = await supabase
           .from('expense_reports')
+          .insert({
+            user_email: userEmail,
+            workspace_name: 'Default Workspace',
+            title: `Receipt - ${new Date().toLocaleString()}`,
+            status: 'draft',
+            total_amount: 0,
+          })
           .select('id')
-          .order('created_at', { ascending: false })
-          .limit(1);
+          .single();
 
-        if (fetchError) {
-          console.error('❌ Error fetching reports:', fetchError);
+        if (reportError) {
+          console.error('❌ Failed to create expense report:', reportError);
+          result.warnings.push('Could not create expense report');
         }
-        console.log('📊 Found existing reports:', existingReports?.length || 0);
-
-        let reportId: string;
-        if (existingReports && existingReports.length > 0) {
-          reportId = existingReports[0].id;
-          console.log('✅ Using existing report:', reportId)
-        } else {
-          // Create new report (RLS ensures it's for current user)
-          const { data: newReport, error: reportError } = await supabase
-            .from('expense_reports')
-            .insert({
-              user_email: userEmail,
-              workspace_name: 'Default Workspace',
-              title: `Expense Report - ${new Date().toLocaleDateString()}`,
-              status: 'draft',
-              total_amount: 0,
-            })
-            .select('id')
-            .single();
-
-          if (reportError) {
-            console.error('❌ Failed to create expense report:', reportError);
-            result.warnings.push('Could not create expense report');
-          }
-          reportId = newReport?.id || '';
-          console.log('✅ Created new report:', reportId)
-        }
+        
+        const reportId = newReport?.id || '';
+        console.log('✅ Created new report:', reportId)
 
         if (reportId) {
           // Extract category from AI enhancement or parsed data
