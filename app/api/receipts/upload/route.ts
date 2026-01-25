@@ -113,11 +113,13 @@ export async function POST(request: NextRequest) {
     
   } catch (error: any) {
     console.error('❌ API error:', error);
+    console.error('Stack trace:', error.stack);
     
     return NextResponse.json({
       success: false,
       error: 'Processing failed',
       message: error.message || 'An unexpected error occurred',
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
     }, {
       status: 500,
     });

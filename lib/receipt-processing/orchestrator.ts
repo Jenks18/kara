@@ -13,6 +13,7 @@ import { rawReceiptStorage, type RawReceiptData } from './raw-storage';
 import { storeRecognizer } from './store-recognition';
 import { templateRegistry } from './template-registry';
 import { aiReceiptEnhancer } from './ai-enhancement';
+import { supabase } from '@/lib/supabase/client';
 
 // Use Web Crypto API instead of Node crypto for Vercel compatibility
 function calculateHash(buffer: Buffer): string {
@@ -411,8 +412,6 @@ export class ReceiptProcessor {
    */
   private async uploadImage(buffer: Buffer, filename: string): Promise<string> {
     // Upload to Supabase Storage
-    const { supabase } = await import('@/lib/supabase/client');
-    
     const timestamp = Date.now();
     const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
     const path = `receipts/${timestamp}-${sanitizedFilename}`;
@@ -426,7 +425,7 @@ export class ReceiptProcessor {
     
     if (error) {
       console.error('Upload error:', error);
-      throw new Error('Failed to upload image');
+      throw new Error(`Failed to upload image: ${error.message}`);
     }
     
     // Get public URL
