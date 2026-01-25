@@ -144,10 +144,9 @@ export async function POST(request: NextRequest) {
         }
 
         if (reportId) {
-          // Extract category from AI enhancement or template
+          // Extract category from AI enhancement or parsed data
           const category = result.aiEnhanced?.category || 
                           result.parsedData?.category || 
-                          result.store?.category || 
                           'other';
 
           // Create expense item
