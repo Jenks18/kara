@@ -40,7 +40,8 @@ export default async function HomePage() {
   const { userId } = await auth()
   const user = await currentUser()
   
-  if (!userId || !user) {
+  // Redirect if not authenticated or missing email
+  if (!userId || !user?.emailAddresses?.[0]?.emailAddress) {
     redirect('/sign-in')
   }
   
