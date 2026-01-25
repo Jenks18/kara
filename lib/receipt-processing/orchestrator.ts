@@ -244,7 +244,7 @@ export class ReceiptProcessor {
         (result.confidence < 70 && !options.skipAI);
       
       if (shouldUseAI && process.env.GEMINI_API_KEY) {
-        console.log('🤖 Stage 6: AI enhancement...');
+        console.log('🤖 Stage 6: AI enhancement (non-blocking)...');
         
         try {
           const enhanced = await aiReceiptEnhancer.enhance({
@@ -262,9 +262,14 @@ export class ReceiptProcessor {
           if (enhanced.confidence > result.confidence) {
             result.confidence = enhanced.confidence;
           }
-        } catch (error) {
-          result.warnings.push('AI enhancement failed');
+        } catch (error: any) {
+          // AI failures are non-blocking - log but don't fail the upload
+          console.warn('⚠️ AI enhancement failed (non-blocking):', error.message);
+          result.warnings.push(`AI unavailable: ${error.message || 'Unknown error'}`);
         }
+      } else if (!process.env.GEMINI_API_KEY) {
+        console.log('⏭️  Skipping AI enhancement (no API key configured)');
+        result.warnings.push('AI enhancement disabled (no API key)');
       }
       
       // ==========================================

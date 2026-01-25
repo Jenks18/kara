@@ -104,9 +104,14 @@ export async function POST(request: NextRequest) {
 
     console.log(`✅ Processing complete: ${result.status}`);
 
+    // IMPORTANT: If image was uploaded (rawReceiptId exists), always return success
+    // AI processing failures are non-blocking and captured in warnings
+    const uploadSucceeded = !!result.rawReceiptId && !!result.imageUrl;
+    const httpStatus = uploadSucceeded ? 200 : 500;
+
     // Return comprehensive result
     return NextResponse.json({
-      success: result.status !== 'failed',
+      success: uploadSucceeded, // Success if image uploaded, regardless of AI
       status: result.status,
       
       // IDs
@@ -137,7 +142,7 @@ export async function POST(request: NextRequest) {
       errors: result.errors,
       warnings: result.warnings,
     }, {
-      status: result.status === 'failed' ? 500 : 200,
+      status: httpStatus,
     });
     
   } catch (error: any) {

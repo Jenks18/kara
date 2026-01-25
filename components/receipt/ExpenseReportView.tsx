@@ -38,7 +38,6 @@ export default function ExpenseReportView({ images, workspace, reportId, onBack 
           <div className="flex-1 flex items-center justify-center gap-2">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center shadow-emerald-md">
               <span className="text-white font-bold text-lg">T</span>
-              <div className="absolute bottom-0 right-0 w-4 h-4 bg-amber-500 rounded-full border-2 border-dark-300"></div>
             </div>
             <div className="flex flex-col items-start">
               <div className="flex items-center gap-1">
