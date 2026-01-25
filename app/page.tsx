@@ -252,7 +252,7 @@ export default async function HomePage() {
         </div>
       </div>
       
-      <FAB onClick={() => alert('Opening camera...')} />
+      <FAB />
       <BottomNav />
     </div>
   )

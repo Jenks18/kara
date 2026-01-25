@@ -2,15 +2,12 @@
 
 import React from 'react'
 import { Camera } from 'lucide-react'
+import Link from 'next/link'
 
-interface FABProps {
-  onClick?: () => void
-}
-
-export default function FAB({ onClick }: FABProps) {
+export default function FAB() {
   return (
-    <button
-      onClick={onClick}
+    <Link
+      href="/create"
       className="
         fixed right-4 sm:right-6
         w-14 h-14 sm:w-16 sm:h-16
@@ -30,6 +27,6 @@ export default function FAB({ onClick }: FABProps) {
       aria-label="Scan receipt"
     >
       <Camera size={26} className="sm:w-7 sm:h-7" />
-    </button>
+    </Link>
   )
 }
