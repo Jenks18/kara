@@ -144,13 +144,19 @@ export async function POST(request: NextRequest) {
         }
 
         if (reportId) {
+          // Extract category from AI enhancement or template
+          const category = result.aiEnhanced?.category || 
+                          result.parsedData?.category || 
+                          result.store?.category || 
+                          'other';
+
           // Create expense item
           const { error: itemError } = await supabaseWithUser
             .from('expense_items')
             .insert({
               report_id: reportId,
               image_url: result.imageUrl,
-              category: result.category || 'other',
+              category: category,
               amount: result.parsedData?.totalAmount || 0,
               processing_status: result.status === 'success' ? 'processed' : 'scanning',
               merchant_name: result.parsedData?.merchantName || result.store?.name,
