@@ -107,13 +107,13 @@ export default function ReportsClient({ initialItems }: ReportsClientProps) {
             expenseItems.map((item) => (
               <ExpenseItemCard
                 key={item.id}
-                id={item.id}
                 imageUrl={item.image_url}
-                merchant={item.merchant_name || 'Unknown'}
-                amount={item.amount}
                 date={item.transaction_date || new Date(item.created_at).toLocaleDateString()}
-                category={item.category}
-                status={item.processing_status === 'processed' ? 'approved' : 'pending'}
+                type={item.category}
+                amount={item.amount}
+                status={item.processing_status === 'processed' ? 'processed' : item.processing_status === 'error' ? 'review_required' : 'scanning'}
+                userEmail="user@example.com"
+                onClick={() => {/* TODO: Open detail */}}
               />
             ))
           )}
