@@ -109,6 +109,67 @@ export async function POST(request: NextRequest) {
     const uploadSucceeded = !!result.rawReceiptId && !!result.imageUrl;
     const httpStatus = uploadSucceeded ? 200 : 500;
 
+    // ==========================================
+    // CREATE EXPENSE ITEM FOR APP DISPLAY
+    // ==========================================
+    if (uploadSucceeded) {
+      try {
+        // Get or create expense report for this user
+        const { data: existingReports } = await supabaseWithUser
+          .from('expense_reports')
+          .select('id')
+          .eq('user_email', userEmail)
+          .limit(1);
+
+        let reportId: string;
+        if (existingReports && existingReports.length > 0) {
+          reportId = existingReports[0].id;
+        } else {
+          // Create new report
+          const { data: newReport, error: reportError } = await supabaseWithUser
+            .from('expense_reports')
+            .insert({
+              user_email: userEmail,
+              workspace_id: workspaceId,
+              status: 'draft',
+            })
+            .select('id')
+            .single();
+
+          if (reportError) {
+            console.error('Failed to create expense report:', reportError);
+            result.warnings.push('Could not create expense report');
+          }
+          reportId = newReport?.id || '';
+        }
+
+        if (reportId) {
+          // Create expense item
+          const { error: itemError } = await supabaseWithUser
+            .from('expense_items')
+            .insert({
+              report_id: reportId,
+              image_url: result.imageUrl,
+              category: result.category || 'other',
+              amount: result.parsedData?.totalAmount || 0,
+              processing_status: result.status === 'success' ? 'processed' : 'scanning',
+              merchant_name: result.parsedData?.merchantName || result.store?.name,
+              date: result.parsedData?.transactionDate || new Date().toISOString(),
+            });
+
+          if (itemError) {
+            console.error('Failed to create expense item:', itemError);
+            result.warnings.push('Receipt saved but not added to reports view');
+          } else {
+            console.log('✅ Expense item created for reports view');
+          }
+        }
+      } catch (error: any) {
+        console.error('Error creating expense item:', error);
+        result.warnings.push('Receipt saved but not added to reports view');
+      }
+    }
+
     // Return comprehensive result
     return NextResponse.json({
       success: uploadSucceeded, // Success if image uploaded, regardless of AI
