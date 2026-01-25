@@ -188,6 +188,7 @@ export async function getExpenseReports(
   }
   
   try {
+    console.log('🔍 Querying expense_reports for user_email:', userEmailOrId)
     const { data: reports, error: reportsError } = await supabase
       .from('expense_reports')
       .select('*')
@@ -199,6 +200,8 @@ export async function getExpenseReports(
       console.error('Error fetching reports:', reportsError)
       return []
     }
+
+    console.log('📦 Found expense_reports:', reports?.length || 0)
 
     // Fetch items for each report
     const reportsWithItems = await Promise.all(

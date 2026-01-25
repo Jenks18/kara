@@ -114,6 +114,7 @@ export async function POST(request: NextRequest) {
     // ==========================================
     if (uploadSucceeded) {
       try {
+        console.log('📧 Creating expense report/item for user:', userEmail)
         // Get or create expense report for this user
         const { data: existingReports } = await supabaseWithUser
           .from('expense_reports')
@@ -124,6 +125,7 @@ export async function POST(request: NextRequest) {
         let reportId: string;
         if (existingReports && existingReports.length > 0) {
           reportId = existingReports[0].id;
+          console.log('✅ Using existing report:', reportId)
         } else {
           // Create new report
           const { data: newReport, error: reportError } = await supabaseWithUser
@@ -142,6 +144,7 @@ export async function POST(request: NextRequest) {
             result.warnings.push('Could not create expense report');
           }
           reportId = newReport?.id || '';
+          console.log('✅ Created new report:', reportId)
         }
 
         if (reportId) {

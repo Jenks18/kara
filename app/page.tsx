@@ -35,7 +35,9 @@ export default function HomePage() {
   useEffect(() => {
     async function fetchReports() {
       setLoading(true)
+      console.log('📧 Fetching reports for:', userEmail)
       const reports = await getExpenseReports(userEmail, 10)
+      console.log('📊 Found reports:', reports.length)
       setExpenseReports(reports)
       setLoading(false)
     }
