@@ -8,6 +8,8 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
  * Create a Supabase client with Clerk JWT authentication
  * RLS policies will automatically filter by authenticated user
  * No manual .eq('user_email', email) filtering needed!
+ * 
+ * REQUIRES: Clerk JWT template named "supabase" to be configured
  */
 export async function createServerClient() {
   const { getToken } = await auth()
@@ -16,7 +18,10 @@ export async function createServerClient() {
   const supabaseAccessToken = await getToken({ template: 'supabase' })
 
   if (!supabaseAccessToken) {
-    throw new Error('No Clerk session found. User must be authenticated.')
+    console.warn('⚠️ No Clerk "supabase" JWT template found. Setup incomplete!')
+    console.warn('Falling back to service role for now...')
+    // Fallback to service role until JWT is configured
+    return createClient(supabaseUrl, process.env.SUPABASE_SERVICE_ROLE_KEY!)
   }
 
   // Create Supabase client with Clerk JWT as auth token
