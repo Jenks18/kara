@@ -8,7 +8,7 @@
  * - Geocoding and location verification
  * 
  * Optimized for Vercel serverless deployment
- * WITH proper user authentication and RLS enforcement
+ * WITH proper Clerk JWT + Supabase RLS authentication
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -16,7 +16,7 @@ import { auth } from '@clerk/nextjs/server';
 import { currentUser } from '@clerk/nextjs/server';
 import { receiptProcessor } from '@/lib/receipt-processing/orchestrator';
 import { rawReceiptStorage } from '@/lib/receipt-processing/raw-storage';
-import { createAuthenticatedClient } from '@/lib/supabase/auth-client';
+import { createServerClient } from '@/lib/supabase/server-client';
 
 // Vercel serverless configuration
 export const config = {
@@ -56,9 +56,10 @@ export async function POST(request: NextRequest) {
     console.log(`🔐 Authenticated: ${userEmail} (${userId})`);
 
     // ==========================================
-    // CREATE AUTHENTICATED SUPABASE CLIENT
+    // CREATE SUPABASE CLIENT WITH CLERK JWT
+    // RLS will automatically filter by authenticated user!
     // ==========================================
-    const supabaseWithUser = createAuthenticatedClient(userId, userEmail);
+    const supabase = await createServerClient();
 
     // ==========================================
     // PARSE REQUEST DATA
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest) {
       userEmail,
       userId,
       workspaceId,
-      supabaseClient: supabaseWithUser, // Pass authenticated client
+      supabaseClient: supabase, // Clerk JWT authenticated client with RLS
       latitude: latitude ? parseFloat(latitude) : undefined,
       longitude: longitude ? parseFloat(longitude) : undefined,
       locationAccuracy: locationAccuracy ? parseFloat(locationAccuracy) : undefined,
@@ -115,11 +116,10 @@ export async function POST(request: NextRequest) {
     if (uploadSucceeded) {
       try {
         console.log('📧 Creating expense report/item for user:', userEmail)
-        // Get or create expense report for this user
-        const { data: existingReports } = await supabaseWithUser
+        // Get or create expense report for this user (RLS auto-filters!)
+        const { data: existingReports } = await supabase
           .from('expense_reports')
           .select('id')
-          .eq('user_email', userEmail)
           .limit(1);
 
         let reportId: string;
@@ -127,8 +127,8 @@ export async function POST(request: NextRequest) {
           reportId = existingReports[0].id;
           console.log('✅ Using existing report:', reportId)
         } else {
-          // Create new report
-          const { data: newReport, error: reportError } = await supabaseWithUser
+          // Create new report (RLS ensures it's for current user)
+          const { data: newReport, error: reportError } = await supabase
             .from('expense_reports')
             .insert({
               user_email: userEmail,
@@ -153,8 +153,8 @@ export async function POST(request: NextRequest) {
                           result.parsedData?.category || 
                           'other';
 
-          // Create expense item
-          const { error: itemError } = await supabaseWithUser
+          // Create expense item (RLS ensures it's for current user's report)
+          const { error: itemError } = await supabase
             .from('expense_items')
             .insert({
               report_id: reportId,
@@ -285,7 +285,7 @@ export async function GET(request: NextRequest) {
 
     // Export to SQL-like format
     if (format === 'sql') {
-      const sqlText = await rawReceiptStorage.exportToText(receiptId, supabaseWithUser);
+      const sqlText = await rawReceiptStorage.exportToText(receiptId, supabase);
       
       return new NextResponse(sqlText, {
         headers: {

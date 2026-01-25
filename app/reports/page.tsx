@@ -1,6 +1,6 @@
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
-import { createAuthenticatedClient } from '@/lib/supabase/auth-client'
+import { createServerClient } from '@/lib/supabase/server-client'
 import ReportsClient from './ReportsClient'
 
 // Force dynamic rendering
@@ -26,20 +26,17 @@ export default async function ReportsPage() {
   if (!userId || !user) {
     redirect('/sign-in')
   }
-
-  const userEmail = user.emailAddresses[0]?.emailAddress || ''
   
-  // Create authenticated Supabase client
-  const supabase = createAuthenticatedClient(userId, userEmail)
+  // Create Supabase client with Clerk JWT - RLS auto-filters by user!
+  const supabase = await createServerClient()
   
-  // Fetch expense items for this user only
+  // No need to filter by user_email - RLS does it automatically!
   const { data: expenseItems, error } = await supabase
     .from('expense_items')
     .select(`
       *,
       report:expense_reports!inner(user_email)
     `)
-    .eq('expense_reports.user_email', userEmail)
     .order('created_at', { ascending: false })
     .limit(50)
 

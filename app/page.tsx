@@ -5,7 +5,7 @@ import StatsCard from '@/components/expense/StatsCard'
 import ExpenseCard from '@/components/expense/ExpenseCard'
 import FAB from '@/components/ui/FAB'
 import { Search, Bell, FileText } from 'lucide-react'
-import { createAuthenticatedClient } from '@/lib/supabase/auth-client'
+import { createServerClient } from '@/lib/supabase/server-client'
 import Image from 'next/image'
 
 // Force dynamic rendering
@@ -43,17 +43,14 @@ export default async function HomePage() {
   if (!userId || !user) {
     redirect('/sign-in')
   }
-
-  const userEmail = user.emailAddresses[0]?.emailAddress || ''
   
-  // Create authenticated Supabase client
-  const supabase = createAuthenticatedClient(userId, userEmail)
+  // Create Supabase client with Clerk JWT - RLS auto-filters by user!
+  const supabase = await createServerClient()
   
-  // Fetch expense reports with items
+  // No need to filter by user_email - RLS does it automatically!
   const { data: reports, error } = await supabase
     .from('expense_reports')
     .select('*')
-    .eq('user_email', userEmail)
     .order('created_at', { ascending: false })
     .limit(10)
 
