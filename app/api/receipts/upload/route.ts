@@ -130,7 +130,8 @@ export async function POST(request: NextRequest) {
             .from('expense_reports')
             .insert({
               user_email: userEmail,
-              workspace_id: workspaceId,
+              workspace_name: 'Default Workspace',
+              title: 'Expense Report',
               status: 'draft',
             })
             .select('id')
