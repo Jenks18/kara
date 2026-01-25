@@ -259,9 +259,9 @@ export async function GET(request: NextRequest) {
     }
 
     // ==========================================
-    // CREATE AUTHENTICATED SUPABASE CLIENT
+    // CREATE SUPABASE CLIENT WITH CLERK JWT
     // ==========================================
-    const supabaseWithUser = createAuthenticatedClient(userId, userEmail);
+    const supabase = await createServerClient();
 
     const searchParams = request.nextUrl.searchParams;
     const receiptId = searchParams.get('id');
@@ -274,7 +274,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const receipt = await rawReceiptStorage.get(receiptId, supabaseWithUser);
+    const receipt = await rawReceiptStorage.get(receiptId, supabase);
     
     if (!receipt) {
       return NextResponse.json(
