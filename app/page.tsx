@@ -1,48 +1,76 @@
-'use client'
-
-import { useEffect, useState } from 'react'
-import { useUser } from '@clerk/nextjs'
-import { useRouter } from 'next/navigation'
+import { auth, currentUser } from '@clerk/nextjs/server'
+import { redirect } from 'next/navigation'
 import BottomNav from '@/components/navigation/BottomNav'
 import StatsCard from '@/components/expense/StatsCard'
 import ExpenseCard from '@/components/expense/ExpenseCard'
 import FAB from '@/components/ui/FAB'
 import { Search, Bell, FileText } from 'lucide-react'
-import { getExpenseReports, type ExpenseReport } from '@/lib/api/expense-reports'
+import { createAuthenticatedClient } from '@/lib/supabase/auth-client'
 import Image from 'next/image'
 
-// Force dynamic rendering to avoid Clerk prerender issues
+// Force dynamic rendering
 export const dynamic = 'force-dynamic'
 
-export default function HomePage() {
-  const { user, isLoaded, isSignedIn } = useUser()
-  const router = useRouter()
-  const [expenseReports, setExpenseReports] = useState<ExpenseReport[]>([])
-  const [loading, setLoading] = useState(true)
+interface ExpenseReport {
+  id: string
+  created_at: string
+  user_email: string
+  workspace_name: string
+  workspace_avatar: string | null
+  title: string
+  status: 'draft' | 'submitted' | 'approved' | 'rejected'
+  total_amount: number
+  items: ExpenseItem[]
+}
+
+interface ExpenseItem {
+  id: string
+  created_at: string
+  image_url: string
+  description: string | null
+  category: string
+  amount: number
+  merchant_name: string | null
+  transaction_date: string | null
+  processing_status: string
+}
+
+export default async function HomePage() {
+  // Get authenticated user
+  const { userId } = await auth()
+  const user = await currentUser()
   
-  // Use email for querying (schema uses user_email not user_id)
-  const userEmail = user?.primaryEmailAddress?.emailAddress || 'demo@example.com'
+  if (!userId || !user) {
+    redirect('/sign-in')
+  }
+
+  const userEmail = user.emailAddresses[0]?.emailAddress || ''
   
-  // Redirect unauthenticated users (optional - commented for dev mode)
-  useEffect(() => {
-    if (isLoaded && !isSignedIn) {
-      // Uncomment to enforce auth:
-      // router.push('/sign-in')
+  // Create authenticated Supabase client
+  const supabase = createAuthenticatedClient(userId, userEmail)
+  
+  // Fetch expense reports with items
+  const { data: reports, error } = await supabase
+    .from('expense_reports')
+    .select('*')
+    .eq('user_email', userEmail)
+    .order('created_at', { ascending: false })
+    .limit(10)
+
+  const expenseReports: ExpenseReport[] = []
+  
+  if (reports && !error) {
+    // Fetch items for each report
+    for (const report of reports) {
+      const { data: items } = await supabase
+        .from('expense_items')
+        .select('*')
+        .eq('report_id', report.id)
+        .order('created_at', { ascending: true })
+      
+      expenseReports.push({ ...report, items: items || [] })
     }
-  }, [isLoaded, isSignedIn, router])
-  
-  // Fetch expense reports on mount
-  useEffect(() => {
-    async function fetchReports() {
-      setLoading(true)
-      console.log('📧 Fetching reports for:', userEmail)
-      const reports = await getExpenseReports(userEmail, 10)
-      console.log('📊 Found reports:', reports.length)
-      setExpenseReports(reports)
-      setLoading(false)
-    }
-    fetchReports()
-  }, [userEmail])
+  }
   
   // Mock data (keep for now)
   const expenses = [
