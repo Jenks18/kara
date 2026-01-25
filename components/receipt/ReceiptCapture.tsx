@@ -254,7 +254,10 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
           }
           
           // Process each receipt through the enhanced processing API
-          const uploadPromises = expenses.map(async (exp) => {
+          // First upload creates report, subsequent uploads use the same reportId
+          let sharedReportId: string | null = null;
+          
+          const uploadPromises = expenses.map(async (exp, index) => {
             // Convert base64 to blob
             const base64Data = exp.imageData.split(',')[1]
             const byteString = atob(base64Data)
@@ -265,19 +268,33 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
             }
             const blob = new Blob([ab], { type: 'image/jpeg' })
             
+            // Wait for previous upload to get reportId (for batching)
+            if (index > 0) {
+              await new Promise(resolve => setTimeout(resolve, 100 * index)) // Stagger requests
+            }
+            
             // Upload to enhanced receipt processing API
             // Server will get userEmail from Clerk authentication
             const formData = new FormData()
             formData.append('image', blob, 'receipt.jpg')
             if (latitude) formData.append('latitude', latitude.toString())
             if (longitude) formData.append('longitude', longitude.toString())
+            if (sharedReportId) formData.append('reportId', sharedReportId) // Batch into same report
             
             try {
               const response = await fetch('/api/receipts/upload', {
                 method: 'POST',
                 body: formData,
               })
-              return await response.json()
+              const result = await response.json()
+              
+              // Store reportId from first successful upload for batching
+              if (!sharedReportId && result.reportId) {
+                sharedReportId = result.reportId
+                console.log('📦 Batching receipts into report:', sharedReportId)
+              }
+              
+              return result
             } catch (error) {
               console.error('Receipt upload failed:', error)
               return { success: false, error: String(error) }

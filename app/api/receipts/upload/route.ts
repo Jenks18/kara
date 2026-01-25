@@ -68,6 +68,9 @@ export async function POST(request: NextRequest) {
     const imageFile = formData.get('image') as File;
     const workspaceId = formData.get('workspaceId') as string;
     
+    // Optional reportId for batching multiple receipts into one report
+    const reportId = formData.get('reportId') as string;
+    
     // Optional location data (from device GPS or photo EXIF)
     const latitude = formData.get('latitude') as string;
     const longitude = formData.get('longitude') as string;
@@ -115,42 +118,48 @@ export async function POST(request: NextRequest) {
     // ==========================================
     if (uploadSucceeded) {
       try {
-        console.log('📧 Creating new expense report/item for user:', userEmail, 'userId:', userId)
+        let finalReportId = reportId; // Use provided reportId if available
         
-        // Always create a NEW report for each receipt upload
-        const { data: newReport, error: reportError } = await supabase
-          .from('expense_reports')
-          .insert({
-            user_id: userId,
-            user_email: userEmail,
-            workspace_name: 'Default Workspace',
-            title: `Receipt - ${new Date().toLocaleString()}`,
-            status: 'draft',
-            total_amount: 0,
-          })
-          .select('id')
-          .single();
-
-        if (reportError) {
-          console.error('❌ FAILED TO CREATE REPORT:', JSON.stringify(reportError, null, 2));
-          console.error('❌ Report error code:', reportError.code);
-          console.error('❌ Report error message:', reportError.message);
-          console.error('❌ Report error details:', reportError.details);
-          console.error('❌ Report error hint:', reportError.hint);
-          result.warnings.push(`Could not create expense report: ${reportError.message}`);
+        if (!finalReportId) {
+          // Create a NEW report only if reportId not provided
+          console.log('📧 Creating new expense report for user:', userEmail, 'userId:', userId)
           
-          // Don't proceed if we can't create a report
-          return NextResponse.json({
-            success: false,
-            error: `Failed to create expense report: ${reportError.message}`,
-            details: reportError
-          }, { status: 500 });
-        }
-        
-        const reportId = newReport?.id || '';
-        console.log('✅ Created new report:', reportId, 'for email:', userEmail)
+          const { data: newReport, error: reportError } = await supabase
+            .from('expense_reports')
+            .insert({
+              user_id: userId,
+              user_email: userEmail,
+              workspace_name: 'Default Workspace',
+              title: `Receipt - ${new Date().toLocaleString()}`,
+              status: 'draft',
+              total_amount: 0,
+            })
+            .select('id')
+            .single();
 
-        if (reportId) {
+          if (reportError) {
+            console.error('❌ FAILED TO CREATE REPORT:', JSON.stringify(reportError, null, 2));
+            console.error('❌ Report error code:', reportError.code);
+            console.error('❌ Report error message:', reportError.message);
+            console.error('❌ Report error details:', reportError.details);
+            console.error('❌ Report error hint:', reportError.hint);
+            result.warnings.push(`Could not create expense report: ${reportError.message}`);
+            
+            // Don't proceed if we can't create a report
+            return NextResponse.json({
+              success: false,
+              error: `Failed to create expense report: ${reportError.message}`,
+              details: reportError
+            }, { status: 500 });
+          }
+          
+          finalReportId = newReport?.id || '';
+          console.log('✅ Created new report:', finalReportId, 'for email:', userEmail)
+        } else {
+          console.log('✅ Using existing report:', finalReportId, 'for batching')
+        }
+
+        if (finalReportId) {
           // Extract category from AI enhancement or parsed data
           const category = result.aiEnhanced?.category || 
                           result.parsedData?.category || 
@@ -160,7 +169,7 @@ export async function POST(request: NextRequest) {
           const { error: itemError } = await supabase
             .from('expense_items')
             .insert({
-              report_id: reportId,
+              report_id: finalReportId,
               image_url: result.imageUrl,
               category: category,
               amount: result.parsedData?.totalAmount || 0,
@@ -190,6 +199,7 @@ export async function POST(request: NextRequest) {
       // IDs
       rawReceiptId: result.rawReceiptId,
       imageUrl: result.imageUrl,
+      reportId: finalReportId, // Return reportId for batching subsequent uploads
       
       // Store information
       store: result.store,
