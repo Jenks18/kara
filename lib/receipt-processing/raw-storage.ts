@@ -3,9 +3,12 @@
  * 
  * Stores complete raw data from receipts for later analysis.
  * Think of this as a "digital shoebox" - everything goes in as-is.
+ * 
+ * PRODUCTION-GRADE: All methods REQUIRE authenticated Supabase client.
+ * No admin fallback. Every operation maintains user context for RLS.
  */
 
-import { supabaseAdmin } from '@/lib/supabase/admin';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 export interface RawReceiptData {
   id?: string;
@@ -45,39 +48,37 @@ export interface RawReceiptData {
 }
 
 export interface RawReceiptStorage {
-  // Save raw receipt
-  save(data: RawReceiptData): Promise<string>; // Returns ID
+  // Save raw receipt (requires authenticated client)
+  save(data: RawReceiptData, supabase: SupabaseClient): Promise<string>;
   
-  // Get raw receipt by ID
-  get(id: string): Promise<RawReceiptData | null>;
+  // Get raw receipt by ID (requires authenticated client)
+  get(id: string, supabase: SupabaseClient): Promise<RawReceiptData | null>;
   
-  // Update processing status
-  updateStatus(id: string, status: string, metadata?: any): Promise<void>;
+  // Update processing status (requires authenticated client)
+  updateStatus(id: string, status: string, supabase: SupabaseClient, metadata?: any): Promise<void>;
   
-  // Find duplicates by image hash
-  findDuplicates(imageHash: string): Promise<RawReceiptData[]>;
+  // Find duplicates by image hash (requires authenticated client)
+  findDuplicates(imageHash: string, supabase: SupabaseClient): Promise<RawReceiptData[]>;
   
-  // Get receipts by user
-  getByUser(userEmail: string, limit?: number): Promise<RawReceiptData[]>;
+  // Get receipts by user (requires authenticated client)
+  getByUser(userEmail: string, supabase: SupabaseClient, limit?: number): Promise<RawReceiptData[]>;
   
-  // Get receipts by store
-  getByStore(storeId: string, limit?: number): Promise<RawReceiptData[]>;
+  // Get receipts by store (requires authenticated client)
+  getByStore(storeId: string, supabase: SupabaseClient, limit?: number): Promise<RawReceiptData[]>;
   
-  // Get unprocessed receipts
-  getUnprocessed(limit?: number): Promise<RawReceiptData[]>;
+  // Get unprocessed receipts (requires authenticated client)
+  getUnprocessed(supabase: SupabaseClient, limit?: number): Promise<RawReceiptData[]>;
   
-  // Export raw data to text (SQL-like format)
-  exportToText(id: string): Promise<string>;
+  // Export raw data to text (requires authenticated client)
+  exportToText(id: string, supabase: SupabaseClient): Promise<string>;
 }
 
 /**
  * Supabase implementation of raw receipt storage
  */
 export class SupabaseRawReceiptStorage implements RawReceiptStorage {
-  private supabaseClient = supabaseAdmin;
-  
-  async save(data: RawReceiptData): Promise<string> {
-    const { data: result, error } = await this.supabaseClient
+  async save(data: RawReceiptData, supabase: SupabaseClient): Promise<string> {
+    const { data: result, error } = await supabase
       .from('raw_receipts')
       .insert({
         user_email: data.userEmail,
@@ -108,8 +109,8 @@ export class SupabaseRawReceiptStorage implements RawReceiptStorage {
     return result.id;
   }
   
-  async get(id: string): Promise<RawReceiptData | null> {
-    const { data, error } = await this.supabaseClient
+  async get(id: string, supabase: SupabaseClient): Promise<RawReceiptData | null> {
+    const { data, error } = await supabase
       .from('raw_receipts')
       .select('*')
       .eq('id', id)
@@ -120,8 +121,8 @@ export class SupabaseRawReceiptStorage implements RawReceiptStorage {
     return this.mapFromDB(data);
   }
   
-  async updateStatus(id: string, status: string, metadata?: any): Promise<void> {
-    await this.supabaseClient
+  async updateStatus(id: string, status: string, supabase: SupabaseClient, metadata?: any): Promise<void> {
+    await supabase
       .from('raw_receipts')
       .update({
         processing_status: status,
@@ -131,8 +132,8 @@ export class SupabaseRawReceiptStorage implements RawReceiptStorage {
       .eq('id', id);
   }
   
-  async findDuplicates(imageHash: string): Promise<RawReceiptData[]> {
-    const { data, error } = await this.supabaseClient
+  async findDuplicates(imageHash: string, supabase: SupabaseClient): Promise<RawReceiptData[]> {
+    const { data, error } = await supabase
       .from('raw_receipts')
       .select('*')
       .eq('image_hash', imageHash)
@@ -142,8 +143,8 @@ export class SupabaseRawReceiptStorage implements RawReceiptStorage {
     return data.map(this.mapFromDB);
   }
   
-  async getByUser(userEmail: string, limit = 50): Promise<RawReceiptData[]> {
-    const { data, error } = await this.supabaseClient
+  async getByUser(userEmail: string, supabase: SupabaseClient, limit = 50): Promise<RawReceiptData[]> {
+    const { data, error } = await supabase
       .from('raw_receipts')
       .select('*')
       .eq('user_email', userEmail)
@@ -154,8 +155,8 @@ export class SupabaseRawReceiptStorage implements RawReceiptStorage {
     return data.map(this.mapFromDB);
   }
   
-  async getByStore(storeId: string, limit = 100): Promise<RawReceiptData[]> {
-    const { data, error } = await this.supabaseClient
+  async getByStore(storeId: string, supabase: SupabaseClient, limit = 100): Promise<RawReceiptData[]> {
+    const { data, error } = await supabase
       .from('raw_receipts')
       .select('*')
       .eq('recognized_store_id', storeId)
@@ -166,8 +167,8 @@ export class SupabaseRawReceiptStorage implements RawReceiptStorage {
     return data.map(this.mapFromDB);
   }
   
-  async getUnprocessed(limit = 10): Promise<RawReceiptData[]> {
-    const { data, error } = await this.supabaseClient
+  async getUnprocessed(supabase: SupabaseClient, limit = 10): Promise<RawReceiptData[]> {
+    const { data, error } = await supabase
       .from('raw_receipts')
       .select('*')
       .eq('processing_status', 'raw')
@@ -182,8 +183,8 @@ export class SupabaseRawReceiptStorage implements RawReceiptStorage {
    * Export raw receipt data to SQL-like text format
    * This creates a human-readable dump of all data for AI analysis
    */
-  async exportToText(id: string): Promise<string> {
-    const receipt = await this.get(id);
+  async exportToText(id: string, supabase: SupabaseClient): Promise<string> {
+    const receipt = await this.get(id, supabase);
     if (!receipt) throw new Error('Receipt not found');
     
     const lines: string[] = [];

@@ -5,7 +5,7 @@
  * Uses multiple signals: location, QR data, OCR text, and historical patterns.
  */
 
-import { supabaseAdmin } from '@/lib/supabase/admin';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { templateRegistry, type ReceiptTemplate } from './template-registry';
 
 export interface Store {
@@ -34,11 +34,11 @@ export interface StoreRecognitionResult {
  * Store Recognition Engine
  */
 export class StoreRecognizer {
-  private supabaseClient = supabaseAdmin;
   private storeCache: Map<string, Store> = new Map();
   
   /**
    * Recognize store from receipt data
+   * REQUIRES authenticated Supabase client for RLS enforcement
    */
   async recognize(data: {
     qrData?: any;
@@ -46,7 +46,7 @@ export class StoreRecognizer {
     kraData?: any;
     latitude?: number;
     longitude?: number;
-  }): Promise<StoreRecognitionResult> {
+  }, supabase: SupabaseClient): Promise<StoreRecognitionResult> {
     const signals: {
       method: string;
       store?: Store;
@@ -56,7 +56,7 @@ export class StoreRecognizer {
     // Signal 1: KRA PIN (highest confidence)
     if (data.kraData?.merchantPIN || data.qrData?.merchantPIN) {
       const pin = data.kraData?.merchantPIN || data.qrData?.merchantPIN;
-      const store = await this.findStoreByKRAPin(pin);
+      const store = await this.findStoreByKRAPin(pin, supabase);
       if (store) {
         signals.push({ method: 'kra_pin', store, confidence: 95 });
       }
@@ -64,7 +64,7 @@ export class StoreRecognizer {
     
     // Signal 2: Till Number
     if (data.qrData?.tillNumber) {
-      const store = await this.findStoreByTillNumber(data.qrData.tillNumber);
+      const store = await this.findStoreByTillNumber(data.qrData.tillNumber, supabase);
       if (store) {
         signals.push({ method: 'till_number', store, confidence: 85 });
       }
@@ -75,7 +75,8 @@ export class StoreRecognizer {
       const nearbyStores = await this.findNearbyStores(
         data.latitude,
         data.longitude,
-        100 // 100 meter radius
+        100, // 100 meter radius
+        supabase
       );
       
       // Check merchant name match
@@ -102,7 +103,7 @@ export class StoreRecognizer {
                         this.extractMerchantFromOCR(data.ocrText);
     
     if (merchantName && signals.length === 0) {
-      const store = await this.findStoreByName(merchantName);
+      const store = await this.findStoreByName(merchantName, supabase);
       if (store) {
         signals.push({ method: 'name_pattern', store, confidence: 70 });
       }
@@ -110,7 +111,7 @@ export class StoreRecognizer {
     
     // Signal 5: QR URL pattern
     if (data.qrData?.url && signals.length === 0) {
-      const store = await this.findStoreByQRPattern(data.qrData.url);
+      const store = await this.findStoreByQRPattern(data.qrData.url, supabase);
       if (store) {
         signals.push({ method: 'qr_data', store, confidence: 65 });
       }
@@ -148,11 +149,11 @@ export class StoreRecognizer {
   /**
    * Find store by KRA PIN
    */
-  private async findStoreByKRAPin(pin: string): Promise<Store | undefined> {
+  private async findStoreByKRAPin(pin: string, supabase: SupabaseClient): Promise<Store | undefined> {
     const cached = Array.from(this.storeCache.values()).find(s => s.kraPin === pin);
     if (cached) return cached;
     
-    const { data } = await this.supabaseClient
+    const { data } = await supabase
       .from('stores')
       .select('*')
       .eq('kra_pin', pin)
@@ -168,11 +169,11 @@ export class StoreRecognizer {
   /**
    * Find store by till number
    */
-  private async findStoreByTillNumber(tillNumber: string): Promise<Store | undefined> {
+  private async findStoreByTillNumber(tillNumber: string, supabase: SupabaseClient): Promise<Store | undefined> {
     const cached = Array.from(this.storeCache.values()).find(s => s.tillNumber === tillNumber);
     if (cached) return cached;
     
-    const { data } = await this.supabaseClient
+    const { data } = await supabase
       .from('stores')
       .select('*')
       .eq('till_number', tillNumber)
@@ -191,10 +192,11 @@ export class StoreRecognizer {
   private async findNearbyStores(
     latitude: number,
     longitude: number,
-    radiusMeters: number
+    radiusMeters: number,
+    supabase: SupabaseClient
   ): Promise<Store[]> {
     // Using PostGIS or basic distance calculation
-    const { data } = await this.supabaseClient.rpc('find_stores_nearby', {
+    const { data } = await supabase.rpc('find_stores_nearby', {
       lat: latitude,
       lng: longitude,
       radius_m: radiusMeters,
@@ -202,7 +204,7 @@ export class StoreRecognizer {
     
     if (!data) {
       // Fallback: Get all stores and filter in memory
-      const { data: allStores } = await this.supabaseClient
+      const { data: allStores } = await supabase
         .from('stores')
         .select('*')
         .not('latitude', 'is', null)
@@ -228,9 +230,9 @@ export class StoreRecognizer {
   /**
    * Find store by merchant name
    */
-  private async findStoreByName(name: string): Promise<Store | undefined> {
+  private async findStoreByName(name: string, supabase: SupabaseClient): Promise<Store | undefined> {
     // Try exact match first
-    const { data: exactMatch } = await this.supabaseClient
+    const { data: exactMatch } = await supabase
       .from('stores')
       .select('*')
       .ilike('name', name)
@@ -241,7 +243,7 @@ export class StoreRecognizer {
     // Try fuzzy match on chain name
     const chainName = this.extractChainName(name);
     if (chainName) {
-      const { data: chainMatch } = await this.supabaseClient
+      const { data: chainMatch } = await supabase
         .from('stores')
         .select('*')
         .ilike('chain_name', `%${chainName}%`)
@@ -255,7 +257,7 @@ export class StoreRecognizer {
   /**
    * Find store by QR URL pattern
    */
-  private async findStoreByQRPattern(url: string): Promise<Store | undefined> {
+  private async findStoreByQRPattern(url: string, supabase: SupabaseClient): Promise<Store | undefined> {
     // Extract domain or identifier from URL
     // e.g., itax.kra.go.ke/KRA-Portal/... -> look for KRA PIN in URL
     return undefined; // Implement based on your QR patterns

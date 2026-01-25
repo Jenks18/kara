@@ -13,7 +13,7 @@ import { rawReceiptStorage, type RawReceiptData } from './raw-storage';
 import { storeRecognizer } from './store-recognition';
 import { templateRegistry } from './template-registry';
 import { aiReceiptEnhancer } from './ai-enhancement';
-import { supabaseAdmin } from '@/lib/supabase/admin';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Use Web Crypto API instead of Node crypto for Vercel compatibility
 function calculateHash(buffer: Buffer): string {
@@ -23,7 +23,11 @@ function calculateHash(buffer: Buffer): string {
 
 export interface ProcessingOptions {
   userEmail: string;
+  userId?: string; // Clerk user ID for audit trails
   workspaceId?: string;
+  
+  // Authenticated Supabase client (REQUIRED for proper RLS enforcement)
+  supabaseClient: SupabaseClient;
   
   // Location (if available from device/photo)
   latitude?: number;
@@ -98,23 +102,29 @@ export class ReceiptProcessor {
     };
     
     try {
+      // PRODUCTION: Use REQUIRED authenticated client
+      const supabase = options.supabaseClient;
+      
+      console.log(`🔄 Starting receipt processing for ${options.userEmail}...`);
+      if (options.userId) {
+        console.log(`   User ID: ${options.userId}`);
+      }
+      
       // Convert image to buffer
       const imageBuffer = Buffer.from(await imageFile.arrayBuffer());
       const imageHash = calculateHash(imageBuffer);
       
-      console.log('🔄 Starting receipt processing pipeline...');
-      
       // ==========================================
       // STAGE 1: UPLOAD & RAW STORAGE
       // ==========================================
-      console.log('📤 Stage 1: Uploading image...');
+      console.log('📤 Stage 1: Uploading image with user context...');
       
-      const imageUrl = await this.uploadImage(imageBuffer, imageFile.name);
+      const imageUrl = await this.uploadImage(imageBuffer, imageFile.name, supabase);
       result.imageUrl = imageUrl;
       
       // Check for duplicates
       if (options.storeRaw !== false) {
-        const duplicates = await rawReceiptStorage.findDuplicates(imageHash);
+        const duplicates = await rawReceiptStorage.findDuplicates(imageHash, supabase);
         if (duplicates.length > 0) {
           result.warnings.push(`Possible duplicate receipt (${duplicates.length} similar found)`);
         }
@@ -159,7 +169,7 @@ export class ReceiptProcessor {
         kraData,
         latitude: options.latitude,
         longitude: options.longitude,
-      });
+      }, supabase);
       
       if (storeMatch.storeId) {
         result.store = {
@@ -195,7 +205,7 @@ export class ReceiptProcessor {
           recognitionConfidence: storeMatch.confidence / 100,
         };
         
-        result.rawReceiptId = await rawReceiptStorage.save(rawData);
+        result.rawReceiptId = await rawReceiptStorage.save(rawData, supabase);
         console.log(`✓ Raw data stored: ${result.rawReceiptId}`);
       }
       
@@ -275,7 +285,7 @@ export class ReceiptProcessor {
       
       // Update raw storage status
       if (result.rawReceiptId) {
-        await rawReceiptStorage.updateStatus(result.rawReceiptId, result.status);
+        await rawReceiptStorage.updateStatus(result.rawReceiptId, result.status, supabase);
       }
       
     } catch (error: any) {
@@ -410,13 +420,14 @@ export class ReceiptProcessor {
   /**
    * Upload image to storage
    */
-  private async uploadImage(buffer: Buffer, filename: string): Promise<string> {
-    // Upload to Supabase Storage using admin client (bypasses RLS)
+  private async uploadImage(buffer: Buffer, filename: string, supabase: SupabaseClient): Promise<string> {
+    // Upload to Supabase Storage using REQUIRED authenticated client
+    // This maintains user context for RLS and audit trails
     const timestamp = Date.now();
     const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
     const path = `receipts/${timestamp}-${sanitizedFilename}`;
     
-    const { data, error } = await supabaseAdmin.storage
+    const { data, error } = await supabase.storage
       .from('receipt-images')
       .upload(path, buffer, {
         contentType: 'image/jpeg',
@@ -429,7 +440,7 @@ export class ReceiptProcessor {
     }
     
     // Get public URL
-    const { data: urlData } = supabaseAdmin.storage
+    const { data: urlData } = supabase.storage
       .from('receipt-images')
       .getPublicUrl(path);
     

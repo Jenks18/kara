@@ -8,11 +8,15 @@
  * - Geocoding and location verification
  * 
  * Optimized for Vercel serverless deployment
+ * WITH proper user authentication and RLS enforcement
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
+import { currentUser } from '@clerk/nextjs/server';
 import { receiptProcessor } from '@/lib/receipt-processing/orchestrator';
 import { rawReceiptStorage } from '@/lib/receipt-processing/raw-storage';
+import { createAuthenticatedClient } from '@/lib/supabase/auth-client';
 
 // Vercel serverless configuration
 export const config = {
@@ -28,9 +32,39 @@ export const maxDuration = 60; // 60 seconds for receipt processing
 
 export async function POST(request: NextRequest) {
   try {
+    // ==========================================
+    // AUTHENTICATE USER WITH CLERK
+    // ==========================================
+    const { userId } = await auth();
+    const user = await currentUser();
+    
+    if (!userId || !user) {
+      return NextResponse.json(
+        { error: 'Unauthorized - please sign in' },
+        { status: 401 }
+      );
+    }
+
+    const userEmail = user.emailAddresses[0]?.emailAddress;
+    if (!userEmail) {
+      return NextResponse.json(
+        { error: 'User email not found' },
+        { status: 400 }
+      );
+    }
+
+    console.log(`🔐 Authenticated: ${userEmail} (${userId})`);
+
+    // ==========================================
+    // CREATE AUTHENTICATED SUPABASE CLIENT
+    // ==========================================
+    const supabaseWithUser = createAuthenticatedClient(userId, userEmail);
+
+    // ==========================================
+    // PARSE REQUEST DATA
+    // ==========================================
     const formData = await request.formData();
     const imageFile = formData.get('image') as File;
-    const userEmail = formData.get('userEmail') as string;
     const workspaceId = formData.get('workspaceId') as string;
     
     // Optional location data (from device GPS or photo EXIF)
@@ -50,21 +84,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!userEmail) {
-      return NextResponse.json(
-        { error: 'User email required' },
-        { status: 400 }
-      );
-    }
-
     console.log('📸 Processing receipt:', imageFile.name);
 
     // ==========================================
-    // PROCESS THROUGH PIPELINE
+    // PROCESS THROUGH PIPELINE WITH USER CONTEXT
     // ==========================================
     const result = await receiptProcessor.process(imageFile, {
       userEmail,
+      userId,
       workspaceId,
+      supabaseClient: supabaseWithUser, // Pass authenticated client
       latitude: latitude ? parseFloat(latitude) : undefined,
       longitude: longitude ? parseFloat(longitude) : undefined,
       locationAccuracy: locationAccuracy ? parseFloat(locationAccuracy) : undefined,
@@ -133,6 +162,32 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
+    // ==========================================
+    // AUTHENTICATE USER WITH CLERK
+    // ==========================================
+    const { userId } = await auth();
+    const user = await currentUser();
+    
+    if (!userId || !user) {
+      return NextResponse.json(
+        { error: 'Unauthorized - please sign in' },
+        { status: 401 }
+      );
+    }
+
+    const userEmail = user.emailAddresses[0]?.emailAddress;
+    if (!userEmail) {
+      return NextResponse.json(
+        { error: 'User email not found' },
+        { status: 400 }
+      );
+    }
+
+    // ==========================================
+    // CREATE AUTHENTICATED SUPABASE CLIENT
+    // ==========================================
+    const supabaseWithUser = createAuthenticatedClient(userId, userEmail);
+
     const searchParams = request.nextUrl.searchParams;
     const receiptId = searchParams.get('id');
     const format = searchParams.get('format') || 'json';
@@ -144,7 +199,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const receipt = await rawReceiptStorage.get(receiptId);
+    const receipt = await rawReceiptStorage.get(receiptId, supabaseWithUser);
     
     if (!receipt) {
       return NextResponse.json(
@@ -155,7 +210,7 @@ export async function GET(request: NextRequest) {
 
     // Export to SQL-like format
     if (format === 'sql') {
-      const sqlText = await rawReceiptStorage.exportToText(receiptId);
+      const sqlText = await rawReceiptStorage.exportToText(receiptId, supabaseWithUser);
       
       return new NextResponse(sqlText, {
         headers: {

@@ -266,9 +266,9 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
             const blob = new Blob([ab], { type: 'image/jpeg' })
             
             // Upload to enhanced receipt processing API
+            // Server will get userEmail from Clerk authentication
             const formData = new FormData()
             formData.append('image', blob, 'receipt.jpg')
-            formData.append('userEmail', userEmail)
             if (latitude) formData.append('latitude', latitude.toString())
             if (longitude) formData.append('longitude', longitude.toString())
             
