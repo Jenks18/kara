@@ -63,8 +63,8 @@ export default function QRTestPage() {
 
       const base64Data = await base64Promise;
 
-      // Call Python processor API
-      const response = await fetch('/api/receipts/process-python', {
+      // Call Google Vision API processor
+      const response = await fetch('/api/receipts/process-vision', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ imageData: base64Data }),
@@ -78,7 +78,7 @@ export default function QRTestPage() {
       const data = await response.json();
       const totalTime = Date.now() - startTime;
 
-      // Transform Python response to match UI expectations
+      // Transform response to match UI expectations
       const processedResult = {
         fullText: data.ocr.full_text,
         confidence: data.ocr.confidence,
@@ -87,23 +87,26 @@ export default function QRTestPage() {
           found: true,
           data: data.qr_codes[0].data,
           url: data.qr_codes[0].url,
-          position: data.qr_codes[0].rect,
+          position: data.qr_codes[0].position,
           isKRA: data.qr_codes[0].is_kra,
         } : { found: false },
         extractedFields: data.extracted_fields,
         processingTime: totalTime,
         imageSize: {
-          width: data.image.width,
-          height: data.image.height,
+          width: 0,
+          height: 0,
         },
-        tables: data.tables,
+        source: data.source,
         processingNotes: data.processing_notes,
       };
 
       setResult(processedResult);
 
-      // If KRA QR code detected, automatically scrape the invoice
-      if (processedResult.qrCode.found && processedResult.qrCode.isKRA && processedResult.qrCode.url) {
+      // If KRA data was included in response, set it directly
+      if (data.kra_data) {
+        setKraData(data.kra_data);
+      } else if (processedResult.qrCode.found && processedResult.qrCode.isKRA && processedResult.qrCode.url) {
+        // Fallback: scrape if not already included
         await scrapeKRAInvoice(processedResult.qrCode.url);
       }
     } catch (error) {
@@ -118,9 +121,9 @@ export default function QRTestPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold mb-2">QR Scanner Test</h1>
+        <h1 className="text-3xl font-bold mb-2">Receipt Scanner (Google Vision + KRA)</h1>
         <p className="text-gray-600 mb-8">
-          Upload a receipt with QR code to test scanning
+          Upload a receipt to extract text and verify KRA invoices automatically
         </p>
 
         {/* File Input */}
@@ -155,8 +158,8 @@ export default function QRTestPage() {
         {/* Loading */}
         {loading && (
           <div className="mt-8 p-4 bg-blue-50 rounded-lg">
-            <p className="text-blue-800">� Processing receipt (OCR + QR + parsing)...</p>
-            <p className="text-sm text-blue-600 mt-1">This may take 10-30 seconds</p>
+            <p className="text-blue-800">🔄 Processing with Google Vision API...</p>
+            <p className="text-sm text-blue-600 mt-1">Extracting text, detecting QR codes, and scraping KRA data</p>
           </div>
         )}
 
@@ -383,11 +386,11 @@ export default function QRTestPage() {
         <div className="mt-8 p-4 bg-blue-50 rounded-lg">
           <h3 className="font-semibold text-blue-900 mb-2">ℹ️ How it works</h3>
           <ul className="text-sm text-blue-800 space-y-1">
-            <li>• Scans QR code using pyzbar (Python)</li>
-            <li>• Extracts text using Tesseract OCR</li>
-            <li>• Detects KRA invoices automatically</li>
-            <li>• Scrapes verified data from KRA website</li>
-            <li>• Combines QR + OCR for complete receipt data</li>
+            <li>• Uses Google Cloud Vision API for high-accuracy OCR</li>
+            <li>• Detects QR codes automatically (including KRA invoices)</li>
+            <li>• Scrapes verified data from KRA government website</li>
+            <li>• Provides two independent data sources for validation</li>
+            <li>• KRA data = 100% accurate official records</li>
           </ul>
         </div>
       </div>
