@@ -155,17 +155,22 @@ export class ReceiptProcessor {
         console.log('🌐 Stage 2b: Verifying with KRA...');
         try {
           const kraScrapedData = await scrapeKRAInvoice(qrData.url);
-          // Merge: KRA data takes priority over Vision where available
-          kraData = {
-            merchantName: kraScrapedData.merchantName || ocrData?.merchantName || 'Unknown Merchant',
-            totalAmount: kraScrapedData.totalAmount || ocrData?.totalAmount || 0,
-            invoiceDate: kraScrapedData.invoiceDate || ocrData?.invoiceDate || new Date().toISOString().split('T')[0],
-            invoiceNumber: kraScrapedData.invoiceNumber || ocrData?.invoiceNumber || null,
-            taxAmount: kraScrapedData.taxAmount || null,
-            qrCodeData: kraScrapedData.qrCodeData || null,
-          };
-          result.kraData = kraData;
-          console.log('✓ KRA data merged with Vision OCR');
+          if (kraScrapedData) {
+            // Merge: KRA data takes priority over Vision where available
+            kraData = {
+              merchantName: kraScrapedData.merchantName || ocrData?.merchantName || 'Unknown Merchant',
+              totalAmount: kraScrapedData.totalAmount || ocrData?.totalAmount || 0,
+              invoiceDate: kraScrapedData.invoiceDate || ocrData?.invoiceDate || new Date().toISOString().split('T')[0],
+              invoiceNumber: kraScrapedData.invoiceNumber || ocrData?.invoiceNumber || null,
+              taxAmount: kraScrapedData.taxAmount || null,
+              qrCodeData: kraScrapedData.qrCodeData || null,
+            };
+            result.kraData = kraData;
+            console.log('✓ KRA data merged with Vision OCR');
+          } else {
+            result.warnings.push('KRA returned no data');
+            result.kraData = ocrData;
+          }
         } catch (error) {
           console.warn('KRA verification failed - using Vision OCR only');
           result.warnings.push('KRA verification failed');
