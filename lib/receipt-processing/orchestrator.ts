@@ -429,7 +429,7 @@ export class ReceiptProcessor {
       let merchantName = 'Unknown Merchant';
       
       // Try to find merchant after "START OF LEGAL RECEIPT"
-      const receiptStartIdx = lines.findIndex(l => l.includes('START OF LEGAL RECEIPT'));
+      const receiptStartIdx = lines.findIndex((l: string) => l.includes('START OF LEGAL RECEIPT'));
       if (receiptStartIdx >= 0 && lines[receiptStartIdx + 1]) {
         merchantName = lines[receiptStartIdx + 1].trim();
       } else {
