@@ -132,85 +132,50 @@ export class ReceiptProcessor {
       
       // ==========================================
       // STAGE 2: DATA EXTRACTION (Parallel)
+      // Google Vision is PRIMARY OCR source for ALL receipts
       // ==========================================
       console.log('🔍 Stage 2: Extracting data from all sources...');
       
       const [qrResult, ocrResult] = await Promise.allSettled([
         this.extractQRData(imageBuffer),
-        this.extractOCRData(imageBuffer),
+        this.extractOCRData(imageBuffer), // Google Vision OCR
       ]);
       
       const qrData = qrResult.status === 'fulfilled' ? qrResult.value : null;
-      const ocrData = ocrResult.status === 'fulfilled' ? ocrResult.value : null;
+      const ocrData = ocrResult.status === 'fulfilled' ? ocrResult.value : null; // Vision data
       
       result.qrData = qrData;
       result.ocrData = ocrData;
       
-      // Extract KRA data if QR has URL
-      let kraData = null;
+      // Start with Google Vision data as base
+      let kraData = ocrData;
+      
+      // Extract KRA data if QR has URL (enhances/verifies Vision data)
       if (qrData?.url) {
         console.log('🌐 Stage 2b: Verifying with KRA...');
         try {
-          kraData = await scrapeKRAInvoice(qrData.url);
+          const kraScrapedData = await scrapeKRAInvoice(qrData.url);
+          // Merge: KRA data takes priority over Vision where available
+          kraData = {
+            merchantName: kraScrapedData.merchantName || ocrData?.merchantName || 'Unknown Merchant',
+            totalAmount: kraScrapedData.totalAmount || ocrData?.totalAmount || 0,
+            invoiceDate: kraScrapedData.invoiceDate || ocrData?.invoiceDate || new Date().toISOString().split('T')[0],
+            invoiceNumber: kraScrapedData.invoiceNumber || ocrData?.invoiceNumber || null,
+            taxAmount: kraScrapedData.taxAmount || null,
+            qrCodeData: kraScrapedData.qrCodeData || null,
+          };
           result.kraData = kraData;
+          console.log('✓ KRA data merged with Vision OCR');
         } catch (error) {
+          console.warn('KRA verification failed - using Vision OCR only');
           result.warnings.push('KRA verification failed');
+          result.kraData = ocrData;
         }
-      }
-      
-      // ==========================================
-      // STAGE 2c: GOOGLE VISION OCR FALLBACK
-      // If no QR code and no KRA data, use Google Vision to extract receipt data
-      // ==========================================
-      if (!qrData && !kraData && process.env.GOOGLE_VISION_API_KEY) {
-        console.log('🤖 Stage 2c: Using Google Vision OCR (no QR/KRA found)...');
-        try {
-          // Convert buffer to base64
-          const base64Image = imageBuffer.toString('base64');
-          
-          const VISION_API_URL = `https://vision.googleapis.com/v1/images:annotate?key=${process.env.GOOGLE_VISION_API_KEY}`;
-          
-          const visionResponse = await fetch(VISION_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              requests: [{
-                image: { content: base64Image },
-                features: [
-                  { type: 'TEXT_DETECTION', maxResults: 1 },
-                  { type: 'DOCUMENT_TEXT_DETECTION', maxResults: 1 }
-                ]
-              }]
-            })
-          });
-          
-          if (visionResponse.ok) {
-            const visionData: any = await visionResponse.json();
-            const fullText = visionData.responses[0]?.fullTextAnnotation?.text || '';
-            
-            if (fullText) {
-              console.log('✓ Google Vision extracted text:', fullText.substring(0, 200));
-              
-              // Extract merchant, amount, and date from text
-              const merchantMatch = fullText.match(/^([A-Z][A-Za-z\s&]+)/m);
-              const amountMatch = fullText.match(/(?:TOTAL|Total|Amount|KES|Ksh)\s*:?\s*(\d+(?:,\d{3})*(?:\.\d{2})?)/i);
-              const dateMatch = fullText.match(/(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/);
-              
-              kraData = {
-                merchantName: merchantMatch ? merchantMatch[1].trim() : 'Unknown Merchant',
-                totalAmount: amountMatch ? parseFloat(amountMatch[1].replace(/,/g, '')) : 0,
-                invoiceDate: dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0],
-                invoiceNumber: null,
-                taxAmount: null,
-                qrCodeData: null,
-              };
-              result.kraData = kraData;
-              console.log(`✓ Vision extracted: ${kraData.merchantName} - ${kraData.totalAmount} KES`);
-            }
-          }
-        } catch (error) {
-          console.error('Google Vision OCR failed:', error);
-          result.warnings.push('Google Vision OCR failed - no data extracted');
+      } else {
+        // No QR code - use pure Vision OCR
+        result.kraData = ocrData;
+        if (ocrData) {
+          console.log(`✓ Using Google Vision OCR: ${ocrData.merchantName} - ${ocrData.totalAmount} KES`);
         }
       }
       
@@ -416,15 +381,76 @@ export class ReceiptProcessor {
   }
   
   /**
+   * Extract OCR data using Google Vision API (PRIMARY METHOD)
+   */
+  private async extractWithGoogleVision(imageBuffer: Buffer): Promise<any> {
+    if (!process.env.GOOGLE_VISION_API_KEY) {
+      console.log('⏭️  Skipping Google Vision (no API key)');
+      return null;
+    }
+
+    try {
+      const base64Image = imageBuffer.toString('base64');
+      const VISION_API_URL = `https://vision.googleapis.com/v1/images:annotate?key=${process.env.GOOGLE_VISION_API_KEY}`;
+      
+      const visionResponse = await fetch(VISION_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requests: [{
+            image: { content: base64Image },
+            features: [
+              { type: 'TEXT_DETECTION', maxResults: 1 },
+              { type: 'DOCUMENT_TEXT_DETECTION', maxResults: 1 }
+            ]
+          }]
+        })
+      });
+      
+      if (!visionResponse.ok) {
+        console.error('Google Vision API error:', visionResponse.status);
+        return null;
+      }
+      
+      const visionData: any = await visionResponse.json();
+      const fullText = visionData.responses[0]?.fullTextAnnotation?.text || '';
+      
+      if (!fullText) {
+        console.log('⚠️  No text extracted from receipt');
+        return null;
+      }
+      
+      console.log('✓ Google Vision extracted text:', fullText.substring(0, 200));
+      
+      // Extract merchant, amount, and date from text
+      const merchantMatch = fullText.match(/^([A-Z][A-Za-z\s&]+)/m);
+      const amountMatch = fullText.match(/(?:TOTAL|Total|Amount|KES|Ksh)\s*:?\s*(\d+(?:,\d{3})*(?:\.\d{2})?)/i);
+      const dateMatch = fullText.match(/(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/);
+      
+      return {
+        merchantName: merchantMatch ? merchantMatch[1].trim() : 'Unknown Merchant',
+        totalAmount: amountMatch ? parseFloat(amountMatch[1].replace(/,/g, '')) : 0,
+        invoiceDate: dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0],
+        invoiceNumber: null,
+        taxAmount: null,
+        qrCodeData: null,
+        fullText: fullText, // Store full text for reference
+      };
+    } catch (error) {
+      console.error('Google Vision extraction failed:', error);
+      return null;
+    }
+  }
+
+  /**
    * Extract OCR data
-   * NOTE: Tesseract disabled for Vercel serverless - using Gemini AI instead
+   * NOTE: Tesseract disabled for Vercel serverless - using Google Vision instead
    */
   private async extractOCRData(imageBuffer: Buffer): Promise<any> {
     try {
       // Tesseract.js causes worker issues in Vercel serverless
-      // Skip free OCR and rely on Gemini AI
-      console.log('⏭️  Skipping Tesseract (using Gemini AI instead)');
-      return null;
+      // Use Google Vision as primary OCR
+      return await this.extractWithGoogleVision(imageBuffer);
     } catch (error) {
       console.error('OCR extraction failed:', error);
       return null;
