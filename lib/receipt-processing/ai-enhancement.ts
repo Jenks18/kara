@@ -185,7 +185,7 @@ export class AIReceiptEnhancer {
    * AI-powered categorization and extraction
    */
   private async categorizeWithAI(data: any): Promise<AIEnhancedData> {
-    const model = this.genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     
     // Build context for AI
     const context = {
