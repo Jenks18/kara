@@ -1,6 +1,30 @@
 /**
  * ENHANCED RECEIPT UPLOAD API
  * 
+ * MULTI-TABLE ARCHITECTURE:
+ * ========================
+ * 1. raw_receipts table:
+ *    - Stores ALL scraped data (QR, OCR, KRA, Gemini responses)
+ *    - Completely separate columns for each data source
+ *    - Immutable historical record for audit/reprocessing
+ *    - Created automatically by receiptProcessor.process()
+ * 
+ * 2. expense_items table:
+ *    - Stores ONLY clean/finalized data for app UI
+ *    - Extracted from best available source in raw_receipts
+ *    - User-visible fields: merchant, amount, date, category
+ *    - Links to raw_receipts via raw_receipt_id
+ * 
+ * WORKFLOW:
+ * =========
+ * Receipt Image → receiptProcessor.process() 
+ *                 ↓
+ *              raw_receipts (all data)
+ *                 ↓
+ *              expense_items (clean data for UI)
+ *                 ↓
+ *              User sees in app
+ * 
  * Uses the multi-strategy processing system with:
  * - Raw data storage for later analysis
  * - Store recognition and template matching
@@ -160,29 +184,58 @@ export async function POST(request: NextRequest) {
         }
 
         if (finalReportId) {
+          // ==========================================
+          // MULTI-TABLE ARCHITECTURE:
+          // 1. raw_receipts = ALL scraped data (already saved by processor)
+          // 2. expense_items = Clean data for app UI (we create here)
+          // ==========================================
+          
           // Extract category from AI enhancement or parsed data
           const category = result.aiEnhanced?.category || 
                           result.parsedData?.category || 
-                          'other';
+                          'Fuel'; // Default to Fuel since this is primarily for fuel receipts
 
-          // Create expense item (RLS ensures it's for current user's report)
+          // Extract merchant from multiple possible sources
+          const merchantName = result.parsedData?.merchantName || 
+                              result.store?.name || 
+                              result.kraData?.merchantName ||
+                              result.aiEnhanced?.merchant ||
+                              'Unknown';
+
+          // Extract amount from multiple sources
+          const amount = result.parsedData?.totalAmount || 
+                        result.kraData?.totalAmount || 
+                        result.aiEnhanced?.amount || 
+                        0;
+
+          // Extract date from multiple sources
+          const transactionDate = result.parsedData?.transactionDate || 
+                                 result.kraData?.invoiceDate || 
+                                 result.aiEnhanced?.date ||
+                                 new Date().toISOString().split('T')[0];
+
+          // Create expense item WITH LINK to raw_receipts table
           const { error: itemError } = await supabase
             .from('expense_items')
             .insert({
               report_id: finalReportId,
+              raw_receipt_id: result.rawReceiptId, // 🔗 Link to raw_receipts table!
               image_url: result.imageUrl,
               category: category,
-              amount: result.parsedData?.totalAmount || 0,
+              amount: amount,
               processing_status: result.status === 'success' ? 'processed' : 'scanning',
-              merchant_name: result.parsedData?.merchantName || result.store?.name,
-              transaction_date: result.parsedData?.transactionDate || new Date().toISOString().split('T')[0],
+              merchant_name: merchantName,
+              transaction_date: transactionDate,
+              // KRA data if available
+              kra_invoice_number: result.kraData?.invoiceNumber,
+              kra_verified: !!result.kraData?.verified,
             });
 
           if (itemError) {
             console.error('Failed to create expense item:', itemError);
             result.warnings.push('Receipt saved but not added to reports view');
           } else {
-            console.log('✅ Expense item created for reports view');
+            console.log('✅ Expense item created and linked to raw_receipts:', result.rawReceiptId);
           }
         }
       } catch (error: any) {
