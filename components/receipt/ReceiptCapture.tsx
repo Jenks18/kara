@@ -303,20 +303,16 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
             }
           }
           
-          // All uploads complete
+          // All uploads complete - redirect to reports page immediately
           const allSuccess = results.every(r => r.success || r.receiptId)
           
           if (allSuccess) {
-            // Store the images and navigate to expense report view
-            setSubmittedImages(selectedImages)
-            setShowConfirmExpenses(false)
-            setShowExpenseReport(true)
+            // Redirect to reports page to see the created expenses
+            window.location.href = '/reports'
           } else {
             console.error('Some receipts failed to process:', results)
-            // Still proceed to show report view (demo mode fallback)
-            setSubmittedImages(selectedImages)
-            setShowConfirmExpenses(false)
-            setShowExpenseReport(true)
+            // Still redirect to reports page
+            window.location.href = '/reports'
           }
         }}
         onCancel={() => {

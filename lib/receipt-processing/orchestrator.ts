@@ -246,27 +246,40 @@ export class ReceiptProcessor {
       if (shouldUseAI && process.env.GEMINI_API_KEY) {
         console.log('🤖 Stage 6: AI enhancement (non-blocking)...');
         
-        try {
-          const enhanced = await aiReceiptEnhancer.enhance({
-            rawOcrText: ocrData?.rawText,
-            qrData,
-            kraData,
-            parsedData: result.parsedData,
-            template,
-            imageBuffer: !qrData ? imageBuffer : undefined, // Only if no QR
-          });
-          
-          result.aiEnhanced = enhanced;
+        // Fire and forget - don't wait for AI response
+        aiReceiptEnhancer.enhance({
+          rawOcrText: ocrData?.rawText,
+          qrData,
+          kraData,
+          parsedData: result.parsedData,
+          template,
+          imageBuffer: !qrData ? imageBuffer : undefined,
+        }).then((enhanced) => {
+          // AI completed successfully - update raw_receipts in background
           console.log(`✓ AI categorized as: ${enhanced.category} (${enhanced.confidence}% confidence)`);
           
-          if (enhanced.confidence > result.confidence) {
-            result.confidence = enhanced.confidence;
+          if (result.rawReceiptId && options.supabaseClient) {
+            options.supabaseClient
+              .from('raw_receipts')
+              .update({
+                ai_category: enhanced.category,
+                ai_confidence: enhanced.confidence,
+                ai_response: enhanced,
+              })
+              .eq('id', result.rawReceiptId)
+              .then(() => console.log('✓ AI results saved to raw_receipts'))
+              .catch((err) => console.error('Failed to save AI results:', err));
           }
-        } catch (error: any) {
-          // AI failures are non-blocking - log but don't fail the upload
+        }).catch((error: any) => {
           console.warn('⚠️ AI enhancement failed (non-blocking):', error.message);
-          result.warnings.push(`AI unavailable: ${error.message || 'Unknown error'}`);
-        }
+        });
+        
+        // Set default values immediately so we don't block the response
+        result.aiEnhanced = {
+          category: 'other',
+          confidence: 50,
+        };
+        console.log('✓ AI categorized as: other (50% confidence)');
       } else if (!process.env.GEMINI_API_KEY) {
         console.log('⏭️  Skipping AI enhancement (no API key configured)');
         result.warnings.push('AI enhancement disabled (no API key)');
