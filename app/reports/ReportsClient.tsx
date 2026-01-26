@@ -6,6 +6,7 @@ import BottomNav from '@/components/navigation/BottomNav'
 import ExpenseItemCard from '@/components/expense/ExpenseItemCard'
 import CategoryPill from '@/components/ui/CategoryPill'
 import { Search, SlidersHorizontal } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 interface ExpenseItem {
   id: string
@@ -29,26 +30,38 @@ export default function ReportsClient({ initialItems }: ReportsClientProps) {
   const [selectedType, setSelectedType] = useState('expense')
   const [expenseItems, setExpenseItems] = useState<ExpenseItem[]>(initialItems)
   
-  // Poll for updates every 2 seconds if any items are scanning
+  // Set up Supabase real-time subscription for expense_items updates
   useEffect(() => {
-    const hasScanning = expenseItems.some(item => item.processing_status === 'scanning')
+    const supabase = createClient()
     
-    if (!hasScanning) return
-    
-    const interval = setInterval(async () => {
-      try {
-        const response = await fetch('/api/expense-reports')
-        if (response.ok) {
-          const data = await response.json()
-          setExpenseItems(data)
+    const channel = supabase
+      .channel('expense-items-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'expense_items'
+        },
+        async () => {
+          // Refetch expense items when any update occurs
+          try {
+            const response = await fetch('/api/expense-reports')
+            if (response.ok) {
+              const data = await response.json()
+              setExpenseItems(data)
+            }
+          } catch (error) {
+            console.error('Failed to fetch updated items:', error)
+          }
         }
-      } catch (error) {
-        console.error('Failed to poll for updates:', error)
-      }
-    }, 2000)
+      )
+      .subscribe()
     
-    return () => clearInterval(interval)
-  }, [expenseItems])
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [])
   
   const categories = [
     { id: 'all', label: 'All' },

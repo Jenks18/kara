@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { ChevronLeft, Search } from 'lucide-react'
 import Image from 'next/image'
+import { createClient } from '@/lib/supabase/client'
 
 interface ExpenseItem {
   id: string
@@ -34,7 +35,7 @@ export default function ReportDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Poll for updates every 2 seconds while items are scanning
+  // Fetch initial data and set up real-time subscription
   useEffect(() => {
     const fetchReport = async () => {
       try {
@@ -52,15 +53,29 @@ export default function ReportDetailPage() {
 
     fetchReport()
     
-    // Set up polling if any items are still scanning
-    const interval = setInterval(() => {
-      if (report?.items?.some(item => item.processing_status === 'scanning')) {
-        fetchReport()
-      }
-    }, 2000)
+    // Set up Supabase real-time subscription for expense_items updates
+    const supabase = createClient()
+    const channel = supabase
+      .channel(`expense-items-${reportId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'expense_items',
+          filter: `report_id=eq.${reportId}`
+        },
+        () => {
+          // Refetch report when any expense item is updated
+          fetchReport()
+        }
+      )
+      .subscribe()
 
-    return () => clearInterval(interval)
-  }, [reportId, report?.items])
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [reportId])
 
   if (loading) {
     return (
