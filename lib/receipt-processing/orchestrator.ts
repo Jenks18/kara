@@ -426,7 +426,7 @@ export class ReceiptProcessor {
       console.log('✓ Google Vision extracted text:', fullText.substring(0, 200));
       
       // Extract merchant name (first non-empty line, usually all caps)
-      const lines = fullText.split('\n').filter(line => line.trim());
+      const lines = fullText.split('\n').filter((line: string) => line.trim());
       const merchantName = lines[0]?.trim() || 'Unknown Merchant';
       
       // Extract total amount - look for "Sum", "Total", "TOTAL", "Amount" followed by number
