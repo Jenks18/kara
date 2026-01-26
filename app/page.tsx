@@ -104,16 +104,16 @@ export default async function HomePage() {
   ]
   
   return (
-    <div className="min-h-screen pb-20" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
+    <div className="min-h-screen pb-20 bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-dark-200/95 backdrop-blur-lg border-b border-gray-800">
+      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-lg border-b border-emerald-200">
         <div className="px-4 py-4 max-w-md mx-auto">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-100">Inbox</h1>
+              <h1 className="text-2xl font-bold text-gray-900">Inbox</h1>
             </div>
-            <button className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center active:bg-dark-100 rounded-full transition-colors touch-manipulation">
-              <Search size={24} className="text-gray-400" />
+            <button className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center active:bg-emerald-100 rounded-full transition-colors touch-manipulation">
+              <Search size={24} className="text-gray-600" />
             </button>
           </div>
         </div>
@@ -133,8 +133,8 @@ export default async function HomePage() {
         {expenseReports.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-200">Expense Reports</h2>
-              <button className="text-sm text-primary-400 hover:text-primary-300 font-medium">
+              <h2 className="text-lg font-semibold text-gray-900">Expense Reports</h2>
+              <button className="text-sm text-emerald-600 hover:text-emerald-700 font-medium">
                 View All
               </button>
             </div>
@@ -143,16 +143,16 @@ export default async function HomePage() {
               {expenseReports.map((report) => (
                 <div 
                   key={report.id}
-                  className="bg-dark-100 rounded-2xl p-4 border border-gray-800 hover:border-gray-700 transition-colors cursor-pointer"
+                  className="bg-white rounded-2xl p-4 border border-gray-200 hover:border-emerald-300 transition-colors cursor-pointer shadow-sm"
                 >
                   {/* Report Header */}
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <FileText size={16} className="text-emerald-500" />
-                        <h3 className="text-white font-semibold">{report.title}</h3>
+                        <FileText size={16} className="text-emerald-600" />
+                        <h3 className="text-gray-900 font-semibold">{report.title}</h3>
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-gray-400">
+                      <div className="flex items-center gap-2 text-xs text-gray-600">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full font-medium ${
                           report.status === 'draft' ? 'bg-emerald-500/20 text-emerald-400' :
                           report.status === 'submitted' ? 'bg-amber-500/20 text-amber-400' :
@@ -174,7 +174,7 @@ export default async function HomePage() {
                     <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
                       {report.items.map((item, idx) => (
                         <div key={item.id} className="flex-shrink-0 snap-start">
-                          <div className="relative w-20 h-24 rounded-lg overflow-hidden bg-dark-200 border border-gray-700">
+                          <div className="relative w-20 h-24 rounded-lg overflow-hidden bg-gray-100 border border-gray-300">
                             <Image
                               src={item.image_url}
                               alt={`Receipt ${idx + 1}`}
@@ -188,11 +188,11 @@ export default async function HomePage() {
                   )}
                   
                   {/* Report Footer */}
-                  <div className="mt-3 pt-3 border-t border-gray-800 flex items-center justify-between">
-                    <div className="text-sm text-gray-400">
+                  <div className="mt-3 pt-3 border-t border-gray-200 flex items-center justify-between">
+                    <div className="text-sm text-gray-600">
                       {report.workspace_name}
                     </div>
-                    <div className="text-white font-semibold font-mono">
+                    <div className="text-gray-900 font-semibold font-mono">
                       ${report.total_amount.toFixed(2)}
                     </div>
                   </div>

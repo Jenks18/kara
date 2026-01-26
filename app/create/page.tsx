@@ -51,11 +51,11 @@ export default function CreatePage() {
   
   return (
     <>
-      <div className="min-h-screen pb-20" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
+      <div className="min-h-screen pb-20 bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
         {/* Header */}
-        <div className="sticky top-0 z-30 bg-dark-200/95 backdrop-blur-lg border-b border-gray-800">
+        <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-lg border-b border-emerald-200">
           <div className="px-4 py-4 max-w-md mx-auto">
-            <h1 className="text-2xl font-bold text-gray-100">Create</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Create</h1>
           </div>
         </div>
         
@@ -71,12 +71,12 @@ export default function CreatePage() {
                   onClick={option.action}
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-primary-500/10 flex items-center justify-center flex-shrink-0">
-                      <Icon className="text-primary-400" size={24} />
+                    <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                      <Icon className="text-emerald-600" size={24} />
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-semibold text-gray-100">{option.label}</h3>
-                      <p className="text-sm text-gray-400 mt-0.5">{option.description}</p>
+                      <h3 className="font-semibold text-gray-900">{option.label}</h3>
+                      <p className="text-sm text-gray-600 mt-0.5">{option.description}</p>
                     </div>
                   </div>
                 </Card>

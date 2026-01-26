@@ -11,8 +11,8 @@ export default function Card({ children, className = '', onClick, hoverable = fa
   return (
     <div 
       className={`
-        bg-dark-100 rounded-2xl p-5 border border-gray-800
-        ${hoverable ? 'transition-all duration-200 active:bg-dark-300 active:scale-[0.98] cursor-pointer touch-manipulation' : ''}
+        bg-white rounded-2xl p-5 border border-gray-200 shadow-sm
+        ${hoverable ? 'transition-all duration-200 hover:border-emerald-300 active:bg-gray-50 active:scale-[0.98] cursor-pointer touch-manipulation' : ''}
         ${className}
       `}
       onClick={onClick}

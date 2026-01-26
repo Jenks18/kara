@@ -25,7 +25,7 @@ export default function ExpenseItemCard({
   return (
     <div 
       onClick={onClick}
-      className="bg-dark-100 rounded-2xl p-4 border border-gray-800 hover:border-gray-700 transition-colors cursor-pointer active:scale-[0.98]"
+      className="bg-white rounded-2xl p-4 border border-gray-200 hover:border-emerald-300 transition-colors cursor-pointer active:scale-[0.98] shadow-sm"
     >
       {/* User Info */}
       <div className="flex items-center gap-2 mb-3">
@@ -34,8 +34,8 @@ export default function ExpenseItemCard({
             {userEmail.charAt(0).toUpperCase()}
           </span>
         </div>
-        <span className="text-gray-400 text-sm">{userEmail}</span>
-        <button className="ml-auto text-emerald-500 text-sm font-medium px-3 py-1 bg-emerald-500/10 rounded-full">
+        <span className="text-gray-600 text-sm">{userEmail}</span>
+        <button className="ml-auto text-emerald-600 text-sm font-medium px-3 py-1 bg-emerald-100 rounded-full">
           View
         </button>
       </div>
@@ -43,7 +43,7 @@ export default function ExpenseItemCard({
       {/* Image and Details */}
       <div className="flex gap-3">
         {/* Receipt Thumbnail */}
-        <div className="relative w-20 h-24 rounded-lg overflow-hidden bg-dark-200 border border-gray-700 flex-shrink-0">
+        <div className="relative w-20 h-24 rounded-lg overflow-hidden bg-gray-100 border border-gray-300 flex-shrink-0">
           {imageUrl ? (
             <Image
               src={imageUrl}
@@ -52,7 +52,7 @@ export default function ExpenseItemCard({
               className="object-cover"
             />
           ) : (
-            <div className="w-full h-full bg-dark-200"></div>
+            <div className="w-full h-full bg-gray-100"></div>
           )}
         </div>
 
@@ -60,9 +60,9 @@ export default function ExpenseItemCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between mb-2">
             <div>
-              <p className="text-gray-400 text-sm">{date} • {type}</p>
+              <p className="text-gray-600 text-sm">{date} • {type}</p>
             </div>
-            <p className="text-white font-semibold font-mono">${amount.toFixed(2)}</p>
+            <p className="text-gray-900 font-semibold font-mono">${amount.toFixed(2)}</p>
           </div>
 
           {/* Status */}

@@ -35,14 +35,14 @@ export default function ReportsClient({ initialItems }: ReportsClientProps) {
   ]
   
   return (
-    <div className="min-h-screen pb-20" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
+    <div className="min-h-screen pb-20 bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-dark-200/95 backdrop-blur-lg border-b border-gray-800">
+      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-lg border-b border-emerald-200">
         <div className="px-4 py-4 max-w-md mx-auto">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-gray-100">Reports</h1>
-            <button className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center active:bg-dark-100 rounded-full transition-colors touch-manipulation">
-              <SlidersHorizontal size={24} className="text-gray-400" />
+            <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
+            <button className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center active:bg-emerald-100 rounded-full transition-colors touch-manipulation">
+              <SlidersHorizontal size={24} className="text-gray-600" />
             </button>
           </div>
           
@@ -52,7 +52,7 @@ export default function ReportsClient({ initialItems }: ReportsClientProps) {
             <input
               type="text"
               placeholder="Search receipts..."
-              className="w-full bg-dark-100 text-gray-100 pl-10 pr-4 py-3 rounded-xl border border-gray-800 focus:outline-none focus:border-primary-500 transition-colors"
+              className="w-full bg-white text-gray-900 pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-emerald-400 transition-colors shadow-sm"
             />
           </div>
         </div>
@@ -66,8 +66,8 @@ export default function ReportsClient({ initialItems }: ReportsClientProps) {
             onClick={() => setSelectedType('expense')}
             className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
               selectedType === 'expense'
-                ? 'bg-primary-500 text-white'
-                : 'bg-dark-100 text-gray-400 hover:text-gray-300'
+                ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-md'
+                : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200'
             }`}
           >
             Expenses
@@ -76,8 +76,8 @@ export default function ReportsClient({ initialItems }: ReportsClientProps) {
             onClick={() => setSelectedType('report')}
             className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
               selectedType === 'report'
-                ? 'bg-primary-500 text-white'
-                : 'bg-dark-100 text-gray-400 hover:text-gray-300'
+                ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-md'
+                : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200'
             }`}
           >
             Reports
@@ -100,7 +100,7 @@ export default function ReportsClient({ initialItems }: ReportsClientProps) {
         <div className="space-y-3">
           {expenseItems.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-400">No receipts found</p>
+              <p className="text-gray-600">No receipts found</p>
               <p className="text-sm text-gray-500 mt-2">Upload a receipt to get started</p>
             </div>
           ) : (

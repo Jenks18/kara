@@ -84,9 +84,9 @@ export default function AccountPage() {
   ]
   
   return (
-    <div className="min-h-screen pb-20" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
+    <div className="min-h-screen pb-20 bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-dark-200/95 backdrop-blur-lg border-b border-gray-800">
+      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-lg border-b border-emerald-200">
         <div className="px-4 py-6 max-w-md mx-auto">
           {/* Profile Section */}
           <div className="flex items-center gap-4">
@@ -94,10 +94,10 @@ export default function AccountPage() {
               <span className="text-2xl">🦁</span>
             </div>
             <div className="flex-1">
-              <h1 className="text-xl font-bold text-gray-100">{displayName}</h1>
-              <p className="text-sm text-gray-400">{displayEmail}</p>
+              <h1 className="text-xl font-bold text-gray-900">{displayName}</h1>
+              <p className="text-sm text-gray-600">{displayEmail}</p>
             </div>
-            <button className="w-10 h-10 rounded-full bg-dark-100 flex items-center justify-center border border-gray-800">
+            <button className="w-10 h-10 rounded-full bg-white flex items-center justify-center border border-gray-200">
               <span className="text-xl">{user?.imageUrl ? '😊' : '👤'}</span>
             </button>
           </div>
@@ -108,7 +108,7 @@ export default function AccountPage() {
       <div className="px-4 py-6 max-w-md mx-auto space-y-8">
         {accountSections.map((section, idx) => (
           <div key={idx}>
-            <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3 px-2">
+            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3 px-2">
               {section.title}
             </h2>
             
@@ -122,17 +122,17 @@ export default function AccountPage() {
                     className="
                       w-full flex items-center justify-between
                       px-4 py-4 min-h-[60px]
-                      bg-dark-100 active:bg-dark-300
-                      border border-gray-800
-                      rounded-xl
+                      bg-white active:bg-gray-50
+                      border border-gray-200 hover:border-emerald-300
+                      rounded-xl shadow-sm
                       transition-colors duration-200
                       touch-manipulation
                       group
                     "
                   >
                     <div className="flex items-center gap-3">
-                      <Icon size={24} className={item.label === 'Sign Out' ? 'text-danger-500' : 'text-gray-400 group-hover:text-gray-300'} />
-                      <span className={`font-medium ${item.label === 'Sign Out' ? 'text-danger-500' : 'text-gray-200'}`}>{item.label}</span>
+                      <Icon size={24} className={item.label === 'Sign Out' ? 'text-red-500' : 'text-gray-600 group-hover:text-emerald-600'} />
+                      <span className={`font-medium ${item.label === 'Sign Out' ? 'text-red-500' : 'text-gray-900'}`}>{item.label}</span>
                     </div>
                     
                     <div className="flex items-center gap-2">

@@ -108,20 +108,20 @@ export default function WorkspacesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-dark-300 flex items-center justify-center">
-        <div className="text-gray-400">Loading...</div>
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 flex items-center justify-center">
+        <div className="text-gray-600">Loading...</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-dark-300 pb-20" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 pb-20" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-dark-300 border-b border-gray-800">
+      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-lg border-b border-emerald-200">
         <div className="px-4 py-6 max-w-md mx-auto flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-white">Workspaces</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Workspaces</h1>
           <button className="p-2 active:scale-95 transition-transform">
-            <Search size={24} className="text-gray-400" />
+            <Search size={24} className="text-gray-600" />
           </button>
         </div>
       </div>
@@ -158,10 +158,10 @@ export default function WorkspacesPage() {
             </div>
 
             {/* Text */}
-            <h2 className="text-2xl font-bold text-white mb-3">
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">
               You have no workspaces
             </h2>
-            <p className="text-gray-400 mb-8 max-w-sm">
+            <p className="text-gray-600 mb-8 max-w-sm">
               Track receipts, reimburse expenses, manage travel, send invoices, and more.
             </p>
 
@@ -187,17 +187,17 @@ export default function WorkspacesPage() {
                 <button
                   onClick={() => handleGoToWorkspace(workspace.id)}
                   className="
-                    w-full p-4 bg-dark-200 rounded-xl border border-gray-800
-                    active:bg-dark-100 transition-colors
+                    w-full p-4 bg-white rounded-xl border border-gray-200 hover:border-emerald-300
+                    active:bg-gray-50 transition-colors shadow-sm
                     flex items-center gap-4
                   "
                 >
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center flex-shrink-0">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center flex-shrink-0">
                     <span className="text-xl font-bold text-white">{workspace.avatar}</span>
                   </div>
                   <div className="flex-1 text-left">
-                    <h3 className="text-white font-semibold">{workspace.name}</h3>
-                    <p className="text-sm text-gray-400">{workspace.currency} - {workspace.currency_symbol}</p>
+                    <h3 className="text-gray-900 font-semibold">{workspace.name}</h3>
+                    <p className="text-sm text-gray-600">{workspace.currency} - {workspace.currency_symbol}</p>
                   </div>
                 </button>
                 
@@ -209,7 +209,7 @@ export default function WorkspacesPage() {
                   }}
                   className="absolute right-4 top-1/2 -translate-y-1/2 p-2 active:scale-95 transition-transform"
                 >
-                  <svg className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
                     <circle cx="12" cy="5" r="2" />
                     <circle cx="12" cy="12" r="2" />
                     <circle cx="12" cy="19" r="2" />
@@ -226,20 +226,20 @@ export default function WorkspacesPage() {
                     />
                     
                     {/* Menu panel */}
-                    <div className="absolute right-0 top-full mt-2 w-64 bg-dark-100 rounded-xl border border-gray-800 shadow-xl z-50 overflow-hidden">
+                    <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl border border-gray-200 shadow-xl z-50 overflow-hidden">
                       <button
                         onClick={() => handleGoToWorkspace(workspace.id)}
-                        className="w-full px-4 py-4 flex items-center gap-3 text-left text-white hover:bg-dark-200 transition-colors"
+                        className="w-full px-4 py-4 flex items-center gap-3 text-left text-gray-900 hover:bg-gray-50 transition-colors"
                       >
-                        <Briefcase size={20} className="text-gray-400" />
+                        <Briefcase size={20} className="text-gray-600" />
                         <span className="font-medium">Go to workspace</span>
                       </button>
                       
                       <button
                         onClick={() => handleDuplicateWorkspace(workspace)}
-                        className="w-full px-4 py-4 flex items-center gap-3 text-left text-white hover:bg-dark-200 transition-colors border-t border-gray-800"
+                        className="w-full px-4 py-4 flex items-center gap-3 text-left text-gray-900 hover:bg-gray-50 transition-colors border-t border-gray-200"
                       >
-                        <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                         </svg>
                         <span className="font-medium">Duplicate Workspace</span>
@@ -247,7 +247,7 @@ export default function WorkspacesPage() {
                       
                       <button
                         onClick={() => handleDeleteWorkspace(workspace.id)}
-                        className="w-full px-4 py-4 flex items-center gap-3 text-left text-red-400 hover:bg-dark-200 transition-colors border-t border-gray-800"
+                        className="w-full px-4 py-4 flex items-center gap-3 text-left text-red-600 hover:bg-red-50 transition-colors border-t border-gray-200"
                       >
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

@@ -20,9 +20,10 @@ export default function BottomNav() {
     <nav 
       className="
         fixed bottom-0 left-0 right-0
-        bg-dark-100/95 backdrop-blur-lg border-t border-gray-800
+        bg-white/80 backdrop-blur-lg border-t border-emerald-200
         px-2
         z-40
+        shadow-lg
       "
       style={{
         paddingBottom: 'max(12px, env(safe-area-inset-bottom))'
@@ -42,7 +43,7 @@ export default function BottomNav() {
                 min-w-[60px] min-h-[56px]
                 transition-colors duration-200 rounded-lg
                 active:scale-95 touch-manipulation
-                ${isActive ? 'text-primary-400' : 'text-gray-400 active:text-gray-300'}
+                ${isActive ? 'text-emerald-600' : 'text-gray-600 active:text-emerald-500'}
               `}
             >
               <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
