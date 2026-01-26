@@ -59,24 +59,25 @@ export default function ReportDetailPage() {
       .on(
         'postgres_changes',
         {
-          event: 'UPDATE',
+          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
           schema: 'public',
           table: 'expense_items',
           filter: `report_id=eq.${reportId}`
         },
         () => {
+          console.log('📊 Expense item changed - refreshing report')
           fetchReport()
         }
       )
       .subscribe()
     
-    // Polling fallback: check every 5 seconds if any items are scanning
+    // Polling fallback: ONLY poll if there are scanning items, reduce to every 10 seconds
     const pollInterval = setInterval(async () => {
-      const currentReport = await fetch(`/api/expense-reports/${reportId}`).then(r => r.json()).catch(() => null)
-      if (currentReport?.items?.some((item: ExpenseItem) => item.processing_status === 'scanning')) {
+      if (report?.items?.some(item => item.processing_status === 'scanning')) {
+        console.log('🔄 Polling for scanning items...')
         fetchReport()
       }
-    }, 5000)
+    }, 10000) // Reduced from 5s to 10s
 
     return () => {
       supabase.removeChannel(channel)

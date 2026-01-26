@@ -453,8 +453,38 @@ export class ReceiptProcessor {
         }
       }
       
-      // Extract date
-      const dateMatch = fullText.match(/(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/);
+      // Extract date and fix common OCR errors
+      let dateMatch = fullText.match(/(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/);
+      let parsedDate = new Date().toISOString().split('T')[0]; // Default to today
+      
+      if (dateMatch) {
+        const dateParts = dateMatch[1].split(/[-\/]/);
+        let day = parseInt(dateParts[0]);
+        let month = parseInt(dateParts[1]);
+        let year = parseInt(dateParts[2]);
+        
+        // Fix common OCR errors in year
+        if (year > 2100) {
+          // OCR read 2825 instead of 2024/2025
+          // Take last 2 digits and prepend 20
+          year = 2000 + (year % 100);
+        } else if (year < 100) {
+          // 2-digit year: 24 -> 2024
+          year = year < 50 ? 2000 + year : 1900 + year;
+        }
+        
+        // Validate date is reasonable (within last 2 years to next year)
+        const currentYear = new Date().getFullYear();
+        if (year < currentYear - 2) year = currentYear;
+        if (year > currentYear + 1) year = currentYear;
+        
+        // Validate month and day
+        if (month < 1 || month > 12) month = new Date().getMonth() + 1;
+        if (day < 1 || day > 31) day = new Date().getDate();
+        
+        // Format as YYYY-MM-DD
+        parsedDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      }
       
       // Extract invoice number
       const invoiceMatch = fullText.match(/Invoice\s+(?:Nr|No|Number|#)[:\s]*(\w+)/i);
@@ -464,7 +494,7 @@ export class ReceiptProcessor {
       return {
         merchantName: merchantName,
         totalAmount: totalAmount,
-        invoiceDate: dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0],
+        invoiceDate: parsedDate,
         invoiceNumber: invoiceMatch ? invoiceMatch[1] : null,
         fullText: fullText,
       };
