@@ -3,13 +3,14 @@ import { ClerkProvider } from '@clerk/nextjs'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Kara - Fuel Expense Tracker',
-  description: 'Track your fuel expenses in Kenya',
+  title: 'MafutaPass - Premium Fuel Expense Tracker',
+  description: 'AI-powered fuel expense tracking for businesses in Kenya',
   manifest: '/manifest.json',
+  metadataBase: new URL('https://www.mafutapass.com'),
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Kara',
+    title: 'MafutaPass',
   },
   formatDetection: {
     telephone: false,

@@ -1,11 +1,11 @@
 {
-  "name": "Kara - Fuel Expense Tracker",
-  "short_name": "Kara",
-  "description": "Track your fuel expenses in Kenya",
+  "name": "MafutaPass",
+  "short_name": "MafutaPass",
+  "description": "AI-powered fuel expense tracking for Kenya",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0c1710",
-  "theme_color": "#0c1710",
+  "theme_color": "#10b981",
   "orientation": "portrait",
   "icons": [
     {

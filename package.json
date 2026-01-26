@@ -1,7 +1,8 @@
 {
-  "name": "kara-fuel-tracker",
-  "version": "0.1.0",
+  "name": "mafutapass",
+  "version": "1.0.0",
   "private": true,
+  "description": "Premium fuel expense tracking for Kenya",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
