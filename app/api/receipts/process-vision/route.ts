@@ -86,17 +86,6 @@ export async function POST(req: NextRequest) {
                 maxResults: 20,
               },
             ],
-            imageContext: {
-              // Hint to Vision API to look for various barcode formats
-              barcodeHints: [
-                'QR_CODE',
-                'DATA_MATRIX',
-                'CODE_128',
-                'CODE_39',
-                'EAN_13',
-                'EAN_8'
-              ]
-            }
           },
         ],
       }),
@@ -124,6 +113,10 @@ export async function POST(req: NextRequest) {
     const visionData: GoogleVisionResponse = await visionResponse.json();
     const result = visionData.responses[0];
 
+    // Debug: Log entire response structure
+    console.log('Vision API Response Keys:', Object.keys(result));
+    console.log('Full response:', JSON.stringify(result, null, 2));
+
     // Extract OCR text
     const fullText = result.fullTextAnnotation?.text || '';
     const textAnnotations = result.textAnnotations || [];
@@ -134,6 +127,12 @@ export async function POST(req: NextRequest) {
     console.log(`Found ${barcodes.length} barcodes/QR codes`);
     if (barcodes.length > 0) {
       console.log('Barcode details:', JSON.stringify(barcodes, null, 2));
+    } else {
+      console.log('⚠️ No barcodes detected. This could mean:');
+      console.log('  1. No QR code in image');
+      console.log('  2. QR code too small/blurry');
+      console.log('  3. QR code at wrong angle');
+      console.log('  Try uploading a close-up of just the QR code');
     }
 
     const qrCodes = barcodes

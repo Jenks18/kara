@@ -1,9 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --color-primary: 14 165 233;
+  --color-emerald-50: #ecfdf5;
+  --color-emerald-100: #d1fae5;
+  --color-emerald-500: #10b981;
+  --color-emerald-600: #059669;
+  --color-emerald-700: #047857;
+  --color-emerald-800: #065f46;
+  --color-green-50: #f0fdf4;
+  --color-green-500: #22c55e;
+  --color-green-600: #16a34a;
+  
+  --color-primary: 5 150 105;
   --color-success: 16 185 129;
   --color-warning: 245 158 11;
   --color-danger: 239 68 68;
@@ -22,6 +34,7 @@
 @layer base {
   html {
     @apply overflow-x-hidden;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
     /* Prevent pull-to-refresh on mobile */
     overscroll-behavior-y: none;
     /* Better font rendering on mobile */
@@ -33,7 +46,7 @@
   }
   
   body {
-    @apply bg-dark-200 text-gray-100 font-sans antialiased;
+    @apply bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 text-gray-900 font-sans antialiased;
     @apply min-h-screen overflow-x-hidden;
     /* Better scrolling on iOS */
     -webkit-overflow-scrolling: touch;
