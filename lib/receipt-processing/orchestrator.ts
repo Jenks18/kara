@@ -493,11 +493,20 @@ export class ReceiptProcessor {
                            result.qrData?.dateTime ||
                            new Date().toISOString().split('T')[0];
     
+    // Determine processing status based on result
+    let processingStatus: 'processed' | 'error' = 'processed';
+    
+    // If processing failed or no meaningful data was extracted, mark as error
+    if (result.status === 'failed' || (amount === 0 && merchantName === 'Unknown Merchant')) {
+      processingStatus = 'error';
+      console.log('⚠️  No data extracted - marking as error');
+    }
+    
     const updateData: any = {
       merchant_name: merchantName,
       amount: amount,
       transaction_date: transactionDate,
-      processing_status: 'processed', // ✅ Scanned successfully
+      processing_status: processingStatus,
     };
     
     // Add KRA data if available
@@ -514,10 +523,12 @@ export class ReceiptProcessor {
     if (error) {
       console.error('Failed to update expense_item:', error);
     } else {
-      console.log('✅ Expense item updated with scanned data');
+      console.log(`✅ Expense item updated with status: ${processingStatus}`);
       
-      // Also update the expense_reports total
-      await this.updateExpenseReportTotal(result.rawReceiptId, supabaseClient);
+      // Also update the expense_reports total (only if processed successfully)
+      if (processingStatus === 'processed') {
+        await this.updateExpenseReportTotal(result.rawReceiptId, supabaseClient);
+      }
     }
   }
   
