@@ -403,8 +403,7 @@ export class ReceiptProcessor {
           requests: [{
             image: { content: base64Image },
             features: [
-              { type: 'TEXT_DETECTION', maxResults: 1 },
-              { type: 'DOCUMENT_TEXT_DETECTION', maxResults: 1 }
+              { type: 'DOCUMENT_TEXT_DETECTION' }
             ]
           }]
         })
@@ -423,17 +422,27 @@ export class ReceiptProcessor {
         return null;
       }
       
-      console.log('✓ Google Vision extracted text:', fullText.substring(0, 200));
+      console.log('✓ Google Vision extracted text (', fullText.length, 'chars):', fullText);
       
-      // Extract merchant name (first non-empty line, usually all caps)
+      // Extract merchant name - look for company name after "START OF LEGAL RECEIPT"
       const lines = fullText.split('\n').filter((line: string) => line.trim());
-      const merchantName = lines[0]?.trim() || 'Unknown Merchant';
+      let merchantName = 'Unknown Merchant';
       
-      // Extract total amount - look for "Sum", "Total", "TOTAL", "Amount" followed by number
+      // Try to find merchant after "START OF LEGAL RECEIPT"
+      const receiptStartIdx = lines.findIndex(l => l.includes('START OF LEGAL RECEIPT'));
+      if (receiptStartIdx >= 0 && lines[receiptStartIdx + 1]) {
+        merchantName = lines[receiptStartIdx + 1].trim();
+      } else {
+        // Fallback to first line
+        merchantName = lines[0]?.trim() || 'Unknown Merchant';
+      }
+      
+      // Extract total amount - KRA receipts show TOTAL followed by amount
       const amountPatterns = [
-        /(?:Sum|TOTAL|Total|Amount)\s+(\d+(?:,\d{3})*(?:\.\d{2})?)/i,
-        /(?:KES|Ksh)\s*:?\s*(\d+(?:,\d{3})*(?:\.\d{2})?)/i,
-        /(\d+(?:,\d{3})*\.\d{2})\s*[A-Z]?\s*$/m, // Amount at end of line with optional letter
+        /TOTAL\s+(\d+(?:,\d{3})*(?:\.\d{2})?)/i,  // "TOTAL 1,000.00"
+        /(?:Sum|Amount)\s+(\d+(?:,\d{3})*(?:\.\d{2})?)/i,  // "Sum 1,000.00"
+        /CASH\s+(\d+(?:,\d{3})*(?:\.\d{2})?)/i,  // "CASH 1,000.00"
+        /(\d+(?:,\d{3})*\.\d{2})\s*(?:KES|Ksh)/i,  // "1,000.00 KES"
       ];
       
       let totalAmount = 0;
@@ -441,7 +450,7 @@ export class ReceiptProcessor {
         const match = fullText.match(pattern);
         if (match) {
           totalAmount = parseFloat(match[1].replace(/,/g, ''));
-          break;
+          if (totalAmount > 0) break;
         }
       }
       

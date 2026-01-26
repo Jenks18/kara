@@ -6,26 +6,14 @@
 
 1. Open: https://supabase.com/dashboard/project/bkypfuyiknytkuhxtduc/sql/new
 
-2. Paste this SQL and click "Run":
+2. Copy the SQL from: `migrations/003-link-raw-receipts-to-expense-items.sql`
 
-```sql
--- Add raw_receipt_id column to expense_items
-ALTER TABLE expense_items 
-ADD COLUMN IF NOT EXISTS raw_receipt_id UUID REFERENCES raw_receipts(id) ON DELETE SET NULL;
+3. Paste it into the SQL Editor and click "Run"
 
--- Create index for faster lookups
-CREATE INDEX IF NOT EXISTS idx_expense_items_raw_receipt ON expense_items(raw_receipt_id);
-
--- Add comment
-COMMENT ON COLUMN expense_items.raw_receipt_id IS 'Links to raw_receipts table containing all scraped data';
-```
-
-3. Verify with:
-```sql
-SELECT column_name, data_type 
-FROM information_schema.columns 
-WHERE table_name = 'expense_items' 
-AND column_name = 'raw_receipt_id';
+**Or run directly from file:**
+```bash
+psql postgresql://postgres:[password]@db.bkypfuyiknytkuhxtduc.supabase.co:5432/postgres \
+  -f migrations/003-link-raw-receipts-to-expense-items.sql
 ```
 
 **This fixes the error:** `"Could not find the 'raw_receipt_id' column of 'expense_items' in the schema cache"`
