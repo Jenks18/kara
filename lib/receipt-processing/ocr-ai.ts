@@ -1,6 +1,17 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { KRAInvoiceData } from './kra-scraper';
 
+export interface GeminiReceiptData {
+  merchantName: string | null;
+  totalAmount: number | null;
+  invoiceDate: string | null;
+  invoiceNumber: string | null;
+  litres: number | null;
+  fuelType: 'PETROL' | 'DIESEL' | 'SUPER' | 'GAS' | null;
+  pricePerLitre: number | null;
+  confidence: number;
+}
+
 export interface GeminiFuelResult {
   litres: number | null;
   fuelType: 'PETROL' | 'DIESEL' | 'SUPER' | 'GAS' | null;
@@ -90,6 +101,69 @@ IMPORTANT:
     return extracted;
   } catch (error: any) {
     console.error('Gemini processing failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Extract basic receipt data using Gemini Vision (fallback when QR/KRA fails)
+ */
+export async function extractReceiptWithGemini(
+  imageBuffer: Buffer
+): Promise<GeminiReceiptData> {
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+
+  const imageBase64 = imageBuffer.toString('base64');
+
+  const prompt = `Extract receipt data from this image.
+
+Return ONLY this JSON (no markdown, no explanation):
+{
+  "merchantName": "<business name>",
+  "totalAmount": <number in KES>,
+  "invoiceDate": "YYYY-MM-DD",
+  "invoiceNumber": "<invoice/receipt number>",
+  "litres": <fuel volume number or null>,
+  "fuelType": "PETROL" | "DIESEL" | "SUPER" | "GAS" | null,
+  "pricePerLitre": <number or null>,
+  "confidence": <0-100>
+}
+
+IMPORTANT:
+- Look for: Total, Amount, KES, KSH, Ksh
+- Date formats: DD/MM/YYYY, YYYY-MM-DD, DD-MM-YYYY
+- Merchant: Usually at top of receipt
+- If fuel receipt: look for LITRES, L, Ltrs near volume
+- Fuel types: PMS=Petrol, AGO=Diesel, DPK=Kerosene
+- Return null for fields you cannot find
+- Set confidence 0-100 based on clarity`;
+
+  try {
+    const result = await model.generateContent([
+      prompt,
+      {
+        inlineData: {
+          mimeType: 'image/jpeg',
+          data: imageBase64,
+        },
+      },
+    ]);
+
+    const responseText = result.response.text();
+    console.log('✓ Gemini OCR response:', responseText.substring(0, 200));
+
+    // Parse JSON from response (handle markdown code blocks)
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error('Gemini did not return valid JSON');
+    }
+
+    const extracted: GeminiReceiptData = JSON.parse(jsonMatch[0]);
+
+    return extracted;
+  } catch (error: any) {
+    console.error('Gemini OCR failed:', error);
     throw error;
   }
 }

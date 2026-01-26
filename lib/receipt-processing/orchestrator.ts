@@ -8,7 +8,7 @@
 import { decodeQRFromImage } from './qr-decoder';
 import { scrapeKRAInvoice } from './kra-scraper';
 // import { extractWithTesseract } from './ocr-free'; // Disabled: causes worker issues in Vercel
-import { extractWithGemini } from './ocr-ai';
+import { extractWithGemini, extractReceiptWithGemini } from './ocr-ai';
 import { rawReceiptStorage, type RawReceiptData } from './raw-storage';
 import { storeRecognizer } from './store-recognition';
 import { templateRegistry } from './template-registry';
@@ -155,6 +155,34 @@ export class ReceiptProcessor {
           result.kraData = kraData;
         } catch (error) {
           result.warnings.push('KRA verification failed');
+        }
+      }
+      
+      // ==========================================
+      // STAGE 2c: GEMINI OCR FALLBACK
+      // If no QR code and no KRA data, use Gemini to extract basic receipt data
+      // ==========================================
+      if (!qrData && !kraData && process.env.GEMINI_API_KEY) {
+        console.log('🤖 Stage 2c: Using Gemini OCR (no QR/KRA found)...');
+        try {
+          const geminiData = await extractReceiptWithGemini(imageBuffer);
+          
+          // Map Gemini data to kraData format for compatibility
+          if (geminiData.merchantName || geminiData.totalAmount) {
+            kraData = {
+              merchantName: geminiData.merchantName || 'Unknown Merchant',
+              totalAmount: geminiData.totalAmount || 0,
+              invoiceDate: geminiData.invoiceDate || new Date().toISOString().split('T')[0],
+              invoiceNumber: geminiData.invoiceNumber || null,
+              taxAmount: null,
+              qrCodeData: null,
+            };
+            result.kraData = kraData;
+            console.log(`✓ Gemini extracted: ${kraData.merchantName} - ${kraData.totalAmount} KES`);
+          }
+        } catch (error) {
+          console.error('Gemini OCR failed:', error);
+          result.warnings.push('Gemini OCR failed - no data extracted');
         }
       }
       
