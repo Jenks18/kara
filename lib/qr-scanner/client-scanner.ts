@@ -9,6 +9,14 @@
 
 import { preprocessReceiptImage } from '@/lib/receipt-processing/image-preprocessor';
 
+// Type declaration for BarcodeDetector API
+declare global {
+  interface Window {
+    BarcodeDetector?: any;
+  }
+  var BarcodeDetector: any;
+}
+
 export interface QRScanResult {
   found: boolean;
   url?: string;
