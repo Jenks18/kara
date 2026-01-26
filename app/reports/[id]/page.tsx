@@ -13,8 +13,9 @@ interface ExpenseItem {
   category: string
   transaction_date: string
   image_url: string
-  processing_status: 'scanning' | 'processed' | 'failed'
+  processing_status: 'scanning' | 'processed' | 'needs_review' | 'error'
   kra_verified: boolean
+  needs_review_fields?: string // JSON string with field review flags
 }
 
 interface ExpenseReport {
@@ -177,33 +178,77 @@ export default function ReportDetailPage() {
 
               {/* Item Details */}
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Merchant</span>
-                  <span className={`font-medium ${item.processing_status === 'scanning' ? 'text-gray-400 animate-pulse' : 'text-gray-900'}`}>
-                    {item.merchant_name}
-                  </span>
-                </div>
+                {/* Parse needs_review_fields if available */}
+                {(() => {
+                  let reviewFields: any = null;
+                  try {
+                    reviewFields = item.needs_review_fields ? JSON.parse(item.needs_review_fields) : null;
+                  } catch (e) {
+                    // Invalid JSON, ignore
+                  }
+                  
+                  return (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">Merchant</span>
+                        <div className="flex items-center gap-2">
+                          {reviewFields?.merchant && (
+                            <span className="text-xs text-amber-600">⚠️</span>
+                          )}
+                          <span className={`font-medium ${item.processing_status === 'scanning' ? 'text-gray-400 animate-pulse' : reviewFields?.merchant ? 'text-amber-700' : 'text-gray-900'}`}>
+                            {item.merchant_name}
+                          </span>
+                        </div>
+                      </div>
 
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Amount</span>
-                  <span className={`text-lg font-bold ${item.processing_status === 'scanning' ? 'text-gray-400 animate-pulse' : 'text-emerald-600'}`}>
-                    {item.amount > 0 ? formatCurrency(item.amount) : 'Scanning...'}
-                  </span>
-                </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">Amount</span>
+                        <div className="flex items-center gap-2">
+                          {reviewFields?.amount && (
+                            <span className="text-xs text-amber-600">⚠️</span>
+                          )}
+                          <span className={`text-lg font-bold ${item.processing_status === 'scanning' ? 'text-gray-400 animate-pulse' : reviewFields?.amount ? 'text-amber-700' : 'text-emerald-600'}`}>
+                            {item.amount > 0 ? formatCurrency(item.amount) : 'Scanning...'}
+                          </span>
+                        </div>
+                      </div>
 
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Date</span>
-                  <span className="font-medium text-gray-900">
-                    {formatDate(item.transaction_date)}
-                  </span>
-                </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">Date</span>
+                        <div className="flex items-center gap-2">
+                          {reviewFields?.date && (
+                            <span className="text-xs text-amber-600" title={`OCR: ${reviewFields.dateOCR || 'none'}`}>⚠️</span>
+                          )}
+                          <span className={`font-medium ${reviewFields?.date ? 'text-amber-700' : 'text-gray-900'}`}>
+                            {formatDate(item.transaction_date)}
+                          </span>
+                        </div>
+                      </div>
 
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Category</span>
-                  <span className="px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
-                    {item.category}
-                  </span>
-                </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">Category</span>
+                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+                          {item.category}
+                        </span>
+                      </div>
+                    </>
+                  );
+                })()}
+
+                {/* Review Warning */}
+                {item.processing_status === 'needs_review' && (
+                  <div className="mt-3 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                    <div className="flex items-start gap-2">
+                      <span className="text-amber-600 text-lg">⚠️</span>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-amber-900">Please Review</p>
+                        <p className="text-xs text-amber-700 mt-1">
+                          Some fields were unclear. Tap to edit if incorrect.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Status Badge */}
                 {item.processing_status === 'scanning' && (

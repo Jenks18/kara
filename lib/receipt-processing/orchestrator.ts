@@ -74,6 +74,13 @@ export interface ProcessingResult {
   errors: string[];
   warnings: string[];
   
+  // Field-level confidence for user review
+  fieldConfidence?: {
+    merchantName?: { value: string; confidence: number; needsReview: boolean };
+    amount?: { value: number; confidence: number; needsReview: boolean };
+    date?: { value: string; confidence: number; needsReview: boolean; originalOCR?: string };
+  };
+  
   // Performance
   processingTimeMs: number;
   costUSD?: number; // Track API costs
@@ -342,12 +349,43 @@ export class ReceiptProcessor {
          result.kraData?.merchantName ||
          result.ocrData?.merchantName);
       
+      // Track field-level confidence for user review
+      result.fieldConfidence = {
+        merchantName: {
+          value: result.kraData?.merchantName || result.ocrData?.merchantName || 'Unknown',
+          confidence: result.kraData?.merchantName ? 95 : (result.ocrData?.merchantName ? 75 : 0),
+          needsReview: !result.kraData?.merchantName && !result.ocrData?.merchantName
+        },
+        amount: {
+          value: result.kraData?.totalAmount || result.ocrData?.totalAmount || 0,
+          confidence: result.kraData?.totalAmount ? 95 : (result.ocrData?.totalAmount ? 80 : 0),
+          needsReview: (result.kraData?.totalAmount || result.ocrData?.totalAmount || 0) === 0
+        },
+        date: {
+          value: result.kraData?.invoiceDate || result.ocrData?.invoiceDate || new Date().toISOString().split('T')[0],
+          confidence: result.kraData?.invoiceDate ? 95 : (result.ocrData?.dateNeedsReview ? 30 : 70),
+          needsReview: result.ocrData?.dateNeedsReview || !result.kraData?.invoiceDate,
+          originalOCR: result.ocrData?.originalDateOCR
+        }
+      };
+      
+      // Add warnings for fields that need review
+      if (result.fieldConfidence?.merchantName?.needsReview) {
+        result.warnings.push('Merchant name unclear - please verify');
+      }
+      if (result.fieldConfidence?.amount?.needsReview) {
+        result.warnings.push('Amount not detected - please enter manually');
+      }
+      if (result.fieldConfidence?.date?.needsReview) {
+        result.warnings.push(`Date uncertain (OCR: ${result.fieldConfidence.date.originalOCR || 'none'}) - please verify`);
+      }
+      
       if (result.errors.length > 0) {
         result.status = 'failed';
       } else if (!hasExtractedData) {
         result.status = 'failed'; // No data extracted
-      } else if (result.confidence < 60) {
-        result.status = 'needs_review'; // Low confidence
+      } else if (result.confidence < 60 || result.warnings.length > 0) {
+        result.status = 'needs_review'; // Low confidence or warnings = needs review
       } else {
         result.status = 'success'; // We have good data!
       }
@@ -456,8 +494,11 @@ export class ReceiptProcessor {
       // Extract date and fix common OCR errors
       let dateMatch = fullText.match(/(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/);
       let parsedDate = new Date().toISOString().split('T')[0]; // Default to today
+      let dateNeedsReview = false;
+      let originalDateOCR: string | undefined;
       
       if (dateMatch) {
+        originalDateOCR = dateMatch[1];
         const dateParts = dateMatch[1].split(/[-\/]/);
         let day = parseInt(dateParts[0]);
         let month = parseInt(dateParts[1]);
@@ -465,7 +506,9 @@ export class ReceiptProcessor {
         
         // Fix common OCR errors in year
         if (year > 2100) {
-          // OCR read 2825 instead of 2024/2025
+          // OCR read 2825 instead of 2024/2025 - NEEDS REVIEW!
+          console.warn('⚠️  Suspicious year detected:', year, '- flagging for user review');
+          dateNeedsReview = true;
           // Take last 2 digits and prepend 20
           year = 2000 + (year % 100);
         } else if (year < 100) {
@@ -475,15 +518,35 @@ export class ReceiptProcessor {
         
         // Validate date is reasonable (within last 2 years to next year)
         const currentYear = new Date().getFullYear();
-        if (year < currentYear - 2) year = currentYear;
-        if (year > currentYear + 1) year = currentYear;
+        if (year < currentYear - 2) {
+          console.warn('⚠️  Date too old:', year, '- flagging for user review');
+          dateNeedsReview = true;
+          year = currentYear;
+        }
+        if (year > currentYear + 1) {
+          console.warn('⚠️  Future date detected:', year, '- flagging for user review');
+          dateNeedsReview = true;
+          year = currentYear;
+        }
         
         // Validate month and day
-        if (month < 1 || month > 12) month = new Date().getMonth() + 1;
-        if (day < 1 || day > 31) day = new Date().getDate();
+        if (month < 1 || month > 12) {
+          console.warn('⚠️  Invalid month:', month, '- flagging for user review');
+          dateNeedsReview = true;
+          month = new Date().getMonth() + 1;
+        }
+        if (day < 1 || day > 31) {
+          console.warn('⚠️  Invalid day:', day, '- flagging for user review');
+          dateNeedsReview = true;
+          day = new Date().getDate();
+        }
         
         // Format as YYYY-MM-DD
         parsedDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      } else {
+        // No date found - definitely needs review
+        console.warn('⚠️  No date found in receipt - using today, flagging for review');
+        dateNeedsReview = true;
       }
       
       // Extract invoice number
@@ -497,6 +560,9 @@ export class ReceiptProcessor {
         invoiceDate: parsedDate,
         invoiceNumber: invoiceMatch ? invoiceMatch[1] : null,
         fullText: fullText,
+        // Metadata for confidence tracking
+        dateNeedsReview: dateNeedsReview,
+        originalDateOCR: originalDateOCR,
       };
     } catch (error) {
       console.error('Google Vision extraction failed:', error);

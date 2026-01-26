@@ -206,7 +206,10 @@ export async function POST(request: NextRequest) {
           
           // Determine initial status
           const hasExtractedData = amount > 0 || merchantName !== 'Processing...';
-          const initialStatus = hasExtractedData ? 'processed' : 'scanning';
+          const needsReview = result.fieldConfidence?.merchantName?.needsReview ||
+                             result.fieldConfidence?.amount?.needsReview ||
+                             result.fieldConfidence?.date?.needsReview;
+          const initialStatus = !hasExtractedData ? 'scanning' : (needsReview ? 'needs_review' : 'processed');
           
           // Create expense item WITH LINK to raw_receipts table
           // Use extracted data immediately if available, otherwise set to scanning
@@ -223,6 +226,13 @@ export async function POST(request: NextRequest) {
               transaction_date: transactionDate,
               kra_invoice_number: result.kraData?.invoiceNumber || null,
               kra_verified: !!result.kraData?.invoiceNumber,
+              // Add metadata for fields that need review
+              needs_review_fields: needsReview ? JSON.stringify({
+                merchant: result.fieldConfidence?.merchantName?.needsReview,
+                amount: result.fieldConfidence?.amount?.needsReview,
+                date: result.fieldConfidence?.date?.needsReview,
+                dateOCR: result.fieldConfidence?.date?.originalOCR
+              }) : null,
             })
             .select('id')
             .single();
@@ -279,6 +289,9 @@ export async function POST(request: NextRequest) {
         parsed: result.parsedData,
         enhanced: result.aiEnhanced,
       },
+      
+      // Field-level confidence for user review UI
+      fieldConfidence: result.fieldConfidence,
       
       // Processing metadata
       processing: {
