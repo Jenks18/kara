@@ -20,7 +20,7 @@ export interface QRProcessorResult {
   rawText?: string;
   dataType: 'url' | 'structured' | 'plain' | null;
   url?: string;
-  scrapedData?: KRAInvoiceData;
+  scrapedData?: KRAInvoiceData | null;
   parsedFields?: Record<string, any>;
   timestamp: string;
 }
