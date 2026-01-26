@@ -254,21 +254,25 @@ export class ReceiptProcessor {
           parsedData: result.parsedData,
           template,
           imageBuffer: !qrData ? imageBuffer : undefined,
-        }).then((enhanced) => {
+        }).then(async (enhanced) => {
           // AI completed successfully - update raw_receipts in background
           console.log(`✓ AI categorized as: ${enhanced.category} (${enhanced.confidence}% confidence)`);
           
           if (result.rawReceiptId && options.supabaseClient) {
-            options.supabaseClient
+            const { error } = await options.supabaseClient
               .from('raw_receipts')
               .update({
                 ai_category: enhanced.category,
                 ai_confidence: enhanced.confidence,
                 ai_response: enhanced,
               })
-              .eq('id', result.rawReceiptId)
-              .then(() => console.log('✓ AI results saved to raw_receipts'))
-              .catch((err) => console.error('Failed to save AI results:', err));
+              .eq('id', result.rawReceiptId);
+            
+            if (error) {
+              console.error('Failed to save AI results:', error);
+            } else {
+              console.log('✓ AI results saved to raw_receipts');
+            }
           }
         }).catch((error: any) => {
           console.warn('⚠️ AI enhancement failed (non-blocking):', error.message);
