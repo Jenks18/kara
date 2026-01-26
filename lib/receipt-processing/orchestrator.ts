@@ -159,30 +159,58 @@ export class ReceiptProcessor {
       }
       
       // ==========================================
-      // STAGE 2c: GEMINI OCR FALLBACK
-      // If no QR code and no KRA data, use Gemini to extract basic receipt data
+      // STAGE 2c: GOOGLE VISION OCR FALLBACK
+      // If no QR code and no KRA data, use Google Vision to extract receipt data
       // ==========================================
-      if (!qrData && !kraData && process.env.GEMINI_API_KEY) {
-        console.log('🤖 Stage 2c: Using Gemini OCR (no QR/KRA found)...');
+      if (!qrData && !kraData && process.env.GOOGLE_VISION_API_KEY) {
+        console.log('🤖 Stage 2c: Using Google Vision OCR (no QR/KRA found)...');
         try {
-          const geminiData = await extractReceiptWithGemini(imageBuffer);
+          // Convert buffer to base64
+          const base64Image = imageBuffer.toString('base64');
           
-          // Map Gemini data to kraData format for compatibility
-          if (geminiData.merchantName || geminiData.totalAmount) {
-            kraData = {
-              merchantName: geminiData.merchantName || 'Unknown Merchant',
-              totalAmount: geminiData.totalAmount || 0,
-              invoiceDate: geminiData.invoiceDate || new Date().toISOString().split('T')[0],
-              invoiceNumber: geminiData.invoiceNumber || null,
-              taxAmount: null,
-              qrCodeData: null,
-            };
-            result.kraData = kraData;
-            console.log(`✓ Gemini extracted: ${kraData.merchantName} - ${kraData.totalAmount} KES`);
+          const VISION_API_URL = `https://vision.googleapis.com/v1/images:annotate?key=${process.env.GOOGLE_VISION_API_KEY}`;
+          
+          const visionResponse = await fetch(VISION_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              requests: [{
+                image: { content: base64Image },
+                features: [
+                  { type: 'TEXT_DETECTION', maxResults: 1 },
+                  { type: 'DOCUMENT_TEXT_DETECTION', maxResults: 1 }
+                ]
+              }]
+            })
+          });
+          
+          if (visionResponse.ok) {
+            const visionData: any = await visionResponse.json();
+            const fullText = visionData.responses[0]?.fullTextAnnotation?.text || '';
+            
+            if (fullText) {
+              console.log('✓ Google Vision extracted text:', fullText.substring(0, 200));
+              
+              // Extract merchant, amount, and date from text
+              const merchantMatch = fullText.match(/^([A-Z][A-Za-z\s&]+)/m);
+              const amountMatch = fullText.match(/(?:TOTAL|Total|Amount|KES|Ksh)\s*:?\s*(\d+(?:,\d{3})*(?:\.\d{2})?)/i);
+              const dateMatch = fullText.match(/(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/);
+              
+              kraData = {
+                merchantName: merchantMatch ? merchantMatch[1].trim() : 'Unknown Merchant',
+                totalAmount: amountMatch ? parseFloat(amountMatch[1].replace(/,/g, '')) : 0,
+                invoiceDate: dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0],
+                invoiceNumber: null,
+                taxAmount: null,
+                qrCodeData: null,
+              };
+              result.kraData = kraData;
+              console.log(`✓ Vision extracted: ${kraData.merchantName} - ${kraData.totalAmount} KES`);
+            }
           }
         } catch (error) {
-          console.error('Gemini OCR failed:', error);
-          result.warnings.push('Gemini OCR failed - no data extracted');
+          console.error('Google Vision OCR failed:', error);
+          result.warnings.push('Google Vision OCR failed - no data extracted');
         }
       }
       
