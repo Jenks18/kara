@@ -265,9 +265,9 @@ export default function WorkspacesPage() {
               onClick={handleNewWorkspace}
               className="
                 w-full py-4 rounded-xl
-                border-2 border-dashed border-gray-700
-                text-gray-400 font-medium
-                active:bg-dark-100 transition-colors
+                bg-gradient-to-r from-emerald-500 to-green-600
+                text-white font-semibold
+                active:scale-[0.98] transition-transform shadow-md
                 flex items-center justify-center gap-2
               "
             >
@@ -281,18 +281,18 @@ export default function WorkspacesPage() {
         
         {/* Domains Section */}
         <div className="mt-12">
-          <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">
+          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
             Domains
           </h3>
           
-          <div className="bg-dark-200 rounded-2xl border border-gray-800 p-6 flex items-start gap-4">
-            <div className="w-14 h-14 bg-cyan-500/20 rounded-2xl flex items-center justify-center flex-shrink-0">
-              <Shield size={28} className="text-cyan-400" />
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 flex items-start gap-4 shadow-sm">
+            <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center flex-shrink-0">
+              <Shield size={28} className="text-emerald-600" />
             </div>
             
             <div className="flex-1">
-              <h4 className="text-white font-semibold mb-2">Enhanced security</h4>
-              <p className="text-sm text-gray-400 leading-relaxed">
+              <h4 className="text-gray-900 font-semibold mb-2">Enhanced security</h4>
+              <p className="text-sm text-gray-600 leading-relaxed">
                 Require members on your domain to log in via single sign-on, restrict workspace creation, and more.
               </p>
             </div>
