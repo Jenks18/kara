@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import BottomNav from '@/components/navigation/BottomNav'
 import ExpenseItemCard from '@/components/expense/ExpenseItemCard'
 import CategoryPill from '@/components/ui/CategoryPill'
@@ -15,6 +16,7 @@ interface ExpenseItem {
   processing_status: 'scanning' | 'processed' | 'error'
   merchant_name: string | null
   transaction_date: string | null
+  report_id: string
 }
 
 interface ReportsClientProps {
@@ -22,10 +24,31 @@ interface ReportsClientProps {
 }
 
 export default function ReportsClient({ initialItems }: ReportsClientProps) {
+  const router = useRouter()
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedType, setSelectedType] = useState('expense')
-  const [showTypeFilter, setShowTypeFilter] = useState(false)
-  const [expenseItems] = useState<ExpenseItem[]>(initialItems)
+  const [expenseItems, setExpenseItems] = useState<ExpenseItem[]>(initialItems)
+  
+  // Poll for updates every 2 seconds if any items are scanning
+  useEffect(() => {
+    const hasScanning = expenseItems.some(item => item.processing_status === 'scanning')
+    
+    if (!hasScanning) return
+    
+    const interval = setInterval(async () => {
+      try {
+        const response = await fetch('/api/expense-reports')
+        if (response.ok) {
+          const data = await response.json()
+          setExpenseItems(data)
+        }
+      } catch (error) {
+        console.error('Failed to poll for updates:', error)
+      }
+    }, 2000)
+    
+    return () => clearInterval(interval)
+  }, [expenseItems])
   
   const categories = [
     { id: 'all', label: 'All' },
@@ -113,7 +136,7 @@ export default function ReportsClient({ initialItems }: ReportsClientProps) {
                 amount={item.amount}
                 status={item.processing_status === 'processed' ? 'processed' : item.processing_status === 'error' ? 'review_required' : 'scanning'}
                 userEmail="user@example.com"
-                onClick={() => {/* TODO: Open detail */}}
+                onClick={() => router.push(`/reports/${item.report_id}`)}
               />
             ))
           )}

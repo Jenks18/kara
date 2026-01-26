@@ -303,15 +303,17 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
             }
           }
           
-          // All uploads complete - redirect to reports page immediately
+          // All uploads complete - show report view with the created report
           const allSuccess = results.every(r => r.success || r.receiptId)
           
-          if (allSuccess) {
-            // Redirect to reports page to see the created expenses
-            window.location.href = '/reports'
+          if (allSuccess && sharedReportId) {
+            // Navigate to the report detail page to see real-time updates
+            window.location.href = `/reports/${sharedReportId}`
+          } else if (sharedReportId) {
+            // Some failed but we have a report - still show it
+            window.location.href = `/reports/${sharedReportId}`
           } else {
-            console.error('Some receipts failed to process:', results)
-            // Still redirect to reports page
+            // No report created - go to reports list
             window.location.href = '/reports'
           }
         }}
