@@ -162,8 +162,6 @@ export class ReceiptProcessor {
               totalAmount: kraScrapedData.totalAmount || ocrData?.totalAmount || 0,
               invoiceDate: kraScrapedData.invoiceDate || ocrData?.invoiceDate || new Date().toISOString().split('T')[0],
               invoiceNumber: kraScrapedData.invoiceNumber || ocrData?.invoiceNumber || null,
-              taxAmount: null,
-              qrCodeData: kraScrapedData.qrCodeData || null,
             };
             result.kraData = kraData;
             console.log('✓ KRA data merged with Vision OCR');
@@ -437,8 +435,6 @@ export class ReceiptProcessor {
         totalAmount: amountMatch ? parseFloat(amountMatch[1].replace(/,/g, '')) : 0,
         invoiceDate: dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0],
         invoiceNumber: null,
-        taxAmount: null,
-        qrCodeData: null,
         fullText: fullText, // Store full text for reference
       };
     } catch (error) {
