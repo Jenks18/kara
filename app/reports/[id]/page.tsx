@@ -73,9 +73,9 @@ export default function ReportDetailPage() {
         console.log('Supabase subscription status:', status)
       })
     
-    // Polling fallback: check every 3 seconds if any items are scanning/error
+    // Polling fallback: check every 3 seconds if any items are scanning
     const pollInterval = setInterval(() => {
-      if (report?.items?.some(item => item.processing_status === 'scanning' || item.processing_status === 'error')) {
+      if (report?.items?.some(item => item.processing_status === 'scanning')) {
         console.log('Polling: Refreshing report...')
         fetchReport()
       }
