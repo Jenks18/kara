@@ -275,36 +275,19 @@ export class ReceiptProcessor {
               console.log('✓ AI results saved to raw_receipts');
             }
             
-            // Update expense_items with better AI data (if confidence is high enough)
+            // Update expense_items with better AI category (if confidence is high enough)
             if (enhanced.confidence >= 70) {
-              const updateData: any = {
-                category: enhanced.category,
-              };
-              
-              // Update merchant if AI provided better data
-              if (enhanced.merchant && enhanced.merchant !== 'Unknown') {
-                updateData.merchant_name = enhanced.merchant;
-              }
-              
-              // Update amount if AI provided better data
-              if (enhanced.amount && enhanced.amount > 0) {
-                updateData.amount = enhanced.amount;
-              }
-              
-              // Update date if AI provided better data
-              if (enhanced.date) {
-                updateData.transaction_date = enhanced.date;
-              }
-              
               const { error: itemError } = await options.supabaseClient
                 .from('expense_items')
-                .update(updateData)
+                .update({
+                  category: enhanced.category,
+                })
                 .eq('raw_receipt_id', result.rawReceiptId);
               
               if (itemError) {
                 console.error('Failed to update expense_items with AI results:', itemError);
               } else {
-                console.log('✓ AI results updated in expense_items (UI will refresh)');
+                console.log('✓ AI category updated in expense_items (UI will refresh)');
               }
             }
           }
