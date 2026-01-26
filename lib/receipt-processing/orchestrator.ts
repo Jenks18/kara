@@ -283,12 +283,10 @@ export class ReceiptProcessor {
           console.log(`✓ AI categorized as: ${enhanced.category} (${enhanced.confidence}% confidence)`);
           
           if (result.rawReceiptId && options.supabaseClient) {
-            // Update raw_receipts with AI data
+            // Update raw_receipts with full OCR text for future vendor-specific parsing
             const { error: rawError } = await options.supabaseClient
               .from('raw_receipts')
               .update({
-                ai_category: enhanced.category,
-                ai_confidence: enhanced.confidence,
                 ai_response: enhanced,
               })
               .eq('id', result.rawReceiptId);
@@ -611,10 +609,13 @@ export class ReceiptProcessor {
     // Determine processing status based on result
     let processingStatus: 'processed' | 'error' = 'processed';
     
-    // If processing failed or no meaningful data was extracted, mark as error
-    if (result.status === 'failed' || (amount === 0 && merchantName === 'Unknown Merchant')) {
+    // Only mark as error if BOTH amount is 0 AND merchant is unknown
+    // (Having either one means we got useful data from OCR)
+    if (result.status === 'failed' && amount === 0 && merchantName === 'Unknown Merchant') {
       processingStatus = 'error';
       console.log('⚠️  No data extracted - marking as error');
+    } else {
+      console.log(`✓ Extracted: ${merchantName} - ${amount} KES`);
     }
     
     const updateData: any = {
