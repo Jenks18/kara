@@ -72,6 +72,13 @@ export default function QRTestPage() {
 
       if (!response.ok) {
         const error = await response.json();
+        
+        // If it's a setup error with instructions, show detailed message
+        if (error.instructions) {
+          const errorMsg = `${error.message}\n\n${error.instructions.join('\n')}`;
+          throw new Error(errorMsg);
+        }
+        
         throw new Error(error.error || 'Processing failed');
       }
 
@@ -176,7 +183,14 @@ export default function QRTestPage() {
         )}
 
         {/* Results */}
-        {result && (
+        {result && result.error && (
+          <div className="mt-8 p-6 bg-red-50 rounded-lg border-2 border-red-200">
+            <h3 className="text-lg font-semibold mb-3 text-red-900">❌ Error</h3>
+            <pre className="text-sm text-red-800 whitespace-pre-wrap">{result.error}</pre>
+          </div>
+        )}
+
+        {result && !result.error && (
           <div className="mt-8 space-y-6">
             <h2 className="text-2xl font-bold">Processing Results</h2>
             
@@ -384,13 +398,13 @@ export default function QRTestPage() {
 
         {/* Info */}
         <div className="mt-8 p-4 bg-blue-50 rounded-lg">
-          <h3 className="font-semibold text-blue-900 mb-2">ℹ️ How it works</h3>
+          <h3 className="font-semibold text-blue-900 mb-2">💡 Tips for Best Results</h3>
           <ul className="text-sm text-blue-800 space-y-1">
-            <li>• Uses Google Cloud Vision API for high-accuracy OCR</li>
-            <li>• Detects QR codes automatically (including KRA invoices)</li>
-            <li>• Scrapes verified data from KRA government website</li>
-            <li>• Provides two independent data sources for validation</li>
-            <li>• KRA data = 100% accurate official records</li>
+            <li>• <strong>QR Code Detection:</strong> Make sure the QR code is clearly visible and in focus</li>
+            <li>• Take photo in good lighting - avoid shadows over the QR code</li>
+            <li>• Keep the receipt flat and straight (not crumpled or at an angle)</li>
+            <li>• Higher resolution images work better (at least 1000x1000px)</li>
+            <li>• If QR code isn't detected, try zooming in on the QR code portion only</li>
           </ul>
         </div>
       </div>
