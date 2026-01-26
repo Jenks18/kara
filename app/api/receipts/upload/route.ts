@@ -190,26 +190,66 @@ export async function POST(request: NextRequest) {
           // 2. expense_items = Clean data for app UI (we create here)
           // ==========================================
           
+          // Extract data for immediate display
+          const merchantName = result.kraData?.merchantName ||
+                              result.parsedData?.merchantName ||
+                              result.store?.name ||
+                              'Processing...';
+          
+          const amount = result.kraData?.totalAmount ||
+                        result.parsedData?.totalAmount ||
+                        0;
+          
+          const transactionDate = result.kraData?.invoiceDate ||
+                                 result.parsedData?.transactionDate ||
+                                 new Date().toISOString().split('T')[0];
+          
+          // Determine initial status
+          const hasExtractedData = amount > 0 || merchantName !== 'Processing...';
+          const initialStatus = hasExtractedData ? 'processed' : 'scanning';
+          
           // Create expense item WITH LINK to raw_receipts table
-          // Set to 'scanning' initially - will be updated when OCR/AI completes
-          const { error: itemError } = await supabase
+          // Use extracted data immediately if available, otherwise set to scanning
+          const { error: itemError, data: createdItem } = await supabase
             .from('expense_items')
             .insert({
               report_id: finalReportId,
               raw_receipt_id: result.rawReceiptId, // 🔗 Link to raw_receipts table!
               image_url: result.imageUrl,
-              category: 'Fuel', // Default - will be updated
-              amount: 0, // Placeholder - will be updated
-              processing_status: 'scanning', // 🔄 Scanning in background
-              merchant_name: 'Processing...', // Placeholder
-              transaction_date: new Date().toISOString().split('T')[0],
-            });
+              category: 'other', // Default - will be updated by AI
+              amount: amount,
+              processing_status: initialStatus,
+              merchant_name: merchantName,
+              transaction_date: transactionDate,
+              kra_invoice_number: result.kraData?.invoiceNumber || null,
+              kra_verified: !!result.kraData?.invoiceNumber,
+            })
+            .select('id')
+            .single();
 
           if (itemError) {
             console.error('Failed to create expense item:', itemError);
             result.warnings.push('Receipt saved but not added to reports view');
           } else {
             console.log('✅ Expense item created and linked to raw_receipts:', result.rawReceiptId);
+            console.log('   Merchant:', merchantName, '| Amount:', amount, '| Status:', initialStatus);
+            
+            // Update report total immediately if we have an amount
+            if (amount > 0) {
+              const { data: reportItems } = await supabase
+                .from('expense_items')
+                .select('amount')
+                .eq('report_id', finalReportId);
+              
+              const total = reportItems?.reduce((sum, i) => sum + (i.amount || 0), 0) || 0;
+              
+              await supabase
+                .from('expense_reports')
+                .update({ total_amount: total })
+                .eq('id', finalReportId);
+              
+              console.log('✅ Report total updated immediately:', total);
+            }
           }
         }
       } catch (error: any) {

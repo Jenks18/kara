@@ -283,7 +283,7 @@ export class ReceiptProcessor {
           console.log(`✓ AI categorized as: ${enhanced.category} (${enhanced.confidence}% confidence)`);
           
           if (result.rawReceiptId && options.supabaseClient) {
-            // Update raw_receipts with full OCR text for future vendor-specific parsing
+            // Update raw_receipts with AI response
             const { error: rawError } = await options.supabaseClient
               .from('raw_receipts')
               .update({
@@ -298,7 +298,7 @@ export class ReceiptProcessor {
             }
             
             // Update expense_items with better AI category (if confidence is high enough)
-            if (enhanced.confidence >= 70) {
+            if (enhanced.confidence >= 60) {
               const { error: itemError } = await options.supabaseClient
                 .from('expense_items')
                 .update({
@@ -316,13 +316,6 @@ export class ReceiptProcessor {
         }).catch((error: any) => {
           console.warn('⚠️ AI enhancement failed (non-blocking):', error.message);
         });
-        
-        // ALSO: Update expense_items immediately with OCR/KRA data in background
-        // This happens right after raw_receipts is created
-        if (result.rawReceiptId && options.supabaseClient) {
-          this.updateExpenseItemWithScanData(result, options.supabaseClient)
-            .catch(err => console.error('Failed to update expense_item with scan data:', err));
-        }
         
         // Set default values immediately so we don't block the response
         result.aiEnhanced = {
@@ -342,13 +335,21 @@ export class ReceiptProcessor {
       
       this.validateResult(result);
       
-      // Determine final status
+      // Determine final status based on what data we extracted
+      const hasExtractedData = !!
+        (result.kraData?.totalAmount ||
+         result.ocrData?.totalAmount ||
+         result.kraData?.merchantName ||
+         result.ocrData?.merchantName);
+      
       if (result.errors.length > 0) {
         result.status = 'failed';
-      } else if (result.confidence < 70 || result.warnings.length > 2) {
-        result.status = 'needs_review';
+      } else if (!hasExtractedData) {
+        result.status = 'failed'; // No data extracted
+      } else if (result.confidence < 60) {
+        result.status = 'needs_review'; // Low confidence
       } else {
-        result.status = 'success';
+        result.status = 'success'; // We have good data!
       }
       
       // Update raw storage status
@@ -556,21 +557,37 @@ export class ReceiptProcessor {
    * Validate processing result
    */
   private validateResult(result: ProcessingResult): void {
-    // Check for required fields
-    if (!result.parsedData?.totalAmount) {
-      result.errors.push('Missing total amount');
-    }
+    // Check for required fields - check ALL possible data sources
+    const hasAmount = !!
+      (result.kraData?.totalAmount ||
+       result.parsedData?.totalAmount ||
+       result.ocrData?.totalAmount);
     
-    if (!result.parsedData?.merchantName && !result.store) {
-      result.warnings.push('Merchant name not found');
+    const hasMerchant = !!
+      (result.kraData?.merchantName ||
+       result.parsedData?.merchantName ||
+       result.ocrData?.merchantName ||
+       result.store?.name);
+    
+    // Only add error if we have NEITHER merchant NOR amount
+    if (!hasAmount && !hasMerchant) {
+      result.errors.push('No data could be extracted from receipt');
+    } else {
+      // We have some data - just warnings for missing fields
+      if (!hasAmount) {
+        result.warnings.push('Amount not detected');
+      }
+      if (!hasMerchant) {
+        result.warnings.push('Merchant name not detected');
+      }
     }
     
     // Calculate overall confidence
     const confidenceScores: number[] = [];
     
     if (result.qrData) confidenceScores.push(100);
-    if (result.kraData) confidenceScores.push(100);
-    if (result.ocrData?.confidence) confidenceScores.push(result.ocrData.confidence);
+    if (result.kraData) confidenceScores.push(95);
+    if (result.ocrData) confidenceScores.push(85); // Google Vision is reliable
     if (result.store) confidenceScores.push(result.store.confidence);
     if (result.aiEnhanced) confidenceScores.push(result.aiEnhanced.confidence);
     
@@ -580,116 +597,56 @@ export class ReceiptProcessor {
   }
   
   /**
-   * Update expense_items with scanned data after processing completes
-   * This runs in the background after raw_receipts is populated
-   */
-  private async updateExpenseItemWithScanData(
-    result: ProcessingResult,
-    supabaseClient: SupabaseClient
-  ): Promise<void> {
-    console.log('📝 Updating expense_item with scanned data...');
-    
-    // Extract data from multiple sources (priority: KRA > OCR > Store > QR)
-    const merchantName = result.kraData?.merchantName ||
-                        result.parsedData?.merchantName ||
-                        result.store?.name ||
-                        result.qrData?.merchantName ||
-                        'Unknown Merchant';
-    
-    const amount = result.kraData?.totalAmount ||
-                  result.parsedData?.totalAmount ||
-                  result.qrData?.totalAmount ||
-                  0;
-    
-    const transactionDate = result.kraData?.invoiceDate ||
-                           result.parsedData?.transactionDate ||
-                           result.qrData?.dateTime ||
-                           new Date().toISOString().split('T')[0];
-    
-    // Determine processing status based on result
-    let processingStatus: 'processed' | 'error' = 'processed';
-    
-    // Only mark as error if BOTH amount is 0 AND merchant is unknown
-    // (Having either one means we got useful data from OCR)
-    if (result.status === 'failed' && amount === 0 && merchantName === 'Unknown Merchant') {
-      processingStatus = 'error';
-      console.log('⚠️  No data extracted - marking as error');
-    } else {
-      console.log(`✓ Extracted: ${merchantName} - ${amount} KES`);
-    }
-    
-    const updateData: any = {
-      merchant_name: merchantName,
-      amount: amount,
-      transaction_date: transactionDate,
-      processing_status: processingStatus,
-    };
-    
-    // Add KRA data if available
-    if (result.kraData?.invoiceNumber) {
-      updateData.kra_invoice_number = result.kraData.invoiceNumber;
-      updateData.kra_verified = true;
-    }
-    
-    const { error } = await supabaseClient
-      .from('expense_items')
-      .update(updateData)
-      .eq('raw_receipt_id', result.rawReceiptId);
-    
-    if (error) {
-      console.error('Failed to update expense_item:', error);
-    } else {
-      console.log(`✅ Expense item updated with status: ${processingStatus}`);
-      
-      // Also update the expense_reports total (only if processed successfully)
-      if (processingStatus === 'processed') {
-        await this.updateExpenseReportTotal(result.rawReceiptId, supabaseClient);
-      }
-    }
-  }
-  
-  /**
    * Update expense_reports total when an item is updated
    */
   private async updateExpenseReportTotal(
     rawReceiptId: string,
     supabaseClient: SupabaseClient
   ): Promise<void> {
-    // Get the report_id from the expense_item
-    const { data: item, error: itemError } = await supabaseClient
-      .from('expense_items')
-      .select('report_id')
-      .eq('raw_receipt_id', rawReceiptId)
-      .single();
-    
-    if (itemError || !item) {
-      console.error('Failed to get report_id:', itemError);
-      return;
-    }
-    
-    // Calculate total from all items in the report
-    const { data: items, error: itemsError } = await supabaseClient
-      .from('expense_items')
-      .select('amount')
-      .eq('report_id', item.report_id);
-    
-    if (itemsError) {
-      console.error('Failed to get report items:', itemsError);
-      return;
-    }
-    
-    const total = items?.reduce((sum, i) => sum + (i.amount || 0), 0) || 0;
-    
-    // Update the expense_reports table
-    const { error: reportError } = await supabaseClient
-      .from('expense_reports')
-      .update({ total_amount: total })
-      .eq('id', item.report_id);
-    
-    if (reportError) {
-      console.error('Failed to update report total:', reportError);
-    } else {
-      console.log('✅ Report total updated:', total);
+    try {
+      // Get the report_id from the expense_item (use maybeSingle to avoid error on 0 rows)
+      const { data: item, error: itemError } = await supabaseClient
+        .from('expense_items')
+        .select('report_id')
+        .eq('raw_receipt_id', rawReceiptId)
+        .maybeSingle();
+      
+      if (itemError) {
+        console.error('Failed to get report_id:', itemError);
+        return;
+      }
+      
+      if (!item || !item.report_id) {
+        console.log('⏭️  No report_id found for expense item (likely still being created)');
+        return;
+      }
+      
+      // Calculate total from all items in the report
+      const { data: items, error: itemsError } = await supabaseClient
+        .from('expense_items')
+        .select('amount')
+        .eq('report_id', item.report_id);
+      
+      if (itemsError) {
+        console.error('Failed to get report items:', itemsError);
+        return;
+      }
+      
+      const total = items?.reduce((sum, i) => sum + (i.amount || 0), 0) || 0;
+      
+      // Update the expense_reports table
+      const { error: reportError } = await supabaseClient
+        .from('expense_reports')
+        .update({ total_amount: total })
+        .eq('id', item.report_id);
+      
+      if (reportError) {
+        console.error('Failed to update report total:', reportError);
+      } else {
+        console.log('✅ Report total updated:', total);
+      }
+    } catch (error: any) {
+      console.error('Error in updateExpenseReportTotal:', error.message);
     }
   }
   
