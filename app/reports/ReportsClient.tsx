@@ -6,7 +6,7 @@ import BottomNav from '@/components/navigation/BottomNav'
 import ExpenseItemCard from '@/components/expense/ExpenseItemCard'
 import CategoryPill from '@/components/ui/CategoryPill'
 import { Search, SlidersHorizontal } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 
 interface ExpenseItem {
   id: string
@@ -32,8 +32,6 @@ export default function ReportsClient({ initialItems }: ReportsClientProps) {
   
   // Set up Supabase real-time subscription for expense_items updates
   useEffect(() => {
-    const supabase = createClient()
-    
     const channel = supabase
       .channel('expense-items-updates')
       .on(

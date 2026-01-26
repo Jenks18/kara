@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { ChevronLeft, Search } from 'lucide-react'
 import Image from 'next/image'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 
 interface ExpenseItem {
   id: string
@@ -54,7 +54,6 @@ export default function ReportDetailPage() {
     fetchReport()
     
     // Set up Supabase real-time subscription for expense_items updates
-    const supabase = createClient()
     const channel = supabase
       .channel(`expense-items-${reportId}`)
       .on(
