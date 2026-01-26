@@ -31,14 +31,6 @@ interface GoogleVisionResponse {
   }>;
 }
 
-const GOOGLE_VISION_API_KEY = process.env.GOOGLE_VISION_API_KEY;
-
-if (!GOOGLE_VISION_API_KEY) {
-  throw new Error('GOOGLE_VISION_API_KEY is not configured in environment variables');
-}
-
-const VISION_API_URL = `https://vision.googleapis.com/v1/images:annotate?key=${GOOGLE_VISION_API_KEY}`;
-
 export async function POST(req: NextRequest) {
   try {
     const { imageData } = await req.json();
@@ -46,6 +38,20 @@ export async function POST(req: NextRequest) {
     if (!imageData) {
       return NextResponse.json({ error: 'No image data provided' }, { status: 400 });
     }
+
+    // Check for API key at runtime, not build time
+    const GOOGLE_VISION_API_KEY = process.env.GOOGLE_VISION_API_KEY;
+    if (!GOOGLE_VISION_API_KEY) {
+      return NextResponse.json(
+        { 
+          error: 'Google Vision API key not configured',
+          message: 'GOOGLE_VISION_API_KEY environment variable is missing'
+        }, 
+        { status: 500 }
+      );
+    }
+
+    const VISION_API_URL = `https://vision.googleapis.com/v1/images:annotate?key=${GOOGLE_VISION_API_KEY}`;
 
     // Remove data URL prefix if present
     const base64Image = imageData.includes(',') 
