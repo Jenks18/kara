@@ -162,7 +162,7 @@ export class ReceiptProcessor {
               totalAmount: kraScrapedData.totalAmount || ocrData?.totalAmount || 0,
               invoiceDate: kraScrapedData.invoiceDate || ocrData?.invoiceDate || new Date().toISOString().split('T')[0],
               invoiceNumber: kraScrapedData.invoiceNumber || ocrData?.invoiceNumber || null,
-              taxAmount: kraScrapedData.taxAmount || null,
+              taxAmount: null,
               qrCodeData: kraScrapedData.qrCodeData || null,
             };
             result.kraData = kraData;
