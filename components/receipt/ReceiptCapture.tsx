@@ -329,23 +329,23 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
   }
 
   return (
-    <div className="fixed inset-0 bg-dark-300 z-50 flex items-center justify-center">
-      <div className="w-full max-w-[430px] h-full bg-dark-300 flex flex-col relative">
+    <div className="fixed inset-0 bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 z-50 flex items-center justify-center">
+      <div className="w-full max-w-[430px] h-full bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 flex flex-col relative">
         {/* Header */}
-        <div className="flex flex-col px-4 pt-6 pb-4 border-b border-gray-700">
+        <div className="flex flex-col px-4 pt-6 pb-4 border-b border-emerald-200 bg-white/80 backdrop-blur-lg">
           <div className="flex items-center justify-between mb-4">
             <button
               onClick={handleCancel}
               className="p-2 -ml-2 active:scale-95 transition-transform"
             >
-              <X size={24} className="text-gray-100" />
+              <X size={24} className="text-gray-900" />
             </button>
-            <h2 className="text-lg font-semibold text-white">Create expense</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Create expense</h2>
             <div className="w-10" />
           </div>
 
           {/* Manual/Scan Tabs */}
-          <div className="flex gap-2 bg-dark-200/50 p-1 rounded-full">
+          <div className="flex gap-2 bg-gray-100 p-1 rounded-full">
             <button
               onClick={() => {
                 setActiveTab('manual')
@@ -354,8 +354,8 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
               }}
               className={`flex-1 flex items-center justify-center gap-2 px-6 py-2.5 rounded-full transition-all duration-200 font-medium ${
                 activeTab === 'manual'
-                  ? 'bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-400 text-white shadow-lg shadow-emerald-500/20'
-                  : 'text-gray-400 hover:text-white hover:bg-dark-100/50'
+                  ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-md'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
               }`}
             >
               <Pen size={18} />
@@ -370,8 +370,8 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
               }}
               className={`flex-1 flex items-center justify-center gap-2 px-6 py-2.5 rounded-full transition-all duration-200 font-medium ${
                 activeTab === 'scan'
-                  ? 'bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-400 text-white shadow-lg shadow-emerald-500/20'
-                  : 'text-gray-400 hover:text-white hover:bg-dark-100/50'
+                  ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-md'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
               }`}
             >
               <Receipt size={18} />
@@ -384,19 +384,19 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
         <div className="flex-1 overflow-hidden relative">
           {activeTab === 'manual' ? (
             // MANUAL ENTRY FORM
-            <div className="w-full h-full overflow-y-auto bg-dark-300 p-6">
+            <div className="w-full h-full overflow-y-auto bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 p-6">
               <div className="max-w-md mx-auto space-y-4">
                 <div>
-                  <label className="block text-gray-300 text-sm font-medium mb-2">Merchant</label>
+                  <label className="block text-gray-900 text-sm font-medium mb-2">Merchant</label>
                   <input
                     type="text"
                     placeholder="Enter merchant name"
-                    className="w-full bg-dark-200 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-colors shadow-sm"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-gray-300 text-sm font-medium mb-2">Amount (KES)</label>
+                  <label className="block text-gray-900 text-sm font-medium mb-2">Amount (KES)</label>
                   <input
                     type="number"
                     placeholder="0.00"
