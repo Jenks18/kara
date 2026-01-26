@@ -468,66 +468,66 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                 </div>
               ) : selectedImages.length > 0 && continuousMode ? (
                 // Multi-select mode preview
-                <div className="flex-1 flex items-center justify-center p-4 bg-dark-300">
+                <div className="flex-1 flex items-center justify-center p-4 bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100">
                   <div className="relative w-full max-w-md">
                     <img
                       src={selectedImages[selectedImages.length - 1]}
                       alt="Selected receipt"
-                      className="w-full h-auto rounded-2xl"
+                      className="w-full h-auto rounded-2xl shadow-lg"
                     />
-                    <div className="absolute top-4 right-4 w-12 h-12 bg-dark-200/80 backdrop-blur rounded-full flex items-center justify-center">
-                      <Zap size={24} className="text-primary" />
+                    <div className="absolute top-4 right-4 w-12 h-12 bg-emerald-500/90 backdrop-blur rounded-full flex items-center justify-center shadow-md">
+                      <Zap size={24} className="text-white" />
                     </div>
                   </div>
                 </div>
               ) : preview ? (
                 // Image Preview (single)
-                <div className="flex-1 flex items-center justify-center p-4 bg-dark-300">
+                <div className="flex-1 flex items-center justify-center p-4 bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100">
                   <img
                     src={preview}
                     alt="Receipt preview"
-                    className="max-w-full max-h-full object-contain rounded-lg"
+                    className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
                   />
                 </div>
               ) : (
                 // Empty state
-                <div className="flex-1 flex items-center justify-center bg-dark-300">
+                <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100">
                   <div className="text-center px-8">
-                    <Camera size={48} className="mx-auto mb-3 text-gray-600" />
-                    <p className="text-sm text-gray-400">Allow camera access to start scanning</p>
+                    <Camera size={48} className="mx-auto mb-3 text-gray-500" />
+                    <p className="text-sm text-gray-600">Allow camera access to start scanning</p>
                   </div>
                 </div>
               )}
 
               {/* Continuous mode counter overlay */}
               {cameraActive && continuousMode && selectedImages.length > 0 && (
-                <div className="absolute top-4 right-4 bg-dark-300/90 backdrop-blur px-4 py-2 rounded-full text-white font-semibold z-10">
+                <div className="absolute top-4 right-4 bg-emerald-600/90 backdrop-blur px-4 py-2 rounded-full text-white font-semibold z-10 shadow-lg">
                   {selectedImages.length} photo{selectedImages.length > 1 ? 's' : ''}
                 </div>
               )}
 
               {/* Camera Permission Prompt - Inside scan mode */}
               {showPermissionPrompt && !cameraActive && (
-                <div className="absolute inset-x-4 bottom-24 bg-dark-200 rounded-2xl p-5 shadow-2xl border border-gray-700 animate-slide-up z-20">
+                <div className="absolute inset-x-4 bottom-24 bg-white rounded-2xl p-5 shadow-2xl border border-emerald-200 animate-slide-up z-20">
                   <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
-                      <Camera size={20} className="text-primary" />
+                    <div className="flex-shrink-0 w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+                      <Camera size={20} className="text-emerald-600" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-white font-semibold mb-1 text-sm">Camera Access Required</h3>
-                      <p className="text-gray-400 text-xs mb-3">
+                      <h3 className="text-gray-900 font-semibold mb-1 text-sm">Camera Access Required</h3>
+                      <p className="text-gray-600 text-xs mb-3">
                         We need camera access to scan receipts.
                       </p>
                       <div className="flex gap-2">
                         <button
                           onClick={() => setShowPermissionPrompt(false)}
-                          className="flex-1 bg-dark-300 hover:bg-dark-100 text-gray-300 font-medium py-2.5 rounded-lg transition-all text-sm border border-gray-600"
+                          className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2.5 rounded-lg transition-all text-sm border border-gray-300"
                         >
                           Cancel
                         </button>
                         <button
                           onClick={startCamera}
-                          className="flex-1 bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-400 hover:from-emerald-700 hover:via-emerald-600 hover:to-emerald-500 text-white font-semibold py-2.5 rounded-lg transition-all duration-200 text-sm shadow-emerald-md hover:shadow-emerald-lg"
+                          className="flex-1 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-semibold py-2.5 rounded-lg transition-all duration-200 text-sm shadow-md"
                         >
                           Allow
                         </button>
@@ -542,7 +542,7 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
         
         {/* Bottom Controls - Only show in Scan mode */}
         {activeTab === 'scan' && (
-          <div className="px-6 py-4 bg-dark-300 border-t border-gray-700">
+          <div className="px-6 py-4 bg-white/80 backdrop-blur-lg border-t border-emerald-200">
             {preview ? (
               // Preview mode - Retake/Use Photo
               <div className="flex items-center gap-4">
@@ -551,13 +551,13 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                     setPreview(null)
                     startCamera()
                   }}
-                  className="flex-1 bg-dark-200 hover:bg-dark-100 active:scale-[0.98] text-white font-semibold py-4 rounded-full transition-all border border-gray-600"
+                  className="flex-1 bg-white hover:bg-gray-50 active:scale-[0.98] text-gray-700 font-semibold py-4 rounded-full transition-all border border-gray-300 shadow-sm"
                 >
                   Retake
                 </button>
                 <button
                   onClick={handleConfirm}
-                  className="flex-1 bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-400 hover:from-emerald-700 hover:via-emerald-600 hover:to-emerald-500 active:scale-[0.98] text-white font-semibold py-4 rounded-full transition-all duration-300 shadow-emerald-md hover:shadow-emerald-lg"
+                  className="flex-1 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 active:scale-[0.98] text-white font-semibold py-4 rounded-full transition-all duration-300 shadow-md"
                 >
                   Use Photo
                 </button>
@@ -575,7 +575,7 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                           <img
                             src={img}
                             alt={`Receipt ${index + 1}`}
-                            className="w-16 h-20 object-cover rounded-lg border-2 border-primary"
+                            className="w-16 h-20 object-cover rounded-lg border-2 border-emerald-500"
                           />
                           <button
                             onClick={() => handleRemoveImage(index)}
@@ -590,9 +590,9 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                       {Array.from({ length: Math.max(0, 5 - selectedImages.length) }).map((_, index) => (
                         <div
                           key={`empty-${index}`}
-                          className="w-16 h-20 rounded-lg border-2 border-dashed border-gray-600 flex items-center justify-center flex-shrink-0 bg-dark-100/30"
+                          className="w-16 h-20 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center flex-shrink-0 bg-white/50"
                         >
-                          <Camera size={20} className="text-gray-600" />
+                          <Camera size={20} className="text-gray-400" />
                         </div>
                       ))}
                     </div>
@@ -613,9 +613,9 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                   {!continuousMode ? (
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      className="w-14 h-14 rounded-xl bg-dark-200 backdrop-blur hover:bg-dark-100 active:scale-95 transition-all flex items-center justify-center border border-gray-600"
+                      className="w-14 h-14 rounded-xl bg-white backdrop-blur hover:bg-gray-50 active:scale-95 transition-all flex items-center justify-center border border-gray-300 shadow-sm"
                     >
-                      <ImageIcon size={24} className="text-gray-300" />
+                      <ImageIcon size={24} className="text-gray-700" />
                     </button>
                   ) : (
                     <div className="w-14" />
@@ -624,7 +624,7 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                   {/* Capture button - ALWAYS visible - Enhanced with gradient and strong borders */}
                   <button
                     onClick={capturePhoto}
-                    className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-600 via-emerald-500 to-emerald-400 hover:from-emerald-700 hover:via-emerald-600 hover:to-emerald-500 active:from-emerald-800 active:via-emerald-700 active:to-emerald-600 transition-all duration-300 flex items-center justify-center active:scale-90 shadow-emerald-xl ring-[6px] ring-emerald-500/20 hover:ring-emerald-500/30"
+                    className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 active:from-emerald-700 active:to-green-800 transition-all duration-300 flex items-center justify-center active:scale-90 shadow-lg ring-4 ring-emerald-200 hover:ring-emerald-300"
                   >
                     <div className="w-[72px] h-[72px] rounded-full border-[6px] border-white shadow-inner" />
                   </button>
@@ -643,8 +643,8 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                       }}
                       className={`w-16 h-16 rounded-xl backdrop-blur active:scale-95 transition-all duration-200 flex items-center justify-center border-2 ${
                         continuousMode 
-                          ? 'bg-gradient-to-br from-emerald-600 to-emerald-500 text-white border-emerald-400 ring-2 ring-emerald-500/30 shadow-lg shadow-emerald-500/30' 
-                          : 'bg-dark-200 hover:bg-dark-100 text-gray-300 border-gray-600 hover:border-emerald-500/50'
+                          ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white border-emerald-400 ring-2 ring-emerald-300 shadow-lg' 
+                          : 'bg-white hover:bg-gray-50 text-gray-700 border-gray-300 hover:border-emerald-400 shadow-sm'
                       }`}
                     >
                       <Receipt size={28} strokeWidth={2.5} />
