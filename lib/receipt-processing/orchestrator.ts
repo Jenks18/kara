@@ -425,17 +425,40 @@ export class ReceiptProcessor {
       
       console.log('✓ Google Vision extracted text:', fullText.substring(0, 200));
       
-      // Extract merchant, amount, and date from text
-      const merchantMatch = fullText.match(/^([A-Z][A-Za-z\s&]+)/m);
-      const amountMatch = fullText.match(/(?:TOTAL|Total|Amount|KES|Ksh)\s*:?\s*(\d+(?:,\d{3})*(?:\.\d{2})?)/i);
+      // Extract merchant name (first non-empty line, usually all caps)
+      const lines = fullText.split('\n').filter(line => line.trim());
+      const merchantName = lines[0]?.trim() || 'Unknown Merchant';
+      
+      // Extract total amount - look for "Sum", "Total", "TOTAL", "Amount" followed by number
+      const amountPatterns = [
+        /(?:Sum|TOTAL|Total|Amount)\s+(\d+(?:,\d{3})*(?:\.\d{2})?)/i,
+        /(?:KES|Ksh)\s*:?\s*(\d+(?:,\d{3})*(?:\.\d{2})?)/i,
+        /(\d+(?:,\d{3})*\.\d{2})\s*[A-Z]?\s*$/m, // Amount at end of line with optional letter
+      ];
+      
+      let totalAmount = 0;
+      for (const pattern of amountPatterns) {
+        const match = fullText.match(pattern);
+        if (match) {
+          totalAmount = parseFloat(match[1].replace(/,/g, ''));
+          break;
+        }
+      }
+      
+      // Extract date
       const dateMatch = fullText.match(/(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/);
       
+      // Extract invoice number
+      const invoiceMatch = fullText.match(/Invoice\s+(?:Nr|No|Number|#)[:\s]*(\w+)/i);
+      
+      console.log(`Parsed: ${merchantName} - ${totalAmount} KES`);
+      
       return {
-        merchantName: merchantMatch ? merchantMatch[1].trim() : 'Unknown Merchant',
-        totalAmount: amountMatch ? parseFloat(amountMatch[1].replace(/,/g, '')) : 0,
+        merchantName: merchantName,
+        totalAmount: totalAmount,
         invoiceDate: dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0],
-        invoiceNumber: null,
-        fullText: fullText, // Store full text for reference
+        invoiceNumber: invoiceMatch ? invoiceMatch[1] : null,
+        fullText: fullText,
       };
     } catch (error) {
       console.error('Google Vision extraction failed:', error);

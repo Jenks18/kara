@@ -65,16 +65,27 @@ export default function ReportDetailPage() {
           filter: `report_id=eq.${reportId}`
         },
         () => {
-          // Refetch report when any expense item is updated
+          console.log('Supabase real-time: expense item updated')
           fetchReport()
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        console.log('Supabase subscription status:', status)
+      })
+    
+    // Polling fallback: check every 3 seconds if any items are scanning/error
+    const pollInterval = setInterval(() => {
+      if (report?.items?.some(item => item.processing_status === 'scanning' || item.processing_status === 'error')) {
+        console.log('Polling: Refreshing report...')
+        fetchReport()
+      }
+    }, 3000)
 
     return () => {
       supabase.removeChannel(channel)
+      clearInterval(pollInterval)
     }
-  }, [reportId])
+  }, [reportId, report?.items])
 
   if (loading) {
     return (
