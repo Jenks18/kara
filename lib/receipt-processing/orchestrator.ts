@@ -295,6 +295,13 @@ export class ReceiptProcessor {
           console.warn('⚠️ AI enhancement failed (non-blocking):', error.message);
         });
         
+        // ALSO: Update expense_items immediately with OCR/KRA data in background
+        // This happens right after raw_receipts is created
+        if (result.rawReceiptId && options.supabaseClient) {
+          this.updateExpenseItemWithScanData(result, options.supabaseClient)
+            .catch(err => console.error('Failed to update expense_item with scan data:', err));
+        }
+        
         // Set default values immediately so we don't block the response
         result.aiEnhanced = {
           category: 'other',
@@ -457,6 +464,106 @@ export class ReceiptProcessor {
     result.confidence = confidenceScores.length > 0
       ? Math.round(confidenceScores.reduce((a, b) => a + b, 0) / confidenceScores.length)
       : 0;
+  }
+  
+  /**
+   * Update expense_items with scanned data after processing completes
+   * This runs in the background after raw_receipts is populated
+   */
+  private async updateExpenseItemWithScanData(
+    result: ProcessingResult,
+    supabaseClient: SupabaseClient
+  ): Promise<void> {
+    console.log('📝 Updating expense_item with scanned data...');
+    
+    // Extract data from multiple sources (priority: KRA > OCR > Store > QR)
+    const merchantName = result.kraData?.merchantName ||
+                        result.parsedData?.merchantName ||
+                        result.store?.name ||
+                        result.qrData?.merchantName ||
+                        'Unknown Merchant';
+    
+    const amount = result.kraData?.totalAmount ||
+                  result.parsedData?.totalAmount ||
+                  result.qrData?.totalAmount ||
+                  0;
+    
+    const transactionDate = result.kraData?.invoiceDate ||
+                           result.parsedData?.transactionDate ||
+                           result.qrData?.dateTime ||
+                           new Date().toISOString().split('T')[0];
+    
+    const updateData: any = {
+      merchant_name: merchantName,
+      amount: amount,
+      transaction_date: transactionDate,
+      processing_status: 'processed', // ✅ Scanned successfully
+    };
+    
+    // Add KRA data if available
+    if (result.kraData?.invoiceNumber) {
+      updateData.kra_invoice_number = result.kraData.invoiceNumber;
+      updateData.kra_verified = true;
+    }
+    
+    const { error } = await supabaseClient
+      .from('expense_items')
+      .update(updateData)
+      .eq('raw_receipt_id', result.rawReceiptId);
+    
+    if (error) {
+      console.error('Failed to update expense_item:', error);
+    } else {
+      console.log('✅ Expense item updated with scanned data');
+      
+      // Also update the expense_reports total
+      await this.updateExpenseReportTotal(result.rawReceiptId, supabaseClient);
+    }
+  }
+  
+  /**
+   * Update expense_reports total when an item is updated
+   */
+  private async updateExpenseReportTotal(
+    rawReceiptId: string,
+    supabaseClient: SupabaseClient
+  ): Promise<void> {
+    // Get the report_id from the expense_item
+    const { data: item, error: itemError } = await supabaseClient
+      .from('expense_items')
+      .select('report_id')
+      .eq('raw_receipt_id', rawReceiptId)
+      .single();
+    
+    if (itemError || !item) {
+      console.error('Failed to get report_id:', itemError);
+      return;
+    }
+    
+    // Calculate total from all items in the report
+    const { data: items, error: itemsError } = await supabaseClient
+      .from('expense_items')
+      .select('amount')
+      .eq('report_id', item.report_id);
+    
+    if (itemsError) {
+      console.error('Failed to get report items:', itemsError);
+      return;
+    }
+    
+    const total = items?.reduce((sum, i) => sum + (i.amount || 0), 0) || 0;
+    
+    // Update the expense_reports table
+    const { error: reportError } = await supabaseClient
+      .from('expense_reports')
+      .update({ total_amount: total })
+      .eq('id', item.report_id);
+    
+    if (reportError) {
+      console.error('Failed to update report total:', reportError);
+    } else {
+      console.log('✅ Report total updated:', total);
+    }
   }
   
   /**

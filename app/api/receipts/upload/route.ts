@@ -190,46 +190,19 @@ export async function POST(request: NextRequest) {
           // 2. expense_items = Clean data for app UI (we create here)
           // ==========================================
           
-          // Extract category from AI enhancement or parsed data
-          const category = result.aiEnhanced?.category || 
-                          result.parsedData?.category || 
-                          'Fuel'; // Default to Fuel since this is primarily for fuel receipts
-
-          // Extract merchant from multiple possible sources
-          const merchantName = result.parsedData?.merchantName || 
-                              result.store?.name || 
-                              result.kraData?.merchantName ||
-                              result.aiEnhanced?.merchant ||
-                              'Unknown';
-
-          // Extract amount from multiple sources
-          const amount = result.parsedData?.totalAmount || 
-                        result.kraData?.totalAmount || 
-                        result.aiEnhanced?.amount || 
-                        0;
-
-          // Extract date from multiple sources
-          const transactionDate = result.parsedData?.transactionDate || 
-                                 result.kraData?.invoiceDate || 
-                                 result.aiEnhanced?.date ||
-                                 new Date().toISOString().split('T')[0];
-
           // Create expense item WITH LINK to raw_receipts table
-          // Always set to 'processed' since we have the image and created the raw_receipt
+          // Set to 'scanning' initially - will be updated when OCR/AI completes
           const { error: itemError } = await supabase
             .from('expense_items')
             .insert({
               report_id: finalReportId,
               raw_receipt_id: result.rawReceiptId, // 🔗 Link to raw_receipts table!
               image_url: result.imageUrl,
-              category: category,
-              amount: amount,
-              processing_status: 'processed', // ✅ Always processed - AI runs in background
-              merchant_name: merchantName,
-              transaction_date: transactionDate,
-              // KRA data if available
-              kra_invoice_number: result.kraData?.invoiceNumber,
-              kra_verified: !!result.kraData?.verified,
+              category: 'Fuel', // Default - will be updated
+              amount: 0, // Placeholder - will be updated
+              processing_status: 'scanning', // 🔄 Scanning in background
+              merchant_name: 'Processing...', // Placeholder
+              transaction_date: new Date().toISOString().split('T')[0],
             });
 
           if (itemError) {
