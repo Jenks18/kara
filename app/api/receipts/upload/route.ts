@@ -215,6 +215,7 @@ export async function POST(request: NextRequest) {
                                  new Date().toISOString().split('T')[0];
 
           // Create expense item WITH LINK to raw_receipts table
+          // Always set to 'processed' since we have the image and created the raw_receipt
           const { error: itemError } = await supabase
             .from('expense_items')
             .insert({
@@ -223,7 +224,7 @@ export async function POST(request: NextRequest) {
               image_url: result.imageUrl,
               category: category,
               amount: amount,
-              processing_status: result.status === 'success' ? 'processed' : 'scanning',
+              processing_status: 'processed', // ✅ Always processed - AI runs in background
               merchant_name: merchantName,
               transaction_date: transactionDate,
               // KRA data if available

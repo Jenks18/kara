@@ -255,11 +255,12 @@ export class ReceiptProcessor {
           template,
           imageBuffer: !qrData ? imageBuffer : undefined,
         }).then(async (enhanced) => {
-          // AI completed successfully - update raw_receipts in background
+          // AI completed successfully - update BOTH tables in background
           console.log(`✓ AI categorized as: ${enhanced.category} (${enhanced.confidence}% confidence)`);
           
           if (result.rawReceiptId && options.supabaseClient) {
-            const { error } = await options.supabaseClient
+            // Update raw_receipts with AI data
+            const { error: rawError } = await options.supabaseClient
               .from('raw_receipts')
               .update({
                 ai_category: enhanced.category,
@@ -268,10 +269,43 @@ export class ReceiptProcessor {
               })
               .eq('id', result.rawReceiptId);
             
-            if (error) {
-              console.error('Failed to save AI results:', error);
+            if (rawError) {
+              console.error('Failed to save AI results to raw_receipts:', rawError);
             } else {
               console.log('✓ AI results saved to raw_receipts');
+            }
+            
+            // Update expense_items with better AI data (if confidence is high enough)
+            if (enhanced.confidence >= 70) {
+              const updateData: any = {
+                category: enhanced.category,
+              };
+              
+              // Update merchant if AI provided better data
+              if (enhanced.merchant && enhanced.merchant !== 'Unknown') {
+                updateData.merchant_name = enhanced.merchant;
+              }
+              
+              // Update amount if AI provided better data
+              if (enhanced.amount && enhanced.amount > 0) {
+                updateData.amount = enhanced.amount;
+              }
+              
+              // Update date if AI provided better data
+              if (enhanced.date) {
+                updateData.transaction_date = enhanced.date;
+              }
+              
+              const { error: itemError } = await options.supabaseClient
+                .from('expense_items')
+                .update(updateData)
+                .eq('raw_receipt_id', result.rawReceiptId);
+              
+              if (itemError) {
+                console.error('Failed to update expense_items with AI results:', itemError);
+              } else {
+                console.log('✓ AI results updated in expense_items (UI will refresh)');
+              }
             }
           }
         }).catch((error: any) => {
