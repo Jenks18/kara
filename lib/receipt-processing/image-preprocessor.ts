@@ -113,7 +113,7 @@ function enhanceImage(imageData: ImageData): ImageData {
   // Step 2: Sharpen (simple 3x3 kernel)
   const sharpened = sharpenImage(data, imageData.width, imageData.height);
   
-  return new ImageData(sharpened, imageData.width, imageData.height);
+  return new ImageData(new Uint8ClampedArray(sharpened), imageData.width, imageData.height);
 }
 
 /**
