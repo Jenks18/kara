@@ -115,8 +115,8 @@ async function performOCR(imageBlob: Blob | File): Promise<{
     await worker.terminate();
     
     // Extract lines from words if lines array doesn't exist
-    const lines = data.lines || [];
-    const words = data.words || [];
+    const lines = (data as any).lines || [];
+    const words = (data as any).words || [];
     
     console.log(`   Extracted ${lines.length} lines, ${words.length} words`);
     
