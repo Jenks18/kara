@@ -1,19 +1,48 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
 import { ChevronLeft } from 'lucide-react'
-import { updateUserProfile } from '@/lib/api/user-profiles'
+import { updateUserProfile, getUserProfile } from '@/lib/api/user-profiles'
 
 export const dynamic = 'force-dynamic'
 
 export default function DisplayNamePage() {
   const router = useRouter()
   const { user } = useUser()
-  const [firstName, setFirstName] = useState(user?.firstName || '')
-  const [lastName, setLastName] = useState(user?.lastName || '')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [saving, setSaving] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  // Load existing profile data
+  useEffect(() => {
+    async function loadProfile() {
+      if (!user?.id) return
+      
+      try {
+        const profile = await getUserProfile(user.id)
+        if (profile) {
+          setFirstName(profile.first_name || '')
+          setLastName(profile.last_name || '')
+        } else {
+          // Fallback to Clerk data if no profile exists
+          setFirstName(user.firstName || '')
+          setLastName(user.lastName || '')
+        }
+      } catch (error) {
+        console.error('Error loading profile:', error)
+        // Fallback to Clerk data
+        setFirstName(user.firstName || '')
+        setLastName(user.lastName || '')
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    loadProfile()
+  }, [user?.id, user?.firstName, user?.lastName])
 
   const handleSave = async () => {
     if (!user?.id) return
@@ -63,29 +92,35 @@ export default function DisplayNamePage() {
           Your display name is shown on your profile.
         </p>
 
-        {/* First Name */}
-        <div>
-          <label className="block text-sm text-gray-700 mb-2">First name</label>
-          <input
-            type="text"
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-            placeholder="First name"
-            className="w-full px-4 py-4 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 touch-manipulation"
-          />
-        </div>
+        {loading ? (
+          <div className="text-center py-8 text-gray-500">Loading...</div>
+        ) : (
+          <>
+            {/* First Name */}
+            <div>
+              <label className="block text-sm text-gray-700 mb-2">First name</label>
+              <input
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="First name"
+                className="w-full px-4 py-4 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 touch-manipulation"
+              />
+            </div>
 
-        {/* Last Name */}
-        <div>
-          <label className="block text-sm text-gray-700 mb-2">Last name</label>
-          <input
-            type="text"
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-            placeholder="Last name"
-            className="w-full px-4 py-4 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 touch-manipulation"
-          />
-        </div>
+            {/* Last Name */}
+            <div>
+              <label className="block text-sm text-gray-700 mb-2">Last name</label>
+              <input
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Last name"
+                className="w-full px-4 py-4 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 touch-manipulation"
+              />
+            </div>
+          </>
+        )}
       </div>
 
       {/* Save Button */}
