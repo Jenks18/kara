@@ -96,11 +96,6 @@ export function AvatarProvider({ children }: { children: ReactNode }) {
       }
     }
   }
-      } catch (error) {
-        console.error('Error saving avatar to database:', error)
-      }
-    }
-  }
 
   return (
     <AvatarContext.Provider value={{ avatar, setAvatar, isLoading }}>
