@@ -8,6 +8,7 @@ export interface Avatar {
   emoji: string
   color: string
   label?: string
+  imageUrl?: string // Support for uploaded profile pictures
 }
 
 interface AvatarContextType {
@@ -57,11 +58,16 @@ export function AvatarProvider({ children }: { children: ReactNode }) {
       if (user?.id) {
         try {
           const profile = await getUserProfile(user.id)
-          if (profile && profile.avatar_emoji) {
-            console.log('✅ Loaded from database:', { emoji: profile.avatar_emoji, color: profile.avatar_color })
-            const dbAvatar = {
-              emoji: profile.avatar_emoji,
+          if (profile && (profile.avatar_emoji || profile.avatar_image_url)) {
+            console.log('✅ Loaded from database:', { 
+              emoji: profile.avatar_emoji, 
               color: profile.avatar_color,
+              imageUrl: profile.avatar_image_url 
+            })
+            const dbAvatar: Avatar = {
+              emoji: profile.avatar_emoji || '💼',
+              color: profile.avatar_color || 'from-emerald-500 to-emerald-600',
+              imageUrl: profile.avatar_image_url || undefined,
             }
             setAvatarState(dbAvatar)
             // Also update localStorage

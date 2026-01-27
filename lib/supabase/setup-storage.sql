@@ -14,6 +14,17 @@ VALUES (
 )
 ON CONFLICT (id) DO NOTHING;
 
+-- Create storage bucket for profile pictures
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'profile-pictures',
+  'profile-pictures',
+  true,
+  5242880, -- 5MB limit
+  ARRAY['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+)
+ON CONFLICT (id) DO NOTHING;
+
 -- ==========================================
 -- STORAGE POLICIES (Row Level Security)
 -- ==========================================
@@ -39,12 +50,40 @@ USING (
   owner = auth.uid()
 );
 
+-- Allow authenticated users to upload profile pictures
+CREATE POLICY "Allow authenticated profile picture uploads" ON storage.objects
+FOR INSERT TO authenticated
+WITH CHECK (
+  bucket_id = 'profile-pictures'
+);
+
+-- Allow public read access to profile pictures
+CREATE POLICY "Allow public read profile pictures" ON storage.objects
+FOR SELECT TO public
+USING (bucket_id = 'profile-pictures');
+
+-- Allow users to update their own profile pictures
+CREATE POLICY "Allow users to update own profile pictures" ON storage.objects
+FOR UPDATE TO authenticated
+USING (
+  bucket_id = 'profile-pictures' AND
+  owner = auth.uid()
+);
+
+-- Allow users to delete their own profile pictures
+CREATE POLICY "Allow users to delete own profile pictures" ON storage.objects
+FOR DELETE TO authenticated
+USING (
+  bucket_id = 'profile-pictures' AND
+  owner = auth.uid()
+);
+
 -- ==========================================
 -- VERIFY SETUP
 -- ==========================================
 
--- Check bucket exists
-SELECT * FROM storage.buckets WHERE id = 'receipt-images';
+-- Check buckets exist
+SELECT * FROM storage.buckets WHERE id IN ('receipt-images', 'profile-pictures');
 
 -- Check policies
 SELECT * FROM pg_policies WHERE tablename = 'objects' AND schemaname = 'storage';

@@ -2,8 +2,13 @@ import { SignIn } from '@clerk/nextjs'
 
 export default function SignInPage() {
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
-      <SignIn />
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100">
+      <SignIn 
+        fallbackRedirectUrl="/"
+        signUpUrl="/sign-up"
+        routing="path"
+        path="/sign-in"
+      />
     </div>
   )
 }

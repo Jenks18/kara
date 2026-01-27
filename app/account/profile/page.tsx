@@ -53,6 +53,7 @@ export default function ProfilePage() {
   const [dateOfBirth, setDateOfBirth] = useState('')
   const [legalName, setLegalName] = useState('')
   const [address, setAddress] = useState('')
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
   
   // Load profile data from database
   useEffect(() => {
@@ -109,11 +110,50 @@ export default function ProfilePage() {
     setShowAvatarPicker(false)
   }
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      // TODO: Upload to storage and update user profile
-      console.log('File selected:', file)
+    if (!file || !user?.id) return
+
+    setUploadingAvatar(true)
+    try {
+      // Upload file to storage
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await fetch('/api/upload-avatar', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error('Upload failed')
+      }
+
+      const { url } = await response.json()
+      console.log('✅ Avatar uploaded:', url)
+
+      // Update user profile with image URL
+      const { updateUserProfile } = await import('@/lib/api/user-profiles')
+      await updateUserProfile(user.id, {
+        avatar_image_url: url,
+        user_email: user.emailAddresses[0]?.emailAddress || '',
+      })
+
+      // Update avatar context with the image URL
+      setAvatar({
+        emoji: '📷',
+        color: 'from-gray-400 to-gray-500',
+        label: 'Custom',
+        imageUrl: url,
+      })
+
+      setShowAvatarPicker(false)
+      alert('Profile picture updated successfully!')
+    } catch (error) {
+      console.error('Error uploading avatar:', error)
+      alert('Failed to upload profile picture. Please try again.')
+    } finally {
+      setUploadingAvatar(false)
     }
   }
 
@@ -157,12 +197,21 @@ export default function ProfilePage() {
           {/* Avatar */}
           <div className="flex justify-center py-4">
             <div className="relative">
-              <div className={`w-32 h-32 rounded-full bg-gradient-to-br ${avatar.color} flex items-center justify-center overflow-hidden shadow-lg [&]:bg-none [&>*]:bg-none`}>
-                <span className="text-6xl">{avatar.emoji}</span>
+              <div className={`w-32 h-32 rounded-full bg-gradient-to-br ${avatar.imageUrl ? 'bg-gray-100' : avatar.color} flex items-center justify-center overflow-hidden shadow-lg`}>
+                {avatar.imageUrl ? (
+                  <img 
+                    src={avatar.imageUrl} 
+                    alt="Profile" 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-6xl">{avatar.emoji}</span>
+                )}
               </div>
               <button 
                 onClick={() => setShowAvatarPicker(true)}
                 className="absolute bottom-0 right-0 w-10 h-10 rounded-full bg-emerald-600 border-4 border-white flex items-center justify-center active:scale-95 transition-transform shadow-lg touch-manipulation"
+                disabled={uploadingAvatar}
               >
                 <Camera size={18} className="text-white" />
               </button>
