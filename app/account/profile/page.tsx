@@ -51,6 +51,8 @@ export default function ProfilePage() {
   const [displayName, setDisplayName] = useState('')
   const [phoneNumber, setPhoneNumber] = useState('')
   const [dateOfBirth, setDateOfBirth] = useState('')
+  const [legalName, setLegalName] = useState('')
+  const [address, setAddress] = useState('')
   
   // Load profile data from database
   useEffect(() => {
@@ -63,6 +65,24 @@ export default function ProfilePage() {
           setDisplayName(profile.display_name || '')
           setPhoneNumber(profile.phone_number || '')
           setDateOfBirth(profile.date_of_birth || '')
+          
+          // Legal name
+          const legalFirst = profile.legal_first_name || ''
+          const legalLast = profile.legal_last_name || ''
+          if (legalFirst || legalLast) {
+            setLegalName(`${legalFirst} ${legalLast}`.trim())
+          }
+          
+          // Address
+          const addressParts = [
+            profile.address_line1,
+            profile.city,
+            profile.state,
+            profile.zip_code
+          ].filter(Boolean)
+          if (addressParts.length > 0) {
+            setAddress(addressParts.join(', '))
+          }
         }
       } catch (error) {
         console.error('Error loading profile:', error)
@@ -187,7 +207,7 @@ export default function ProfilePage() {
           >
             <div className="text-left space-y-1">
               <div className="text-xs text-gray-500">Legal name</div>
-              <div className="text-gray-900"></div>
+              <div className="text-gray-900">{legalName || 'Not set'}</div>
             </div>
             <ChevronRight size={20} className="text-gray-400 absolute right-6 top-1/2 -translate-y-1/2" />
           </button>
@@ -199,7 +219,7 @@ export default function ProfilePage() {
           >
             <div className="text-left space-y-1">
               <div className="text-xs text-gray-500">Date of birth</div>
-              <div className="text-gray-900"></div>
+              <div className="text-gray-900">{dateOfBirth || 'Not set'}</div>
             </div>
             <ChevronRight size={20} className="text-gray-400 absolute right-6 top-1/2 -translate-y-1/2" />
           </button>
@@ -211,7 +231,7 @@ export default function ProfilePage() {
           >
             <div className="text-left space-y-1">
               <div className="text-xs text-gray-500">Phone number</div>
-              <div className="text-gray-900"></div>
+              <div className="text-gray-900">{phoneNumber || 'Not set'}</div>
             </div>
             <ChevronRight size={20} className="text-gray-400 absolute right-6 top-1/2 -translate-y-1/2" />
           </button>
@@ -223,7 +243,7 @@ export default function ProfilePage() {
           >
             <div className="text-left space-y-1">
               <div className="text-xs text-gray-500">Address</div>
-              <div className="text-gray-900"></div>
+              <div className="text-gray-900">{address || 'Not set'}</div>
             </div>
             <ChevronRight size={20} className="text-gray-400 absolute right-6 top-1/2 -translate-y-1/2" />
           </button>
