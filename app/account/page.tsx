@@ -8,16 +8,17 @@ import Card from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
 import { 
   User, 
-  CreditCard, 
+  Crown, 
   Wallet, 
   Settings, 
   Shield, 
   HelpCircle, 
-  Gift,
-  Lightbulb,
+  Sparkles,
+  Wrench,
   Info,
   LogOut,
-  ChevronRight
+  ChevronRight,
+  Heart
 } from 'lucide-react'
 
 // Force dynamic rendering to avoid Clerk prerender issues
@@ -64,7 +65,7 @@ export default function AccountPage() {
       title: 'Account',
       items: [
         { icon: User, label: 'Profile', href: '/account/profile' },
-        { icon: CreditCard, label: 'Subscription', badge: 'Trial: 30 days left!', href: '#' },
+        { icon: Crown, label: 'Subscription', badge: 'Trial: 30 days left!', href: '#' },
         { icon: Wallet, label: 'Wallet', href: '/account/wallet' },
         { icon: Settings, label: 'Preferences', href: '/account/preferences' },
         { icon: Shield, label: 'Security', href: '/account/security' },
@@ -74,10 +75,10 @@ export default function AccountPage() {
       title: 'General',
       items: [
         { icon: HelpCircle, label: 'Help', external: true, href: '#' },
-        { icon: Gift, label: "What's new", external: true, href: '#' },
+        { icon: Sparkles, label: "What's new", external: true, href: '#' },
         { icon: Info, label: 'About', href: '/account/about' },
-        { icon: Lightbulb, label: 'Troubleshoot', href: '#' },
-        { icon: Gift, label: 'Save the world', href: '#' },
+        { icon: Wrench, label: 'Troubleshoot', href: '#' },
+        { icon: Heart, label: 'Save the world', href: '#' },
         { icon: LogOut, label: 'Sign Out', href: '#', onClick: handleSignOut },
       ],
     },

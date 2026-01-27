@@ -43,7 +43,7 @@ export default function BottomNav() {
                 min-w-[60px] min-h-[56px]
                 transition-colors duration-200 rounded-lg
                 active:scale-95 touch-manipulation
-                ${isActive ? 'text-emerald-600' : 'text-gray-600 active:text-emerald-500'}
+                ${isActive ? 'text-emerald-600' : 'text-emerald-600 active:text-emerald-700'}
               `}
             >
               <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
