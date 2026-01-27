@@ -16,11 +16,19 @@ if (typeof window !== 'undefined') {
   }
 }
 
+// Singleton client instance
+let clientInstance: ReturnType<typeof createClient> | null = null
+
 /**
  * Get an authenticated Supabase client with Clerk JWT
  * This client will pass through RLS policies
  */
 export async function getSupabaseClient() {
+  // If we already have a client, return it
+  if (clientInstance) {
+    return clientInstance
+  }
+
   let authToken: string | null = null
   
   // Get Clerk session token for authentication
@@ -44,7 +52,8 @@ export async function getSupabaseClient() {
     }
   }
   
-  return createClient(
+  // Create client with auth token
+  clientInstance = createClient(
     supabaseUrl || 'https://placeholder.supabase.co',
     supabaseAnonKey || 'placeholder-key',
     {
@@ -53,8 +62,14 @@ export async function getSupabaseClient() {
           Authorization: `Bearer ${authToken}`,
         } : {},
       },
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
     }
   )
+
+  return clientInstance
 }
 
 // Legacy export for backwards compatibility (not authenticated)

@@ -20,16 +20,22 @@ export default function DisplayNamePage() {
     
     setSaving(true)
     try {
-      await updateUserProfile(user.id, {
+      const result = await updateUserProfile(user.id, {
         first_name: firstName,
         last_name: lastName,
         display_name: `${firstName} ${lastName}`.trim(),
         user_email: user.emailAddresses[0]?.emailAddress || '',
       })
-      console.log('✅ Display name saved')
-      router.back()
+      
+      if (result) {
+        console.log('✅ Display name saved successfully:', result)
+        router.back()
+      } else {
+        console.error('❌ Display name save returned null')
+        alert('Failed to save. Please check console for errors.')
+      }
     } catch (error) {
-      console.error('Error saving display name:', error)
+      console.error('❌ Error saving display name:', error)
       alert('Failed to save. Please try again.')
     } finally {
       setSaving(false)
