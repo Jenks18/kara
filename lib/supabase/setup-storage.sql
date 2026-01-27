@@ -29,6 +29,15 @@ ON CONFLICT (id) DO NOTHING;
 -- STORAGE POLICIES (Row Level Security)
 -- ==========================================
 
+-- Drop existing policies if they exist (to avoid conflicts)
+DROP POLICY IF EXISTS "Allow authenticated uploads" ON storage.objects;
+DROP POLICY IF EXISTS "Allow public read" ON storage.objects;
+DROP POLICY IF EXISTS "Allow users to delete own receipts" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated profile picture uploads" ON storage.objects;
+DROP POLICY IF EXISTS "Allow public read profile pictures" ON storage.objects;
+DROP POLICY IF EXISTS "Allow users to update own profile pictures" ON storage.objects;
+DROP POLICY IF EXISTS "Allow users to delete own profile pictures" ON storage.objects;
+
 -- Allow authenticated users to upload receipts
 CREATE POLICY "Allow authenticated uploads" ON storage.objects
 FOR INSERT TO authenticated
