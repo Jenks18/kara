@@ -47,11 +47,15 @@
   
   body {
     @apply bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 text-gray-900 font-sans antialiased;
-    @apply min-h-screen overflow-x-hidden;
+    min-height: 100vh;
+    min-height: 100dvh; /* Dynamic viewport height for mobile */
+    overflow-x: hidden;
+    overflow-y: auto; /* Allow vertical scrolling */
     /* Better scrolling on iOS */
     -webkit-overflow-scrolling: touch;
-    /* Prevent overscroll */
-    overscroll-behavior: none;
+    /* Prevent overscroll bounce */
+    overscroll-behavior-x: none;
+    overscroll-behavior-y: auto;
     /* Force mobile view - max width constraint */
     max-width: 430px;
     margin: 0 auto;

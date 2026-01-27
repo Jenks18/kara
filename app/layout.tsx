@@ -34,13 +34,18 @@ export default function RootLayout({
 }) {
   return (
     <ClerkProvider>
-      <html lang="en">
+      <html lang="en" style={{ height: '100%', overflow: 'hidden' }}>
         <head>
           <meta name="mobile-web-app-capable" content="yes" />
           <meta name="apple-mobile-web-app-capable" content="yes" />
           <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         </head>
-        <body className="overflow-x-hidden" style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
+        <body style={{ 
+          height: '100%',
+          overflow: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehavior: 'none'
+        }}>
           <Providers>{children}</Providers>
         </body>
       </html>
