@@ -65,8 +65,8 @@ export default function AccountPage() {
       title: 'Account',
       items: [
         { icon: User, label: 'Profile', href: '/account/profile' },
-        { icon: Crown, label: 'Subscription', badge: 'Trial: 30 days left!', href: '#' },
-        { icon: Wallet, label: 'Wallet', href: '/account/wallet' },
+        // { icon: Crown, label: 'Subscription', badge: 'Trial: 30 days left!', href: '#' },
+        // { icon: Wallet, label: 'Wallet', href: '/account/wallet' },
         { icon: Settings, label: 'Preferences', href: '/account/preferences' },
         { icon: Shield, label: 'Security', href: '/account/security' },
       ],
@@ -78,7 +78,7 @@ export default function AccountPage() {
         { icon: Sparkles, label: "What's new", external: true, href: '#' },
         { icon: Info, label: 'About', href: '/account/about' },
         { icon: Wrench, label: 'Troubleshoot', href: '#' },
-        { icon: Heart, label: 'Save the world', href: '#' },
+        // { icon: Heart, label: 'Save the world', href: '#' },
         { icon: LogOut, label: 'Sign Out', href: '#', onClick: handleSignOut },
       ],
     },
@@ -87,20 +87,17 @@ export default function AccountPage() {
   return (
     <div className="min-h-screen pb-20 bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-lg border-b border-emerald-200">
-        <div className="px-4 py-6 max-w-md mx-auto">
+      <div className="sticky top-0 z-30 bg-white border-b border-gray-200">
+        <div className="px-6 py-4 max-w-md mx-auto">
           {/* Profile Section */}
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center flex-shrink-0">
-              <span className="text-2xl">🦁</span>
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white font-semibold text-lg flex-shrink-0">
+              {displayName.charAt(0).toUpperCase()}
             </div>
-            <div className="flex-1">
-              <h1 className="text-xl font-bold text-gray-900">{displayName}</h1>
-              <p className="text-sm text-gray-600">{displayEmail}</p>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-base font-semibold text-gray-900 truncate">{displayName}</h1>
+              <p className="text-sm text-gray-500 truncate">{displayEmail}</p>
             </div>
-            <button className="w-10 h-10 rounded-full bg-white flex items-center justify-center border border-gray-200">
-              <span className="text-xl">{user?.imageUrl ? '😊' : '👤'}</span>
-            </button>
           </div>
         </div>
       </div>
