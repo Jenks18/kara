@@ -3,17 +3,19 @@
 import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, FileText, PlusCircle, Briefcase, User } from 'lucide-react'
+import { Home, FileText, PlusCircle, Briefcase } from 'lucide-react'
+import { useAvatar } from '@/contexts/AvatarContext'
 
 export default function BottomNav() {
   const pathname = usePathname()
+  const { avatar } = useAvatar()
   
   const navItems = [
     { id: 'inbox', label: 'Inbox', icon: Home, href: '/' },
     { id: 'reports', label: 'Reports', icon: FileText, href: '/reports' },
     { id: 'create', label: 'Create', icon: PlusCircle, href: '/create' },
     { id: 'workspaces', label: 'Workspaces', icon: Briefcase, href: '/workspaces' },
-    { id: 'account', label: 'Account', icon: User, href: '/account' },
+    { id: 'account', label: 'Account', icon: null, href: '/account', isAvatar: true },
   ]
   
   return (
@@ -46,7 +48,13 @@ export default function BottomNav() {
                 ${isActive ? 'text-emerald-600' : 'text-emerald-600 active:text-emerald-700'}
               `}
             >
-              <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
+              {item.isAvatar ? (
+                <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${avatar.color} flex items-center justify-center text-xs ${isActive ? 'ring-2 ring-emerald-600 ring-offset-1' : ''}`}>
+                  {avatar.emoji}
+                </div>
+              ) : Icon ? (
+                <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
+              ) : null}
               <span className="text-xs font-medium whitespace-nowrap">{item.label}</span>
             </Link>
           )

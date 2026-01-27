@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
 import { ChevronLeft, User as UserIcon, ChevronRight, Camera, Upload, X } from 'lucide-react'
+import { useAvatar } from '@/contexts/AvatarContext'
 
 export const dynamic = 'force-dynamic'
 
@@ -45,13 +46,12 @@ const AVATAR_OPTIONS = [
 export default function ProfilePage() {
   const router = useRouter()
   const { user } = useUser()
+  const { avatar, setAvatar } = useAvatar()
   const [showAvatarPicker, setShowAvatarPicker] = useState(false)
-  const [selectedAvatar, setSelectedAvatar] = useState({ emoji: '🦁', color: 'from-emerald-500 to-emerald-600' })
 
-  const handleAvatarSelect = (avatar: typeof AVATAR_OPTIONS[0]) => {
-    setSelectedAvatar(avatar)
+  const handleAvatarSelect = (selectedAvatar: typeof AVATAR_OPTIONS[0]) => {
+    setAvatar(selectedAvatar)
     setShowAvatarPicker(false)
-    // TODO: Save to user profile
   }
 
   return (
@@ -84,11 +84,11 @@ export default function ProfilePage() {
           {/* Avatar */}
           <div className="flex justify-center py-4">
             <div className="relative">
-              <div className={`w-32 h-32 rounded-full bg-gradient-to-br ${selectedAvatar.color} flex items-center justify-center overflow-hidden shadow-lg`}>
+              <div className={`w-32 h-32 rounded-full bg-gradient-to-br ${avatar.color} flex items-center justify-center overflow-hidden shadow-lg`}>
                 {user?.imageUrl ? (
                   <img src={user.imageUrl} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-6xl">{selectedAvatar.emoji}</span>
+                  <span className="text-6xl">{avatar.emoji}</span>
                 )}
               </div>
               <button 
@@ -218,17 +218,17 @@ export default function ProfilePage() {
 
               {/* Avatar Grid */}
               <div className="grid grid-cols-5 gap-3">
-                {AVATAR_OPTIONS.map((avatar, index) => (
+                {AVATAR_OPTIONS.map((avatarOption, index) => (
                   <button
                     key={index}
-                    onClick={() => handleAvatarSelect(avatar)}
-                    className={`aspect-square rounded-full bg-gradient-to-br ${avatar.color} flex items-center justify-center text-3xl hover:scale-110 active:scale-95 transition-transform touch-manipulation shadow-lg ${
-                      selectedAvatar.emoji === avatar.emoji && selectedAvatar.color === avatar.color
+                    onClick={() => handleAvatarSelect(avatarOption)}
+                    className={`aspect-square rounded-full bg-gradient-to-br ${avatarOption.color} flex items-center justify-center text-3xl hover:scale-110 active:scale-95 transition-transform touch-manipulation shadow-lg ${
+                      avatar.emoji === avatarOption.emoji && avatar.color === avatarOption.color
                         ? 'ring-4 ring-white ring-offset-2 ring-offset-emerald-900'
                         : ''
                     }`}
                   >
-                    {avatar.emoji}
+                    {avatarOption.emoji}
                   </button>
                 ))}
               </div>
