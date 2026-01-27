@@ -20,9 +20,9 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-  themeColor: '#0c1710',
+  maximumScale: 5,
+  userScalable: true,
+  themeColor: '#10b981',
   viewportFit: 'cover',
 }
 
@@ -39,7 +39,7 @@ export default function RootLayout({
           <meta name="apple-mobile-web-app-capable" content="yes" />
           <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         </head>
-        <body className="overflow-x-hidden">{children}</body>
+        <body className="overflow-x-hidden" style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>{children}</body>
       </html>
     </ClerkProvider>
   )
