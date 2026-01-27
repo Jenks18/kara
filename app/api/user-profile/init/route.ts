@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { auth, currentUser } from '@clerk/nextjs/server'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 
 export async function POST() {
   try {
@@ -10,8 +10,6 @@ export async function POST() {
     if (!userId || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-
-    const supabase = createClient()
     
     // Check if profile exists
     const { data: existingProfile } = await supabase
