@@ -26,14 +26,18 @@ export async function getSupabaseClient() {
   // Get Clerk session token for authentication
   if (typeof window !== 'undefined') {
     try {
-      const { default: Clerk } = await import('@clerk/clerk-js')
-      const clerk = (window as any).Clerk || Clerk
-      authToken = await clerk?.session?.getToken({ template: 'supabase' })
-      
-      if (authToken) {
-        console.log('✅ Got Clerk token for Supabase')
+      // Access the global Clerk instance loaded by ClerkProvider
+      const clerk = (window as any).Clerk
+      if (clerk && clerk.session) {
+        authToken = await clerk.session.getToken({ template: 'supabase' })
+        
+        if (authToken) {
+          console.log('✅ Got Clerk token for Supabase')
+        } else {
+          console.warn('⚠️ No Clerk token available')
+        }
       } else {
-        console.warn('⚠️ No Clerk token available')
+        console.warn('⚠️ Clerk not loaded yet')
       }
     } catch (error) {
       console.error('Failed to get Clerk token:', error)
