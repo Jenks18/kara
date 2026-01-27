@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
 import { ChevronLeft, User as UserIcon, ChevronRight, Camera, Upload, X } from 'lucide-react'
 import { useAvatar } from '@/contexts/AvatarContext'
+import { getUserProfile } from '@/lib/api/user-profiles'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,6 +48,29 @@ export default function ProfilePage() {
   const { avatar, setAvatar, isLoading } = useAvatar()
   const [showAvatarPicker, setShowAvatarPicker] = useState(false)
   const [selectedTempAvatar, setSelectedTempAvatar] = useState(avatar)
+  const [displayName, setDisplayName] = useState('')
+  const [phoneNumber, setPhoneNumber] = useState('')
+  const [dateOfBirth, setDateOfBirth] = useState('')
+  
+  // Load profile data from database
+  useEffect(() => {
+    async function loadProfile() {
+      if (!user?.id) return
+      
+      try {
+        const profile = await getUserProfile(user.id)
+        if (profile) {
+          setDisplayName(profile.display_name || '')
+          setPhoneNumber(profile.phone_number || '')
+          setDateOfBirth(profile.date_of_birth || '')
+        }
+      } catch (error) {
+        console.error('Error loading profile:', error)
+      }
+    }
+    
+    loadProfile()
+  }, [user?.id])
   
   // Sync temp avatar when context avatar changes
   useEffect(() => {
@@ -132,7 +156,7 @@ export default function ProfilePage() {
           >
             <div className="text-left space-y-1">
               <div className="text-xs text-gray-500">Display name</div>
-              <div className="text-gray-900">{user?.fullName || user?.emailAddresses[0]?.emailAddress || ''}</div>
+              <div className="text-gray-900">{displayName || user?.fullName || 'Not set'}</div>
             </div>
             <ChevronRight size={20} className="text-gray-400 absolute right-6 top-1/2 -translate-y-1/2" />
           </button>

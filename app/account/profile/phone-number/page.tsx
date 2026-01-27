@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
 import { ChevronLeft } from 'lucide-react'
-import { updateUserProfile } from '@/lib/api/user-profiles'
+import { getUserProfile, updateUserProfile } from '@/lib/api/user-profiles'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,6 +13,26 @@ export default function PhoneNumberPage() {
   const { user } = useUser()
   const [phoneNumber, setPhoneNumber] = useState('')
   const [saving, setSaving] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function loadProfile() {
+      if (!user?.id) return
+      
+      try {
+        const profile = await getUserProfile(user.id)
+        if (profile) {
+          setPhoneNumber(profile.phone_number || '')
+        }
+      } catch (error) {
+        console.error('Error loading phone number:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    loadProfile()
+  }, [user?.id])
 
   const handleSave = async () => {
     if (!user?.id) return

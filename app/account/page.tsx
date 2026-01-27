@@ -2,8 +2,9 @@
 
 import { useUser, useClerk } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useAvatar } from '@/contexts/AvatarContext'
+import { getUserProfile } from '@/lib/api/user-profiles'
 import BottomNav from '@/components/navigation/BottomNav'
 import Card from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
@@ -30,23 +31,36 @@ export default function AccountPage() {
   const { signOut } = useClerk()
   const { avatar } = useAvatar()
   const router = useRouter()
+  const [displayName, setDisplayName] = useState('')
+  const [displayEmail, setDisplayEmail] = useState('')
 
-  // Redirect unauthenticated users (optional - can disable for dev)
+  // Load profile data from database
   useEffect(() => {
-    if (isLoaded && !isSignedIn) {
-      // Uncomment to enforce auth:
-      // router.push('/sign-in')
+    async function loadProfile() {
+      if (!user?.id) return
+      
+      try {
+        const profile = await getUserProfile(user.id)
+        if (profile) {
+          setDisplayName(profile.display_name || user?.fullName || '')
+        } else {
+          setDisplayName(user?.fullName || '')
+        }
+        setDisplayEmail(user?.emailAddresses[0]?.emailAddress || '')
+      } catch (error) {
+        console.error('Error loading profile:', error)
+        setDisplayName(user?.fullName || '')
+        setDisplayEmail(user?.emailAddresses[0]?.emailAddress || '')
+      }
     }
-  }, [isLoaded, isSignedIn, router])
+    
+    loadProfile()
+  }, [user?.id, user?.fullName, user?.emailAddresses])
 
   const handleSignOut = async () => {
     await signOut()
     router.push('/sign-in')
   }
-
-  // Allow viewing without auth in dev mode
-  const displayName = user?.fullName || 'Demo User'
-  const displayEmail = user?.emailAddresses[0]?.emailAddress || 'demo@example.com'
 
   interface AccountItem {
     icon: any
