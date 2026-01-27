@@ -30,7 +30,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
     .from('user_profiles')
     .select('*')
     .eq('user_id', userId)
-    .single()
+    .maybeSingle() // Returns null if no rows instead of error
 
   if (error) {
     console.error('Error fetching user profile:', error)
@@ -47,10 +47,16 @@ export async function updateUserProfile(
   const supabase = await getSupabaseClient()
   const { data, error } = await supabase
     .from('user_profiles')
-    .upsert({
-      user_id: userId,
-      ...updates,
-    })
+    .upsert(
+      {
+        user_id: userId,
+        ...updates,
+      },
+      {
+        onConflict: 'user_id', // Specify conflict resolution column
+        ignoreDuplicates: false, // Update on conflict instead of ignoring
+      }
+    )
     .select()
     .single()
 
@@ -80,7 +86,10 @@ export async function updateAvatar(
 
   const { error } = await supabase
     .from('user_profiles')
-    .upsert(updateData)
+    .upsert(updateData, {
+      onConflict: 'user_id',
+      ignoreDuplicates: false,
+    })
 
   if (error) {
     console.error('Error updating avatar:', error)
