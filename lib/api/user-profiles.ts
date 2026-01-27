@@ -45,13 +45,16 @@ export async function updateUserProfile(
   updates: Partial<Omit<UserProfile, 'id' | 'created_at' | 'updated_at'>>
 ): Promise<UserProfile | null> {
   const supabase = await getSupabaseClient()
+  
+  const payload = {
+    user_id: userId,
+    ...updates,
+  }
+  
   const { data, error } = await supabase
     .from('user_profiles')
     .upsert(
-      {
-        user_id: userId,
-        ...updates,
-      },
+      payload as any, // Type assertion needed for Supabase untyped client
       {
         onConflict: 'user_id', // Specify conflict resolution column
         ignoreDuplicates: false, // Update on conflict instead of ignoring
