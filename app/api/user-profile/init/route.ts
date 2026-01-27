@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import { auth, currentUser } from '@clerk/nextjs/server'
-import { supabase } from '@/lib/supabase/client'
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 
 export async function POST() {
   try {
@@ -10,6 +13,9 @@ export async function POST() {
     if (!userId || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    
+    // Use service role key for server-side operations
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
     
     // Check if profile exists
     const { data: existingProfile } = await supabase

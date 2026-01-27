@@ -16,7 +16,44 @@ if (typeof window !== 'undefined') {
   }
 }
 
-// Create client - ensure valid values
+/**
+ * Get an authenticated Supabase client with Clerk JWT
+ * This client will pass through RLS policies
+ */
+export async function getSupabaseClient() {
+  let authToken: string | null = null
+  
+  // Get Clerk session token for authentication
+  if (typeof window !== 'undefined') {
+    try {
+      const { default: Clerk } = await import('@clerk/clerk-js')
+      const clerk = (window as any).Clerk || Clerk
+      authToken = await clerk?.session?.getToken({ template: 'supabase' })
+      
+      if (authToken) {
+        console.log('✅ Got Clerk token for Supabase')
+      } else {
+        console.warn('⚠️ No Clerk token available')
+      }
+    } catch (error) {
+      console.error('Failed to get Clerk token:', error)
+    }
+  }
+  
+  return createClient(
+    supabaseUrl || 'https://placeholder.supabase.co',
+    supabaseAnonKey || 'placeholder-key',
+    {
+      global: {
+        headers: authToken ? {
+          Authorization: `Bearer ${authToken}`,
+        } : {},
+      },
+    }
+  )
+}
+
+// Legacy export for backwards compatibility (not authenticated)
 export const supabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
   supabaseAnonKey || 'placeholder-key'

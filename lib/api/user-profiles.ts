@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase/client'
+import { getSupabaseClient } from '@/lib/supabase/client'
 
 export interface UserProfile {
   id: string
@@ -25,6 +25,7 @@ export interface UserProfile {
 }
 
 export async function getUserProfile(userId: string): Promise<UserProfile | null> {
+  const supabase = await getSupabaseClient()
   const { data, error } = await supabase
     .from('user_profiles')
     .select('*')
@@ -43,6 +44,7 @@ export async function updateUserProfile(
   userId: string,
   updates: Partial<Omit<UserProfile, 'id' | 'created_at' | 'updated_at'>>
 ): Promise<UserProfile | null> {
+  const supabase = await getSupabaseClient()
   const { data, error } = await supabase
     .from('user_profiles')
     .upsert({
@@ -65,6 +67,7 @@ export async function updateAvatar(
   avatar: { emoji: string; color: string },
   userEmail?: string
 ): Promise<boolean> {
+  const supabase = await getSupabaseClient()
   const updateData: any = {
     user_id: userId,
     avatar_emoji: avatar.emoji,
