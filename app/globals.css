@@ -139,4 +139,26 @@
     -ms-overflow-style: none;  /* IE and Edge */
     scrollbar-width: none;  /* Firefox */
   }
+
+  /* Block Clerk profile images from showing */
+  .rounded-full[class*="bg-gradient-to-br"] {
+    background-image: var(--tw-gradient-stops) !important;
+  }
+  
+  .rounded-full[class*="bg-gradient-to-br"] > * {
+    background-image: none !important;
+  }
+  
+  /* Block any Clerk-injected styles */
+  [class*="cl-"] {
+    display: none !important;
+  }
+  
+  /* Ensure emoji avatars are never hidden */
+  span[class*="text-2xl"],
+  span[class*="text-6xl"] {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
 }

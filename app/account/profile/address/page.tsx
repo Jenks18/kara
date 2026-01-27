@@ -2,22 +2,45 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useUser } from '@clerk/nextjs'
 import { ChevronLeft } from 'lucide-react'
+import { updateUserProfile } from '@/lib/api/user-profiles'
 
 export const dynamic = 'force-dynamic'
 
 export default function AddressPage() {
   const router = useRouter()
+  const { user } = useUser()
   const [addressLine1, setAddressLine1] = useState('')
   const [addressLine2, setAddressLine2] = useState('')
   const [city, setCity] = useState('')
   const [state, setState] = useState('')
   const [zipCode, setZipCode] = useState('')
   const [country, setCountry] = useState('United States')
+  const [saving, setSaving] = useState(false)
 
   const handleSave = async () => {
-    // TODO: Save to database
-    router.back()
+    if (!user?.id) return
+    
+    setSaving(true)
+    try {
+      await updateUserProfile(user.id, {
+        address_line1: addressLine1,
+        address_line2: addressLine2,
+        city,
+        state,
+        zip_code: zipCode,
+        country,
+        user_email: user.emailAddresses[0]?.emailAddress || '',
+      })
+      console.log('✅ Address saved')
+      router.back()
+    } catch (error) {
+      console.error('Error saving address:', error)
+      alert('Failed to save. Please try again.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -104,8 +127,12 @@ export default function AddressPage() {
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 p-6 bg-white/95 backdrop-blur-sm border-t border-gray-200">
-        <button onClick={handleSave} className="w-full max-w-md mx-auto py-4 bg-emerald-600 hover:bg-emerald-500 rounded-2xl text-white font-semibold text-lg active:scale-[0.98] transition-all touch-manipulation">
-          Save
+        <button 
+          onClick={handleSave}
+          disabled={saving}
+          className="w-full max-w-md mx-auto py-4 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-400 rounded-2xl text-white font-semibold text-lg active:scale-[0.98] transition-all touch-manipulation"
+        >
+          {saving ? 'Saving...' : 'Save'}
         </button>
       </div>
     </div>

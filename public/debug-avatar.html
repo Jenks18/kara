@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Avatar Debug</title>
+  <style>
+    body {
+      font-family: system-ui;
+      padding: 20px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .debug-box {
+      background: #f5f5f5;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 10px 0;
+      font-family: monospace;
+    }
+    button {
+      background: #10b981;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover {
+      background: #059669;
+    }
+    .avatar-preview {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔍 Avatar Debug Tool</h1>
+  
+  <div class="debug-box" id="localStorage-status">
+    Checking localStorage...
+  </div>
+  
+  <div id="avatar-preview"></div>
+  
+  <h3>Actions:</h3>
+  <button onclick="checkLocalStorage()">Check localStorage</button>
+  <button onclick="setTestAvatar()">Set Test Avatar (🎯)</button>
+  <button onclick="clearAvatar()">Clear Avatar</button>
+  <button onclick="location.reload()">Refresh Page</button>
+  
+  <h3>Console Output:</h3>
+  <div class="debug-box" id="console-output"></div>
+
+  <script>
+    function log(message) {
+      const output = document.getElementById('console-output');
+      output.innerHTML += message + '<br>';
+      console.log(message);
+    }
+
+    function checkLocalStorage() {
+      const saved = localStorage.getItem('user-avatar');
+      const status = document.getElementById('localStorage-status');
+      const preview = document.getElementById('avatar-preview');
+      
+      if (saved) {
+        try {
+          const avatar = JSON.parse(saved);
+          status.innerHTML = `
+            <strong>✅ Avatar found in localStorage:</strong><br>
+            Emoji: ${avatar.emoji}<br>
+            Color: ${avatar.color}<br>
+            Label: ${avatar.label || 'N/A'}
+          `;
+          
+          preview.innerHTML = `
+            <div class="avatar-preview" style="background: linear-gradient(to bottom right, ${avatar.color.replace('from-', '').replace('to-', ', ')})">
+              ${avatar.emoji}
+            </div>
+          `;
+          
+          log(`✅ Found: ${JSON.stringify(avatar)}`);
+        } catch (e) {
+          status.innerHTML = `<strong>❌ Parse Error:</strong><br>${e.message}`;
+          log(`❌ Parse error: ${e.message}`);
+        }
+      } else {
+        status.innerHTML = '<strong>⚠️ No avatar in localStorage</strong>';
+        preview.innerHTML = '';
+        log('⚠️ localStorage is empty');
+      }
+    }
+
+    function setTestAvatar() {
+      const testAvatar = {
+        emoji: '🎯',
+        color: 'from-red-500 to-red-600',
+        label: 'Test Target'
+      };
+      localStorage.setItem('user-avatar', JSON.stringify(testAvatar));
+      log(`✅ Set test avatar: ${JSON.stringify(testAvatar)}`);
+      checkLocalStorage();
+    }
+
+    function clearAvatar() {
+      localStorage.removeItem('user-avatar');
+      log('🗑️ Cleared avatar from localStorage');
+      checkLocalStorage();
+    }
+
+    // Auto-check on load
+    checkLocalStorage();
+  </script>
+</body>
+</html>

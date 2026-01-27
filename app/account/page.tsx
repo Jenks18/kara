@@ -93,12 +93,8 @@ export default function AccountPage() {
         <div className="px-6 py-4 max-w-md mx-auto">
           {/* Profile Section */}
           <div className="flex items-center gap-3">
-            <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${avatar.color} flex items-center justify-center text-white font-semibold text-lg flex-shrink-0 shadow-md`}>
-              {user?.imageUrl ? (
-                <img src={user.imageUrl} alt="Profile" className="w-full h-full object-cover rounded-full" />
-              ) : (
-                <span className="text-2xl">{avatar.emoji}</span>
-              )}
+            <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${avatar.color} flex items-center justify-center text-white font-semibold text-lg flex-shrink-0 shadow-md [&]:bg-none [&>*]:bg-none`}>
+              <span className="text-2xl">{avatar.emoji}</span>
             </div>
             <div className="flex-1 min-w-0">
               <h1 className="text-base font-semibold text-gray-900 truncate">{displayName}</h1>

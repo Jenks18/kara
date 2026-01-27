@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
 import { ChevronLeft, User as UserIcon, ChevronRight, Camera, Upload, X } from 'lucide-react'
@@ -44,15 +44,23 @@ const AVATAR_OPTIONS = [
 export default function ProfilePage() {
   const router = useRouter()
   const { user } = useUser()
-  const { avatar, setAvatar } = useAvatar()
+  const { avatar, setAvatar, isLoading } = useAvatar()
   const [showAvatarPicker, setShowAvatarPicker] = useState(false)
   const [selectedTempAvatar, setSelectedTempAvatar] = useState(avatar)
+  
+  // Sync temp avatar when context avatar changes
+  useEffect(() => {
+    console.log('🔄 Avatar context changed:', avatar)
+    setSelectedTempAvatar(avatar)
+  }, [avatar])
 
   const handleAvatarSelect = (selectedAvatar: typeof AVATAR_OPTIONS[0]) => {
+    console.log('👆 Avatar selected (temp):', selectedAvatar)
     setSelectedTempAvatar(selectedAvatar)
   }
 
   const handleSaveAvatar = () => {
+    console.log('💾 Saving avatar to context:', selectedTempAvatar)
     setAvatar(selectedTempAvatar)
     setShowAvatarPicker(false)
   }
@@ -67,6 +75,16 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
+      {/* Debug Info - Remove this after testing */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="fixed bottom-4 left-4 bg-black text-white text-xs p-2 rounded z-50 max-w-xs">
+          <div>Avatar: {avatar.emoji}</div>
+          <div>Color: {avatar.color.substring(0, 20)}...</div>
+          <div>Temp: {selectedTempAvatar.emoji}</div>
+          <div>Loading: {isLoading ? 'yes' : 'no'}</div>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="sticky top-0 z-30 bg-white border-b border-gray-200">
         <div className="px-4 py-4 max-w-md mx-auto flex items-center gap-4">
@@ -95,12 +113,8 @@ export default function ProfilePage() {
           {/* Avatar */}
           <div className="flex justify-center py-4">
             <div className="relative">
-              <div className={`w-32 h-32 rounded-full bg-gradient-to-br ${avatar.color} flex items-center justify-center overflow-hidden shadow-lg`}>
-                {user?.imageUrl ? (
-                  <img src={user.imageUrl} alt="Profile" className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-6xl">{avatar.emoji}</span>
-                )}
+              <div className={`w-32 h-32 rounded-full bg-gradient-to-br ${avatar.color} flex items-center justify-center overflow-hidden shadow-lg [&]:bg-none [&>*]:bg-none`}>
+                <span className="text-6xl">{avatar.emoji}</span>
               </div>
               <button 
                 onClick={() => setShowAvatarPicker(true)}
