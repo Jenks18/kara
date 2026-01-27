@@ -5,6 +5,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 export interface Avatar {
   emoji: string
   color: string
+  label?: string
 }
 
 interface AvatarContextType {
@@ -13,8 +14,9 @@ interface AvatarContextType {
 }
 
 const defaultAvatar: Avatar = {
-  emoji: '🦁',
-  color: 'from-emerald-500 to-emerald-600'
+  emoji: '💼',
+  color: 'from-emerald-500 to-emerald-600',
+  label: 'Business'
 }
 
 const AvatarContext = createContext<AvatarContextType>({

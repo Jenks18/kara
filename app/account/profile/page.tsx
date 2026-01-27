@@ -9,38 +9,36 @@ import { useAvatar } from '@/contexts/AvatarContext'
 export const dynamic = 'force-dynamic'
 
 const AVATAR_OPTIONS = [
-  { emoji: '🚗', color: 'from-blue-400 to-blue-500' },
-  { emoji: '🐾', color: 'from-blue-500 to-blue-600' },
-  { emoji: '🏃', color: 'from-blue-600 to-blue-700' },
-  { emoji: '🐙', color: 'from-blue-700 to-blue-800' },
-  { emoji: '🐵', color: 'from-blue-800 to-blue-900' },
-  { emoji: '🏆', color: 'from-blue-500 to-blue-600' },
-  { emoji: '🏁', color: 'from-blue-600 to-blue-700' },
-  { emoji: '🦖', color: 'from-blue-700 to-blue-800' },
-  { emoji: '👽', color: 'from-green-400 to-green-500' },
-  { emoji: '🤢', color: 'from-green-500 to-green-600' },
-  { emoji: '🌿', color: 'from-emerald-400 to-emerald-500' },
-  { emoji: '🐸', color: 'from-emerald-500 to-emerald-600' },
-  { emoji: '🦎', color: 'from-emerald-600 to-emerald-700' },
-  { emoji: '🥒', color: 'from-emerald-500 to-emerald-600' },
-  { emoji: '🚀', color: 'from-emerald-600 to-emerald-700' },
-  { emoji: '🌳', color: 'from-green-700 to-green-800' },
-  { emoji: '👓', color: 'from-yellow-300 to-yellow-400' },
-  { emoji: '🦁', color: 'from-yellow-400 to-yellow-500' },
-  { emoji: '🏃', color: 'from-yellow-500 to-yellow-600' },
-  { emoji: '🐥', color: 'from-yellow-400 to-yellow-500' },
-  { emoji: '🏅', color: 'from-yellow-500 to-yellow-600' },
-  { emoji: '🏆', color: 'from-orange-400 to-orange-500' },
-  { emoji: '🐠', color: 'from-brown-500 to-brown-600' },
-  { emoji: '🦀', color: 'from-orange-500 to-orange-600' },
-  { emoji: '🔥', color: 'from-orange-600 to-orange-700' },
-  { emoji: '👹', color: 'from-orange-700 to-orange-800' },
-  { emoji: '🦊', color: 'from-orange-500 to-orange-600' },
-  { emoji: '🚧', color: 'from-red-600 to-red-700' },
-  { emoji: '🐉', color: 'from-red-700 to-red-800' },
-  { emoji: '👓', color: 'from-pink-300 to-pink-400' },
-  { emoji: '🐷', color: 'from-pink-400 to-pink-500' },
-  { emoji: '🏃', color: 'from-pink-500 to-pink-600' },
+  { emoji: '�', color: 'from-gray-400 to-gray-500', label: 'Default' },
+  { emoji: '💼', color: 'from-blue-500 to-blue-600', label: 'Business' },
+  { emoji: '🎯', color: 'from-red-500 to-red-600', label: 'Target' },
+  { emoji: '📊', color: 'from-emerald-500 to-emerald-600', label: 'Analytics' },
+  { emoji: '🏢', color: 'from-slate-500 to-slate-600', label: 'Corporate' },
+  { emoji: '💡', color: 'from-yellow-500 to-yellow-600', label: 'Innovation' },
+  { emoji: '🎓', color: 'from-indigo-500 to-indigo-600', label: 'Education' },
+  { emoji: '⚡', color: 'from-amber-500 to-amber-600', label: 'Energy' },
+  { emoji: '🔧', color: 'from-gray-600 to-gray-700', label: 'Tools' },
+  { emoji: '📈', color: 'from-green-500 to-green-600', label: 'Growth' },
+  { emoji: '🌟', color: 'from-yellow-400 to-yellow-500', label: 'Star' },
+  { emoji: '🎨', color: 'from-purple-500 to-purple-600', label: 'Creative' },
+  { emoji: '🚀', color: 'from-blue-600 to-blue-700', label: 'Launch' },
+  { emoji: '💻', color: 'from-cyan-500 to-cyan-600', label: 'Tech' },
+  { emoji: '📱', color: 'from-teal-500 to-teal-600', label: 'Mobile' },
+  { emoji: '🌐', color: 'from-blue-400 to-blue-500', label: 'Global' },
+  { emoji: '🔒', color: 'from-red-600 to-red-700', label: 'Security' },
+  { emoji: '✅', color: 'from-emerald-600 to-emerald-700', label: 'Success' },
+  { emoji: '⭐', color: 'from-orange-400 to-orange-500', label: 'Premium' },
+  { emoji: '🎯', color: 'from-pink-500 to-pink-600', label: 'Focus' },
+  { emoji: '📍', color: 'from-red-400 to-red-500', label: 'Location' },
+  { emoji: '🏆', color: 'from-yellow-600 to-yellow-700', label: 'Achievement' },
+  { emoji: '💎', color: 'from-cyan-600 to-cyan-700', label: 'Premium' },
+  { emoji: '🎪', color: 'from-rose-500 to-rose-600', label: 'Event' },
+  { emoji: '🌈', color: 'from-pink-400 to-pink-500', label: 'Diversity' },
+  { emoji: '⚙️', color: 'from-slate-600 to-slate-700', label: 'Settings' },
+  { emoji: '📋', color: 'from-gray-500 to-gray-600', label: 'Tasks' },
+  { emoji: '🔔', color: 'from-orange-500 to-orange-600', label: 'Notifications' },
+  { emoji: '🌍', color: 'from-green-600 to-green-700', label: 'World' },
+  { emoji: '⏱️', color: 'from-blue-500 to-blue-600', label: 'Time' },
 ]
 
 export default function ProfilePage() {
@@ -48,10 +46,23 @@ export default function ProfilePage() {
   const { user } = useUser()
   const { avatar, setAvatar } = useAvatar()
   const [showAvatarPicker, setShowAvatarPicker] = useState(false)
+  const [selectedTempAvatar, setSelectedTempAvatar] = useState(avatar)
 
   const handleAvatarSelect = (selectedAvatar: typeof AVATAR_OPTIONS[0]) => {
-    setAvatar(selectedAvatar)
+    setSelectedTempAvatar(selectedAvatar)
+  }
+
+  const handleSaveAvatar = () => {
+    setAvatar(selectedTempAvatar)
     setShowAvatarPicker(false)
+  }
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      // TODO: Upload to storage and update user profile
+      console.log('File selected:', file)
+    }
   }
 
   return (
@@ -185,7 +196,7 @@ export default function ProfilePage() {
       {showAvatarPicker && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowAvatarPicker(false)}>
           <div 
-            className="bg-gradient-to-br from-emerald-900 to-green-900 w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl overflow-hidden"
+            className="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
             style={{
               maxHeight: '85vh',
@@ -193,25 +204,31 @@ export default function ProfilePage() {
             }}
           >
             {/* Header */}
-            <div className="sticky top-0 bg-emerald-900/95 backdrop-blur-sm border-b border-emerald-700 px-6 py-4 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-white">Edit profile picture</h3>
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900">Edit profile picture</h3>
               <button
                 onClick={() => setShowAvatarPicker(false)}
-                className="p-2 hover:bg-emerald-800 rounded-full transition-colors touch-manipulation"
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors touch-manipulation"
               >
-                <X size={24} className="text-gray-300" />
+                <X size={24} className="text-gray-600" />
               </button>
             </div>
 
             {/* Content */}
-            <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(85vh - 80px)' }}>
+            <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(85vh - 160px)' }}>
               {/* Upload button */}
-              <button className="w-full mb-6 px-6 py-4 bg-emerald-800 hover:bg-emerald-700 rounded-2xl text-white font-medium flex items-center justify-center gap-3 transition-colors touch-manipulation">
+              <label className="w-full mb-6 px-6 py-4 bg-emerald-600 hover:bg-emerald-500 rounded-2xl text-white font-medium flex items-center justify-center gap-3 transition-colors touch-manipulation cursor-pointer">
                 <Upload size={24} />
                 Upload photo
-              </button>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </label>
 
-              <p className="text-gray-300 text-sm mb-4">Or choose a custom avatar</p>
+              <p className="text-gray-600 text-sm mb-4">Or choose a custom avatar</p>
 
               {/* Avatar Grid */}
               <div className="grid grid-cols-5 gap-3">
@@ -220,10 +237,11 @@ export default function ProfilePage() {
                     key={index}
                     onClick={() => handleAvatarSelect(avatarOption)}
                     className={`aspect-square rounded-full bg-gradient-to-br ${avatarOption.color} flex items-center justify-center text-3xl hover:scale-110 active:scale-95 transition-transform touch-manipulation shadow-lg ${
-                      avatar.emoji === avatarOption.emoji && avatar.color === avatarOption.color
-                        ? 'ring-4 ring-white ring-offset-2 ring-offset-emerald-900'
+                      selectedTempAvatar.emoji === avatarOption.emoji && selectedTempAvatar.color === avatarOption.color
+                        ? 'ring-4 ring-emerald-600 ring-offset-2'
                         : ''
                     }`}
+                    title={avatarOption.label}
                   >
                     {avatarOption.emoji}
                   </button>
@@ -232,9 +250,9 @@ export default function ProfilePage() {
             </div>
 
             {/* Footer */}
-            <div className="sticky bottom-0 bg-emerald-900/95 backdrop-blur-sm border-t border-emerald-700 p-6">
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6">
               <button
-                onClick={() => setShowAvatarPicker(false)}
+                onClick={handleSaveAvatar}
                 className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 rounded-2xl text-white font-semibold text-lg active:scale-[0.98] transition-all touch-manipulation"
               >
                 Save
