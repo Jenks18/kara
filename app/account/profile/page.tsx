@@ -101,7 +101,10 @@ export default function ProfilePage() {
           </div>
 
           {/* Display name */}
-          <button className="w-full bg-white rounded-xl border border-gray-200 p-4 active:bg-gray-50 transition-colors relative shadow-sm touch-manipulation">
+          <button 
+            onClick={() => router.push('/account/profile/display-name')}
+            className="w-full bg-white rounded-xl border border-gray-200 p-4 active:bg-gray-50 transition-colors relative shadow-sm touch-manipulation"
+          >
             <div className="text-left space-y-1">
               <div className="text-xs text-gray-500">Display name</div>
               <div className="text-gray-900">{user?.fullName || user?.emailAddresses[0]?.emailAddress || ''}</div>
@@ -117,24 +120,6 @@ export default function ProfilePage() {
             </div>
             <ChevronRight size={20} className="text-gray-400 absolute right-6 top-1/2 -translate-y-1/2" />
           </button>
-
-          {/* Pronouns */}
-          <button className="w-full bg-white rounded-xl border border-gray-200 p-4 active:bg-gray-50 transition-colors relative shadow-sm touch-manipulation">
-            <div className="text-left space-y-1">
-              <div className="text-xs text-gray-500">Pronouns</div>
-              <div className="text-gray-900">Select your pronouns</div>
-            </div>
-            <ChevronRight size={20} className="text-gray-400 absolute right-6 top-1/2 -translate-y-1/2" />
-          </button>
-
-          {/* Timezone */}
-          <button className="w-full bg-white rounded-xl border border-gray-200 p-4 active:bg-gray-50 transition-colors relative shadow-sm touch-manipulation">
-            <div className="text-left space-y-1">
-              <div className="text-xs text-gray-500">Timezone</div>
-              <div className="text-gray-900">America/New_York</div>
-            </div>
-            <ChevronRight size={20} className="text-gray-400 absolute right-6 top-1/2 -translate-y-1/2" />
-          </button>
         </div>
 
         {/* Private Section */}
@@ -147,7 +132,10 @@ export default function ProfilePage() {
           </div>
 
           {/* Legal name */}
-          <button className="w-full bg-white rounded-xl border border-gray-200 p-4 active:bg-gray-50 transition-colors relative shadow-sm touch-manipulation">
+          <button 
+            onClick={() => router.push('/account/profile/legal-name')}
+            className="w-full bg-white rounded-xl border border-gray-200 p-4 active:bg-gray-50 transition-colors relative shadow-sm touch-manipulation"
+          >
             <div className="text-left space-y-1">
               <div className="text-xs text-gray-500">Legal name</div>
               <div className="text-gray-900"></div>
@@ -156,7 +144,10 @@ export default function ProfilePage() {
           </button>
 
           {/* Date of birth */}
-          <button className="w-full bg-white rounded-xl border border-gray-200 p-4 active:bg-gray-50 transition-colors relative shadow-sm touch-manipulation">
+          <button 
+            onClick={() => router.push('/account/profile/date-of-birth')}
+            className="w-full bg-white rounded-xl border border-gray-200 p-4 active:bg-gray-50 transition-colors relative shadow-sm touch-manipulation"
+          >
             <div className="text-left space-y-1">
               <div className="text-xs text-gray-500">Date of birth</div>
               <div className="text-gray-900"></div>
@@ -165,7 +156,10 @@ export default function ProfilePage() {
           </button>
 
           {/* Phone number */}
-          <button className="w-full bg-white rounded-xl border border-gray-200 p-4 active:bg-gray-50 transition-colors relative shadow-sm touch-manipulation">
+          <button 
+            onClick={() => router.push('/account/profile/phone-number')}
+            className="w-full bg-white rounded-xl border border-gray-200 p-4 active:bg-gray-50 transition-colors relative shadow-sm touch-manipulation"
+          >
             <div className="text-left space-y-1">
               <div className="text-xs text-gray-500">Phone number</div>
               <div className="text-gray-900"></div>
@@ -174,7 +168,10 @@ export default function ProfilePage() {
           </button>
 
           {/* Address */}
-          <button className="w-full bg-white rounded-xl border border-gray-200 p-4 active:bg-gray-50 transition-colors relative shadow-sm touch-manipulation">
+          <button 
+            onClick={() => router.push('/account/profile/address')}
+            className="w-full bg-white rounded-xl border border-gray-200 p-4 active:bg-gray-50 transition-colors relative shadow-sm touch-manipulation"
+          >
             <div className="text-left space-y-1">
               <div className="text-xs text-gray-500">Address</div>
               <div className="text-gray-900"></div>
