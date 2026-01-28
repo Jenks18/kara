@@ -15,18 +15,18 @@ export default function CompanyCardsPage({ params }: { params: Promise<{ id: str
   }, [params])
 
   return (
-    <div className="min-h-screen bg-[#121f16]">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100">
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-[#121f16] border-b border-gray-800">
+      <div className="sticky top-0 z-30 bg-white border-b border-emerald-200">
         <div className="px-4 py-4 max-w-md mx-auto flex items-center gap-4">
           <button
             onClick={() => router.back()}
             className="p-2 -ml-2 active:scale-95 transition-transform"
           >
-            <ChevronLeft size={24} className="text-gray-400" />
+            <ChevronLeft size={24} className="text-gray-700" />
           </button>
-          <CreditCard size={24} className="text-primary" />
-          <h1 className="text-xl font-bold text-white flex-1">Company cards</h1>
+          <CreditCard size={24} className="text-emerald-600" />
+          <h1 className="text-xl font-bold text-gray-900 flex-1">Company cards</h1>
         </div>
       </div>
       
@@ -43,11 +43,11 @@ export default function CompanyCardsPage({ params }: { params: Promise<{ id: str
             </div>
           </div>
           
-          <p className="text-gray-300 text-sm leading-relaxed">
+          <p className="text-emerald-100 text-sm leading-relaxed">
             Enjoy cash back on every fuel purchase in Kenya, discounts on your MafutaPass subscription, unlimited virtual cards, and so much more.
           </p>
 
-          <button className="w-full py-3 rounded-xl bg-primary text-white font-semibold active:scale-[0.98] transition-transform">
+          <button className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold active:scale-[0.98] transition-transform">
             Learn more
           </button>
         </div>
@@ -83,44 +83,44 @@ export default function CompanyCardsPage({ params }: { params: Promise<{ id: str
             </div>
           </div>
 
-          <h2 className="text-white text-2xl font-bold">
+          <h2 className="text-gray-900 text-2xl font-bold">
             Bring your own cards (BYOC)
           </h2>
 
-          <p className="text-gray-400">
+          <p className="text-gray-600">
             Link the cards you already have for automatic transaction import, receipt matching, and reconciliation.
           </p>
 
           {/* Features list */}
           <div className="space-y-3">
-            <div className="flex items-center gap-3 p-3 bg-dark-200 rounded-xl border border-gray-800">
+            <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-emerald-200 shadow-sm">
               <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center flex-shrink-0">
                 <CreditCard size={20} className="text-white" />
               </div>
-              <span className="text-white">Connect cards from 10,000+ banks</span>
+              <span className="text-gray-900">Connect cards from 10,000+ banks</span>
             </div>
 
-            <div className="flex items-center gap-3 p-3 bg-dark-200 rounded-xl border border-gray-800">
+            <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-emerald-200 shadow-sm">
               <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center flex-shrink-0">
                 <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
               </div>
-              <span className="text-white">Link your team's existing cards</span>
+              <span className="text-gray-900">Link your team's existing cards</span>
             </div>
 
-            <div className="flex items-center gap-3 p-3 bg-dark-200 rounded-xl border border-gray-800">
+            <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-emerald-200 shadow-sm">
               <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
                 <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                 </svg>
               </div>
-              <span className="text-white">We'll pull in transactions automatically</span>
+              <span className="text-gray-900">We'll pull in transactions automatically</span>
             </div>
           </div>
 
           {/* Add cards button */}
-          <button className="w-full py-4 rounded-xl bg-primary text-white font-semibold text-lg active:scale-[0.98] transition-transform flex items-center justify-center gap-2 mt-6">
+          <button className="w-full py-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-lg active:scale-[0.98] transition-transform flex items-center justify-center gap-2 mt-6">
             Add cards
           </button>
         </div>

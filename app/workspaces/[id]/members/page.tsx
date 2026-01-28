@@ -47,25 +47,25 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#121f16] flex items-center justify-center">
-        <div className="text-gray-400">Loading...</div>
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 flex items-center justify-center">
+        <div className="text-gray-600">Loading...</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#121f16]">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100">
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-[#121f16] border-b border-gray-800">
+      <div className="sticky top-0 z-30 bg-white border-b border-emerald-200">
         <div className="px-4 py-4 max-w-md mx-auto flex items-center gap-4">
           <button
             onClick={() => router.back()}
             className="p-2 -ml-2 active:scale-95 transition-transform"
           >
-            <ChevronLeft size={24} className="text-gray-400" />
+            <ChevronLeft size={24} className="text-gray-700" />
           </button>
-          <Users size={24} className="text-primary" />
-          <h1 className="text-xl font-bold text-white flex-1">Members</h1>
+          <Users size={24} className="text-emerald-600" />
+          <h1 className="text-xl font-bold text-gray-900 flex-1">Members</h1>
         </div>
       </div>
       
@@ -75,14 +75,14 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
         <div className="flex items-center gap-3">
           <button
             onClick={handleInvite}
-            className="flex-1 py-3 rounded-xl bg-primary text-white font-semibold active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+            className="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
           >
             <UserPlus size={20} />
             Invite member
           </button>
           <button
             onClick={() => setShowMoreMenu(!showMoreMenu)}
-            className="px-6 py-3 rounded-xl bg-dark-200 border border-gray-800 text-gray-400 font-semibold active:scale-[0.98] transition-transform flex items-center gap-2"
+            className="px-6 py-3 rounded-xl bg-white border border-emerald-200 text-gray-600 font-semibold active:scale-[0.98] transition-transform flex items-center gap-2 shadow-sm"
           >
             More
             <svg className={`w-4 h-4 transition-transform ${showMoreMenu ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -92,12 +92,12 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
         </div>
 
         {/* Total members count */}
-        <div className="text-gray-400 text-sm">
+        <div className="text-gray-600 text-sm">
           Total workspace members: {members.length}
         </div>
 
         {/* Members table header */}
-        <div className="grid grid-cols-2 gap-4 text-xs text-gray-400 px-4">
+        <div className="grid grid-cols-2 gap-4 text-xs text-gray-500 px-4">
           <div>Member</div>
           <div className="text-right">Role</div>
         </div>
@@ -107,11 +107,11 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
           {members.map((member) => (
             <button
               key={member.id}
-              className="w-full bg-dark-200 rounded-xl border border-gray-800 p-4 active:bg-dark-100 transition-colors"
+              className="w-full bg-white rounded-xl border border-emerald-200 p-4 active:bg-emerald-50 transition-colors shadow-sm"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-500 to-yellow-600 flex items-center justify-center overflow-hidden">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center overflow-hidden">
                     {member.avatar ? (
                       <img src={member.avatar} alt={member.email} className="w-full h-full object-cover" />
                     ) : (
@@ -121,15 +121,15 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
                     )}
                   </div>
                   <div className="text-left">
-                    <div className="text-white font-semibold">{member.email}</div>
-                    <div className="text-sm text-gray-400">{member.email}</div>
+                    <div className="text-gray-900 font-semibold">{member.email}</div>
+                    <div className="text-sm text-gray-600">{member.email}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="px-4 py-1.5 rounded-full bg-dark-300 border border-gray-700 text-white text-sm font-medium">
+                  <span className="px-4 py-1.5 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-700 text-sm font-medium">
                     {member.role}
                   </span>
-                  <ChevronLeft size={20} className="text-gray-400 rotate-180" />
+                  <ChevronLeft size={20} className="text-gray-600 rotate-180" />
                 </div>
               </div>
             </button>

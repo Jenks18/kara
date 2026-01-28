@@ -46,18 +46,18 @@ export default function CategoriesPage({ params }: { params: Promise<{ id: strin
   )
 
   return (
-    <div className="min-h-screen bg-[#121f16]">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100">
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-[#121f16] border-b border-gray-800">
+      <div className="sticky top-0 z-30 bg-white border-b border-emerald-200">
         <div className="px-4 py-4 max-w-md mx-auto flex items-center gap-4">
           <button
             onClick={() => router.back()}
             className="p-2 -ml-2 active:scale-95 transition-transform"
           >
-            <ChevronLeft size={24} className="text-gray-400" />
+            <ChevronLeft size={24} className="text-gray-700" />
           </button>
-          <Folder size={24} className="text-primary" />
-          <h1 className="text-xl font-bold text-white flex-1">Categories</h1>
+          <Folder size={24} className="text-emerald-600" />
+          <h1 className="text-xl font-bold text-gray-900 flex-1">Categories</h1>
         </div>
       </div>
       
@@ -67,13 +67,13 @@ export default function CategoriesPage({ params }: { params: Promise<{ id: strin
         <div className="flex items-center gap-3">
           <button
             onClick={() => alert('Add category functionality coming soon')}
-            className="flex-1 py-3 rounded-xl bg-primary text-white font-semibold active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+            className="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
           >
             <Plus size={20} />
             Add category
           </button>
           <button
-            className="px-6 py-3 rounded-xl bg-dark-200 border border-gray-800 text-gray-400 font-semibold active:scale-[0.98] transition-transform flex items-center gap-2"
+            className="px-6 py-3 rounded-xl bg-white border border-emerald-200 text-gray-600 font-semibold active:scale-[0.98] transition-transform flex items-center gap-2 shadow-sm"
           >
             More
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -83,24 +83,24 @@ export default function CategoriesPage({ params }: { params: Promise<{ id: strin
         </div>
 
         {/* Description */}
-        <div className="text-gray-400 text-sm">
+        <div className="text-gray-600 text-sm">
           Get a better overview of where money is being spent. Use our default categories or add your own.
         </div>
 
         {/* Search */}
         <div className="relative">
-          <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Find category"
-            className="w-full pl-12 pr-4 py-3 bg-dark-200 border border-gray-800 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-gray-700"
+            className="w-full pl-12 pr-4 py-3 bg-white border border-emerald-200 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-400 shadow-sm"
           />
         </div>
 
         {/* Categories table header */}
-        <div className="grid grid-cols-2 gap-4 text-xs text-gray-400 px-4">
+        <div className="grid grid-cols-2 gap-4 text-xs text-gray-600 px-4">
           <div>Name</div>
           <div className="text-right">Enabled</div>
         </div>
@@ -110,16 +110,16 @@ export default function CategoriesPage({ params }: { params: Promise<{ id: strin
           {filteredCategories.map((category) => (
             <div
               key={category.id}
-              className="flex items-center justify-between bg-dark-200 rounded-xl border border-gray-800 p-4"
+              className="flex items-center justify-between bg-white rounded-xl border border-emerald-200 p-4 shadow-sm"
             >
               <button className="flex items-center gap-3 flex-1">
-                <div className="text-white font-medium text-left">{category.name}</div>
+                <div className="text-gray-900 font-medium text-left">{category.name}</div>
               </button>
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => toggleCategory(category.id)}
                   className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
-                    category.enabled ? 'bg-primary' : 'bg-gray-600'
+                    category.enabled ? 'bg-emerald-600' : 'bg-gray-400'
                   }`}
                 >
                   <span
@@ -128,7 +128,7 @@ export default function CategoriesPage({ params }: { params: Promise<{ id: strin
                     }`}
                   />
                 </button>
-                <ChevronRight size={20} className="text-gray-400" />
+                <ChevronRight size={20} className="text-gray-600" />
               </div>
             </div>
           ))}

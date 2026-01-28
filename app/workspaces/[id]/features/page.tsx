@@ -64,28 +64,28 @@ export default function FeaturesPage({ params }: { params: Promise<{ id: string 
   ] as const
 
   return (
-    <div className="min-h-screen bg-[#121f16]">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100">
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-[#121f16] border-b border-gray-800">
+      <div className="sticky top-0 z-30 bg-white border-b border-emerald-200">
         <div className="px-4 py-4 max-w-md mx-auto flex items-center gap-4">
           <button
             onClick={() => router.back()}
             className="p-2 -ml-2 active:scale-95 transition-transform"
           >
-            <ChevronLeft size={24} className="text-gray-400" />
+            <ChevronLeft size={24} className="text-gray-700" />
           </button>
           <div className="flex gap-1">
-            <Settings size={24} className="text-blue-400" />
+            <Settings size={24} className="text-emerald-500" />
             <Settings size={24} className="text-yellow-400" />
           </div>
-          <h1 className="text-xl font-bold text-white flex-1">More features</h1>
+          <h1 className="text-xl font-bold text-gray-900 flex-1">More features</h1>
         </div>
       </div>
       
       {/* Content */}
       <div className="px-4 py-6 max-w-md mx-auto space-y-8">
         {/* Description */}
-        <p className="text-gray-400 text-sm">
+        <p className="text-gray-600 text-sm">
           Use the toggles below to enable more features as you grow. Each feature will appear in the navigation menu for further customization.
         </p>
 
@@ -96,24 +96,24 @@ export default function FeaturesPage({ params }: { params: Promise<{ id: string 
 
           return (
             <div key={key} className="space-y-3">
-              <h2 className="text-gray-400 text-sm font-semibold uppercase tracking-wider">{label}</h2>
+              <h2 className="text-gray-600 text-sm font-semibold uppercase tracking-wider">{label}</h2>
               <div className="space-y-2">
                 {categoryFeatures.map((feature) => (
                   <div
                     key={feature.id}
-                    className="flex items-center gap-4 bg-dark-200 rounded-xl border border-gray-800 p-4"
+                    className="flex items-center gap-4 bg-white rounded-xl border border-emerald-200 p-4 shadow-sm"
                   >
-                    <div className="w-12 h-12 bg-dark-300 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
+                    <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 border border-emerald-200">
                       {feature.icon}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-white font-semibold">{feature.name}</h3>
-                      <p className="text-sm text-gray-400 line-clamp-1">{feature.description}</p>
+                      <h3 className="text-gray-900 font-semibold">{feature.name}</h3>
+                      <p className="text-sm text-gray-600 line-clamp-1">{feature.description}</p>
                     </div>
                     <button
                       onClick={() => toggleFeature(feature.id)}
                       className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors flex-shrink-0 ${
-                        feature.enabled ? 'bg-primary' : 'bg-gray-600'
+                        feature.enabled ? 'bg-emerald-600' : 'bg-gray-400'
                       }`}
                     >
                       <span
