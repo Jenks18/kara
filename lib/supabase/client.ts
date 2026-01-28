@@ -32,19 +32,33 @@ function getSharedClient() {
 export async function getSupabaseClient() {
   const client = getSharedClient()
   
-  // Try to get Clerk auth token and set it on the client
+  // Try to get Clerk auth token and create authenticated client
   if (typeof window !== 'undefined') {
     try {
       const clerk = (window as any).Clerk
       if (clerk && clerk.session) {
         const authToken = await clerk.session.getToken({ template: 'supabase' })
         if (authToken) {
-          // Set the auth header on existing client using set method
-          client.rest.headers.set('Authorization', `Bearer ${authToken}`)
+          // Create a new client with the auth token in global headers
+          return createClient(
+            supabaseUrl || 'https://placeholder.supabase.co',
+            supabaseAnonKey || 'placeholder-key',
+            {
+              auth: {
+                persistSession: false,
+                autoRefreshToken: false,
+              },
+              global: {
+                headers: {
+                  Authorization: `Bearer ${authToken}`,
+                },
+              },
+            }
+          )
         }
       }
     } catch (error) {
-      // Silent fail - client still works without auth
+      // Silent fail - return unauthenticated client
     }
   }
   
