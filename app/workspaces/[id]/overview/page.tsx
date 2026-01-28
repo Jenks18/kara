@@ -120,7 +120,7 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
         alert('Failed to remove image')
       }
     } catch (error) {
-      console.error('Error removing avatar:', error)
+      console.error('Error removing workspace image:', error)
       alert('Failed to remove image')
     } finally {
       setUploadingAvatar(false)
@@ -187,8 +187,8 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
         alert('Failed to update image')
       }
     } catch (error) {
-      console.error('Error uploading avatar:', error)
-      alert('Failed to upload avatar')
+      console.error('Error uploading workspace image:', error)
+      alert('Failed to upload image')
     } finally {
       setUploadingAvatar(false)
       // Reset input
