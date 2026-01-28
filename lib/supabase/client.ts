@@ -71,7 +71,7 @@ export async function getSupabaseClient() {
     }
   }
   
-  return client
+  return getSharedClient()
 }
 
 // Legacy export - uses the same shared instance
