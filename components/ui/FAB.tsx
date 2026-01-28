@@ -22,7 +22,7 @@ export default function FAB() {
         z-50
       "
       style={{
-        bottom: 'calc(80px + env(safe-area-inset-bottom))'
+        bottom: 'calc(96px + env(safe-area-inset-bottom))'
       }}
       aria-label="Scan receipt"
     >

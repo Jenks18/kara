@@ -1,7 +1,6 @@
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import BottomNav from '@/components/navigation/BottomNav'
-import StatsCard from '@/components/expense/StatsCard'
 import ExpenseCard from '@/components/expense/ExpenseCard'
 import FAB from '@/components/ui/FAB'
 import { Search, Bell, FileText } from 'lucide-react'
@@ -121,14 +120,6 @@ export default async function HomePage() {
       
       {/* Content */}
       <div className="px-4 py-6 max-w-md mx-auto space-y-6">
-        {/* Stats Card */}
-        <StatsCard 
-          title="Total Fuel Expenses"
-          amount={28476}
-          change="+12% from last month"
-          period="This Month"
-        />
-        
         {/* Expense Reports Section */}
         {expenseReports.length > 0 && (
           <div>
