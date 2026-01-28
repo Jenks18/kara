@@ -43,10 +43,8 @@ export default function PhoneNumberPage() {
         phone_number: phoneNumber,
         user_email: user.emailAddresses[0]?.emailAddress || '',
       })
-      console.log('✅ Phone number saved')
       router.back()
     } catch (error) {
-      console.error('Error saving phone number:', error)
       alert('Failed to save. Please try again.')
     } finally {
       setSaving(false)

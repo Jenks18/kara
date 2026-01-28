@@ -57,14 +57,11 @@ export default function DisplayNamePage() {
       })
       
       if (result) {
-        console.log('✅ Display name saved successfully:', result)
         router.back()
       } else {
-        console.error('❌ Display name save returned null')
-        alert('Failed to save. Please check console for errors.')
+        alert('Failed to save. Please try again.')
       }
     } catch (error) {
-      console.error('❌ Error saving display name:', error)
       alert('Failed to save. Please try again.')
     } finally {
       setSaving(false)

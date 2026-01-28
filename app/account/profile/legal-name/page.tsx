@@ -46,10 +46,8 @@ export default function LegalNamePage() {
         legal_last_name: lastName,
         user_email: user.emailAddresses[0]?.emailAddress || '',
       })
-      console.log('✅ Legal name saved')
       router.back()
     } catch (error) {
-      console.error('Error saving legal name:', error)
       alert('Failed to save. Please try again.')
     } finally {
       setSaving(false)

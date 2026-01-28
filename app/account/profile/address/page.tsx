@@ -58,10 +58,8 @@ export default function AddressPage() {
         country,
         user_email: user.emailAddresses[0]?.emailAddress || '',
       })
-      console.log('✅ Address saved')
       router.back()
     } catch (error) {
-      console.error('Error saving address:', error)
       alert('Failed to save. Please try again.')
     } finally {
       setSaving(false)

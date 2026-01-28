@@ -43,10 +43,8 @@ export default function DateOfBirthPage() {
         date_of_birth: dateOfBirth,
         user_email: user.emailAddresses[0]?.emailAddress || '',
       })
-      console.log('✅ Date of birth saved')
       router.back()
     } catch (error) {
-      console.error('Error saving date of birth:', error)
       alert('Failed to save. Please try again.')
     } finally {
       setSaving(false)

@@ -69,12 +69,11 @@ export async function createExpenseReport(
         title: data.title,
         status: 'draft',
         total_amount: 0, // Will be calculated later when items are processed
-      })
+      } as any)
       .select()
       .single()
 
     if (reportError) {
-      console.error('Error creating report:', reportError)
       return { success: false, error: reportError.message }
     }
 
