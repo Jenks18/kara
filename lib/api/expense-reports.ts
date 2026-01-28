@@ -110,7 +110,7 @@ export async function createExpenseReport(
     // 3. Insert expense items
     const { error: itemsError } = await supabase
       .from('expense_items')
-      .insert(itemsWithUrls)
+      .insert(itemsWithUrls as any)
 
     if (itemsError) {
       console.error('Error creating items:', itemsError)
