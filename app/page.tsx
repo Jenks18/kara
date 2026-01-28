@@ -1,37 +1,25 @@
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import BottomNav from '@/components/navigation/BottomNav'
-import ExpenseCard from '@/components/expense/ExpenseCard'
 import FAB from '@/components/ui/FAB'
-import { Search, Bell, FileText } from 'lucide-react'
+import { Search, Pin } from 'lucide-react'
 import { createServerClient } from '@/lib/supabase/server-client'
-import Image from 'next/image'
+import Link from 'next/link'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
 
-interface ExpenseReport {
+interface ConversationThread {
   id: string
-  created_at: string
-  user_email: string
-  workspace_name: string
-  workspace_avatar: string | null
+  type: 'workspace' | 'report' | 'dm' | 'system'
   title: string
-  status: 'draft' | 'submitted' | 'approved' | 'rejected'
-  total_amount: number
-  items: ExpenseItem[]
-}
-
-interface ExpenseItem {
-  id: string
-  created_at: string
-  image_url: string
-  description: string | null
-  category: string
-  amount: number
-  merchant_name: string | null
-  transaction_date: string | null
-  processing_status: string
+  subtitle: string
+  avatar: string
+  timestamp: string
+  isPinned?: boolean
+  hasUnread?: boolean
+  workspaceId?: string
+  reportId?: string
 }
 
 export default async function HomePage() {
@@ -44,63 +32,111 @@ export default async function HomePage() {
     redirect('/sign-in')
   }
   
-  // Create Supabase client with Clerk JWT - RLS auto-filters by user!
+  // Create Supabase client with Clerk JWT
   const supabase = await createServerClient()
   
-  // No manual filtering - RLS handles it via JWT!
-  const { data: reports, error } = await supabase
+  // Fetch expense reports for conversation threads
+  const { data: reports } = await supabase
     .from('expense_reports')
     .select('*')
     .order('created_at', { ascending: false })
     .limit(10)
 
-  if (error) {
-    console.error('Error fetching reports:', error);
-  }
-
-  const expenseReports: ExpenseReport[] = []
+  // Build conversation threads
+  const conversations: ConversationThread[] = []
   
-  if (reports && !error) {
-    // Fetch items for each report
-    for (const report of reports) {
-      const { data: items } = await supabase
-        .from('expense_items')
-        .select('*')
-        .eq('report_id', report.id)
-        .order('created_at', { ascending: true })
-      
-      // Calculate total amount from all items
-      const totalAmount = items?.reduce((sum, item) => sum + (item.amount || 0), 0) || 0
-      
-      expenseReports.push({ 
-        ...report, 
-        items: items || [],
-        total_amount: totalAmount
+  // Add workspace channel threads
+  conversations.push({
+    id: 'workspace-admins-1',
+    type: 'workspace',
+    title: '#admins',
+    subtitle: "Terpmail's Workspace 1 • Concierge: I'm here to ...",
+    avatar: 'T',
+    timestamp: 'Yesterday',
+    isPinned: true,
+    hasUnread: false,
+  })
+  
+  conversations.push({
+    id: 'workspace-admins-2',
+    type: 'workspace',
+    title: '#admins',
+    subtitle: "Terpmail's Workspace • Concierge: Your free tria...",
+    avatar: 'T',
+    timestamp: '2d ago',
+    isPinned: false,
+    hasUnread: true,
+  })
+  
+  // Add system message thread
+  conversations.push({
+    id: 'concierge',
+    type: 'system',
+    title: 'Concierge',
+    subtitle: "Hi there! I'm sorry to hear you aren't fully satisfie...",
+    avatar: '🤖',
+    timestamp: '3d ago',
+    isPinned: true,
+    hasUnread: false,
+  })
+  
+  // Add report threads
+  if (reports) {
+    for (const report of reports.slice(0, 2)) {
+      conversations.push({
+        id: report.id,
+        type: 'report',
+        title: "Ian Njenga's expenses",
+        subtitle: `${report.workspace_name} • ${report.title}`,
+        avatar: 'T',
+        timestamp: new Date(report.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        hasUnread: true,
+        reportId: report.id,
       })
     }
   }
   
-  // Mock data (keep for now)
-  const expenses = [
-    {
-      id: '1',
-      merchant: 'Shell Westlands',
-      amount: 5250.00,
-      date: 'Dec 26',
-      category: 'Fuel',
-      distance: '4.05 mi @ KES 0.70 / mi',
-      status: 'approved' as const,
-    },
-    {
-      id: '2',
-      merchant: 'Total Energies Karen',
-      amount: 3800.50,
-      date: 'Dec 25',
-      category: 'Fuel',
-      distance: '3.2 mi @ KES 0.68 / mi',
-      status: 'approved' as const,
-    },
-  ]
+  // Add DM thread
+  conversations.push({
+    id: 'dm-foronjenga',
+    type: 'dm',
+    title: 'foronjenga19@gmail.com',
+    subtitle: 'You: Hjm',
+    avatar: '👤',
+    timestamp: 'Today',
+    hasUnread: false,
+  })
+  
+  // Add older report thread
+  conversations.push({
+    id: 'report-old',
+    type: 'report',
+    title: "Ian Njenga's expenses",
+    subtitle: "Terpmail's Workspace 1 • This is where Ian Njenga wi...",
+    avatar: 'T',
+    timestamp: 'Jan 20',
+    hasUnread: false,
+  })
+  
+  conversations.push({
+    id: 'report-old-2',
+    type: 'report',
+    title: 'Expense Report 2025-12-20',
+    subtitle: 'You: Travel',
+    avatar: '💰',
+    timestamp: 'Dec 20',
+    hasUnread: false,
+  })
+  
+  conversations.push({
+    id: 'manager-mctest',
+    type: 'dm',
+    title: 'Manager McTest',
+    subtitle: 'Thanks for sending me that test expense! Next, try su...',
+    avatar: '👨‍💼',
+    timestamp: 'Dec 15',
+    hasUnread: false,
+  })
   
   return (
     <div className="min-h-screen pb-20 bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
@@ -108,9 +144,7 @@ export default async function HomePage() {
       <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-lg border-b border-emerald-200">
         <div className="px-4 py-4 max-w-md mx-auto">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Inbox</h1>
-            </div>
+            <h1 className="text-2xl font-bold text-gray-900">Inbox</h1>
             <button className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center active:bg-emerald-100 rounded-full transition-colors touch-manipulation">
               <Search size={24} className="text-gray-600" />
             </button>
@@ -118,131 +152,57 @@ export default async function HomePage() {
         </div>
       </div>
       
-      {/* Content */}
-      <div className="px-4 py-6 max-w-md mx-auto space-y-6">
-        {/* Expense Reports Section */}
-        {expenseReports.length > 0 && (
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Expense Reports</h2>
-              <button className="text-sm text-emerald-600 hover:text-emerald-700 font-medium">
-                View All
-              </button>
-            </div>
-            
-            <div className="space-y-3">
-              {expenseReports.map((report) => (
-                <div 
-                  key={report.id}
-                  className="bg-white rounded-2xl p-4 border border-gray-200 hover:border-emerald-300 transition-colors cursor-pointer shadow-sm"
-                >
-                  {/* Report Header */}
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <FileText size={16} className="text-emerald-600" />
-                        <h3 className="text-gray-900 font-semibold">{report.title}</h3>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-gray-600">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full font-medium ${
-                          report.status === 'draft' ? 'bg-emerald-500/20 text-emerald-400' :
-                          report.status === 'submitted' ? 'bg-amber-500/20 text-amber-400' :
-                          report.status === 'approved' ? 'bg-success-500/20 text-success-400' :
-                          'bg-danger-500/20 text-danger-400'
-                        }`}>
-                          {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
-                        </span>
-                        <span>•</span>
-                        <span>{report.items.length} expense{report.items.length > 1 ? 's' : ''}</span>
-                        <span>•</span>
-                        <span>{new Date(report.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Receipt Thumbnails - Show ALL images with horizontal scroll */}
-                  {report.items.length > 0 && (
-                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
-                      {report.items.map((item, idx) => (
-                        <div key={item.id} className="flex-shrink-0 snap-start">
-                          <div className="relative w-20 h-24 rounded-lg overflow-hidden bg-gray-100 border border-gray-300">
-                            <Image
-                              src={item.image_url}
-                              alt={`Receipt ${idx + 1}`}
-                              fill
-                              className="object-cover"
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+      {/* Conversation Threads */}
+      <div className="max-w-md mx-auto">
+        {conversations.map((thread) => (
+          <Link
+            key={thread.id}
+            href={thread.reportId ? `/reports/${thread.reportId}` : `/inbox/${thread.id}`}
+            className="block border-b border-emerald-100 hover:bg-white/50 transition-colors"
+          >
+            <div className="px-4 py-3 flex items-center gap-3">
+              {/* Avatar */}
+              <div className="relative flex-shrink-0">
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold ${
+                  thread.type === 'workspace' ? 'bg-gradient-to-br from-blue-600 to-blue-700' :
+                  thread.type === 'report' ? 'bg-gradient-to-br from-emerald-600 to-emerald-700' :
+                  thread.type === 'system' ? 'bg-gradient-to-br from-emerald-500 to-green-600' :
+                  'bg-gradient-to-br from-red-600 to-red-700'
+                }`}>
+                  {thread.avatar.length === 1 && thread.avatar.match(/[A-Z]/) ? (
+                    <span className="text-lg">{thread.avatar}</span>
+                  ) : (
+                    <span className="text-2xl">{thread.avatar}</span>
                   )}
-                  
-                  {/* Report Footer */}
-                  <div className="mt-3 pt-3 border-t border-gray-200 flex items-center justify-between">
-                    <div className="text-sm text-gray-600">
-                      {report.workspace_name}
-                    </div>
-                    <div className="text-gray-900 font-semibold font-mono">
-                      ${report.total_amount.toFixed(2)}
-                    </div>
+                </div>
+                {thread.type === 'report' && (
+                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center border-2 border-white">
+                    <span className="text-xs">💰</span>
                   </div>
+                )}
+              </div>
+              
+              {/* Content */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-gray-900 truncate">{thread.title}</h3>
+                  {thread.isPinned && (
+                    <Pin size={14} className="text-gray-500 flex-shrink-0" />
+                  )}
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {/* Recent Expenses (Mock Data) */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-200">Recent Expenses</h2>
-            <button className="text-sm text-primary-400 hover:text-primary-300 font-medium">
-              View All
-            </button>
-          </div>
-          
-          <div className="space-y-3">
-            {expenses.map((expense) => (
-              <ExpenseCard key={expense.id} {...expense} />
-            ))}
-          </div>
-        </div>
-        
-        {/* Messages */}
-        <div>
-          <h2 className="text-lg font-semibold text-gray-200 mb-4">Messages</h2>
-          
-          <div className="space-y-3">
-            <div className="bg-dark-100 rounded-xl p-4 border border-gray-800">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary-500/20 flex items-center justify-center flex-shrink-0">
-                  <span className="text-xl">🎉</span>
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-200 mb-1">Concierge</h3>
-                  <p className="text-sm text-gray-400">
-                    Recapping your first week in Kara! You've recorded 5 fuel expenses totaling KES 28,476.
-                  </p>
-                </div>
+                <p className="text-sm text-gray-600 truncate mt-0.5">{thread.subtitle}</p>
+              </div>
+              
+              {/* Timestamp and Badge */}
+              <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                <span className="text-xs text-gray-500">{thread.timestamp}</span>
+                {thread.hasUnread && (
+                  <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full"></div>
+                )}
               </div>
             </div>
-            
-            <div className="bg-dark-100 rounded-xl p-4 border border-gray-800">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-success-500/20 flex items-center justify-center flex-shrink-0">
-                  <span className="text-xl">✅</span>
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-200 mb-1">Manager McTest</h3>
-                  <p className="text-sm text-gray-400">
-                    Thanks for sending me that test expense! Next, try submitting a report.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+          </Link>
+        ))}
       </div>
       
       <FAB />
