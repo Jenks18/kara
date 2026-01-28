@@ -32,7 +32,9 @@ export default function WorkspaceDetailPage({ params }: { params: Promise<{ id: 
       if (!workspaceId) return
       
       try {
-        const response = await fetch(`/api/workspaces/${workspaceId}`)
+        const response = await fetch(`/api/workspaces/${workspaceId}`, {
+          cache: 'no-store' // Always fetch fresh data
+        })
         if (response.ok) {
           const data = await response.json()
           setWorkspace(data.workspace)
@@ -46,6 +48,16 @@ export default function WorkspaceDetailPage({ params }: { params: Promise<{ id: 
     }
 
     fetchWorkspace()
+
+    // Refetch when page becomes visible (user navigates back)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && workspaceId) {
+        fetchWorkspace()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [workspaceId])
 
   if (loading) {
@@ -86,8 +98,16 @@ export default function WorkspaceDetailPage({ params }: { params: Promise<{ id: 
             <ChevronLeft size={24} className="text-gray-700" />
           </button>
           <div className="flex items-center gap-3 flex-1">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-700 flex items-center justify-center flex-shrink-0">
-              <span className="text-xl font-bold text-white">{workspace.avatar}</span>
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-700 flex items-center justify-center flex-shrink-0 overflow-hidden">
+              {workspace.avatar?.startsWith('http') ? (
+                <img 
+                  src={workspace.avatar} 
+                  alt={workspace.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-xl font-bold text-white">{workspace.avatar || workspace.name?.charAt(0) || 'W'}</span>
+              )}
             </div>
             <h1 className="text-xl font-bold text-gray-900">{workspace.name}</h1>
           </div>

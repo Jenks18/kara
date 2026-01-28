@@ -32,7 +32,9 @@ export default function WorkspacesPage() {
       
       setLoading(true)
       try {
-        const response = await fetch('/api/workspaces')
+        const response = await fetch('/api/workspaces', {
+          cache: 'no-store' // Always fetch fresh data
+        })
         if (response.ok) {
           const data = await response.json()
           setWorkspaces(data.workspaces || [])
@@ -48,6 +50,16 @@ export default function WorkspacesPage() {
     if (isLoaded || !user) {
       fetchWorkspaces()
     }
+
+    // Refetch when page becomes visible (user navigates back)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && isLoaded) {
+        fetchWorkspaces()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [user?.id, isLoaded])
 
   const handleNewWorkspace = () => {
@@ -166,8 +178,16 @@ export default function WorkspacesPage() {
                     flex items-center gap-4
                   "
                 >
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center flex-shrink-0">
-                    <span className="text-xl font-bold text-white">{workspace.avatar}</span>
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    {workspace.avatar?.startsWith('http') ? (
+                      <img 
+                        src={workspace.avatar} 
+                        alt={workspace.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-xl font-bold text-white">{workspace.avatar || workspace.name?.charAt(0) || 'W'}</span>
+                    )}
                   </div>
                   <div className="flex-1 text-left">
                     <h3 className="text-gray-900 font-semibold">{workspace.name}</h3>
