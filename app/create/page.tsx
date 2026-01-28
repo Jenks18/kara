@@ -4,7 +4,7 @@ import { useState } from 'react'
 import BottomNav from '@/components/navigation/BottomNav'
 import Card from '@/components/ui/Card'
 import ReceiptCapture from '@/components/receipt/ReceiptCapture'
-import { Receipt, MapPin, MessageSquare, Eye, Briefcase } from 'lucide-react'
+import { Receipt, MessageSquare, FileText } from 'lucide-react'
 
 // Force dynamic rendering to avoid Clerk prerender issues
 export const dynamic = 'force-dynamic'
@@ -24,28 +24,16 @@ export default function CreatePage() {
       action: () => setShowCapture(true),
     },
     {
-      id: 'distance',
-      icon: MapPin,
-      label: 'Track distance',
-      description: 'Log mileage for reimbursement',
-    },
-    {
       id: 'chat',
       icon: MessageSquare,
       label: 'Start chat',
       description: 'Message your manager or team',
     },
     {
-      id: 'testdrive',
-      icon: Eye,
-      label: 'Take a 2-minute test drive',
-      description: 'Learn how to use Kara',
-    },
-    {
-      id: 'workspace',
-      icon: Briefcase,
-      label: 'New workspace',
-      description: 'Get the Kara Card and more',
+      id: 'report',
+      icon: FileText,
+      label: 'Create report',
+      description: 'Create a new expense report',
     },
   ]
   
