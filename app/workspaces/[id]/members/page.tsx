@@ -16,6 +16,8 @@ interface WorkspaceMember {
   email: string
   role: 'admin' | 'member'
   display_name?: string
+  first_name?: string
+  last_name?: string
   avatar_emoji?: string
   avatar_color?: string
   avatar_image_url?: string
@@ -74,6 +76,8 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
               email: user.emailAddresses[0]?.emailAddress || '',
               role: 'admin',
               display_name: profile?.display_name || undefined,
+              first_name: profile?.first_name || undefined,
+              last_name: profile?.last_name || undefined,
               avatar_emoji: profile?.avatar_emoji || '💼',
               avatar_color: profile?.avatar_color || 'from-emerald-500 to-emerald-600',
               avatar_image_url: profile?.avatar_image_url || undefined,
@@ -93,6 +97,8 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
             email: user.emailAddresses[0]?.emailAddress || '',
             role: 'admin',
             display_name: profile?.display_name || undefined,
+            first_name: profile?.first_name || undefined,
+            last_name: profile?.last_name || undefined,
             avatar_emoji: profile?.avatar_emoji || '💼',
             avatar_color: profile?.avatar_color || 'from-emerald-500 to-emerald-600',
             avatar_image_url: profile?.avatar_image_url || undefined,
@@ -255,7 +261,12 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
         {/* Members List */}
         <div className="space-y-2">
           {members.map((member) => {
-            const displayText = member.display_name || member.email
+            // Priority: first_name + last_name > display_name > email
+            const fullName = member.first_name && member.last_name 
+              ? `${member.first_name} ${member.last_name}`.trim()
+              : null
+            const displayText = fullName || member.display_name || member.email
+            const secondaryText = fullName || member.display_name ? member.email : ''
             
             return (
               <button
@@ -279,7 +290,7 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
                     </div>
                     <div className="text-left">
                       <div className="text-gray-900 font-semibold">{displayText}</div>
-                      <div className="text-sm text-gray-600">{member.email}</div>
+                      {secondaryText && <div className="text-sm text-gray-600">{secondaryText}</div>}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
