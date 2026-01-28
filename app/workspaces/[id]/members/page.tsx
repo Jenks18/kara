@@ -233,7 +233,7 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
                     className="w-full px-4 py-3 flex items-center gap-3 hover:bg-red-50 transition-colors text-left border-t border-gray-100"
                   >
                     <Trash2 size={20} className="text-red-600" />
-                    <span className="text-red-600 font-medium">Delete workspace</span>
+                    <span className="text-red-600 font-medium">Delete</span>
                   </button>
                 </div>
               </>
@@ -335,44 +335,57 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
 
       {/* Share Modal */}
       {showShareModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-white rounded-3xl p-6 space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold text-gray-900">Share workspace</h2>
               <button
                 onClick={() => setShowShareModal(false)}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
               >
-                <X size={20} />
+                <X size={20} className="text-gray-600" />
               </button>
             </div>
             
-            <div className="bg-white p-6 rounded-xl flex items-center justify-center border-2 border-emerald-500">
-              <QRCode
-                id="members-qr-code"
-                value={shareUrl}
-                size={200}
-                fgColor="#059669"
-                bgColor="#ffffff"
-              />
+            {/* Real QR Code */}
+            <div className="flex justify-center py-8">
+              <div className="p-4 bg-white border-4 border-emerald-600 rounded-2xl">
+                <QRCode
+                  id="members-qr-code"
+                  value={shareUrl}
+                  size={200}
+                  style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                  viewBox={`0 0 200 200`}
+                  fgColor="#059669"
+                  bgColor="#ffffff"
+                />
+              </div>
             </div>
 
-            <div className="space-y-3">
+            {/* Share URL */}
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+              <p className="text-xs text-gray-600 mb-2">Share link</p>
+              <p className="text-sm text-gray-900 font-mono break-all">{shareUrl}</p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(shareUrl)
                   alert('Link copied to clipboard!')
                 }}
-                className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-2xl active:scale-[0.98] transition-all"
+                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2"
               >
-                Copy link
+                <Share2 size={18} />
+                Copy Link
               </button>
               <button
                 onClick={downloadQRCode}
-                className="w-full py-4 bg-white border-2 border-emerald-600 text-emerald-600 font-semibold rounded-2xl active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                className="flex-1 py-3 bg-white border-2 border-emerald-600 text-emerald-600 font-semibold rounded-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2"
               >
-                <Download size={20} />
-                Download QR code
+                <Download size={18} />
+                Download QR
               </button>
             </div>
           </div>
@@ -381,45 +394,30 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">Delete workspace</h2>
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-white rounded-3xl p-6 space-y-6">
             <div className="flex flex-col items-center text-center space-y-4">
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
                 <Trash2 size={32} className="text-red-600" />
               </div>
-              
-              <div className="space-y-2">
-                <p className="text-gray-900 font-medium">
-                  Are you sure you want to delete "{workspace?.name}"?
-                </p>
-                <p className="text-sm text-gray-500">
-                  This action cannot be undone. All workspace data will be permanently deleted.
-                </p>
-              </div>
+              <h2 className="text-xl font-bold text-gray-900">Delete workspace?</h2>
+              <p className="text-gray-600">
+                Are you sure you want to delete "{workspace?.name}"? This action cannot be undone and all data will be permanently lost.
+              </p>
             </div>
 
-            <div className="space-y-3">
-              <button
-                onClick={handleConfirmDelete}
-                className="w-full py-4 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-2xl active:scale-[0.98] transition-all"
-              >
-                Delete workspace
-              </button>
+            <div className="flex gap-3">
               <button
                 onClick={() => setShowDeleteModal(false)}
-                className="w-full py-4 bg-white border-2 border-gray-300 text-gray-700 font-semibold rounded-2xl active:scale-[0.98] transition-all"
+                className="flex-1 py-3 bg-white border-2 border-gray-300 text-gray-700 font-semibold rounded-xl active:scale-[0.98] transition-all"
               >
                 Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-xl active:scale-[0.98] transition-all"
+              >
+                Delete
               </button>
             </div>
           </div>
