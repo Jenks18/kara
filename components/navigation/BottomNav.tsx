@@ -49,8 +49,16 @@ export default function BottomNav() {
               `}
             >
               {item.isAvatar ? (
-                <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${avatar.color} flex items-center justify-center text-xs ${isActive ? 'ring-2 ring-emerald-600 ring-offset-1' : ''}`}>
-                  {avatar.emoji}
+                <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${avatar.imageUrl ? 'bg-gray-100' : avatar.color} flex items-center justify-center text-xs overflow-hidden ${isActive ? 'ring-2 ring-emerald-600 ring-offset-1' : ''}`}>
+                  {avatar.imageUrl ? (
+                    <img 
+                      src={avatar.imageUrl} 
+                      alt="Profile" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span>{avatar.emoji}</span>
+                  )}
                 </div>
               ) : Icon ? (
                 <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />

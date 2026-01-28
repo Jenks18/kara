@@ -47,7 +47,7 @@ export function AvatarProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const { user, isLoaded } = useUser()
 
-  // Load avatar from database on mount (only once)
+  // Load avatar from database on mount and on visibility change
   useEffect(() => {
     async function loadAvatar() {
       if (!isLoaded) return
@@ -56,7 +56,7 @@ export function AvatarProvider({ children }: { children: ReactNode }) {
       if (user?.id) {
         try {
           const profile = await getUserProfile(user.id)
-          if (profile && (profile.avatar_emoji || profile.avatar_image_url)) {
+          if (profile) {
             const dbAvatar: Avatar = {
               emoji: profile.avatar_emoji || '💼',
               color: profile.avatar_color || 'from-emerald-500 to-emerald-600',
@@ -67,6 +67,7 @@ export function AvatarProvider({ children }: { children: ReactNode }) {
             localStorage.setItem('user-avatar', JSON.stringify(dbAvatar))
           }
         } catch (error) {
+          console.error('Error loading avatar:', error)
           // Database not ready yet, use localStorage/default
         }
       }
@@ -75,6 +76,16 @@ export function AvatarProvider({ children }: { children: ReactNode }) {
     }
 
     loadAvatar()
+
+    // Reload avatar when page becomes visible (after navigating back)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && user?.id) {
+        loadAvatar()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [isLoaded, user?.id])
 
   // Save avatar to database and localStorage when it changes
