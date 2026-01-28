@@ -124,7 +124,7 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
       // Upload to Supabase Storage
       const fileExt = file.name.split('.').pop()
       const fileName = `${workspaceId}-${Date.now()}.${fileExt}`
-      const filePath = `workspace-avatars/${fileName}`
+      const filePath = fileName // Remove duplicate 'workspace-avatars/' prefix
 
       const { error: uploadError } = await supabase.storage
         .from('workspace-avatars')
@@ -516,7 +516,7 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
         ref={cameraInputRef}
         type="file"
         accept="image/*"
-        capture="environment"
+        capture="user"
         className="hidden"
         onChange={handleFileSelect}
       />

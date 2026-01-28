@@ -28,8 +28,7 @@ DROP POLICY IF EXISTS "Allow users to delete workspace avatars" ON storage.objec
 CREATE POLICY "Allow authenticated workspace avatar uploads" ON storage.objects
 FOR INSERT TO authenticated
 WITH CHECK (
-  bucket_id = 'workspace-avatars' AND
-  (storage.foldername(name))[1] = 'workspace-avatars'
+  bucket_id = 'workspace-avatars'
 );
 
 -- Allow public read access to workspace avatars
