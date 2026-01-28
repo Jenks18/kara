@@ -141,7 +141,7 @@ export default function WorkflowsPage({ params }: { params: Promise<{ id: string
           <div className="flex items-start justify-between bg-dark-200 rounded-xl border border-gray-800 p-4">
             <div className="flex-1 pr-4">
               <div className="text-white font-medium mb-1">
-                Add an authorized payer for payments made in Expensify or track payments made elsewhere.
+                Add an authorized payer for payments made in MafutaPass or track payments made elsewhere.
               </div>
             </div>
             <button

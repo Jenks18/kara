@@ -79,12 +79,12 @@ export default function WalletPage() {
           </button>
         </div>
 
-        {/* Expensify Wallet Section */}
+        {/* MafutaPass Wallet Section */}
         <div className="space-y-4 pt-4">
           <div>
-            <h2 className="text-white text-lg font-semibold mb-1">Expensify Wallet (Beta)</h2>
+            <h2 className="text-white text-lg font-semibold mb-1">MafutaPass Wallet (Beta)</h2>
             <p className="text-gray-400 text-sm">
-              Send and receive money with friends. US bank accounts only.
+              Send and receive money with friends. Kenyan bank accounts only.
             </p>
           </div>
 

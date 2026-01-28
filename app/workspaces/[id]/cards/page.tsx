@@ -32,19 +32,19 @@ export default function CompanyCardsPage({ params }: { params: Promise<{ id: str
       
       {/* Content */}
       <div className="px-4 py-6 max-w-md mx-auto space-y-6">
-        {/* Expensify Card Promotion */}
+        {/* MafutaPass Card Promotion */}
         <div className="bg-gradient-to-br from-emerald-900/40 to-emerald-800/40 rounded-3xl border border-emerald-700/30 p-6 space-y-4">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center flex-shrink-0">
               <CreditCard size={32} className="text-white" />
             </div>
             <div className="flex-1">
-              <h2 className="text-white text-xl font-bold mb-2">Get the Expensify Card</h2>
+              <h2 className="text-white text-xl font-bold mb-2">Get the MafutaPass Card</h2>
             </div>
           </div>
           
           <p className="text-gray-300 text-sm leading-relaxed">
-            Enjoy cash back on every US purchase, up to 50% off your Expensify bill, unlimited virtual cards, and so much more.
+            Enjoy cash back on every fuel purchase in Kenya, discounts on your MafutaPass subscription, unlimited virtual cards, and so much more.
           </p>
 
           <button className="w-full py-3 rounded-xl bg-primary text-white font-semibold active:scale-[0.98] transition-transform">

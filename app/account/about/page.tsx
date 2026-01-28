@@ -62,11 +62,11 @@ export default function AboutPage() {
           v9.2.96-6
         </div>
 
-        {/* About Expensify */}
+        {/* About MafutaPass */}
         <div className="space-y-4">
-          <h2 className="text-white text-lg font-semibold">About Expensify</h2>
+          <h2 className="text-white text-lg font-semibold">About MafutaPass</h2>
           <p className="text-gray-400 text-sm leading-relaxed">
-            The New Expensify App is built by a community of open-source developers from around the world. Help us build the future of Expensify.
+            MafutaPass is a fuel expense tracking app built for Kenyan businesses and drivers. Track your fuel expenses, receipts, and mileage all in one place.
           </p>
         </div>
 
