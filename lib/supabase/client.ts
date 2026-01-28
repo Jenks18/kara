@@ -39,8 +39,8 @@ export async function getSupabaseClient() {
       if (clerk && clerk.session) {
         const authToken = await clerk.session.getToken({ template: 'supabase' })
         if (authToken) {
-          // Set the auth header on existing client
-          client.rest.headers['Authorization'] = `Bearer ${authToken}`
+          // Set the auth header on existing client using set method
+          client.rest.headers.set('Authorization', `Bearer ${authToken}`)
         }
       }
     } catch (error) {
