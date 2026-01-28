@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
@@ -7,7 +7,7 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 export const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey && !supabaseUrl.includes('placeholder'))
 
 // Single shared client instance - use Map to cache by user/token combo
-const clientCache = new Map<string, { client: ReturnType<typeof createClient>, timestamp: number }>()
+const clientCache = new Map<string, { client: any, timestamp: number }>()
 const BASE_CLIENT_KEY = '__base__'
 const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
 
