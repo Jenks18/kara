@@ -8,9 +8,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const isAuthPage = pathname?.startsWith('/sign-in') || pathname?.startsWith('/sign-up')
   
+  // Skip all providers on auth pages to prevent interference with Clerk
+  if (isAuthPage) {
+    return <>{children}</>
+  }
+  
   return (
     <AvatarProvider>
-      {!isAuthPage && <UserProfileInit />}
+      <UserProfileInit />
       {children}
     </AvatarProvider>
   )
