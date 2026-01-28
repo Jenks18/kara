@@ -59,7 +59,7 @@ export async function createExpenseReport(
   
   try {
     // 1. Create the expense report with user_id
-    const { data: report, error: reportError } = await supabase
+    const { data: reportData, error: reportError } = await supabase
       .from('expense_reports')
       .insert({
         user_id: data.userId,
@@ -73,9 +73,12 @@ export async function createExpenseReport(
       .select()
       .single()
 
-    if (reportError || !report) {
+    if (reportError || !reportData) {
       return { success: false, error: reportError?.message || 'Failed to create report' }
     }
+
+    // Type assertion to help TypeScript
+    const report = reportData as { id: string; [key: string]: any }
 
     // 2. Upload images and create expense items
     const itemsWithUrls = await Promise.all(
