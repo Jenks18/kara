@@ -62,8 +62,8 @@ export async function createExpenseReport(
   
   try {
     // 1. Create the expense report with user_id
-    const { data: reportData, error: reportError } = await supabase
-      .from('expense_reports')
+    const { data: reportData, error: reportError } = await (supabase
+      .from('expense_reports') as SupabaseAny)
       .insert({
         user_id: data.userId,
         user_email: data.userEmail,
@@ -72,7 +72,7 @@ export async function createExpenseReport(
         title: data.title,
         status: 'draft',
         total_amount: 0, // Will be calculated later when items are processed
-      } as SupabaseAny)
+      })
       .select()
       .single()
 
@@ -111,9 +111,9 @@ export async function createExpenseReport(
     )
 
     // 3. Insert expense items
-    const { error: itemsError } = await supabase
-      .from('expense_items')
-      .insert(itemsWithUrls as SupabaseAny)
+    const { error: itemsError } = await (supabase
+      .from('expense_items') as SupabaseAny)
+      .insert(itemsWithUrls)
 
     if (itemsError) {
       console.error('Error creating items:', itemsError)
@@ -292,9 +292,9 @@ export async function updateReportStatus(
       updateData.approved_at = new Date().toISOString()
     }
 
-    const { error } = await supabase
-      .from('expense_reports')
-      .update(updateData as SupabaseAny)
+    const { error } = await (supabase
+      .from('expense_reports') as SupabaseAny)
+      .update(updateData)
       .eq('id', reportId)
 
     if (error) {
@@ -317,10 +317,10 @@ export async function deleteExpenseReport(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     // Items will be automatically deleted due to ON DELETE CASCADE
-    const { error } = await supabase
-      .from('expense_reports')
+    const { error } = await (supabase
+      .from('expense_reports') as SupabaseAny)
       .delete()
-      .eq('id', reportId) as SupabaseAny
+      .eq('id', reportId)
 
     if (error) {
       console.error('Error deleting report:', error)
