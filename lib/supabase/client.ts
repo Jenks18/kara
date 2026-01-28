@@ -6,87 +6,70 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 // Check if Supabase is properly configured
 export const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey && !supabaseUrl.includes('placeholder'))
 
-// Single shared client instance - use Map to cache by user/token combo
-const clientCache = new Map<string, { client: any, timestamp: number }>()
-const BASE_CLIENT_KEY = '__base__'
-const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
+// Single global Supabase client - TRUE SINGLETON
+let globalClient: any = null
 
-function getSharedClient() {
-  const cached = clientCache.get(BASE_CLIENT_KEY)
-  if (cached) {
-    return cached.client
+/**
+ * Get or create the single global Supabase client
+ */
+function getGlobalClient() {
+  if (!globalClient) {
+    globalClient = createClient(
+      supabaseUrl || 'https://placeholder.supabase.co',
+      supabaseAnonKey || 'placeholder-key',
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+          storage: undefined,
+        },
+      }
+    )
   }
-  
-  const client = createClient(
-    supabaseUrl || 'https://placeholder.supabase.co',
-    supabaseAnonKey || 'placeholder-key',
-    {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-        storage: undefined, // Disable storage to prevent conflicts
-      },
-    }
-  )
-  
-  clientCache.set(BASE_CLIENT_KEY, { client, timestamp: Date.now() })
-  return client
+  return globalClient
 }
 
 /**
- * Get an authenticated Supabase client with Clerk JWT
- * This client will pass through RLS policies
- * Caches clients for 5 minutes to avoid multiple instances
+ * Get authenticated Supabase client with fresh Clerk JWT
+ * 
+ * TRUE SINGLETON APPROACH:
+ * - Only ONE Supabase client instance ever created
+ * - ONE GoTrueClient = no multiple instance warnings
+ * - Gets fresh Clerk JWT on each call via await
+ * - Sets Authorization header on the client's fetch wrapper
+ * - Properly integrates with Clerk auth lifecycle
  */
 export async function getSupabaseClient() {
-  // Try to get Clerk auth token and create authenticated client
+  const client = getGlobalClient()
+  
+  // Get fresh Clerk token and set on client
   if (typeof window !== 'undefined') {
     try {
       const clerk = (window as any).Clerk
       if (clerk && clerk.session) {
-        const authToken = await clerk.session.getToken({ template: 'supabase' })
-        if (authToken) {
-          // Use user ID as cache key to avoid multiple instances per user
-          const userId = clerk.user?.id || 'unknown'
-          const cacheKey = `auth_${userId}`
-          const now = Date.now()
-          
-          // Check if we have a valid cached client
-          const cached = clientCache.get(cacheKey)
-          if (cached && (now - cached.timestamp) < CACHE_DURATION) {
-            return cached.client
+        const token = await clerk.session.getToken({ template: 'supabase' })
+        if (token) {
+          // Set authorization header on the client's internal fetch
+          // This works because Supabase uses a wrapped fetch internally
+          const originalFetch = client.rest.fetch
+          client.rest.fetch = async (url: string, options: any = {}) => {
+            return originalFetch.call(client.rest, url, {
+              ...options,
+              headers: {
+                ...options.headers,
+                Authorization: `Bearer ${token}`,
+              },
+            })
           }
-          
-          // Create new authenticated client
-          const client = createClient(
-            supabaseUrl || 'https://placeholder.supabase.co',
-            supabaseAnonKey || 'placeholder-key',
-            {
-              auth: {
-                persistSession: false,
-                autoRefreshToken: false,
-                storage: undefined,
-              },
-              global: {
-                headers: {
-                  Authorization: `Bearer ${authToken}`,
-                },
-              },
-            }
-          )
-          
-          clientCache.set(cacheKey, { client, timestamp: now })
-          return client
         }
       }
     } catch (error) {
       console.error('Error getting Clerk token:', error)
-      // Silent fail - return unauthenticated client
     }
   }
   
-  return getSharedClient()
+  return client
 }
 
-// Legacy export - uses the same shared instance
-export const supabase = getSharedClient()
+// Export the same global instance
+export const supabase = getGlobalClient()
