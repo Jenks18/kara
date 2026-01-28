@@ -144,18 +144,13 @@
     scrollbar-width: none;  /* Firefox */
   }
 
-  /* Block Clerk profile images from showing */
+  /* Block Clerk profile images from showing in our custom avatar UI */
   .rounded-full[class*="bg-gradient-to-br"] {
     background-image: var(--tw-gradient-stops) !important;
   }
   
   .rounded-full[class*="bg-gradient-to-br"] > * {
     background-image: none !important;
-  }
-  
-  /* Block any Clerk-injected styles */
-  [class*="cl-"] {
-    display: none !important;
   }
   
   /* Ensure emoji avatars are never hidden */
