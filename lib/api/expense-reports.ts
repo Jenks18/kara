@@ -190,17 +190,19 @@ export async function getExpenseReports(
   
   try {
     console.log('🔍 Querying expense_reports for user_email:', userEmailOrId)
-    const { data: reports, error: reportsError } = await supabase
+    const { data: reportsData, error: reportsError } = await supabase
       .from('expense_reports')
       .select('*')
       .eq('user_email', userEmailOrId)
       .order('created_at', { ascending: false })
       .limit(limit)
 
-    if (reportsError) {
+    if (reportsError || !reportsData) {
       console.error('Error fetching reports:', reportsError)
       return []
     }
+
+    const reports = reportsData as Array<{ id: string; [key: string]: any }>
 
     console.log('📦 Found expense_reports:', reports?.length || 0)
 
