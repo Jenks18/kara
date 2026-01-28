@@ -6,74 +6,50 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 // Check if Supabase is properly configured
 export const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey && !supabaseUrl.includes('placeholder'))
 
-if (typeof window !== 'undefined') {
-  if (!isSupabaseConfigured) {
-    console.error('⚠️ Supabase not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY')
-    console.error('URL:', supabaseUrl || 'missing')
-    console.error('Key:', supabaseAnonKey ? 'present' : 'missing')
-  } else {
-    console.log('✅ Supabase configured')
-  }
-}
+// Single shared client instance
+let sharedClient: ReturnType<typeof createClient> | null = null
 
-// Singleton client instance
-let clientInstance: ReturnType<typeof createClient> | null = null
+function getSharedClient() {
+  if (!sharedClient) {
+    sharedClient = createClient(
+      supabaseUrl || 'https://placeholder.supabase.co',
+      supabaseAnonKey || 'placeholder-key',
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+        },
+      }
+    )
+  }
+  return sharedClient
+}
 
 /**
  * Get an authenticated Supabase client with Clerk JWT
  * This client will pass through RLS policies
  */
 export async function getSupabaseClient() {
-  // If we already have a client, return it
-  if (clientInstance) {
-    return clientInstance
-  }
-
-  let authToken: string | null = null
+  const client = getSharedClient()
   
-  // Get Clerk session token for authentication
+  // Try to get Clerk auth token and set it on the client
   if (typeof window !== 'undefined') {
     try {
-      // Access the global Clerk instance loaded by ClerkProvider
       const clerk = (window as any).Clerk
       if (clerk && clerk.session) {
-        authToken = await clerk.session.getToken({ template: 'supabase' })
-        
+        const authToken = await clerk.session.getToken({ template: 'supabase' })
         if (authToken) {
-          console.log('✅ Got Clerk token for Supabase')
-        } else {
-          console.warn('⚠️ No Clerk token available')
+          // Set the auth header on existing client
+          client.rest.headers['Authorization'] = `Bearer ${authToken}`
         }
-      } else {
-        console.warn('⚠️ Clerk not loaded yet')
       }
     } catch (error) {
-      console.error('Failed to get Clerk token:', error)
+      // Silent fail - client still works without auth
     }
   }
   
-  // Create client with auth token
-  clientInstance = createClient(
-    supabaseUrl || 'https://placeholder.supabase.co',
-    supabaseAnonKey || 'placeholder-key',
-    {
-      global: {
-        headers: authToken ? {
-          Authorization: `Bearer ${authToken}`,
-        } : {},
-      },
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-      },
-    }
-  )
-
-  return clientInstance
+  return client
 }
 
-// Legacy export for backwards compatibility (not authenticated)
-export const supabase = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-key'
-)
+// Legacy export - uses the same shared instance
+export const supabase = getSharedClient()

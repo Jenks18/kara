@@ -66,7 +66,6 @@ export default function ReportDetailPage() {
           filter: `report_id=eq.${reportId}`
         },
         () => {
-          console.log('📊 Expense item changed - refreshing report')
           fetchReport()
         }
       )
@@ -75,7 +74,6 @@ export default function ReportDetailPage() {
     // Polling fallback: ONLY poll if there are scanning items, reduce to every 10 seconds
     const pollInterval = setInterval(async () => {
       if (report?.items?.some(item => item.processing_status === 'scanning')) {
-        console.log('🔄 Polling for scanning items...')
         fetchReport()
       }
     }, 10000) // Reduced from 5s to 10s

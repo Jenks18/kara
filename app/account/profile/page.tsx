@@ -95,17 +95,14 @@ export default function ProfilePage() {
   
   // Sync temp avatar when context avatar changes
   useEffect(() => {
-    console.log('🔄 Avatar context changed:', avatar)
     setSelectedTempAvatar(avatar)
   }, [avatar])
 
   const handleAvatarSelect = (selectedAvatar: typeof AVATAR_OPTIONS[0]) => {
-    console.log('👆 Avatar selected (temp):', selectedAvatar)
     setSelectedTempAvatar(selectedAvatar)
   }
 
   const handleSaveAvatar = () => {
-    console.log('💾 Saving avatar to context:', selectedTempAvatar)
     setAvatar(selectedTempAvatar)
     setShowAvatarPicker(false)
   }
@@ -130,7 +127,6 @@ export default function ProfilePage() {
       }
 
       const { url } = await response.json()
-      console.log('✅ Avatar uploaded:', url)
 
       // Update user profile with image URL
       const { updateUserProfile } = await import('@/lib/api/user-profiles')
@@ -150,7 +146,6 @@ export default function ProfilePage() {
       setShowAvatarPicker(false)
       alert('Profile picture updated successfully!')
     } catch (error) {
-      console.error('Error uploading avatar:', error)
       alert('Failed to upload profile picture. Please try again.')
     } finally {
       setUploadingAvatar(false)

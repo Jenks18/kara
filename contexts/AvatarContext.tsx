@@ -38,7 +38,7 @@ export function AvatarProvider({ children }: { children: ReactNode }) {
         try {
           return JSON.parse(saved)
         } catch (e) {
-          console.error('Failed to parse saved avatar:', e)
+          // Failed to parse - use default
         }
       }
     }
@@ -52,18 +52,11 @@ export function AvatarProvider({ children }: { children: ReactNode }) {
     async function loadAvatar() {
       if (!isLoaded) return
       
-      console.log('🎨 Loading avatar from database...', { userId: user?.id })
-      
       // Try database if user is logged in
       if (user?.id) {
         try {
           const profile = await getUserProfile(user.id)
           if (profile && (profile.avatar_emoji || profile.avatar_image_url)) {
-            console.log('✅ Loaded from database:', { 
-              emoji: profile.avatar_emoji, 
-              color: profile.avatar_color,
-              imageUrl: profile.avatar_image_url 
-            })
             const dbAvatar: Avatar = {
               emoji: profile.avatar_emoji || '💼',
               color: profile.avatar_color || 'from-emerald-500 to-emerald-600',
@@ -74,7 +67,7 @@ export function AvatarProvider({ children }: { children: ReactNode }) {
             localStorage.setItem('user-avatar', JSON.stringify(dbAvatar))
           }
         } catch (error) {
-          console.log('ℹ️ Database not ready yet, using localStorage/default avatar')
+          // Database not ready yet, use localStorage/default
         }
       }
       
@@ -86,19 +79,16 @@ export function AvatarProvider({ children }: { children: ReactNode }) {
 
   // Save avatar to database and localStorage when it changes
   const setAvatar = async (newAvatar: Avatar) => {
-    console.log('💾 Saving avatar:', newAvatar)
     setAvatarState(newAvatar)
     localStorage.setItem('user-avatar', JSON.stringify(newAvatar))
-    console.log('✅ Saved to localStorage')
     
     // Save to database if user is logged in
     if (user?.id) {
       try {
         const userEmail = user.emailAddresses[0]?.emailAddress || ''
         await updateAvatarInDB(user.id, newAvatar, userEmail)
-        console.log('✅ Saved to database')
       } catch (error) {
-        console.error('Error saving avatar to database:', error)
+        // Silent fail - avatar saved to localStorage at least
       }
     }
   }
