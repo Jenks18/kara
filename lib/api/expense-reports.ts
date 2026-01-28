@@ -73,8 +73,8 @@ export async function createExpenseReport(
       .select()
       .single()
 
-    if (reportError) {
-      return { success: false, error: reportError.message }
+    if (reportError || !report) {
+      return { success: false, error: reportError?.message || 'Failed to create report' }
     }
 
     // 2. Upload images and create expense items
@@ -85,7 +85,6 @@ export async function createExpenseReport(
         try {
           imageUrl = await uploadReceiptImage(item.imageData, report.id)
         } catch (error) {
-          console.warn('Image upload failed, using base64 fallback:', error)
           // Store base64 data directly if storage upload fails (RLS issue)
           imageUrl = item.imageData
         }
