@@ -119,6 +119,7 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
     setUploadingAvatar(true)
 
     try {
+      // Get fresh Supabase client with valid token
       const supabase = await getSupabaseClient()
       
       // Upload to Supabase Storage
@@ -273,8 +274,16 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
         {/* Workspace Avatar */}
         <div className="flex justify-center">
           <div className="relative">
-            <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-700 flex items-center justify-center">
-              <span className="text-4xl font-bold text-white">{workspace.avatar}</span>
+            <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-700 flex items-center justify-center overflow-hidden">
+              {workspace.avatar?.startsWith('http') ? (
+                <img 
+                  src={workspace.avatar} 
+                  alt={workspace.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-4xl font-bold text-white">{workspace.avatar || workspace.name?.charAt(0) || 'W'}</span>
+              )}
             </div>
             <button 
               onClick={() => setShowAvatarMenu(true)}
@@ -516,7 +525,7 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
         ref={cameraInputRef}
         type="file"
         accept="image/*"
-        capture="user"
+        capture
         className="hidden"
         onChange={handleFileSelect}
       />
