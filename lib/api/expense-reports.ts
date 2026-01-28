@@ -224,7 +224,7 @@ export async function getExpenseReports(
       })
     )
 
-    return reportsWithItems as ExpenseReport[]
+    return reportsWithItems as unknown as ExpenseReport[]
   } catch (error) {
     console.error('Error getting expense reports:', error)
     return []
