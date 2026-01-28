@@ -9,6 +9,9 @@ export interface Workspace {
   avatar: string
   currency: string
   currency_symbol: string
+  description?: string
+  address?: string
+  plan_type?: string
   is_active: boolean
 }
 
@@ -122,14 +125,20 @@ export async function getWorkspace(
 export async function updateWorkspace(
   workspaceId: string,
   userId: string,
-  updates: Partial<Pick<Workspace, 'name' | 'avatar' | 'currency' | 'currency_symbol'>>
-): Promise<{ success: boolean; error?: string }> {
+  updates: Partial<Pick<Workspace, 'name' | 'avatar' | 'currency' | 'currency_symbol' | 'description' | 'address' | 'plan_type'>>
+): Promise<{ success: boolean; workspace?: Workspace; error?: string }> {
   if (!isAdminConfigured) {
     return { success: false, error: 'Supabase not configured' }
   }
 
   try {
-    const { error } = await supabaseAdmin
+    // First verify the workspace belongs to the user
+    const existing = await getWorkspace(workspaceId, userId)
+    if (!existing) {
+      return { success: false, error: 'Workspace not found or access denied' }
+    }
+
+    const { data, error } = await supabaseAdmin
       .from('workspaces')
       .update({
         ...updates,
@@ -137,13 +146,15 @@ export async function updateWorkspace(
       })
       .eq('id', workspaceId)
       .eq('user_id', userId)
+      .select()
+      .single()
 
     if (error) {
       console.error('Error updating workspace:', error)
       return { success: false, error: error.message }
     }
 
-    return { success: true }
+    return { success: true, workspace: data }
   } catch (error: any) {
     console.error('Error updating workspace:', error)
     return { success: false, error: error.message }
