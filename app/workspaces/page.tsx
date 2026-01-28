@@ -129,34 +129,8 @@ export default function WorkspacesPage() {
       {/* Content */}
       <div className="px-4 py-8 max-w-md mx-auto">
         {workspaces.length === 0 ? (
-          // Empty State with illustration
-          <div className="flex flex-col items-center text-center">
-            {/* Illustration */}
-            <div className="w-full max-w-sm mb-8 rounded-3xl overflow-hidden bg-gradient-to-br from-purple-900/40 to-purple-800/40 p-12">
-              <div className="relative w-full aspect-video flex items-center justify-center">
-                {/* Planet with ring */}
-                <div className="relative">
-                  <div className="w-32 h-32 rounded-full bg-gradient-to-br from-orange-500 to-pink-500 relative">
-                    {/* Ring around planet */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-48 h-24 border-8 border-purple-400 rounded-full transform rotate-12 opacity-80"></div>
-                    </div>
-                    {/* Small decorative elements */}
-                    <div className="absolute top-4 right-4 w-3 h-3 bg-white rounded-full animate-pulse"></div>
-                    <div className="absolute bottom-8 left-8 w-2 h-2 bg-white rounded-full animate-pulse delay-100"></div>
-                    <div className="absolute top-1/2 right-12 w-2 h-2 bg-white rounded-full animate-pulse delay-200"></div>
-                  </div>
-                  {/* Money/receipt icons on the ring */}
-                  <div className="absolute top-8 left-0 w-8 h-8 bg-yellow-400 rounded-lg transform -rotate-12 flex items-center justify-center text-lg">
-                    💰
-                  </div>
-                  <div className="absolute top-12 right-4 w-8 h-8 bg-cyan-400 rounded-lg transform rotate-12 flex items-center justify-center text-lg">
-                    🧾
-                  </div>
-                </div>
-              </div>
-            </div>
-
+          // Empty State
+          <div className="flex flex-col items-center text-center pt-12">
             {/* Text */}
             <h2 className="text-2xl font-bold text-gray-900 mb-3">
               You have no workspaces
@@ -278,37 +252,6 @@ export default function WorkspacesPage() {
             </button>
           </div>
         )}
-        
-        {/* Domains Section */}
-        <div className="mt-12">
-          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
-            Domains
-          </h3>
-          
-          <div className="bg-white rounded-2xl border border-gray-200 p-6 flex items-start gap-4 shadow-sm">
-            <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center flex-shrink-0">
-              <Shield size={28} className="text-emerald-600" />
-            </div>
-            
-            <div className="flex-1">
-              <h4 className="text-gray-900 font-semibold mb-2">Enhanced security</h4>
-              <p className="text-sm text-gray-600 leading-relaxed">
-                Require members on your domain to log in via single sign-on, restrict workspace creation, and more.
-              </p>
-            </div>
-            
-            <button className="
-              px-6 py-2 rounded-full
-              bg-gradient-to-r from-emerald-500 to-emerald-600
-              text-white font-medium text-sm
-              active:scale-95 transition-transform
-              whitespace-nowrap
-              flex-shrink-0
-            ">
-              Enable
-            </button>
-          </div>
-        </div>
       </div>
       
       <BottomNav />
