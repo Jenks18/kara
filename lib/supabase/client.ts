@@ -31,7 +31,7 @@ function getSharedClient() {
 /**
  * Get an authenticated Supabase client with Clerk JWT
  * This client will pass through RLS policies
- * Caches clients by auth token to prevent multiple instances
+ * Always creates fresh client with current token to avoid expiration issues
  */
 export async function getSupabaseClient() {
   // Try to get Clerk auth token and create authenticated client
@@ -41,32 +41,28 @@ export async function getSupabaseClient() {
       if (clerk && clerk.session) {
         const authToken = await clerk.session.getToken({ template: 'supabase' })
         if (authToken) {
-          // Use token as cache key - reuse client if same token
-          const cacheKey = `auth_${authToken.substring(0, 20)}` // Use portion of token as key
-          
-          if (!clientCache.has(cacheKey)) {
-            clientCache.set(cacheKey, createClient(
-              supabaseUrl || 'https://placeholder.supabase.co',
-              supabaseAnonKey || 'placeholder-key',
-              {
-                auth: {
-                  persistSession: false,
-                  autoRefreshToken: false,
-                  storage: undefined, // Disable storage to prevent conflicts
-                  storageKey: 'sb-auth-client', // Use consistent storage key
+          // Always create fresh client with current token (don't cache)
+          return createClient(
+            supabaseUrl || 'https://placeholder.supabase.co',
+            supabaseAnonKey || 'placeholder-key',
+            {
+              auth: {
+                persistSession: false,
+                autoRefreshToken: false,
+                storage: undefined,
+                storageKey: 'sb-auth-client',
+              },
+              global: {
+                headers: {
+                  Authorization: `Bearer ${authToken}`,
                 },
-                global: {
-                  headers: {
-                    Authorization: `Bearer ${authToken}`,
-                  },
-                },
-              }
-            ))
-          }
-          return clientCache.get(cacheKey)!
+              },
+            }
+          )
         }
       }
     } catch (error) {
+      console.error('Error getting Clerk token:', error)
       // Silent fail - return unauthenticated client
     }
   }

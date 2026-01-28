@@ -561,7 +561,7 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
         ref={cameraInputRef}
         type="file"
         accept="image/*"
-        capture
+        capture="environment"
         className="hidden"
         onChange={handleFileSelect}
       />
