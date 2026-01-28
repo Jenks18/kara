@@ -100,6 +100,33 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
     }
   }
 
+  const handleRemoveAvatar = async () => {
+    setShowAvatarMenu(false)
+    setUploadingAvatar(true)
+
+    try {
+      // Update workspace to remove avatar (set to empty string or workspace initial)
+      const response = await fetch(`/api/workspaces/${workspaceId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ avatar: workspace?.name?.charAt(0) || 'W' })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setWorkspace(data.workspace)
+        alert('Image removed successfully!')
+      } else {
+        alert('Failed to remove image')
+      }
+    } catch (error) {
+      console.error('Error removing avatar:', error)
+      alert('Failed to remove image')
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
+
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file || !workspace) return
@@ -155,9 +182,9 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
       if (response.ok) {
         const data = await response.json()
         setWorkspace(data.workspace)
-        alert('Avatar updated successfully!')
+        alert('Image updated successfully!')
       } else {
-        alert('Failed to update avatar')
+        alert('Failed to update image')
       }
     } catch (error) {
       console.error('Error uploading avatar:', error)
@@ -379,6 +406,15 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
                 <FileText size={24} className="text-emerald-600" />
                 <span className="font-medium">Choose file</span>
               </button>
+              {workspace?.avatar?.startsWith('http') && (
+                <button
+                  onClick={handleRemoveAvatar}
+                  className="w-full py-4 flex items-center gap-4 text-red-600 hover:bg-red-50 rounded-xl px-4 transition-colors border-t border-gray-100 mt-2"
+                >
+                  <Trash2 size={24} className="text-red-600" />
+                  <span className="font-medium">Remove image</span>
+                </button>
+              )}
               <button
                 onClick={() => setShowAvatarMenu(false)}
                 className="w-full py-4 text-gray-600 font-medium hover:bg-gray-100 rounded-xl transition-colors mt-2"
