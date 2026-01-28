@@ -291,7 +291,7 @@ export async function updateReportStatus(
 
     const { error } = await supabase
       .from('expense_reports')
-      .update(updateData)
+      .update(updateData as any)
       .eq('id', reportId)
 
     if (error) {
