@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
-import { ChevronLeft, UserPlus, Users, Share2, Trash2, X } from 'lucide-react'
+import { ChevronLeft, UserPlus, Users, Share2, Trash2, X, Download } from 'lucide-react'
+import QRCode from 'react-qr-code'
 import { getUserProfile } from '@/lib/api/user-profiles'
 
 export const dynamic = 'force-dynamic'
@@ -21,32 +22,49 @@ interface WorkspaceMember {
   joined_at: string
 }
 
+interface Workspace {
+  id: string
+  name: string
+}
+
 export default function MembersPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
   const { user } = useUser()
   const [members, setMembers] = useState<WorkspaceMember[]>([])
+  const [workspace, setWorkspace] = useState<Workspace | null>(null)
   const [loading, setLoading] = useState(true)
   const [workspaceId, setWorkspaceId] = useState<string>('')
   const [showMoreMenu, setShowMoreMenu] = useState(false)
   const [showInviteModal, setShowInviteModal] = useState(false)
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [inviteInput, setInviteInput] = useState('')
+
+  const shareUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/workspaces/${workspaceId}/join`
 
   useEffect(() => {
     params.then(p => setWorkspaceId(p.id))
   }, [params])
 
   useEffect(() => {
-    async function fetchMembers() {
+    async function fetchData() {
       if (!workspaceId || !user) return
       
       try {
+        // Fetch workspace info
+        const wsResponse = await fetch(`/api/workspaces/${workspaceId}`)
+        if (wsResponse.ok) {
+          const wsData = await wsResponse.json()
+          setWorkspace(wsData.workspace)
+        }
+
         // Fetch workspace members from API
         const response = await fetch(`/api/workspaces/${workspaceId}/members`)
         if (response.ok) {
           const data = await response.json()
           setMembers(data.members || [])
-        } else {
-          // If no members endpoint yet, initialize with current user
+        } else if (response.status === 404) {
+          // If endpoint doesn't exist, initialize with current user
           const profile = await getUserProfile(user.id)
           setMembers([
             {
@@ -64,7 +82,7 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
           ])
         }
       } catch (error) {
-        console.error('Error fetching members:', error)
+        console.error('Error fetching data:', error)
         // Fallback to current user
         const profile = await getUserProfile(user.id)
         setMembers([
@@ -86,7 +104,7 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
       }
     }
 
-    fetchMembers()
+    fetchData()
   }, [user, workspaceId])
 
   const handleInvite = () => {
@@ -95,10 +113,58 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
   }
 
   const handleShare = () => {
-    const shareUrl = `${window.location.origin}/workspaces/${workspaceId}/join`
-    navigator.clipboard.writeText(shareUrl)
-    alert('Workspace invite link copied to clipboard!')
+    setShowShareModal(true)
     setShowMoreMenu(false)
+  }
+
+  const handleDelete = () => {
+    setShowDeleteModal(true)
+    setShowMoreMenu(false)
+  }
+
+  const handleConfirmDelete = async () => {
+    try {
+      const response = await fetch(`/api/workspaces/${workspaceId}`, {
+        method: 'DELETE',
+      })
+      if (response.ok) {
+        router.push('/workspaces')
+      } else {
+        alert('Failed to delete workspace')
+      }
+    } catch (error) {
+      console.error('Error deleting workspace:', error)
+      alert('Failed to delete workspace')
+    }
+  }
+
+  const downloadQRCode = () => {
+    const svg = document.getElementById('members-qr-code')
+    if (!svg) return
+
+    const svgData = new XMLSerializer().serializeToString(svg)
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    const img = new Image()
+
+    img.onload = () => {
+      canvas.width = 800
+      canvas.height = 800
+      ctx?.drawImage(img, 0, 0, 800, 800)
+      
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const url = URL.createObjectURL(blob)
+          const link = document.createElement('a')
+          link.href = url
+          link.download = `${workspace?.name || 'workspace'}-qr-code.png`
+          link.click()
+          URL.revokeObjectURL(url)
+        }
+      })
+    }
+
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)))
   }
 
   if (loading) {
@@ -149,15 +215,28 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
 
             {/* More Menu Dropdown */}
             {showMoreMenu && (
-              <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl border border-emerald-200 shadow-lg overflow-hidden z-40">
-                <button
-                  onClick={handleShare}
-                  className="w-full px-4 py-3 flex items-center gap-3 hover:bg-emerald-50 transition-colors text-left"
-                >
-                  <Share2 size={20} className="text-emerald-600" />
-                  <span className="text-gray-900 font-medium">Share</span>
-                </button>
-              </div>
+              <>
+                <div 
+                  className="fixed inset-0 z-30" 
+                  onClick={() => setShowMoreMenu(false)}
+                />
+                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl border border-emerald-200 shadow-lg overflow-hidden z-40">
+                  <button
+                    onClick={handleShare}
+                    className="w-full px-4 py-3 flex items-center gap-3 hover:bg-emerald-50 transition-colors text-left"
+                  >
+                    <Share2 size={20} className="text-emerald-600" />
+                    <span className="text-gray-900 font-medium">Share</span>
+                  </button>
+                  <button
+                    onClick={handleDelete}
+                    className="w-full px-4 py-3 flex items-center gap-3 hover:bg-red-50 transition-colors text-left border-t border-gray-100"
+                  >
+                    <Trash2 size={20} className="text-red-600" />
+                    <span className="text-red-600 font-medium">Delete workspace</span>
+                  </button>
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -254,6 +333,99 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
         </div>
       )}
 
+      {/* Share Modal */}
+      {showShareModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">Share workspace</h2>
+              <button
+                onClick={() => setShowShareModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="bg-white p-6 rounded-xl flex items-center justify-center border-2 border-emerald-500">
+              <QRCode
+                id="members-qr-code"
+                value={shareUrl}
+                size={200}
+                fgColor="#059669"
+                bgColor="#ffffff"
+              />
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(shareUrl)
+                  alert('Link copied to clipboard!')
+                }}
+                className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-2xl active:scale-[0.98] transition-all"
+              >
+                Copy link
+              </button>
+              <button
+                onClick={downloadQRCode}
+                className="w-full py-4 bg-white border-2 border-emerald-600 text-emerald-600 font-semibold rounded-2xl active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+              >
+                <Download size={20} />
+                Download QR code
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">Delete workspace</h2>
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
+                <Trash2 size={32} className="text-red-600" />
+              </div>
+              
+              <div className="space-y-2">
+                <p className="text-gray-900 font-medium">
+                  Are you sure you want to delete "{workspace?.name}"?
+                </p>
+                <p className="text-sm text-gray-500">
+                  This action cannot be undone. All workspace data will be permanently deleted.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={handleConfirmDelete}
+                className="w-full py-4 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-2xl active:scale-[0.98] transition-all"
+              >
+                Delete workspace
+              </button>
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="w-full py-4 bg-white border-2 border-gray-300 text-gray-700 font-semibold rounded-2xl active:scale-[0.98] transition-all"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Click outside to close more menu */}
       {showMoreMenu && (
         <div 
@@ -264,3 +436,4 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
     </div>
   )
 }
+
