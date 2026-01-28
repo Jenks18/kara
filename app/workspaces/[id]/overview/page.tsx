@@ -470,20 +470,6 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
           </div>
         </div>
       )}
-                <Share2 size={18} />
-                Copy Link
-              </button>
-              <button
-                onClick={() => alert('QR code download coming soon')}
-                className="flex-1 py-3 bg-white border-2 border-emerald-600 text-emerald-600 font-semibold rounded-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-              >
-                <Download size={18} />
-                Download QR
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
