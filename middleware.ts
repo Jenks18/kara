@@ -5,15 +5,17 @@ const isPublicRoute = createRouteMatcher([
   '/sign-up(.*)',
 ])
 
-export default clerkMiddleware(async (auth, req) => {
-  // Allow public routes without auth  
-  if (!isPublicRoute(req)) {
-    await auth.protect()
+export default clerkMiddleware(
+  (auth, req) => {
+    // Protect all routes except sign-in/sign-up
+    if (!isPublicRoute(req)) {
+      auth.protect()
+    }
+  },
+  {
+    signInUrl: '/sign-in',
   }
-}, {
-  signInUrl: '/sign-in',
-  signUpUrl: '/sign-up',
-})
+)
 
 export const config = {
   matcher: ['/((?!.*\\..*|_next).*)', '/', '/(api|trpc)(.*)'],

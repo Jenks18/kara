@@ -1,9 +1,20 @@
 import { SignIn } from '@clerk/nextjs'
 
+export const dynamic = 'force-dynamic'
+
 export default function SignInPage() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100">
-      <SignIn />
+      <div className="w-full max-w-md px-4">
+        <SignIn 
+          appearance={{
+            elements: {
+              rootBox: "mx-auto",
+              card: "shadow-2xl"
+            }
+          }}
+        />
+      </div>
     </div>
   )
 }
