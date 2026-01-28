@@ -1,8 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, ChevronRight, Building, Share2, Trash2, Camera, Image as ImageIcon, FileText, X, UserPlus, Download, QrCode } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Building, Share2, Trash2, Camera, Image as ImageIcon, FileText, X, UserPlus, Download } from 'lucide-react'
+import QRCode from 'react-qr-code'
+import { getSupabaseClient } from '@/lib/supabase/client'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,6 +30,10 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showAvatarMenu, setShowAvatarMenu] = useState(false)
   const [inviteInput, setInviteInput] = useState('')
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
+  const galleryInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     params.then(p => setWorkspaceId(p.id))
@@ -85,8 +91,105 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
 
   const handleAvatarChange = (method: 'camera' | 'gallery' | 'file') => {
     setShowAvatarMenu(false)
-    // Will implement file upload later
-    alert(`${method} functionality coming soon`)
+    if (method === 'camera') {
+      cameraInputRef.current?.click()
+    } else if (method === 'gallery') {
+      galleryInputRef.current?.click()
+    } else if (method === 'file') {
+      fileInputRef.current?.click()
+    }
+  }
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file || !workspace) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file')
+      return
+    }
+
+    // Validate file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image size must be less than 5MB')
+      return
+    }
+
+    setUploadingAvatar(true)
+
+    try {
+      const supabase = await getSupabaseClient()
+      
+      // Upload to Supabase Storage
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${workspaceId}-${Date.now()}.${fileExt}`
+      const filePath = `workspace-avatars/${fileName}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('workspace-avatars')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        })
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError)
+        alert('Failed to upload image')
+        return
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('workspace-avatars')
+        .getPublicUrl(filePath)
+
+      // Update workspace with new avatar URL
+      const response = await fetch(`/api/workspaces/${workspaceId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ avatar: publicUrl })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setWorkspace(data.workspace)
+        alert('Avatar updated successfully!')
+      } else {
+        alert('Failed to update avatar')
+      }
+    } catch (error) {
+      console.error('Error uploading avatar:', error)
+      alert('Failed to upload avatar')
+    } finally {
+      setUploadingAvatar(false)
+      // Reset input
+      if (event.target) event.target.value = ''
+    }
+  }
+
+  const downloadQRCode = () => {
+    const svg = document.getElementById('workspace-qr-code')
+    if (!svg) return
+
+    const svgData = new XMLSerializer().serializeToString(svg)
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    const img = new Image()
+
+    img.onload = () => {
+      canvas.width = img.width
+      canvas.height = img.height
+      ctx?.drawImage(img, 0, 0)
+      const pngFile = canvas.toDataURL('image/png')
+
+      const downloadLink = document.createElement('a')
+      downloadLink.download = `${workspace?.name || 'workspace'}-qr-code.png`
+      downloadLink.href = pngFile
+      downloadLink.click()
+    }
+
+    img.src = 'data:image/svg+xml;base64,' + btoa(svgData)
   }
 
   const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/workspaces/${workspaceId}/join` : ''
@@ -323,10 +426,18 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
               </button>
             </div>
             
-            {/* QR Code Placeholder */}
+            {/* Real QR Code */}
             <div className="flex justify-center py-8">
-              <div className="w-64 h-64 bg-white border-4 border-emerald-600 rounded-2xl flex items-center justify-center">
-                <QrCode size={200} className="text-emerald-600" />
+              <div className="p-4 bg-white border-4 border-emerald-600 rounded-2xl">
+                <QRCode
+                  id="workspace-qr-code"
+                  value={shareUrl}
+                  size={200}
+                  style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                  viewBox={`0 0 200 200`}
+                  fgColor="#059669"
+                  bgColor="#ffffff"
+                />
               </div>
             </div>
 
@@ -345,6 +456,20 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
                 }}
                 className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2"
               >
+                <Share2 size={18} />
+                Copy Link
+              </button>
+              <button
+                onClick={downloadQRCode}
+                className="flex-1 py-3 bg-white border-2 border-emerald-600 text-emerald-600 font-semibold rounded-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+              >
+                <Download size={18} />
+                Download QR
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
                 <Share2 size={18} />
                 Copy Link
               </button>
@@ -399,6 +524,30 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
           onClick={() => setShowMoreMenu(false)}
         />
       )}
+
+      {/* Hidden file inputs for avatar upload */}
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handleFileSelect}
+      />
+      <input
+        ref={galleryInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileSelect}
+      />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileSelect}
+      />
     </div>
   )
 }
