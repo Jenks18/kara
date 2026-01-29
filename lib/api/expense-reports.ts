@@ -245,6 +245,7 @@ export async function getExpenseReport(
   }
   
   try {
+    console.log('📄 Fetching report:', reportId)
     const { data: reportData, error: reportError } = await supabase
       .from('expense_reports')
       .select('*')
@@ -257,7 +258,9 @@ export async function getExpenseReport(
     }
 
     const report = reportData as { id: string; [key: string]: any }
+    console.log('✅ Found report:', report.title)
 
+    console.log('📦 Fetching items for report:', reportId)
     const { data: items, error: itemsError } = await supabase
       .from('expense_items')
       .select('*')
@@ -268,6 +271,9 @@ export async function getExpenseReport(
       console.error('Error fetching items:', itemsError)
       return { ...report, items: [] } as unknown as ExpenseReport
     }
+
+    console.log(`✅ Found ${items?.length || 0} items for report`)
+    console.log('Items:', items)
 
     return { ...report, items } as unknown as ExpenseReport
   } catch (error) {

@@ -226,13 +226,7 @@ export async function POST(request: NextRequest) {
               transaction_date: transactionDate,
               kra_invoice_number: result.kraData?.invoiceNumber || null,
               kra_verified: !!result.kraData?.invoiceNumber,
-              // Add metadata for fields that need review
-              needs_review_fields: needsReview ? JSON.stringify({
-                merchant: result.fieldConfidence?.merchantName?.needsReview,
-                amount: result.fieldConfidence?.amount?.needsReview,
-                date: result.fieldConfidence?.date?.needsReview,
-                dateOCR: result.fieldConfidence?.date?.originalOCR
-              }) : null,
+              // Note: needs_review_fields column not in schema yet, skipping for now
             })
             .select('id')
             .single();
