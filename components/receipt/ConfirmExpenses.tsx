@@ -193,8 +193,8 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
                   disabled={currentImageIndex === 0}
                   className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${
                     currentImageIndex === 0
-                      ? 'bg-dark-100/30 text-gray-600 cursor-not-allowed'
-                      : 'bg-gradient-to-br from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white active:scale-95 shadow-emerald-sm'
+                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      : 'bg-gradient-to-br from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white active:scale-95 shadow-sm'
                   }`}
                 >
                   <ChevronLeft size={18} />
@@ -207,7 +207,7 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
                   disabled={currentImageIndex === images.length - 1}
                   className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${
                     currentImageIndex === images.length - 1
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                       : 'bg-gradient-to-br from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white active:scale-95 shadow-sm'
                   }`}
                 >
