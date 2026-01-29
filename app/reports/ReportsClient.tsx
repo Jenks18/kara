@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation'
 import BottomNav from '@/components/navigation/BottomNav'
 import ExpenseItemCard from '@/components/expense/ExpenseItemCard'
 import CategoryPill from '@/components/ui/CategoryPill'
-import { Search, SlidersHorizontal } from 'lucide-react'
+import { Search, SlidersHorizontal, FileText } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
+import Image from 'next/image'
 
 interface ExpenseItem {
   id: string
@@ -20,15 +21,26 @@ interface ExpenseItem {
   report_id: string
 }
 
-interface ReportsClientProps {
-  initialItems: ExpenseItem[]
+interface ExpenseReport {
+  id: string
+  created_at: string
+  title: string
+  status: 'draft' | 'submitted' | 'approved' | 'rejected'
+  workspace_name: string
+  items: ExpenseItem[]
 }
 
-export default function ReportsClient({ initialItems }: ReportsClientProps) {
+interface ReportsClientProps {
+  initialItems: ExpenseItem[]
+  initialReports: ExpenseReport[]
+}
+
+export default function ReportsClient({ initialItems, initialReports }: ReportsClientProps) {
   const router = useRouter()
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedType, setSelectedType] = useState('expense')
   const [expenseItems, setExpenseItems] = useState<ExpenseItem[]>(initialItems)
+  const [reports, setReports] = useState<ExpenseReport[]>(initialReports)
   
   // Set up Supabase real-time subscription for expense_items updates
   useEffect(() => {
@@ -132,24 +144,99 @@ export default function ReportsClient({ initialItems }: ReportsClientProps) {
 
         {/* Expense Items */}
         <div className="space-y-3">
-          {expenseItems.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-600">No receipts found</p>
-              <p className="text-sm text-gray-500 mt-2">Upload a receipt to get started</p>
-            </div>
+          {selectedType === 'expense' ? (
+            // Show individual expense items
+            expenseItems.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-600">No receipts found</p>
+                <p className="text-sm text-gray-500 mt-2">Upload a receipt to get started</p>
+              </div>
+            ) : (
+              expenseItems.map((item) => (
+                <ExpenseItemCard
+                  key={item.id}
+                  imageUrl={item.image_url}
+                  date={item.transaction_date || new Date(item.created_at).toLocaleDateString()}
+                  type={item.category}
+                  amount={item.amount}
+                  status={item.processing_status === 'processed' ? 'processed' : item.processing_status === 'error' ? 'review_required' : 'scanning'}
+                  userEmail="user@example.com"
+                  onClick={() => router.push(`/reports/${item.report_id}`)}
+                />
+              ))
+            )
           ) : (
-            expenseItems.map((item) => (
-              <ExpenseItemCard
-                key={item.id}
-                imageUrl={item.image_url}
-                date={item.transaction_date || new Date(item.created_at).toLocaleDateString()}
-                type={item.category}
-                amount={item.amount}
-                status={item.processing_status === 'processed' ? 'processed' : item.processing_status === 'error' ? 'review_required' : 'scanning'}
-                userEmail="user@example.com"
-                onClick={() => router.push(`/reports/${item.report_id}`)}
-              />
-            ))
+            // Show grouped reports with their items
+            reports.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-600">No reports found</p>
+                <p className="text-sm text-gray-500 mt-2">Create a report to get started</p>
+              </div>
+            ) : (
+              reports.map((report) => {
+                const totalAmount = report.items.reduce((sum, item) => sum + (item.amount || 0), 0)
+                
+                return (
+                  <div 
+                    key={report.id}
+                    onClick={() => router.push(`/reports/${report.id}`)}
+                    className="bg-white rounded-2xl p-4 border border-gray-200 hover:border-emerald-300 transition-colors cursor-pointer shadow-sm"
+                  >
+                    {/* Report Header */}
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <FileText size={16} className="text-emerald-600" />
+                          <h3 className="text-gray-900 font-semibold">{report.title}</h3>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-600">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full font-medium ${
+                            report.status === 'draft' ? 'bg-gray-500/20 text-gray-700' :
+                            report.status === 'submitted' ? 'bg-amber-500/20 text-amber-700' :
+                            report.status === 'approved' ? 'bg-emerald-500/20 text-emerald-700' :
+                            'bg-red-500/20 text-red-700'
+                          }`}>
+                            {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
+                          </span>
+                          <span>•</span>
+                          <span>{report.items.length} expense{report.items.length !== 1 ? 's' : ''}</span>
+                          <span>•</span>
+                          <span>{new Date(report.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Receipt Thumbnails */}
+                    {report.items.length > 0 && (
+                      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
+                        {report.items.map((item, idx) => (
+                          <div key={item.id} className="flex-shrink-0 snap-start">
+                            <div className="relative w-20 h-24 rounded-lg overflow-hidden bg-gray-100 border border-gray-300">
+                              <Image
+                                src={item.image_url}
+                                alt={`Receipt ${idx + 1}`}
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Report Footer */}
+                    <div className="mt-3 pt-3 border-t border-gray-200 flex items-center justify-between">
+                      <div className="text-sm text-gray-600">
+                        {report.workspace_name}
+                      </div>
+                      <div className="text-gray-900 font-semibold font-mono">
+                        KES {totalAmount.toFixed(2)}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })
+            )
           )}
         </div>
       </div>
