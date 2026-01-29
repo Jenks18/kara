@@ -180,23 +180,26 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
       })
       
       Promise.all(imagePromises).then(images => {
-        setSelectedImages(prev => [...prev, ...images])
-        setContinuousMode(true) // Switch to continuous mode for multi-select
+        // Skip preview and go straight to confirm screen
+        setSelectedImages(images)
         stopCamera()
-        // Reset input so same files can be selected again
+        setShowConfirmExpenses(true)
+        // Reset input
         if (fileInputRef.current) {
           fileInputRef.current.value = ''
         }
       })
     } else {
-      // Single file selected
+      // Single file selected - skip preview and go to confirm screen
       const file = files[0]
       const reader = new FileReader()
       reader.onloadend = () => {
         const imageData = reader.result as string
-        setPreview(imageData)
+        // Skip preview, go directly to confirm screen
+        setSelectedImages([imageData])
         stopCamera()
-        // Reset input so same file can be selected again
+        setShowConfirmExpenses(true)
+        // Reset input
         if (fileInputRef.current) {
           fileInputRef.current.value = ''
         }
