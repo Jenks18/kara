@@ -117,11 +117,21 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
   }
 
   const goToPrevImage = () => {
-    setCurrentImageIndex(prev => Math.max(0, prev - 1))
+    console.log('🔙 goToPrevImage clicked - current:', currentImageIndex, 'total:', images.length)
+    setCurrentImageIndex(prev => {
+      const newIndex = Math.max(0, prev - 1)
+      console.log('🔙 Moving from', prev, 'to', newIndex)
+      return newIndex
+    })
   }
 
   const goToNextImage = () => {
-    setCurrentImageIndex(prev => Math.min(images.length - 1, prev + 1))
+    console.log('▶️ goToNextImage clicked - current:', currentImageIndex, 'total:', images.length)
+    setCurrentImageIndex(prev => {
+      const newIndex = Math.min(images.length - 1, prev + 1)
+      console.log('▶️ Moving from', prev, 'to', newIndex)
+      return newIndex
+    })
   }
 
   if (showLocationPrompt) {
@@ -189,7 +199,12 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
             {images.length > 1 && (
               <div className="flex items-center gap-3 mt-1">
                 <button
-                  onClick={goToPrevImage}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    console.log('LEFT CHEVRON clicked! currentIndex:', currentImageIndex, 'disabled:', currentImageIndex === 0)
+                    goToPrevImage()
+                  }}
                   disabled={currentImageIndex === 0}
                   className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${
                     currentImageIndex === 0
@@ -203,7 +218,12 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
                   {currentImageIndex + 1} of {images.length}
                 </span>
                 <button
-                  onClick={goToNextImage}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    console.log('RIGHT CHEVRON clicked! currentIndex:', currentImageIndex, 'disabled:', currentImageIndex === images.length - 1)
+                    goToNextImage()
+                  }}
                   disabled={currentImageIndex === images.length - 1}
                   className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${
                     currentImageIndex === images.length - 1
