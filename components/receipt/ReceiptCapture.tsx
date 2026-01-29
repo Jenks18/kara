@@ -164,16 +164,37 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
   }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const files = e.target.files
+    if (!files || files.length === 0) return
     
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      const imageData = reader.result as string
-      setPreview(imageData)
-      stopCamera()
+    // Handle multiple files selected from gallery
+    if (files.length > 1) {
+      const imagePromises = Array.from(files).map(file => {
+        return new Promise<string>((resolve) => {
+          const reader = new FileReader()
+          reader.onloadend = () => {
+            resolve(reader.result as string)
+          }
+          reader.readAsDataURL(file)
+        })
+      })
+      
+      Promise.all(imagePromises).then(images => {
+        setSelectedImages(prev => [...prev, ...images])
+        setContinuousMode(true) // Switch to continuous mode for multi-select
+        stopCamera()
+      })
+    } else {
+      // Single file selected
+      const file = files[0]
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        const imageData = reader.result as string
+        setPreview(imageData)
+        stopCamera()
+      }
+      reader.readAsDataURL(file)
     }
-    reader.readAsDataURL(file)
   }
 
   const handleRemoveImage = (index: number) => {
@@ -603,6 +624,7 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                     ref={fileInputRef}
                     type="file"
                     accept="image/*"
+                    multiple
                     onChange={handleFileSelect}
                     className="hidden"
                   />
