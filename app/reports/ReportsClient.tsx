@@ -145,7 +145,7 @@ export default function ReportsClient({ initialItems, initialReports }: ReportsC
         {/* Expense Items */}
         <div className="space-y-3">
           {selectedType === 'expense' ? (
-            // Show individual expense items
+            // Show individual expense items (single receipts)
             expenseItems.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-gray-600">No receipts found</p>
@@ -153,16 +153,54 @@ export default function ReportsClient({ initialItems, initialReports }: ReportsC
               </div>
             ) : (
               expenseItems.map((item) => (
-                <ExpenseItemCard
+                <div
                   key={item.id}
-                  imageUrl={item.image_url}
-                  date={item.transaction_date || new Date(item.created_at).toLocaleDateString()}
-                  type={item.category}
-                  amount={item.amount}
-                  status={item.processing_status === 'processed' ? 'processed' : item.processing_status === 'error' ? 'review_required' : 'scanning'}
-                  userEmail="user@example.com"
                   onClick={() => router.push(`/reports/${item.report_id}`)}
-                />
+                  className="bg-white rounded-2xl p-4 border border-gray-200 hover:border-emerald-300 transition-colors cursor-pointer shadow-sm"
+                >
+                  {/* Receipt Image */}
+                  <div className="relative w-full h-48 rounded-lg overflow-hidden bg-gray-100 mb-3">
+                    <Image
+                      src={item.image_url}
+                      alt="Receipt"
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                  
+                  {/* Receipt Details */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-600">
+                        {item.merchant_name || 'Unknown Merchant'}
+                      </span>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                        item.processing_status === 'processed' ? 'bg-emerald-500/20 text-emerald-700' :
+                        item.processing_status === 'error' ? 'bg-red-500/20 text-red-700' :
+                        'bg-amber-500/20 text-amber-700'
+                      }`}>
+                        {item.processing_status === 'processed' ? 'Processed' :
+                         item.processing_status === 'error' ? 'Review Required' :
+                         'Scanning'}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-500">
+                        {item.transaction_date || new Date(item.created_at).toLocaleDateString()}
+                      </span>
+                      <span className="text-lg font-bold text-gray-900">
+                        KES {item.amount.toFixed(2)}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        {item.category}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               ))
             )
           ) : (
@@ -207,7 +245,7 @@ export default function ReportsClient({ initialItems, initialReports }: ReportsC
                     </div>
                     
                     {/* Receipt Thumbnails */}
-                    {report.items.length > 0 && (
+                    {report.items.length > 0 ? (
                       <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
                         {report.items.map((item, idx) => (
                           <div key={item.id} className="flex-shrink-0 snap-start">
@@ -221,6 +259,10 @@ export default function ReportsClient({ initialItems, initialReports }: ReportsC
                             </div>
                           </div>
                         ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-4 text-sm text-gray-500">
+                        No expenses in this report yet
                       </div>
                     )}
                     

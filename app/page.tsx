@@ -35,108 +35,31 @@ export default async function HomePage() {
   // Create Supabase client with Clerk JWT
   const supabase = await createServerClient()
   
-  // Fetch expense reports for conversation threads
+  // Fetch expense reports - RLS filters to user's data only
   const { data: reports } = await supabase
     .from('expense_reports')
     .select('*')
     .order('created_at', { ascending: false })
-    .limit(10)
+    .limit(20)
 
-  // Build conversation threads
+  // Build conversation threads from REAL data only
   const conversations: ConversationThread[] = []
   
-  // Add workspace channel threads
-  conversations.push({
-    id: 'workspace-admins-1',
-    type: 'workspace',
-    title: '#admins',
-    subtitle: "Terpmail's Workspace 1 • Concierge: I'm here to ...",
-    avatar: 'T',
-    timestamp: 'Yesterday',
-    isPinned: true,
-    hasUnread: false,
-  })
-  
-  conversations.push({
-    id: 'workspace-admins-2',
-    type: 'workspace',
-    title: '#admins',
-    subtitle: "Terpmail's Workspace • Concierge: Your free tria...",
-    avatar: 'T',
-    timestamp: '2d ago',
-    isPinned: false,
-    hasUnread: true,
-  })
-  
-  // Add system message thread
-  conversations.push({
-    id: 'concierge',
-    type: 'system',
-    title: 'Concierge',
-    subtitle: "Hi there! I'm sorry to hear you aren't fully satisfie...",
-    avatar: '🤖',
-    timestamp: '3d ago',
-    isPinned: true,
-    hasUnread: false,
-  })
-  
-  // Add report threads
-  if (reports) {
-    for (const report of reports.slice(0, 2)) {
+  // Add actual report threads from database
+  if (reports && reports.length > 0) {
+    for (const report of reports) {
       conversations.push({
         id: report.id,
         type: 'report',
-        title: "Ian Njenga's expenses",
-        subtitle: `${report.workspace_name} • ${report.title}`,
+        title: report.title,
+        subtitle: `${report.workspace_name} • ${report.status}`,
         avatar: 'T',
         timestamp: new Date(report.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        hasUnread: true,
+        hasUnread: report.status === 'submitted',
         reportId: report.id,
       })
     }
   }
-  
-  // Add DM thread
-  conversations.push({
-    id: 'dm-foronjenga',
-    type: 'dm',
-    title: 'foronjenga19@gmail.com',
-    subtitle: 'You: Hjm',
-    avatar: '👤',
-    timestamp: 'Today',
-    hasUnread: false,
-  })
-  
-  // Add older report thread
-  conversations.push({
-    id: 'report-old',
-    type: 'report',
-    title: "Ian Njenga's expenses",
-    subtitle: "Terpmail's Workspace 1 • This is where Ian Njenga wi...",
-    avatar: 'T',
-    timestamp: 'Jan 20',
-    hasUnread: false,
-  })
-  
-  conversations.push({
-    id: 'report-old-2',
-    type: 'report',
-    title: 'Expense Report 2025-12-20',
-    subtitle: 'You: Travel',
-    avatar: '💰',
-    timestamp: 'Dec 20',
-    hasUnread: false,
-  })
-  
-  conversations.push({
-    id: 'manager-mctest',
-    type: 'dm',
-    title: 'Manager McTest',
-    subtitle: 'Thanks for sending me that test expense! Next, try su...',
-    avatar: '👨‍💼',
-    timestamp: 'Dec 15',
-    hasUnread: false,
-  })
   
   return (
     <div className="min-h-screen pb-20 bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
@@ -154,14 +77,25 @@ export default async function HomePage() {
       
       {/* Conversation Threads */}
       <div className="max-w-md mx-auto">
-        {conversations.map((thread) => (
-          <Link
-            key={thread.id}
-            href={thread.reportId ? `/reports/${thread.reportId}` : `/inbox/${thread.id}`}
-            className="block border-b border-emerald-100 hover:bg-white/50 transition-colors"
-          >
-            <div className="px-4 py-3 flex items-center gap-3">
-              {/* Avatar */}
+        {conversations.length === 0 ? (
+          <div className="text-center py-12 px-4">
+            <p className="text-gray-600 font-medium">No conversations yet</p>
+            <p className="text-sm text-gray-500 mt-2">Create a report to start tracking expenses</p>
+          </div>
+        ) : (
+          conversations.map((thread) => {
+            // Only reports are clickable for now
+            const isClickable = thread.type === 'report' && thread.reportId
+            const Component = isClickable ? Link : 'div'
+            const linkProps = isClickable ? { href: `/reports/${thread.reportId}` } : {}
+            
+            return (
+              <Component
+                key={thread.id}
+                {...linkProps}
+                className={`block border-b border-emerald-100 ${isClickable ? 'hover:bg-white/50 cursor-pointer' : ''} transition-colors`}
+              >
+                <div className="px-4 py-3 flex items-center gap-3">{/* Avatar */}
               <div className="relative flex-shrink-0">
                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold ${
                   thread.type === 'workspace' ? 'bg-gradient-to-br from-blue-600 to-blue-700' :
@@ -201,8 +135,10 @@ export default async function HomePage() {
                 )}
               </div>
             </div>
-          </Link>
-        ))}
+              </Component>
+            )
+          })
+        )}
       </div>
       
       <FAB />

@@ -47,12 +47,16 @@ export default async function ReportsPage() {
     .order('created_at', { ascending: false })
     .limit(50)
 
+  console.log('Fetched expense items:', expenseItems?.length || 0)
+
   // Fetch expense reports with their items for "Reports" view - RLS handles user filtering
   const { data: reports } = await supabase
     .from('expense_reports')
     .select('*')
     .order('created_at', { ascending: false })
     .limit(20)
+
+  console.log('Fetched reports:', reports?.length || 0)
 
   // For each report, fetch its items
   const reportsWithItems: ExpenseReport[] = []
@@ -64,12 +68,16 @@ export default async function ReportsPage() {
         .eq('report_id', report.id)
         .order('created_at', { ascending: true })
       
+      console.log(`Report ${report.id} (${report.title}): ${items?.length || 0} items`)
+      
       reportsWithItems.push({
         ...report,
         items: items || []
       })
     }
   }
+
+  console.log('Total reports with items:', reportsWithItems.length)
 
   return <ReportsClient initialItems={expenseItems || []} initialReports={reportsWithItems} />
 }
