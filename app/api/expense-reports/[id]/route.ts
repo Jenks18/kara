@@ -19,8 +19,8 @@ export async function GET(
   try {
     const report = await getExpenseReport(id)
 
-    // Verify user owns this report
-    if (!report || report.user_id !== userId) {
+    // RLS handles user filtering automatically via Clerk JWT
+    if (!report) {
       return NextResponse.json(
         { error: 'Not found' },
         { status: 404 }
@@ -51,9 +51,9 @@ export async function PATCH(
   }
 
   try {
-    // Verify user owns this report
+    // RLS handles user filtering automatically via Clerk JWT
     const report = await getExpenseReport(id)
-    if (!report || report.user_id !== userId) {
+    if (!report) {
       return NextResponse.json(
         { error: 'Not found' },
         { status: 404 }
@@ -94,9 +94,9 @@ export async function DELETE(
   }
 
   try {
-    // Verify user owns this report
+    // RLS handles user filtering automatically via Clerk JWT
     const report = await getExpenseReport(id)
-    if (!report || report.user_id !== userId) {
+    if (!report) {
       return NextResponse.json(
         { error: 'Not found' },
         { status: 404 }
