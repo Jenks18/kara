@@ -86,15 +86,14 @@ export default async function HomePage() {
           conversations.map((thread) => {
             // Only reports are clickable for now
             const isClickable = thread.type === 'report' && thread.reportId
-            const Component = isClickable ? Link : 'div'
-            const linkProps = isClickable ? { href: `/reports/${thread.reportId}` } : {}
             
-            return (
-              <Component
-                key={thread.id}
-                {...linkProps}
-                className={`block border-b border-emerald-100 ${isClickable ? 'hover:bg-white/50 cursor-pointer' : ''} transition-colors`}
-              >
+            if (isClickable) {
+              return (
+                <Link
+                  key={thread.id}
+                  href={`/reports/${thread.reportId}`}
+                  className="block border-b border-emerald-100 hover:bg-white/50 cursor-pointer transition-colors"
+                >
                 <div className="px-4 py-3 flex items-center gap-3">{/* Avatar */}
               <div className="relative flex-shrink-0">
                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold ${
@@ -135,8 +134,58 @@ export default async function HomePage() {
                 )}
               </div>
             </div>
-              </Component>
-            )
+                </Link>
+              )
+            } else {
+              return (
+                <div
+                  key={thread.id}
+                  className="block border-b border-emerald-100 transition-colors"
+                >
+                  <div className="px-4 py-3 flex items-center gap-3">
+                    {/* Avatar */}
+                    <div className="relative flex-shrink-0">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold ${
+                        thread.type === 'workspace' ? 'bg-gradient-to-br from-blue-600 to-blue-700' :
+                        thread.type === 'report' ? 'bg-gradient-to-br from-emerald-600 to-emerald-700' :
+                        thread.type === 'system' ? 'bg-gradient-to-br from-emerald-500 to-green-600' :
+                        'bg-gradient-to-br from-red-600 to-red-700'
+                      }`}>
+                        {thread.avatar.length === 1 && thread.avatar.match(/[A-Z]/) ? (
+                          <span className="text-lg">{thread.avatar}</span>
+                        ) : (
+                          <span className="text-2xl">{thread.avatar}</span>
+                        )}
+                      </div>
+                      {thread.type === 'report' && (
+                        <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center border-2 border-white">
+                          <span className="text-xs">💰</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-gray-900 truncate">{thread.title}</h3>
+                        {thread.isPinned && (
+                          <Pin size={14} className="text-gray-500 flex-shrink-0" />
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600 truncate mt-0.5">{thread.subtitle}</p>
+                    </div>
+                    
+                    {/* Timestamp and Badge */}
+                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                      <span className="text-xs text-gray-500">{thread.timestamp}</span>
+                      {thread.hasUnread && (
+                        <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full"></div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            }
           })
         )}
       </div>
