@@ -24,7 +24,6 @@ export async function scrapeKRAInvoice(
         await new Promise((resolve) => setTimeout(resolve, 2000 * attempt));
       }
 
-      console.log(`Attempt ${attempt}: Fetching ${qrUrl}`);
 
       const response = await axios.get(qrUrl, {
         headers: {
@@ -68,7 +67,6 @@ export async function scrapeKRAInvoice(
         throw new Error('KRA page returned no invoice data');
       }
 
-      console.log('✓ KRA data extracted:', Object.keys(extractedData));
 
       return {
         invoiceNumber: extractedData.invoiceNumber || '',

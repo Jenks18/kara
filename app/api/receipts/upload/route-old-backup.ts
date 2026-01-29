@@ -16,7 +16,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('📸 Processing receipt:', imageFile.name);
 
     // Convert to buffer
     const imageBuffer = Buffer.from(await imageFile.arrayBuffer());
@@ -24,13 +23,11 @@ export async function POST(request: NextRequest) {
     // ============================================
     // DATA SOURCE 1: QR CODE (Structured Data)
     // ============================================
-    console.log('📱 Step 1: Decoding QR code...');
     let qrData: QRCodeData;
     let kraData = null;
     
     try {
       qrData = await decodeQRFromImage(imageBuffer);
-      console.log('✓ QR decoded:', {
         hasURL: !!qrData.url,
         hasInvoice: !!qrData.invoiceNumber,
         hasMerchant: !!qrData.merchantName,
@@ -39,10 +36,8 @@ export async function POST(request: NextRequest) {
       
       // If QR contains a URL, try to scrape additional data from KRA
       if (qrData.url) {
-        console.log('🌐 Step 1b: Verifying with KRA website...');
         kraData = await scrapeKRAInvoice(qrData.url);
         if (kraData) {
-          console.log('✓ KRA verified:', {
             merchant: kraData.merchantName,
             amount: kraData.totalAmount,
             invoice: kraData.invoiceNumber,
@@ -62,10 +57,8 @@ export async function POST(request: NextRequest) {
     // ============================================
     // DATA SOURCE 2: RECEIPT IMAGE (Visual OCR)
     // ============================================
-    console.log('🔍 Step 2: Extracting data from receipt image with Tesseract...');
     let receiptData = await extractWithTesseract(imageBuffer);
 
-    console.log('Tesseract result:', {
       merchant: receiptData.merchantName,
       amount: receiptData.totalAmount,
       litres: receiptData.litres,
@@ -74,7 +67,6 @@ export async function POST(request: NextRequest) {
 
     // Try Gemini if Tesseract confidence is low and we have QR/KRA data to help
     if (receiptData.confidence < 60 && (qrData.totalAmount || kraData)) {
-      console.log('⚠️ Tesseract confidence low, trying Gemini AI...');
       try {
         const geminiResult = await extractWithGemini(imageBuffer, kraData || {
           merchantName: qrData.merchantName || '',
@@ -95,7 +87,6 @@ export async function POST(request: NextRequest) {
           source: 'tesseract_ocr + gemini_vision',
         };
         
-        console.log('✓ Enhanced with Gemini:', {
           litres: receiptData.litres,
           confidence: receiptData.confidence,
         });
@@ -186,7 +177,6 @@ export async function POST(request: NextRequest) {
       processedAt: new Date().toISOString(),
     };
 
-    console.log('✅ Processing complete:', {
       qrFound: true,
       kraVerified: !!kraData,
       ocrConfidence: receiptData.confidence,

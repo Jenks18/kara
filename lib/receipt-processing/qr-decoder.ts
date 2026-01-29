@@ -27,7 +27,6 @@ export async function decodeQRFromImage(imageBuffer: Buffer): Promise<QRCodeData
     const result = await codeReader.decodeFromImageUrl(dataUrl);
     const qrText = result.getText();
 
-    console.log('📱 QR Code decoded:', qrText.substring(0, 100));
 
     // Check if it's a KRA URL or structured data
     if (qrText.includes('itax.kra.go.ke')) {

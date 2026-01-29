@@ -14,7 +14,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Not a valid KRA URL' }, { status: 400 });
     }
 
-    console.log('Scraping KRA invoice:', url);
 
     const invoiceData = await scrapeKRAInvoice(url);
 

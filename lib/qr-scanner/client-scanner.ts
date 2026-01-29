@@ -31,21 +31,18 @@ export interface QRScanResult {
  */
 export async function scanQRFromImage(imageBlob: Blob | File): Promise<QRScanResult> {
   try {
-    console.log('📸 Preprocessing receipt image...');
     
     // Step 1: Preprocess - isolate and enhance QR region
     const processed = await preprocessReceiptImage(imageBlob);
     
     // Step 2: Try native BarcodeDetector on isolated QR region first
     if ('BarcodeDetector' in window && processed.qrRegion) {
-      console.log('🔍 Trying BarcodeDetector on QR region...');
       const qrBlob = imageDataToBlob(processed.qrRegion);
       const detector = new BarcodeDetector({ formats: ['qr_code'] });
       const barcodes = await detector.detect(qrBlob as any);
       
       if (barcodes.length > 0) {
         const qr = barcodes[0];
-        console.log('✅ Found with BarcodeDetector (QR region)');
         return {
           found: true,
           url: qr.rawValue.startsWith('http') ? qr.rawValue : undefined,
@@ -58,7 +55,6 @@ export async function scanQRFromImage(imageBlob: Blob | File): Promise<QRScanRes
     
     // Step 3: Fallback to jsQR on enhanced QR region
     if (processed.qrRegion) {
-      console.log('🔍 Trying jsQR on enhanced QR region...');
       const result = await scanImageDataWithJsQR(processed.qrRegion);
       if (result.found) {
         result.confidence = 'jsqr-qr-region';
@@ -67,7 +63,6 @@ export async function scanQRFromImage(imageBlob: Blob | File): Promise<QRScanRes
     }
     
     // Step 4: Last resort - scan full enhanced image
-    console.log('🔍 Trying jsQR on full enhanced image...');
     const result = await scanImageDataWithJsQR(processed.enhanced);
     if (result.found) {
       result.confidence = 'jsqr-full-enhanced';
@@ -110,7 +105,6 @@ async function scanImageDataWithJsQR(imageData: ImageData): Promise<QRScanResult
       });
       
       if (code) {
-        console.log(`✅ Found with jsQR (mode: ${mode})`);
         return {
           found: true,
           url: code.data.startsWith('http') ? code.data : undefined,

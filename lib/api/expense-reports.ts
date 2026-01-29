@@ -56,7 +56,6 @@ export async function createExpenseReport(
 ): Promise<{ success: boolean; reportId?: string; error?: string }> {
   if (!isSupabaseConfigured) {
     console.warn('⚠️ Supabase not configured. Report will not be saved to database.')
-    console.log('💡 To enable database: Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local')
     return { success: false, error: 'Supabase not configured' }
   }
   
@@ -192,7 +191,6 @@ export async function getExpenseReports(
   }
   
   try {
-    console.log('🔍 Querying expense_reports for user_email:', userEmailOrId)
     const { data: reportsData, error: reportsError } = await supabase
       .from('expense_reports')
       .select('*')
@@ -207,7 +205,6 @@ export async function getExpenseReports(
 
     const reports = reportsData as Array<{ id: string; [key: string]: any }>
 
-    console.log('📦 Found expense_reports:', reports?.length || 0)
 
     // Fetch items for each report
     const reportsWithItems = await Promise.all(
@@ -245,7 +242,6 @@ export async function getExpenseReport(
   }
   
   try {
-    console.log('📄 Fetching report:', reportId)
     const { data: reportData, error: reportError } = await supabase
       .from('expense_reports')
       .select('*')
@@ -258,9 +254,7 @@ export async function getExpenseReport(
     }
 
     const report = reportData as { id: string; [key: string]: any }
-    console.log('✅ Found report:', report.title)
 
-    console.log('📦 Fetching items for report:', reportId)
     const { data: items, error: itemsError } = await supabase
       .from('expense_items')
       .select('*')
@@ -272,8 +266,6 @@ export async function getExpenseReport(
       return { ...report, items: [] } as unknown as ExpenseReport
     }
 
-    console.log(`✅ Found ${items?.length || 0} items for report`)
-    console.log('Items:', items)
 
     return { ...report, items } as unknown as ExpenseReport
   } catch (error) {

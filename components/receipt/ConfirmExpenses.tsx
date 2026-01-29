@@ -117,19 +117,15 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
   }
 
   const goToPrevImage = () => {
-    console.log('🔙 goToPrevImage clicked - current:', currentImageIndex, 'total:', images.length)
     setCurrentImageIndex(prev => {
       const newIndex = Math.max(0, prev - 1)
-      console.log('🔙 Moving from', prev, 'to', newIndex)
       return newIndex
     })
   }
 
   const goToNextImage = () => {
-    console.log('▶️ goToNextImage clicked - current:', currentImageIndex, 'total:', images.length)
     setCurrentImageIndex(prev => {
       const newIndex = Math.min(images.length - 1, prev + 1)
-      console.log('▶️ Moving from', prev, 'to', newIndex)
       return newIndex
     })
   }
@@ -202,7 +198,6 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
                   onClick={(e) => {
                     e.preventDefault()
                     e.stopPropagation()
-                    console.log('LEFT CHEVRON clicked! currentIndex:', currentImageIndex, 'disabled:', currentImageIndex === 0)
                     goToPrevImage()
                   }}
                   disabled={currentImageIndex === 0}
@@ -221,7 +216,6 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
                   onClick={(e) => {
                     e.preventDefault()
                     e.stopPropagation()
-                    console.log('RIGHT CHEVRON clicked! currentIndex:', currentImageIndex, 'disabled:', currentImageIndex === images.length - 1)
                     goToNextImage()
                   }}
                   disabled={currentImageIndex === images.length - 1}

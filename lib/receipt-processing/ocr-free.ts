@@ -34,7 +34,6 @@ export async function extractWithTesseract(
     const base64 = imageBuffer.toString('base64');
     const dataUrl = `data:image/jpeg;base64,${base64}`;
 
-    console.log('Running Tesseract OCR...');
 
     // Create worker without web workers (for Vercel serverless)
     const worker = await Tesseract.createWorker('eng', 1, {
@@ -51,7 +50,6 @@ export async function extractWithTesseract(
 
     await worker.terminate();
 
-    console.log('✓ Tesseract extracted text (first 200 chars):', text.substring(0, 200));
 
     // Parse the extracted text
     return parseReceiptText(text);

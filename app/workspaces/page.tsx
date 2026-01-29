@@ -32,17 +32,13 @@ export default function WorkspacesPage() {
       
       setLoading(true)
       try {
-        const response = await fetch('/api/workspaces', {
-          cache: 'no-store' // Always fetch fresh data
-        })
+        const response = await fetch('/api/workspaces')
         if (response.ok) {
           const data = await response.json()
           setWorkspaces(data.workspaces || [])
-        } else {
-          console.error('Failed to fetch workspaces')
         }
       } catch (error) {
-        console.error('Error fetching workspaces:', error)
+        // Silent fail for better UX
       }
       setLoading(false)
     }
@@ -81,7 +77,6 @@ export default function WorkspacesPage() {
         alert('Failed to delete workspace')
       }
     } catch (error) {
-      console.error('Error deleting workspace:', error)
       alert('Failed to delete workspace')
     }
   }
@@ -113,7 +108,6 @@ export default function WorkspacesPage() {
         alert('Failed to duplicate workspace')
       }
     } catch (error) {
-      console.error('Error duplicating workspace:', error)
       alert('Failed to duplicate workspace')
     }
   }

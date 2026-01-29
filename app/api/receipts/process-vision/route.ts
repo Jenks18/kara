@@ -58,7 +58,6 @@ export async function POST(req: NextRequest) {
       ? imageData.split(',')[1] 
       : imageData;
 
-    console.log('Processing with Google Vision API...');
 
     // Call Google Vision API for both text detection and barcode detection
     const visionResponse = await fetch(VISION_API_URL, {
@@ -114,8 +113,6 @@ export async function POST(req: NextRequest) {
     const result = visionData.responses[0];
 
     // Debug: Log entire response structure
-    console.log('Vision API Response Keys:', Object.keys(result));
-    console.log('Full response:', JSON.stringify(result, null, 2));
 
     // Extract OCR text
     const fullText = result.fullTextAnnotation?.text || '';
@@ -124,15 +121,8 @@ export async function POST(req: NextRequest) {
 
     // Extract QR codes / barcodes with enhanced logging
     const barcodes = result.barcodeAnnotations || [];
-    console.log(`Found ${barcodes.length} barcodes/QR codes`);
     if (barcodes.length > 0) {
-      console.log('Barcode details:', JSON.stringify(barcodes, null, 2));
     } else {
-      console.log('⚠️ No barcodes detected. This could mean:');
-      console.log('  1. No QR code in image');
-      console.log('  2. QR code too small/blurry');
-      console.log('  3. QR code at wrong angle');
-      console.log('  Try uploading a close-up of just the QR code');
     }
 
     const qrCodes = barcodes
@@ -142,7 +132,6 @@ export async function POST(req: NextRequest) {
         const isKRA = data.toLowerCase().includes('kra.go.ke');
         const isUrl = data.startsWith('http');
 
-        console.log(`Detected barcode: ${data.substring(0, 100)}... (KRA: ${isKRA}, URL: ${isUrl})`);
 
         return {
           data,
@@ -176,7 +165,6 @@ export async function POST(req: NextRequest) {
     // If KRA QR code found, scrape the invoice data
     const kraQR = qrCodes.find((qr) => qr.is_kra && qr.url);
     if (kraQR && kraQR.url) {
-      console.log('KRA QR detected, scraping invoice data...');
       try {
         const kraData = await scrapeKRAInvoice(kraQR.url);
         if (kraData) {

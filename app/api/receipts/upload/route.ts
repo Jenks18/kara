@@ -110,7 +110,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('📸 Processing receipt:', imageFile.name);
 
     // ==========================================
     // PROCESS THROUGH PIPELINE WITH USER CONTEXT
@@ -128,7 +127,6 @@ export async function POST(request: NextRequest) {
       templateId,
     });
 
-    console.log(`✅ Processing complete: ${result.status}`);
 
     // IMPORTANT: If image was uploaded (rawReceiptId exists), always return success
     // AI processing failures are non-blocking and captured in warnings
@@ -146,7 +144,6 @@ export async function POST(request: NextRequest) {
         
         if (!finalReportId) {
           // Create a NEW report only if reportId not provided
-          console.log('📧 Creating new expense report for user:', userEmail, 'userId:', userId)
           
           const { data: newReport, error: reportError } = await supabase
             .from('expense_reports')
@@ -178,9 +175,7 @@ export async function POST(request: NextRequest) {
           }
           
           finalReportId = newReport?.id || '';
-          console.log('✅ Created new report:', finalReportId, 'for email:', userEmail)
         } else {
-          console.log('✅ Using existing report:', finalReportId, 'for batching')
         }
 
         if (finalReportId) {
@@ -235,8 +230,6 @@ export async function POST(request: NextRequest) {
             console.error('Failed to create expense item:', itemError);
             result.warnings.push('Receipt saved but not added to reports view');
           } else {
-            console.log('✅ Expense item created and linked to raw_receipts:', result.rawReceiptId);
-            console.log('   Merchant:', merchantName, '| Amount:', amount, '| Status:', initialStatus);
             
             // Update report total immediately if we have an amount
             if (amount > 0) {
@@ -252,7 +245,6 @@ export async function POST(request: NextRequest) {
                 .update({ total_amount: total })
                 .eq('id', finalReportId);
               
-              console.log('✅ Report total updated immediately:', total);
             }
           }
         }

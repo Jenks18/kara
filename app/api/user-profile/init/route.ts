@@ -29,11 +29,9 @@ export async function POST() {
     }
 
     if (existingProfile) {
-      console.log('Profile already exists for user:', userId)
       return NextResponse.json({ profile: existingProfile })
     }
 
-    console.log('Creating new profile for user:', userId)
     
     // Create new profile with default values
     const { data: newProfile, error } = await supabase
@@ -57,7 +55,6 @@ export async function POST() {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    console.log('Successfully created profile for user:', userId)
     return NextResponse.json({ profile: newProfile })
   } catch (error) {
     console.error('Error in user profile init:', error)

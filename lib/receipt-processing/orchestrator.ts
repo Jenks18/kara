@@ -112,9 +112,7 @@ export class ReceiptProcessor {
       // PRODUCTION: Use REQUIRED authenticated client
       const supabase = options.supabaseClient;
       
-      console.log(`🔄 Starting receipt processing for ${options.userEmail}...`);
       if (options.userId) {
-        console.log(`   User ID: ${options.userId}`);
       }
       
       // Convert image to buffer
@@ -124,7 +122,6 @@ export class ReceiptProcessor {
       // ==========================================
       // STAGE 1: UPLOAD & RAW STORAGE
       // ==========================================
-      console.log('📤 Stage 1: Uploading image with user context...');
       
       const imageUrl = await this.uploadImage(imageBuffer, imageFile.name, supabase);
       result.imageUrl = imageUrl;
@@ -141,7 +138,6 @@ export class ReceiptProcessor {
       // STAGE 2: DATA EXTRACTION (Parallel)
       // Google Vision is PRIMARY OCR source for ALL receipts
       // ==========================================
-      console.log('🔍 Stage 2: Extracting data from all sources...');
       
       const [qrResult, ocrResult] = await Promise.allSettled([
         this.extractQRData(imageBuffer),
@@ -159,7 +155,6 @@ export class ReceiptProcessor {
       
       // Extract KRA data if QR has URL (enhances/verifies Vision data)
       if (qrData?.url) {
-        console.log('🌐 Stage 2b: Verifying with KRA...');
         try {
           const kraScrapedData = await scrapeKRAInvoice(qrData.url);
           if (kraScrapedData) {
@@ -171,7 +166,6 @@ export class ReceiptProcessor {
               invoiceNumber: kraScrapedData.invoiceNumber || ocrData?.invoiceNumber || null,
             };
             result.kraData = kraData;
-            console.log('✓ KRA data merged with Vision OCR');
           } else {
             result.warnings.push('KRA returned no data');
             result.kraData = ocrData;
@@ -185,14 +179,12 @@ export class ReceiptProcessor {
         // No QR code - use pure Vision OCR
         result.kraData = ocrData;
         if (ocrData) {
-          console.log(`✓ Using Google Vision OCR: ${ocrData.merchantName} - ${ocrData.totalAmount} KES`);
         }
       }
       
       // ==========================================
       // STAGE 3: STORE RECOGNITION
       // ==========================================
-      console.log('🏪 Stage 3: Recognizing store...');
       
       const storeMatch = await storeRecognizer.recognize({
         qrData,
@@ -208,14 +200,12 @@ export class ReceiptProcessor {
           name: storeMatch.storeName!,
           confidence: storeMatch.confidence,
         };
-        console.log(`✓ Store matched: ${storeMatch.storeName} (${storeMatch.confidence}% confidence)`);
       }
       
       // ==========================================
       // STAGE 4: RAW STORAGE (if enabled)
       // ==========================================
       if (options.storeRaw !== false) {
-        console.log('💾 Stage 4: Storing raw data...');
         
         const rawData: RawReceiptData = {
           userEmail: options.userEmail,
@@ -237,13 +227,11 @@ export class ReceiptProcessor {
         };
         
         result.rawReceiptId = await rawReceiptStorage.save(rawData, supabase);
-        console.log(`✓ Raw data stored: ${result.rawReceiptId}`);
       }
       
       // ==========================================
       // STAGE 5: TEMPLATE MATCHING & PARSING
       // ==========================================
-      console.log('📋 Stage 5: Applying template...');
       
       const template = options.templateId
         ? templateRegistry.get(options.templateId)
@@ -251,7 +239,6 @@ export class ReceiptProcessor {
       
       if (template) {
         result.templateUsed = template.name;
-        console.log(`✓ Using template: ${template.name}`);
         
         // Parse data using template
         const parsedData = this.applyTemplate(template, {
@@ -261,7 +248,6 @@ export class ReceiptProcessor {
         });
         
         result.parsedData = parsedData;
-        console.log(`✓ Parsed ${Object.keys(parsedData).length} fields`);
       } else {
         result.warnings.push('No template matched, using generic extraction');
         result.parsedData = this.genericParse(qrData, kraData, ocrData);
@@ -275,7 +261,6 @@ export class ReceiptProcessor {
         (result.confidence < 70 && !options.skipAI);
       
       if (shouldUseAI && process.env.GEMINI_API_KEY) {
-        console.log('🤖 Stage 6: AI enhancement (non-blocking)...');
         
         // Fire and forget - don't wait for AI response
         aiReceiptEnhancer.enhance({
@@ -287,7 +272,6 @@ export class ReceiptProcessor {
           imageBuffer: !qrData ? imageBuffer : undefined,
         }).then(async (enhanced) => {
           // AI completed successfully - update BOTH tables in background
-          console.log(`✓ AI categorized as: ${enhanced.category} (${enhanced.confidence}% confidence)`);
           
           if (result.rawReceiptId && options.supabaseClient) {
             // Update raw_receipts with AI response
@@ -301,7 +285,6 @@ export class ReceiptProcessor {
             if (rawError) {
               console.error('Failed to save AI results to raw_receipts:', rawError);
             } else {
-              console.log('✓ AI results saved to raw_receipts');
             }
             
             // Update expense_items with better AI category (if confidence is high enough)
@@ -316,7 +299,6 @@ export class ReceiptProcessor {
               if (itemError) {
                 console.error('Failed to update expense_items with AI results:', itemError);
               } else {
-                console.log('✓ AI category updated in expense_items (UI will refresh)');
               }
             }
           }
@@ -329,16 +311,13 @@ export class ReceiptProcessor {
           category: 'other',
           confidence: 50,
         };
-        console.log('✓ AI categorized as: other (50% confidence)');
       } else if (!process.env.GEMINI_API_KEY) {
-        console.log('⏭️  Skipping AI enhancement (no API key configured)');
         result.warnings.push('AI enhancement disabled (no API key)');
       }
       
       // ==========================================
       // STAGE 7: VALIDATION & STATUS
       // ==========================================
-      console.log('✅ Stage 7: Validating result...');
       
       this.validateResult(result);
       
@@ -403,7 +382,6 @@ export class ReceiptProcessor {
     
     result.processingTimeMs = Date.now() - startTime;
     
-    console.log(`✅ Processing complete: ${result.status} (${result.processingTimeMs}ms)`);
     
     return result;
   }
@@ -415,7 +393,6 @@ export class ReceiptProcessor {
     try {
       return await decodeQRFromImage(imageBuffer);
     } catch (error) {
-      console.log('No QR code found');
       return null;
     }
   }
@@ -425,7 +402,6 @@ export class ReceiptProcessor {
    */
   private async extractWithGoogleVision(imageBuffer: Buffer): Promise<any> {
     if (!process.env.GOOGLE_VISION_API_KEY) {
-      console.log('⏭️  Skipping Google Vision (no API key)');
       return null;
     }
 
@@ -455,11 +431,9 @@ export class ReceiptProcessor {
       const fullText = visionData.responses[0]?.fullTextAnnotation?.text || '';
       
       if (!fullText) {
-        console.log('⚠️  No text extracted from receipt');
         return null;
       }
       
-      console.log('✓ Google Vision extracted text (', fullText.length, 'chars):', fullText);
       
       // Extract merchant name - look for company name after "START OF LEGAL RECEIPT"
       const lines = fullText.split('\n').filter((line: string) => line.trim());
@@ -552,7 +526,6 @@ export class ReceiptProcessor {
       // Extract invoice number
       const invoiceMatch = fullText.match(/Invoice\s+(?:Nr|No|Number|#)[:\s]*(\w+)/i);
       
-      console.log(`Parsed: ${merchantName} - ${totalAmount} KES`);
       
       return {
         merchantName: merchantName,
@@ -713,7 +686,6 @@ export class ReceiptProcessor {
       }
       
       if (!item || !item.report_id) {
-        console.log('⏭️  No report_id found for expense item (likely still being created)');
         return;
       }
       
@@ -739,7 +711,6 @@ export class ReceiptProcessor {
       if (reportError) {
         console.error('Failed to update report total:', reportError);
       } else {
-        console.log('✅ Report total updated:', total);
       }
     } catch (error: any) {
       console.error('Error in updateExpenseReportTotal:', error.message);

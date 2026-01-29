@@ -71,7 +71,6 @@ IMPORTANT:
     ]);
 
     const responseText = result.response.text();
-    console.log('Gemini response:', responseText.substring(0, 200));
 
     // Parse JSON from response (handle markdown code blocks)
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
@@ -151,7 +150,6 @@ IMPORTANT:
     ]);
 
     const responseText = result.response.text();
-    console.log('✓ Gemini OCR response:', responseText.substring(0, 200));
 
     // Parse JSON from response (handle markdown code blocks)
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);

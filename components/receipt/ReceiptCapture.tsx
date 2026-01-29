@@ -310,9 +310,7 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
             if (longitude) formData.append('longitude', longitude.toString())
             if (sharedReportId) {
               formData.append('reportId', sharedReportId) // Batch into same report
-              console.log(`📦 Adding receipt ${i + 1}/${expenses.length} to report:`, sharedReportId)
             } else {
-              console.log(`📦 Creating new report for receipt 1/${expenses.length}`)
             }
             
             try {
@@ -325,7 +323,6 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
               // Store reportId from first successful upload for batching
               if (!sharedReportId && result.reportId) {
                 sharedReportId = result.reportId
-                console.log('✅ Created report for batch:', sharedReportId)
               }
               
               results.push(result)

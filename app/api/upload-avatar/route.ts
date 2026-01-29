@@ -49,7 +49,6 @@ export async function POST(request: NextRequest) {
       .from('profile-pictures')
       .getPublicUrl(fileName)
 
-    console.log('✅ Avatar uploaded:', urlData.publicUrl)
 
     return NextResponse.json({ 
       success: true, 

@@ -50,14 +50,12 @@ export async function processCompleteReceipt(
 ): Promise<ComprehensiveReceiptData> {
   const startTime = Date.now();
   
-  console.log('🔄 Starting comprehensive receipt processing...');
   
   try {
     // Convert to ImageBitmap for parallel processing
     const imageBitmap = await createImageBitmap(imageBlob);
     const imageSize = { width: imageBitmap.width, height: imageBitmap.height };
     
-    console.log(`📐 Image size: ${imageSize.width}x${imageSize.height}px`);
     
     // Run OCR and QR detection in parallel
     const [ocrResult, qrResult] = await Promise.all([
@@ -69,7 +67,6 @@ export async function processCompleteReceipt(
     const extractedFields = parseReceiptText(ocrResult.fullText, ocrResult.lines);
     
     const processingTime = Date.now() - startTime;
-    console.log(`✅ Processing complete in ${processingTime}ms`);
     
     return {
       ...ocrResult,
@@ -100,17 +97,13 @@ async function performOCR(imageBlob: Blob | File): Promise<{
   confidence: number;
   lines: Array<{ text: string; confidence: number; bbox: any }>;
 }> {
-  console.log('📝 Running OCR...');
-  console.log(`   Image size: ${imageBlob.size} bytes, type: ${imageBlob.type}`);
   
   try {
     const worker = await createWorker('eng', undefined, {
-      logger: (m) => console.log('   Tesseract:', m.status, m.progress),
     });
     
     const { data } = await worker.recognize(imageBlob);
     
-    console.log(`   ✅ OCR complete - confidence: ${data.confidence.toFixed(1)}%`);
     
     await worker.terminate();
     
@@ -118,7 +111,6 @@ async function performOCR(imageBlob: Blob | File): Promise<{
     const lines = (data as any).lines || [];
     const words = (data as any).words || [];
     
-    console.log(`   Extracted ${lines.length} lines, ${words.length} words`);
     
     return {
       fullText: data.text || '',
@@ -148,8 +140,6 @@ async function detectQRCode(imageBitmap: ImageBitmap): Promise<{
   url?: string;
   position?: { x: number; y: number; width: number; height: number };
 }> {
-  console.log('📱 Scanning for QR code...');
-  console.log(`   Image: ${imageBitmap.width}x${imageBitmap.height}px`);
   
   try {
     const canvas = new OffscreenCanvas(imageBitmap.width, imageBitmap.height);
@@ -157,23 +147,17 @@ async function detectQRCode(imageBitmap: ImageBitmap): Promise<{
     ctx.drawImage(imageBitmap, 0, 0);
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     
-    console.log(`   Got ${imageData.data.length} bytes of pixel data`);
-    console.log(`   Image dimensions: ${imageData.width}x${imageData.height}`);
     
     // Try scanning full image first
-    console.log('   🔍 Scanning full image...');
     const modes = ['attemptBoth', 'dontInvert', 'onlyInvert'] as const;
     
     for (const mode of modes) {
-      console.log(`      Trying mode: ${mode}`);
       try {
         const code = jsQR(imageData.data, imageData.width, imageData.height, {
           inversionAttempts: mode,
         });
         
         if (code) {
-          console.log(`   ✅ QR code found with mode: ${mode}`);
-          console.log(`      Data: ${code.data.substring(0, 50)}...`);
           return {
             found: true,
             data: code.data,
@@ -187,13 +171,11 @@ async function detectQRCode(imageBitmap: ImageBitmap): Promise<{
           };
         }
       } catch (err) {
-        console.log(`      ⚠️ Mode ${mode} failed:`, err instanceof Error ? err.message : 'Unknown error');
         continue;
       }
     }
     
     // Try bottom 30% region
-    console.log('   🔍 Scanning bottom 30%...');
     const bottomY = Math.floor(imageBitmap.height * 0.7);
     const bottomHeight = imageBitmap.height - bottomY;
     const bottomCanvas = new OffscreenCanvas(imageBitmap.width, bottomHeight);
@@ -208,7 +190,6 @@ async function detectQRCode(imageBitmap: ImageBitmap): Promise<{
         });
         
           if (code) {
-          console.log(`   ✅ QR found in bottom region (mode: ${mode})`);
           return {
             found: true,
             data: code.data,
@@ -222,12 +203,10 @@ async function detectQRCode(imageBitmap: ImageBitmap): Promise<{
           };
         }
       } catch (err) {
-        console.log(`      ⚠️ Bottom scan mode ${mode} failed:`, err instanceof Error ? err.message : 'Unknown error');
         continue;
       }
     }
     
-    console.log('   ⚠️  No QR code detected in any region');
     return { found: false };
   } catch (error) {
     console.error('❌ QR detection failed:', error);
@@ -244,7 +223,6 @@ function parseReceiptText(fullText: string, lines: Array<{ text: string; confide
   date?: string;
   items?: Array<{ name: string; amount: number }>;
 } {
-  console.log('🧠 Parsing receipt structure...');
   
   const result: any = {};
   
