@@ -198,16 +198,17 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
                   onClick={(e) => {
                     e.preventDefault()
                     e.stopPropagation()
-                    goToPrevImage()
+                    if (currentImageIndex > 0) {
+                      goToPrevImage()
+                    }
                   }}
-                  disabled={currentImageIndex === 0}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 pointer-events-auto touch-manipulation ${
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 touch-manipulation ${
                     currentImageIndex === 0
-                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                      : 'bg-gradient-to-br from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white active:scale-95 shadow-sm'
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-60'
+                      : 'bg-gradient-to-br from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white active:scale-95 shadow-lg pointer-events-auto'
                   }`}
                 >
-                  <ChevronLeft size={18} />
+                  <ChevronLeft size={18} strokeWidth={2.5} />
                 </button>
                 <span className="text-sm text-gray-600 font-medium">
                   {currentImageIndex + 1} of {images.length}
@@ -216,16 +217,17 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
                   onClick={(e) => {
                     e.preventDefault()
                     e.stopPropagation()
-                    goToNextImage()
+                    if (currentImageIndex < images.length - 1) {
+                      goToNextImage()
+                    }
                   }}
-                  disabled={currentImageIndex === images.length - 1}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 pointer-events-auto touch-manipulation ${
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 touch-manipulation ${
                     currentImageIndex === images.length - 1
-                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                      : 'bg-gradient-to-br from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white active:scale-95 shadow-sm'
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-60'
+                      : 'bg-gradient-to-br from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white active:scale-95 shadow-lg pointer-events-auto'
                   }`}
                 >
-                  <ChevronRight size={18} />
+                  <ChevronRight size={18} strokeWidth={2.5} />
                 </button>
               </div>
             )}
