@@ -183,6 +183,10 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
         setSelectedImages(prev => [...prev, ...images])
         setContinuousMode(true) // Switch to continuous mode for multi-select
         stopCamera()
+        // Reset input so same files can be selected again
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ''
+        }
       })
     } else {
       // Single file selected
@@ -192,6 +196,10 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
         const imageData = reader.result as string
         setPreview(imageData)
         stopCamera()
+        // Reset input so same file can be selected again
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ''
+        }
       }
       reader.readAsDataURL(file)
     }
