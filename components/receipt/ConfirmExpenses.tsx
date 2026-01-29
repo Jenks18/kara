@@ -202,15 +202,15 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
                       goToPrevImage()
                     }
                   }}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 touch-manipulation ${
+                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 touch-manipulation ${
                     currentImageIndex === 0
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-60'
-                      : 'bg-gradient-to-br from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white active:scale-95 shadow-lg pointer-events-auto'
+                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-50'
+                      : 'bg-emerald-600 text-white active:scale-95 shadow-xl border-2 border-emerald-400'
                   }`}
                 >
-                  <ChevronLeft size={18} strokeWidth={2.5} />
+                  <ChevronLeft size={20} strokeWidth={3} />
                 </button>
-                <span className="text-sm text-gray-600 font-medium">
+                <span className="text-sm text-gray-700 font-semibold">
                   {currentImageIndex + 1} of {images.length}
                 </span>
                 <button
@@ -221,13 +221,13 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
                       goToNextImage()
                     }
                   }}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 touch-manipulation ${
+                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 touch-manipulation ${
                     currentImageIndex === images.length - 1
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-60'
-                      : 'bg-gradient-to-br from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white active:scale-95 shadow-lg pointer-events-auto'
+                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-50'
+                      : 'bg-emerald-600 text-white active:scale-95 shadow-xl border-2 border-emerald-400'
                   }`}
                 >
-                  <ChevronRight size={18} strokeWidth={2.5} />
+                  <ChevronRight size={20} strokeWidth={3} />
                 </button>
               </div>
             )}
