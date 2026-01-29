@@ -19,9 +19,9 @@ function getGlobalClient() {
       supabaseAnonKey || 'placeholder-key',
       {
         auth: {
-          persistSession: false,
-          autoRefreshToken: false,
-          storage: undefined,
+          persistSession: true,
+          autoRefreshToken: true,
+          storage: typeof window !== 'undefined' ? window.localStorage : undefined,
         },
       }
     )

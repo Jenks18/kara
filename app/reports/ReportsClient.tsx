@@ -87,9 +87,10 @@ export default function ReportsClient({ initialItems, initialReports }: ReportsC
         <div className="px-4 py-4 max-w-md mx-auto">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
-            <button className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center active:bg-emerald-100 rounded-full transition-colors touch-manipulation">
+            {/* Filter button hidden for now */}
+            {/* <button className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center active:bg-emerald-100 rounded-full transition-colors touch-manipulation">
               <SlidersHorizontal size={24} className="text-gray-600" />
-            </button>
+            </button> */}
           </div>
           
           {/* Search */}
@@ -130,8 +131,8 @@ export default function ReportsClient({ initialItems, initialReports }: ReportsC
           </button>
         </div>
 
-        {/* Category Pills */}
-        <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+        {/* Category Pills - Hidden for now */}
+        {/* <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
           {categories.map((category) => (
             <CategoryPill
               key={category.id}
@@ -140,7 +141,7 @@ export default function ReportsClient({ initialItems, initialReports }: ReportsC
               onClick={() => setSelectedCategory(category.id)}
             />
           ))}
-        </div>
+        </div> */}
 
         {/* Expense Items */}
         <div className="space-y-3">

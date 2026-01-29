@@ -374,8 +374,8 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
             <div className="w-10" />
           </div>
 
-          {/* Manual/Scan Tabs */}
-          <div className="flex gap-2 bg-gray-100 p-1 rounded-full">
+          {/* Manual/Scan Tabs - Hidden to focus on photo scanning */}
+          {/* <div className="flex gap-2 bg-gray-100 p-1 rounded-full">
             <button
               onClick={() => {
                 setActiveTab('manual')
@@ -407,7 +407,7 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
               <Receipt size={18} />
               Scan
             </button>
-          </div>
+          </div> */}
         </div>
 
         {/* Content Area */}
@@ -430,23 +430,23 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                   <input
                     type="number"
                     placeholder="0.00"
-                    className="w-full bg-dark-200 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-colors shadow-sm"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-gray-300 text-sm font-medium mb-2">Litres</label>
+                  <label className="block text-gray-900 text-sm font-medium mb-2">Litres</label>
                   <input
                     type="number"
                     step="0.01"
                     placeholder="0.00"
-                    className="w-full bg-dark-200 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-colors shadow-sm"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-gray-300 text-sm font-medium mb-2">Fuel Type</label>
-                  <select className="w-full bg-dark-200 border border-gray-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors">
+                  <label className="block text-gray-900 text-sm font-medium mb-2">Fuel Type</label>
+                  <select className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-colors shadow-sm">
                     <option value="">Select fuel type</option>
                     <option value="PETROL">Petrol</option>
                     <option value="DIESEL">Diesel</option>
@@ -456,19 +456,19 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                 </div>
 
                 <div>
-                  <label className="block text-gray-300 text-sm font-medium mb-2">Date</label>
+                  <label className="block text-gray-900 text-sm font-medium mb-2">Date</label>
                   <input
                     type="date"
-                    className="w-full bg-dark-200 border border-gray-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-colors shadow-sm"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-gray-300 text-sm font-medium mb-2">Vehicle Number (optional)</label>
+                  <label className="block text-gray-900 text-sm font-medium mb-2">Vehicle Number (optional)</label>
                   <input
                     type="text"
                     placeholder="KBX 123A"
-                    className="w-full bg-dark-200 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-colors shadow-sm"
                   />
                 </div>
 

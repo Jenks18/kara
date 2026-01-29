@@ -197,7 +197,7 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
           <div className="flex flex-col items-center relative z-50">
             <h1 className="text-lg font-semibold text-gray-900">Confirm details</h1>
             {images.length > 1 && (
-              <div className="flex items-center gap-3 mt-1">
+              <div className="flex items-center gap-3 mt-1 pointer-events-auto">
                 <button
                   onClick={(e) => {
                     e.preventDefault()
@@ -206,7 +206,7 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
                     goToPrevImage()
                   }}
                   disabled={currentImageIndex === 0}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 pointer-events-auto touch-manipulation ${
                     currentImageIndex === 0
                       ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                       : 'bg-gradient-to-br from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white active:scale-95 shadow-sm'
@@ -225,7 +225,7 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
                     goToNextImage()
                   }}
                   disabled={currentImageIndex === images.length - 1}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 pointer-events-auto touch-manipulation ${
                     currentImageIndex === images.length - 1
                       ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                       : 'bg-gradient-to-br from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white active:scale-95 shadow-sm'
