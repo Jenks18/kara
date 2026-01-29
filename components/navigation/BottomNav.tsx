@@ -11,7 +11,7 @@ export default function BottomNav() {
   const { avatar } = useAvatar()
   
   const navItems = [
-    { id: 'inbox', label: 'Inbox', icon: Home, href: '/' },
+    // { id: 'inbox', label: 'Inbox', icon: Home, href: '/' }, // Hidden - chat not set up yet
     { id: 'reports', label: 'Reports', icon: FileText, href: '/reports' },
     { id: 'create', label: 'Create', icon: PlusCircle, href: '/create' },
     { id: 'workspaces', label: 'Workspaces', icon: Briefcase, href: '/workspaces' },

@@ -186,7 +186,7 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
     <div className="fixed inset-0 bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 z-50 overflow-hidden">
       <div className="h-full flex flex-col max-w-[430px] mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-emerald-200 bg-white/80 backdrop-blur-lg">
+        <div className="flex items-center justify-between p-4 border-b border-emerald-200 bg-white/80 backdrop-blur-lg relative z-50">
           <button
             onClick={onCancel}
             className="w-10 h-10 rounded-full bg-white hover:bg-gray-50 active:scale-95 transition-all flex items-center justify-center border border-gray-200 shadow-sm"
@@ -194,7 +194,7 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
             <ChevronLeft size={24} className="text-gray-900" />
           </button>
           
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center relative z-50">
             <h1 className="text-lg font-semibold text-gray-900">Confirm details</h1>
             {images.length > 1 && (
               <div className="flex items-center gap-3 mt-1">
