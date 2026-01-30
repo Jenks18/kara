@@ -249,7 +249,7 @@ struct NativeExpenseCard: View {
                     .foregroundColor(.secondary)
                     .font(.system(size: 12))
                 
-                Text("\(report.items.count) expense\(report.items.count != 1 ? "s" : "")")
+                Text("\(report.items?.count ?? 0) expense\((report.items?.count ?? 0) != 1 ? "s" : "")")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.secondary)
                 

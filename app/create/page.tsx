@@ -39,16 +39,10 @@ export default function CreatePage() {
   
   return (
     <>
+      {/* No header - start directly with content */}
       <div className="min-h-screen pb-20 bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
-        {/* Header */}
-        <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-lg border-b border-emerald-200">
-          <div className="px-4 py-4 max-w-md mx-auto">
-            <h1 className="text-2xl font-bold text-gray-900">Create</h1>
-          </div>
-        </div>
-        
-        {/* Content */}
-        <div className="px-4 py-6 max-w-md mx-auto">
+        {/* Cards start from top with padding */}
+        <div className="px-4 pt-6 pb-6 max-w-md mx-auto">
           <div className="space-y-3">
             {options.map((option) => {
               const Icon = option.icon

@@ -121,10 +121,10 @@ export default function WorkspacesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 pb-20" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
+    <div className="min-h-screen bg-emerald-50 pb-20" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-lg border-b border-emerald-200">
-        <div className="px-4 py-6 max-w-md mx-auto flex items-center justify-between">
+      <div className="sticky top-0 z-30 bg-white border-b border-emerald-100">
+        <div className="px-4 py-3 max-w-md mx-auto flex items-center justify-between">
           <h1 className="text-3xl font-bold text-gray-900">Workspaces</h1>
           <button className="p-2 active:scale-95 transition-transform">
             <Search size={24} className="text-gray-600" />
@@ -133,7 +133,7 @@ export default function WorkspacesPage() {
       </div>
       
       {/* Content */}
-      <div className="px-4 py-8 max-w-md mx-auto">
+      <div className="px-4 py-4 max-w-md mx-auto">
         {workspaces.length === 0 ? (
           // Empty State
           <div className="flex flex-col items-center text-center pt-12">
@@ -161,31 +161,31 @@ export default function WorkspacesPage() {
           </div>
         ) : (
           // Workspaces List (when we have workspaces)
-          <div className="space-y-4">
+          <div className="space-y-3">
             {workspaces.map((workspace) => (
               <div key={workspace.id} className="relative">
                 <button
                   onClick={() => handleGoToWorkspace(workspace.id)}
                   className="
-                    w-full p-4 bg-white rounded-xl border border-gray-200 hover:border-emerald-300
+                    w-full p-4 bg-white rounded-xl border border-gray-100
                     active:bg-gray-50 transition-colors shadow-sm
-                    flex items-center gap-4
+                    flex items-center gap-3
                   "
                 >
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  <div className="w-14 h-14 rounded-xl bg-emerald-600 flex items-center justify-center flex-shrink-0">
                     {workspace.avatar?.startsWith('http') ? (
                       <img 
                         src={workspace.avatar} 
                         alt={workspace.name}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover rounded-xl"
                       />
                     ) : (
-                      <span className="text-xl font-bold text-white">{workspace.avatar || workspace.name?.charAt(0) || 'W'}</span>
+                      <span className="text-2xl font-bold text-white">{workspace.avatar || workspace.name?.charAt(0) || 'W'}</span>
                     )}
                   </div>
                   <div className="flex-1 text-left">
-                    <h3 className="text-gray-900 font-semibold">{workspace.name}</h3>
-                    <p className="text-sm text-gray-600">{workspace.currency} - {workspace.currency_symbol}</p>
+                    <h3 className="text-gray-900 font-semibold text-base">{workspace.name}</h3>
+                    <p className="text-sm text-gray-500">{workspace.currency} - {workspace.currency_symbol}</p>
                   </div>
                 </button>
                 
@@ -253,14 +253,14 @@ export default function WorkspacesPage() {
               onClick={handleNewWorkspace}
               className="
                 w-full py-4 rounded-xl
-                bg-gradient-to-r from-emerald-500 to-green-600
-                text-white font-semibold
-                active:scale-[0.98] transition-transform shadow-md
+                bg-emerald-600
+                text-white font-semibold text-base
+                active:scale-[0.98] transition-transform shadow-sm
                 flex items-center justify-center gap-2
               "
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
               </svg>
               Add workspace
             </button>

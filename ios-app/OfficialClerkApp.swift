@@ -9,8 +9,10 @@ struct MafutaPassApp: App {
         WindowGroup {
             ContentView()
                 .environment(\.clerk, clerk)
-                .task {
+                .onAppear {
                     clerk.configure(publishableKey: "pk_live_Y2xlcmsubWFmdXRhcGFzcy5jb20k")
+                }
+                .task {
                     try? await clerk.load()
                 }
         }
@@ -93,71 +95,16 @@ struct WelcomeView: View {
     }
 }
 
-struct MainAppView: View {
+// MainAppView is now in Views/MainAppView.swift
+
+struct CameraView: View {
     var body: some View {
-        TabView {
-            HomePage()
-                .tabItem {
-                    Label("Home", systemImage: "house.fill")
-                }
-            
-            ReportsPage()
-                .tabItem {
-                    Label("Reports", systemImage: "doc.text.fill")
-                }
-            
-            CameraView()
-                .tabItem {
-                    Label("Scan", systemImage: "camera.fill")
-                }
-            
-            AccountTab()
-                .tabItem {
-                    Label("Account", systemImage: "person.fill")
-                }
-        }
-        .tint(.green)
+        Text("Camera placeholder")
     }
 }
 
-struct AccountTab: View {
-    @Environment(\.clerk) private var clerk
-    
+struct HomePage: View {
     var body: some View {
-        NavigationView {
-            List {
-                Section {
-                    HStack(spacing: 16) {
-                        UserButton()
-                            .frame(width: 60, height: 60)
-                        
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(clerk.user?.fullName ?? "User")
-                                .font(.headline)
-                            Text(clerk.user?.primaryEmailAddress?.emailAddress ?? "")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    .padding(.vertical, 8)
-                }
-                
-                Section("Settings") {
-                    NavigationLink(destination: Text("Profile")) {
-                        Label("Profile", systemImage: "person.circle")
-                    }
-                    NavigationLink(destination: Text("Preferences")) {
-                        Label("Preferences", systemImage: "slider.horizontal.3")
-                    }
-                }
-                
-                Section("Workspace") {
-                    NavigationLink(destination: Text("Workspaces")) {
-                        Label("Workspaces", systemImage: "building.2")
-                    }
-                }
-            }
-            .navigationTitle("Account")
-        }
+        Text("Home placeholder")
     }
 }
