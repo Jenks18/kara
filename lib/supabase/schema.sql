@@ -60,12 +60,15 @@ CREATE INDEX idx_expense_items_report ON expense_items(report_id);
 ALTER TABLE expense_reports ENABLE ROW LEVEL SECURITY;
 ALTER TABLE expense_items ENABLE ROW LEVEL SECURITY;
 
--- Allow all operations for now (add authentication later)
-CREATE POLICY "Enable all access for expense_reports" ON expense_reports
-  FOR ALL USING (true) WITH CHECK (true);
+-- SECURITY: Do NOT use these insecure policies in production!
+-- Use rls-policies.sql instead which has proper user filtering
+-- CREATE POLICY "Enable all access for expense_reports" ON expense_reports
+--   FOR ALL USING (true) WITH CHECK (true);
 
-CREATE POLICY "Enable all access for expense_items" ON expense_items
-  FOR ALL USING (true) WITH CHECK (true);
+-- CREATE POLICY "Enable all access for expense_items" ON expense_items
+--   FOR ALL USING (true) WITH CHECK (true);
+
+-- NOTE: Apply rls-policies.sql after running this schema
 
 -- Updated timestamp trigger
 CREATE OR REPLACE FUNCTION update_updated_at_column()
