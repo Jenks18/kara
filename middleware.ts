@@ -7,10 +7,10 @@ const isPublicRoute = createRouteMatcher([
 ])
 
 export default clerkMiddleware(
-  (auth, req) => {
+  async (auth, req) => {
     // Redirect root to reports (inbox disabled)
     if (req.nextUrl.pathname === '/') {
-      const { userId } = auth()
+      const { userId } = await auth()
       if (userId) {
         // Logged in users go to reports
         return NextResponse.redirect(new URL('/reports', req.url))
@@ -22,7 +22,7 @@ export default clerkMiddleware(
     
     // Protect all routes except sign-in and sign-up
     if (!isPublicRoute(req)) {
-      auth.protect()
+      await auth.protect()
     }
   }
 )
