@@ -50,17 +50,18 @@ export async function POST() {
     // Get Gmail profile picture if available
     const gmailImage = user.imageUrl || null
     
+    // Use username as display name, leave first/last name blank for user to fill
+    const displayName = user.username || user.emailAddresses[0]?.emailAddress?.split('@')[0] || 'User'
+    
     // Create new profile with default values
     const { data: newProfile, error } = await supabase
       .from('user_profiles')
       .insert({
         user_id: userId,
         user_email: user.emailAddresses[0]?.emailAddress || '',
-        display_name: user.firstName && user.lastName 
-          ? `${user.firstName} ${user.lastName}`
-          : user.username || '',
-        first_name: user.firstName || '',
-        last_name: user.lastName || '',
+        display_name: displayName,
+        first_name: '',  // Leave blank - user will fill manually
+        last_name: '',   // Leave blank - user will fill manually
         avatar_emoji: gmailImage ? '' : getRandomAnimalAvatar(),
         avatar_color: 'from-emerald-500 to-emerald-600',
         avatar_image_url: gmailImage,

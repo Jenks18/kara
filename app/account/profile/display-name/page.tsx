@@ -24,25 +24,32 @@ export default function DisplayNamePage() {
       try {
         const profile = await getUserProfile(user.id)
         if (profile) {
-          setFirstName(profile.first_name || '')
-          setLastName(profile.last_name || '')
-        } else {
-          // Fallback to Clerk data if no profile exists
-          setFirstName(user.firstName || '')
-          setLastName(user.lastName || '')
+          // Use stored first_name and last_name if they exist
+          if (profile.first_name || profile.last_name) {
+            setFirstName(profile.first_name || '')
+            setLastName(profile.last_name || '')
+          } else if (profile.display_name) {
+            // Split display_name into first/last if it contains a space
+            const parts = profile.display_name.trim().split(' ')
+            if (parts.length >= 2) {
+              setFirstName(parts[0])
+              setLastName(parts.slice(1).join(' '))
+            } else {
+              // Single word display name - leave fields blank
+              setFirstName('')
+              setLastName('')
+            }
+          }
         }
       } catch (error) {
         console.error('Error loading profile:', error)
-        // Fallback to Clerk data
-        setFirstName(user.firstName || '')
-        setLastName(user.lastName || '')
       } finally {
         setLoading(false)
       }
     }
     
     loadProfile()
-  }, [user?.id, user?.firstName, user?.lastName])
+  }, [user?.id])
 
   const handleSave = async () => {
     if (!user?.id) return
