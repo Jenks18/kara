@@ -104,7 +104,7 @@ export default function PhoneNumberPage() {
               setPhoneNumber(e.target.value)
               setError('') // Clear error when typing
             }}
-            placeholder="+254 712 345 678"
+            placeholder="+254 20 1234567"
             className={`w-full px-4 py-4 bg-white border rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 touch-manipulation ${
               error ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-emerald-500 focus:border-emerald-500'
             }`}
