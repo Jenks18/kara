@@ -1,14 +1,26 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
+import { NextResponse } from 'next/server'
 
 const isPublicRoute = createRouteMatcher([
-  '/',
   '/sign-in(.*)',
   '/sign-up(.*)',
 ])
 
 export default clerkMiddleware(
   (auth, req) => {
-    // Protect all routes except home, sign-in, and sign-up
+    // Redirect root to reports (inbox disabled)
+    if (req.nextUrl.pathname === '/') {
+      const { userId } = auth()
+      if (userId) {
+        // Logged in users go to reports
+        return NextResponse.redirect(new URL('/reports', req.url))
+      } else {
+        // Not logged in, allow access to sign in
+        return NextResponse.next()
+      }
+    }
+    
+    // Protect all routes except sign-in and sign-up
     if (!isPublicRoute(req)) {
       auth.protect()
     }
