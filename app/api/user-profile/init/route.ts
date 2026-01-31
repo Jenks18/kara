@@ -5,6 +5,20 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 
+// Animal avatars for random selection
+const ANIMAL_AVATARS = [
+  '🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯',
+  '🦁', '🐮', '🐷', '🐸', '🐵', '🐔', '🐧', '🐦', '🐤', '🦆',
+  '🦅', '🦉', '🦇', '🐺', '🐗', '🐴', '🦄', '🐝', '🐛', '🦋',
+  '🐌', '🐞', '🐜', '🦟', '🦗', '🕷', '🦂', '🐢', '🐍', '🦎',
+  '🦖', '🦕', '🐙', '🦑', '🦐', '🦞', '🦀', '🐡', '🐠', '🐟',
+  '🐬', '🐳', '🐋', '🦈', '🐊', '🐅', '🐆', '🦓', '🦍', '🦧'
+]
+
+function getRandomAnimalAvatar() {
+  return ANIMAL_AVATARS[Math.floor(Math.random() * ANIMAL_AVATARS.length)]
+}
+
 export async function POST() {
   try {
     const { userId } = await auth()
@@ -33,6 +47,9 @@ export async function POST() {
     }
 
     
+    // Get Gmail profile picture if available
+    const gmailImage = user.imageUrl || null
+    
     // Create new profile with default values
     const { data: newProfile, error } = await supabase
       .from('user_profiles')
@@ -44,8 +61,9 @@ export async function POST() {
           : user.username || '',
         first_name: user.firstName || '',
         last_name: user.lastName || '',
-        avatar_emoji: '💼',
+        avatar_emoji: gmailImage ? '' : getRandomAnimalAvatar(),
         avatar_color: 'from-emerald-500 to-emerald-600',
+        avatar_image_url: gmailImage,
       })
       .select()
       .single()

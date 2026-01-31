@@ -28,8 +28,6 @@ export default function WorkspacesPage() {
 
   useEffect(() => {
     async function fetchWorkspaces() {
-      if (!isLoaded) return
-      
       setLoading(true)
       try {
         const response = await fetch('/api/workspaces')
@@ -43,20 +41,8 @@ export default function WorkspacesPage() {
       setLoading(false)
     }
 
-    if (isLoaded || !user) {
-      fetchWorkspaces()
-    }
-
-    // Refetch when page becomes visible (user navigates back)
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && isLoaded) {
-        fetchWorkspaces()
-      }
-    }
-
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
-  }, [user?.id, isLoaded])
+    fetchWorkspaces()
+  }, [])
 
   const handleNewWorkspace = () => {
     router.push('/workspaces/new')
