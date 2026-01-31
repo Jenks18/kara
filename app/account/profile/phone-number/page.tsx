@@ -14,6 +14,7 @@ export default function PhoneNumberPage() {
   const [phoneNumber, setPhoneNumber] = useState('')
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     async function loadProfile() {
@@ -37,15 +38,42 @@ export default function PhoneNumberPage() {
   const handleSave = async () => {
     if (!user?.id) return
     
+    setError('')
+    
+    // Basic phone validation
+    if (phoneNumber && phoneNumber.trim()) {
+      // Remove spaces and special chars for validation
+      const cleaned = phoneNumber.replace(/[\s\-\(\)]/g, '')
+      
+      // Check if it starts with + and has digits
+      if (!cleaned.startsWith('+')) {
+        setError('Phone number must start with country code (e.g., +254)')
+        return
+      }
+      
+      // Check for valid length (10-15 digits after +)
+      const digits = cleaned.substring(1)
+      if (!/^\d{10,15}$/.test(digits)) {
+        setError('Please enter a valid phone number (10-15 digits)')
+        return
+      }
+    }
+    
     setSaving(true)
     try {
-      await updateUserProfile(user.id, {
-        phone_number: phoneNumber,
+      const result = await updateUserProfile(user.id, {
+        phone_number: phoneNumber.trim(),
         user_email: user.emailAddresses[0]?.emailAddress || '',
       })
-      router.back()
-    } catch (error) {
-      alert('Failed to save. Please try again.')
+      
+      if (result) {
+        router.back()
+      } else {
+        setError('Failed to save. Please try again.')
+      }
+    } catch (err) {
+      console.error('Save error:', err)
+      setError('Failed to save. Please check your connection and try again.')
     } finally {
       setSaving(false)
     }
@@ -72,10 +100,21 @@ export default function PhoneNumberPage() {
           <input
             type="tel"
             value={phoneNumber}
-            onChange={(e) => setPhoneNumber(e.target.value)}
-            placeholder="+1 (555) 123-4567"
-            className="w-full px-4 py-4 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 touch-manipulation"
+            onChange={(e) => {
+              setPhoneNumber(e.target.value)
+              setError('') // Clear error when typing
+            }}
+            placeholder="+254 712 345 678"
+            className={`w-full px-4 py-4 bg-white border rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 touch-manipulation ${
+              error ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-emerald-500 focus:border-emerald-500'
+            }`}
           />
+          {error && (
+            <p className="mt-2 text-sm text-red-600">{error}</p>
+          )}
+          <p className="mt-2 text-xs text-gray-500">
+            Enter with country code (e.g., +254 for Kenya)
+          </p>
         </div>
       </div>
 

@@ -51,24 +51,26 @@ export async function updateUserProfile(
     ...updates,
   }
   
-  const { data, error } = await supabase
-    .from('user_profiles')
-    .upsert(
-      payload as any, // Type assertion needed for Supabase untyped client
-      {
-        onConflict: 'user_id', // Specify conflict resolution column
-        ignoreDuplicates: false, // Update on conflict instead of ignoring
-      }
-    )
-    .select()
-    .single()
+  try {
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .upsert(payload, {
+        onConflict: 'user_id',
+        ignoreDuplicates: false,
+      })
+      .select()
+      .single()
 
-  if (error) {
-    console.error('Error updating user profile:', error)
+    if (error) {
+      console.error('Error updating user profile:', error)
+      return null
+    }
+
+    return data
+  } catch (err) {
+    console.error('Exception updating user profile:', err)
     return null
   }
-
-  return data
 }
 
 export async function updateAvatar(
