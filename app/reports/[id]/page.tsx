@@ -73,18 +73,28 @@ export default function ReportDetailPage() {
       )
       .subscribe()
     
-    // Polling fallback: ONLY poll if there are scanning items, reduce to every 10 seconds
-    const pollInterval = setInterval(async () => {
-      if (report?.items?.some(item => item.processing_status === 'scanning')) {
-        fetchReport()
-      }
-    }, 10000) // Reduced from 5s to 10s
-
     return () => {
       supabase.removeChannel(channel)
-      clearInterval(pollInterval)
     }
   }, [reportId])
+  
+  // Separate effect for polling to avoid dependency issues
+  useEffect(() => {
+    // Polling fallback: ONLY poll if there are scanning items
+    const pollInterval = setInterval(async () => {
+      if (report?.items?.some(item => item.processing_status === 'scanning')) {
+        const response = await fetch(`/api/expense-reports/${reportId}`)
+        if (response.ok) {
+          const data = await response.json()
+          setReport(data)
+        }
+      }
+    }, 10000)
+
+    return () => {
+      clearInterval(pollInterval)
+    }
+  }, [report, reportId])
 
   if (loading) {
     return (
