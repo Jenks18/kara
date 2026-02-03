@@ -25,6 +25,17 @@ VALUES (
 )
 ON CONFLICT (id) DO NOTHING;
 
+-- Create storage bucket for workspace avatars
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'workspace-avatars',
+  'workspace-avatars',
+  true,
+  5242880, -- 5MB limit
+  ARRAY['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+)
+ON CONFLICT (id) DO NOTHING;
+
 -- ==========================================
 -- STORAGE POLICIES (Row Level Security)
 -- CLERK JWT COMPATIBLE - Uses email from JWT instead of auth.uid()
@@ -38,6 +49,16 @@ DROP POLICY IF EXISTS "Allow authenticated profile picture uploads" ON storage.o
 DROP POLICY IF EXISTS "Allow public read profile pictures" ON storage.objects;
 DROP POLICY IF EXISTS "Allow users to update own profile pictures" ON storage.objects;
 DROP POLICY IF EXISTS "Allow users to delete own profile pictures" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated workspace avatar uploads" ON storage.objects;
+DROP POLICY IF EXISTS "Allow public read workspace avatars" ON storage.objects;
+DROP POLICY IF EXISTS "Allow users to update workspace avatars" ON storage.objects;
+DROP POLICY IF EXISTS "Allow users to delete workspace avatars" ON storage.objects;
+
+-- Remove insecure public policies (if they exist)
+DROP POLICY IF EXISTS "receipts_insert" ON storage.objects;
+DROP POLICY IF EXISTS "receipts_update" ON storage.objects;
+DROP POLICY IF EXISTS "receipts_delete" ON storage.objects;
+DROP POLICY IF EXISTS "receipts_select" ON storage.objects;
 
 -- Allow authenticated users to upload receipts
 -- Files should be uploaded to: receipts/{user-email}/{filename}
@@ -82,7 +103,32 @@ CREATE POLICY "Allow users to update own profile pictures" ON storage.objects
 FOR UPDATE TO authenticated
 USING (
   bucket_id = 'profile-pictures' AND
-  (storage.foldername(name))[1] = (auth.jwt()->>'email')::text
+  
+
+-- ==========================================
+-- WORKSPACE AVATARS POLICIES
+-- ==========================================
+
+-- Allow authenticated users to upload workspace avatars
+CREATE POLICY "Allow authenticated workspace avatar uploads" ON storage.objects
+FOR INSERT TO authenticated
+WITH CHECK (bucket_id = 'workspace-avatars');
+
+-- Allow public read access to workspace avatars
+CREATE POLICY "Allow public read workspace avatars" ON storage.objects
+FOR SELECT TO public
+USING (bucket_id = 'workspace-avatars');
+
+-- Allow authenticated users to update workspace avatars
+CREATE POLICY "Allow users to update workspace avatars" ON storage.object, 'workspace-avatars's
+FOR UPDATE TO authenticated
+USING (bucket_id = 'workspace-avatars')
+WITH CHECK (bucket_id = 'workspace-avatars');
+
+-- Allow authenticated users to delete workspace avatars
+CREATE POLICY "Allow users to delete workspace avatars" ON storage.objects
+FOR DELETE TO authenticated
+USING (bucket_id = 'workspace-avatars');(storage.foldername(name))[1] = (auth.jwt()->>'email')::text
 );
 
 -- Allow users to delete their own profile pictures
