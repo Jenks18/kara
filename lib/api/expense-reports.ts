@@ -92,7 +92,7 @@ export async function createExpenseReport(
         // Try to upload image to Supabase Storage, fallback to base64 if fails
         let imageUrl: string
         try {
-          imageUrl = await uploadReceiptImage(item.imageData, report.id, supabase)
+          imageUrl = await uploadReceiptImage(item.imageData, report.id, data.userEmail, supabase)
         } catch (error) {
           // Store base64 data directly if storage upload fails (RLS issue)
           imageUrl = item.imageData
@@ -141,6 +141,7 @@ export async function createExpenseReport(
 async function uploadReceiptImage(
   imageData: string,
   reportId: string,
+  userEmail: string,
   supabaseClient?: SupabaseClient
 ): Promise<string> {
   const supabase = supabaseClient || defaultSupabase
@@ -156,8 +157,8 @@ async function uploadReceiptImage(
     const byteArray = new Uint8Array(byteNumbers)
     const blob = new Blob([byteArray], { type: 'image/jpeg' })
 
-    // Generate unique filename
-    const filename = `${reportId}/${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`
+    // Generate filename with user email for RLS: {userEmail}/{reportId}-{timestamp}.jpg
+    const filename = `${userEmail}/${reportId}-${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`
 
     // Upload to Supabase Storage
     const { data, error } = await supabase.storage
