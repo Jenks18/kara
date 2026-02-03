@@ -1,4 +1,5 @@
-import { supabase, isSupabaseConfigured } from '../supabase/client'
+import { SupabaseClient } from '@supabase/supabase-js'
+import { supabase as defaultSupabase, isSupabaseConfigured } from '../supabase/client'
 
 // Type helper to work around Supabase TypeScript strict mode
 type SupabaseAny = any
@@ -52,12 +53,15 @@ export interface ExpenseItem {
  * Create a new expense report with items
  */
 export async function createExpenseReport(
-  data: ExpenseReportInput
+  data: ExpenseReportInput,
+  supabaseClient?: SupabaseClient
 ): Promise<{ success: boolean; reportId?: string; error?: string }> {
   if (!isSupabaseConfigured) {
     console.warn('⚠️ Supabase not configured. Report will not be saved to database.')
     return { success: false, error: 'Supabase not configured' }
   }
+  
+  const supabase = supabaseClient || defaultSupabase
   
   try {
     // 1. Create the expense report with user_id
@@ -88,7 +92,7 @@ export async function createExpenseReport(
         // Try to upload image to Supabase Storage, fallback to base64 if fails
         let imageUrl: string
         try {
-          imageUrl = await uploadReceiptImage(item.imageData, report.id)
+          imageUrl = await uploadReceiptImage(item.imageData, report.id, supabase)
         } catch (error) {
           // Store base64 data directly if storage upload fails (RLS issue)
           imageUrl = item.imageData
@@ -136,8 +140,11 @@ export async function createExpenseReport(
  */
 async function uploadReceiptImage(
   imageData: string,
-  reportId: string
+  reportId: string,
+  supabaseClient?: SupabaseClient
 ): Promise<string> {
+  const supabase = supabaseClient || defaultSupabase
+  
   try {
     // Convert base64 to blob
     const base64Data = imageData.split(',')[1]
@@ -184,11 +191,14 @@ async function uploadReceiptImage(
  */
 export async function getExpenseReports(
   userEmailOrId: string,
-  limit: number = 50
+  limit: number = 50,
+  supabaseClient?: SupabaseClient
 ): Promise<ExpenseReport[]> {
   if (!isSupabaseConfigured) {
     return []
   }
+  
+  const supabase = supabaseClient || defaultSupabase
   
   try {
     const { data: reportsData, error: reportsError } = await supabase
@@ -235,11 +245,14 @@ export async function getExpenseReports(
  * Get a single expense report by ID
  */
 export async function getExpenseReport(
-  reportId: string
+  reportId: string,
+  supabaseClient?: SupabaseClient
 ): Promise<ExpenseReport | null> {
   if (!isSupabaseConfigured) {
     return null
   }
+  
+  const supabase = supabaseClient || defaultSupabase
   
   try {
     const { data: reportData, error: reportError } = await supabase
@@ -279,8 +292,11 @@ export async function getExpenseReport(
  */
 export async function updateReportStatus(
   reportId: string,
-  status: 'draft' | 'submitted' | 'approved' | 'rejected'
+  status: 'draft' | 'submitted' | 'approved' | 'rejected',
+  supabaseClient?: SupabaseClient
 ): Promise<{ success: boolean; error?: string }> {
+  const supabase = supabaseClient || defaultSupabase
+  
   try {
     const updateData: any = { status }
     
@@ -311,8 +327,11 @@ export async function updateReportStatus(
  * Delete an expense report and all its items
  */
 export async function deleteExpenseReport(
-  reportId: string
+  reportId: string,
+  supabaseClient?: SupabaseClient
 ): Promise<{ success: boolean; error?: string }> {
+  const supabase = supabaseClient || defaultSupabase
+  
   try {
     // Items will be automatically deleted due to ON DELETE CASCADE
     const { error } = await (supabase

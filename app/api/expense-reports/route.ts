@@ -1,6 +1,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { createExpenseReport, getExpenseReports, type ExpenseReportInput } from '@/lib/api/expense-reports'
+import { createServerClient } from '@/lib/supabase/server-client'
 
 export async function GET(request: NextRequest) {
   const { userId } = await auth()
@@ -13,7 +14,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const reports = await getExpenseReports(userId)
+    const supabase = await createServerClient()
+    const reports = await getExpenseReports(userId, 50, supabase)
     return NextResponse.json(reports)
   } catch (error: any) {
     return NextResponse.json(
@@ -34,6 +36,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const supabase = await createServerClient()
     const body = await request.json()
     
     // Add userId and userEmail from Clerk
@@ -46,7 +49,7 @@ export async function POST(request: NextRequest) {
       items: body.items,
     }
 
-    const result = await createExpenseReport(reportData)
+    const result = await createExpenseReport(reportData, supabase)
 
     if (result.success) {
       return NextResponse.json(

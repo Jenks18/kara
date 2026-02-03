@@ -1,6 +1,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { getExpenseReport, updateReportStatus, deleteExpenseReport } from '@/lib/api/expense-reports'
+import { createServerClient } from '@/lib/supabase/server-client'
 
 export async function GET(
   request: NextRequest,
@@ -17,7 +18,8 @@ export async function GET(
   }
 
   try {
-    const report = await getExpenseReport(id)
+    const supabase = await createServerClient()
+    const report = await getExpenseReport(id, supabase)
 
     // RLS handles user filtering automatically via Clerk JWT
     if (!report) {
@@ -51,8 +53,10 @@ export async function PATCH(
   }
 
   try {
+    const supabase = await createServerClient()
+    
     // RLS handles user filtering automatically via Clerk JWT
-    const report = await getExpenseReport(id)
+    const report = await getExpenseReport(id, supabase)
     if (!report) {
       return NextResponse.json(
         { error: 'Not found' },
@@ -61,7 +65,7 @@ export async function PATCH(
     }
 
     const body = await request.json()
-    const result = await updateReportStatus(id, body.status)
+    const result = await updateReportStatus(id, body.status, supabase)
 
     if (result.success) {
       return NextResponse.json({ success: true })
@@ -94,8 +98,10 @@ export async function DELETE(
   }
 
   try {
+    const supabase = await createServerClient()
+    
     // RLS handles user filtering automatically via Clerk JWT
-    const report = await getExpenseReport(id)
+    const report = await getExpenseReport(id, supabase)
     if (!report) {
       return NextResponse.json(
         { error: 'Not found' },
@@ -103,7 +109,7 @@ export async function DELETE(
       )
     }
 
-    const result = await deleteExpenseReport(id)
+    const result = await deleteExpenseReport(id, supabase)
 
     if (result.success) {
       return NextResponse.json({ success: true })
