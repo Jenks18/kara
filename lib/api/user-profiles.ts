@@ -46,7 +46,7 @@ export async function updateUserProfile(
 ): Promise<UserProfile | null> {
   const supabase = await getSupabaseClient()
   
-  const payload = {
+  const payload: any = {
     user_id: userId,
     ...updates,
   }
@@ -54,10 +54,7 @@ export async function updateUserProfile(
   try {
     const { data, error } = await supabase
       .from('user_profiles')
-      .upsert(payload, {
-        onConflict: 'user_id',
-        ignoreDuplicates: false,
-      })
+      .upsert(payload)
       .select()
       .single()
 
