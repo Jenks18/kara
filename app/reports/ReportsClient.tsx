@@ -188,17 +188,11 @@ export default function ReportsClient({ initialItems, initialReports }: ReportsC
                     
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-gray-500">
-                        {item.transaction_date 
-                          ? new Date(item.transaction_date).toLocaleDateString('en-US', { 
-                              year: 'numeric', 
-                              month: 'short', 
-                              day: 'numeric' 
-                            })
-                          : new Date(item.created_at).toLocaleDateString('en-US', { 
-                              year: 'numeric', 
-                              month: 'short', 
-                              day: 'numeric' 
-                            })}
+                        {new Date(item.created_at).toLocaleDateString('en-US', { 
+                          year: 'numeric', 
+                          month: 'short', 
+                          day: 'numeric' 
+                        })}
                       </span>
                       <span className="text-lg font-bold text-gray-900">
                         KES {item.amount.toFixed(2)}
