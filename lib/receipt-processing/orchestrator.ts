@@ -123,7 +123,7 @@ export class ReceiptProcessor {
       // STAGE 1: UPLOAD & RAW STORAGE
       // ==========================================
       
-      const imageUrl = await this.uploadImage(imageBuffer, imageFile.name, supabase);
+      const imageUrl = await this.uploadImage(imageBuffer, imageFile.name, supabase, options.userEmail);
       result.imageUrl = imageUrl;
       
       // Check for duplicates
@@ -308,7 +308,7 @@ export class ReceiptProcessor {
         
         // Set default values immediately so we don't block the response
         result.aiEnhanced = {
-          category: 'other',
+          category: 'Fuel',
           confidence: 50,
         };
       } else if (!process.env.GEMINI_API_KEY) {
@@ -720,15 +720,19 @@ export class ReceiptProcessor {
   /**
    * Upload image to storage
    */
-  private async uploadImage(buffer: Buffer, filename: string, supabase: SupabaseClient): Promise<string> {
+  private async uploadImage(buffer: Buffer, filename: string, supabase: SupabaseClient, userEmail?: string): Promise<string> {
     // Upload to Supabase Storage using REQUIRED authenticated client
     // This maintains user context for RLS and audit trails
     const timestamp = Date.now();
     const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const path = `receipts/${timestamp}-${sanitizedFilename}`;
+    
+    // CLERK RLS: Path must start with user email
+    const path = userEmail 
+      ? `${userEmail}/${timestamp}-${sanitizedFilename}`
+      : `receipts/${timestamp}-${sanitizedFilename}`;
     
     const { data, error } = await supabase.storage
-      .from('receipt-images')
+      .from('receipts')
       .upload(path, buffer, {
         contentType: 'image/jpeg',
         upsert: false,
@@ -741,7 +745,7 @@ export class ReceiptProcessor {
     
     // Get public URL
     const { data: urlData } = supabase.storage
-      .from('receipt-images')
+      .from('receipts')
       .getPublicUrl(path);
     
     return urlData.publicUrl;

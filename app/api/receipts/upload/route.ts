@@ -199,12 +199,15 @@ export async function POST(request: NextRequest) {
                                  result.parsedData?.transactionDate ||
                                  new Date().toISOString().split('T')[0];
           
-          // Determine initial status
-          const hasExtractedData = amount > 0 || merchantName !== 'Processing...';
+          // Determine initial status based on data extraction
+          const hasExtractedData = amount > 0 && merchantName !== 'Processing...';
           const needsReview = result.fieldConfidence?.merchantName?.needsReview ||
                              result.fieldConfidence?.amount?.needsReview ||
                              result.fieldConfidence?.date?.needsReview;
-          const initialStatus = !hasExtractedData ? 'scanning' : (needsReview ? 'needs_review' : 'processed');
+          // processed = data extracted successfully
+          // needs_review = data extracted but flagged for review
+          // error = processing failed
+          const initialStatus = hasExtractedData ? (needsReview ? 'needs_review' : 'processed') : 'error';
           
           // Create expense item WITH LINK to raw_receipts table
           // Use extracted data immediately if available, otherwise set to scanning
@@ -214,7 +217,7 @@ export async function POST(request: NextRequest) {
               report_id: finalReportId,
               raw_receipt_id: result.rawReceiptId, // 🔗 Link to raw_receipts table!
               image_url: result.imageUrl,
-              category: 'other', // Default - will be updated by AI
+              category: 'Fuel', // Default category
               amount: amount,
               processing_status: initialStatus,
               merchant_name: merchantName,
