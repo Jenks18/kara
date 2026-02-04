@@ -175,11 +175,23 @@ fun ExpenseCard(expense: ExpenseItem) {
                     style = MaterialTheme.typography.titleMedium,
                     color = Gray900
                 )
-                Text(
-                    text = expense.category,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Gray500
-                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = expense.category,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Gray500
+                    )
+                    Text(
+                        text = "•",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Gray500
+                    )
+                    Text(
+                        text = expense.createdAt,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Gray500
+                    )
+                }
             }
             
             Column(horizontalAlignment = Alignment.End) {

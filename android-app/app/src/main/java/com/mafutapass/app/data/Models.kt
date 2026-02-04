@@ -7,6 +7,7 @@ data class ExpenseItem(
     val category: String,
     val merchantName: String?,
     val transactionDate: String?,
+    val createdAt: String,
     val kraVerified: Boolean?,
     val workspaceName: String,
     val description: String?

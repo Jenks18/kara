@@ -149,7 +149,7 @@ struct ExpenseCardView: View {
                         Text("•")
                             .foregroundColor(.gray)
                         
-                        Text(formatDate(expense.transaction_date))
+                        Text(formatDate(expense.created_at))
                             .font(.system(size: 13))
                             .foregroundColor(.gray)
                     }
