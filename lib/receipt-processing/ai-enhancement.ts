@@ -87,7 +87,7 @@ export class AIReceiptEnhancer {
    */
   private categorizeByRules(data: any): AIEnhancedData {
     const result: AIEnhancedData = {
-      category: 'other',
+      category: 'Fuel',
       tags: [],
       insights: [],
       anomalies: [],
@@ -256,7 +256,7 @@ Return ONLY valid JSON, no markdown:
       
       // Fallback
       return {
-        category: 'other',
+        category: 'Fuel',
         tags: [],
         insights: [],
         anomalies: ['AI processing failed'],
@@ -293,7 +293,7 @@ Return ONLY valid JSON, no markdown:
     } catch (error) {
       console.error('Failed to parse AI response:', error);
       return {
-        category: 'other',
+        category: 'Fuel',
         tags: [],
         insights: [],
         anomalies: ['AI response parsing failed'],
