@@ -195,9 +195,24 @@ export async function POST(request: NextRequest) {
                         result.parsedData?.totalAmount ||
                         0;
           
-          const transactionDate = result.kraData?.invoiceDate ||
-                                 result.parsedData?.transactionDate ||
-                                 new Date().toISOString().split('T')[0];
+          // For transaction date: prioritize extracted date, but validate it
+          let transactionDate = result.kraData?.invoiceDate || result.parsedData?.transactionDate;
+          
+          // Validate the date - if it's in the future or too old (>2 years), use today instead
+          if (transactionDate) {
+            const dateObj = new Date(transactionDate);
+            const today = new Date();
+            const twoYearsAgo = new Date();
+            twoYearsAgo.setFullYear(today.getFullYear() - 2);
+            
+            if (dateObj > today || dateObj < twoYearsAgo || isNaN(dateObj.getTime())) {
+              console.warn(`⚠️ Invalid date detected: ${transactionDate}, using today instead`);
+              transactionDate = today.toISOString().split('T')[0];
+            }
+          } else {
+            // No date found, use today
+            transactionDate = new Date().toISOString().split('T')[0];
+          }
           
           // Determine initial status based on data extraction
           const hasExtractedData = amount > 0 && merchantName !== 'Processing...';
