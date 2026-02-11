@@ -1,3 +1,4 @@
+
 package com.mafutapass.app.ui.screens
 
 import androidx.compose.foundation.background
@@ -19,19 +20,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mafutapass.app.data.ExpenseItem
 import com.mafutapass.app.data.ExpenseReport
 import com.mafutapass.app.ui.theme.*
+import com.mafutapass.app.viewmodel.ReportsViewModel
 
 @Composable
-fun ReportsScreen() {
+fun ReportsScreen(viewModel: ReportsViewModel = viewModel()) {
     var selectedTab by remember { mutableStateOf(0) }
     val tabs = listOf("Expenses", "Reports")
-    
-    // Mock data
-    val expenses = remember { emptyList<ExpenseItem>() }
-    val reports = remember { emptyList<ExpenseReport>() }
-    
+
+    val expenses by viewModel.expenseItems.collectAsState()
+    val reports by viewModel.expenseReports.collectAsState()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -54,7 +56,7 @@ fun ReportsScreen() {
                     color = Gray900,
                     modifier = Modifier.padding(16.dp)
                 )
-                
+
                 // Segmented Control
                 TabRow(
                     selectedTabIndex = selectedTab,
@@ -83,11 +85,11 @@ fun ReportsScreen() {
                         }
                     }
                 }
-                
+
                 Divider(color = Emerald100.copy(alpha = 0.3f))
             }
         }
-        
+
         // Content
         if (selectedTab == 0) {
             ExpensesTab(expenses)
@@ -166,9 +168,9 @@ fun ExpenseCard(expense: ExpenseItem) {
                     fontSize = 20.sp
                 )
             }
-            
+
             Spacer(modifier = Modifier.width(12.dp))
-            
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = expense.merchantName ?: "Receipt",
@@ -193,7 +195,7 @@ fun ExpenseCard(expense: ExpenseItem) {
                     )
                 }
             }
-            
+
             Column(horizontalAlignment = Alignment.End) {
                 Text(
                     text = "KES ${String.format("%.2f", expense.amount)}",
@@ -201,34 +203,6 @@ fun ExpenseCard(expense: ExpenseItem) {
                     fontWeight = FontWeight.Bold,
                     color = Emerald600
                 )
-                
-                if (expense.kraVerified == true) {
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = Emerald100,
-                        modifier = Modifier.padding(top = 4.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.CheckCircle,
-                                contentDescription = "Verified",
-                                tint = Emerald600,
-                                modifier = Modifier.size(10.dp)
-                            )
-                            Text(
-                                text = "KRA",
-                                style = MaterialTheme.typography.bodySmall,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Emerald600
-                            )
-                        }
-                    }
-                }
             }
         }
     }
@@ -255,9 +229,9 @@ fun ReportCard(report: ExpenseReport) {
                 fontWeight = FontWeight.SemiBold,
                 color = Gray900
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -266,16 +240,16 @@ fun ReportCard(report: ExpenseReport) {
                     color = Emerald100
                 ) {
                     Text(
-                        text = report.status.capitalize(),
+                        text = report.status.replaceFirstChar { it.uppercase() },
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.Medium,
                         color = Emerald600,
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                     )
                 }
-                
+
                 Text(
-                    text = "${report.itemsCount} items",
+                    text = "${ report.itemsCount} items",
                     style = MaterialTheme.typography.bodySmall,
                     color = Gray500
                 )

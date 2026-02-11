@@ -1,3 +1,4 @@
+
 pluginManagement {
     repositories {
         google()
@@ -11,6 +12,8 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        // Repository for the Clerk SDK
+        maven { url = uri("https://s01.oss.sonatype.org/content/repositories/releases/") }
     }
 }
 

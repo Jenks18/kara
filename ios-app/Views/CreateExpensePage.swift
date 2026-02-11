@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct CreateExpensePage: View {
+    @State private var showReceiptCapture = false
+    
     var body: some View {
         ZStack {
             // Light emerald gradient matching web app
@@ -17,41 +19,44 @@ struct CreateExpensePage: View {
             
             // Content - No header, start directly with cards
             ScrollView {
-                    VStack(spacing: 16) {
-                        // Scan Receipt Card
-                        CreateOptionCard(
-                            icon: "doc.text.fill",
-                            title: "Scan Receipt",
-                            description: "Capture fuel receipt with camera",
-                            iconColor: Color(red: 0.063, green: 0.725, blue: 0.506)
-                        ) {
-                            // TODO: Open camera
-                        }
-                        
-                        // Start Chat Card
-                        CreateOptionCard(
-                            icon: "bubble.left.fill",
-                            title: "Start chat",
-                            description: "Message your manager or team",
-                            iconColor: Color(red: 0.063, green: 0.725, blue: 0.506)
-                        ) {
-                            // TODO: Open chat
-                        }
-                        
-                        // Create Report Card
-                        CreateOptionCard(
-                            icon: "doc.text.fill",
-                            title: "Create report",
-                            description: "Create a new expense report",
-                            iconColor: Color(red: 0.063, green: 0.725, blue: 0.506)
-                        ) {
-                            // TODO: Open create report
-                        }
+                VStack(spacing: 16) {
+                    // Scan Receipt Card
+                    CreateOptionCard(
+                        icon: "doc.text.fill",
+                        title: "Scan Receipt",
+                        description: "Capture fuel receipt with camera",
+                        iconColor: Color(red: 0.063, green: 0.725, blue: 0.506)
+                    ) {
+                        showReceiptCapture = true
                     }
-                    .padding(16)
-                    .padding(.top, 60) // Space from top
-                    .padding(.bottom, 80) // Space for tab bar
+                    
+                    // Start Chat Card
+                    CreateOptionCard(
+                        icon: "bubble.left.fill",
+                        title: "Start chat",
+                        description: "Message your manager or team",
+                        iconColor: Color(red: 0.063, green: 0.725, blue: 0.506)
+                    ) {
+                        // TODO: Open chat
+                    }
+                    
+                    // Create Report Card
+                    CreateOptionCard(
+                        icon: "doc.text.fill",
+                        title: "Create report",
+                        description: "Create a new expense report",
+                        iconColor: Color(red: 0.063, green: 0.725, blue: 0.506)
+                    ) {
+                        // TODO: Open create report
+                    }
                 }
+                .padding(16)
+                .padding(.top, 60) // Space from top
+                .padding(.bottom, 16)
+            }
+        }
+        .fullScreenCover(isPresented: $showReceiptCapture) {
+            ReceiptCapture()
         }
     }
 }

@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ImprovedAccountPage: View {
-    @EnvironmentObject var authManager: AuthManager
+    @EnvironmentObject var authManager: ClerkAuthManager
     @State private var showingSignOutAlert = false
     
     var body: some View {
@@ -154,5 +154,5 @@ struct ImprovedAccountPage: View {
 
 #Preview {
     ImprovedAccountPage()
-        .environmentObject(AuthManager.shared)
+        .environmentObject(ClerkAuthManager.shared)
 }

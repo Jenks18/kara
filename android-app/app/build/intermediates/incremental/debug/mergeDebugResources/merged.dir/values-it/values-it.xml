@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:ns1="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="a_text_message_containing_a_verification_code_will_be_sent">Un messaggio di testo contenente un codice di verifica verrà inviato a questo numero di telefono. Potrebbero applicarsi tariffe per messaggi e dati.</string>
+    <string msgid="5976598919945601918" name="abc_action_bar_home_description">"Portami a casa"</string>
+    <string msgid="8388173803310557296" name="abc_action_bar_up_description">"Torna indietro"</string>
+    <string msgid="3937310113216875497" name="abc_action_menu_overflow_description">"Altre opzioni"</string>
+    <string msgid="4692188335987374352" name="abc_action_mode_done">"Fine"</string>
+    <string msgid="1189761859438369441" name="abc_activity_chooser_view_see_all">"Mostra tutto"</string>
+    <string msgid="2165779757652331008" name="abc_activitychooserview_choose_application">"Scelta di un\'app"</string>
+    <string msgid="4215997306490295099" name="abc_capital_off">"OFF"</string>
+    <string msgid="884982626291842264" name="abc_capital_on">"ON"</string>
+    <string msgid="8833365367933412986" name="abc_menu_alt_shortcut_label">"ALT +"</string>
+    <string msgid="2223301931652355242" name="abc_menu_ctrl_shortcut_label">"CTRL +"</string>
+    <string msgid="838001238306846836" name="abc_menu_delete_shortcut_label">"CANC"</string>
+    <string msgid="7986526966204849475" name="abc_menu_enter_shortcut_label">"INVIO"</string>
+    <string msgid="375214403600139847" name="abc_menu_function_shortcut_label">"FUNZIONE +"</string>
+    <string msgid="4192209724446364286" name="abc_menu_meta_shortcut_label">"META +"</string>
+    <string msgid="4741552369836443843" name="abc_menu_shift_shortcut_label">"MAIUSC +"</string>
+    <string msgid="5473865519181928982" name="abc_menu_space_shortcut_label">"SPAZIO"</string>
+    <string msgid="6180552449598693998" name="abc_menu_sym_shortcut_label">"SYM +"</string>
+    <string msgid="5520303668377388990" name="abc_prepend_shortcut_label">"MENU +"</string>
+    <string msgid="7208076849092622260" name="abc_search_hint">"Cerca…"</string>
+    <string msgid="3741173234950517107" name="abc_searchview_description_clear">"Cancella query"</string>
+    <string msgid="693312494995508443" name="abc_searchview_description_query">"Query di ricerca"</string>
+    <string msgid="3417662926640357176" name="abc_searchview_description_search">"Cerca"</string>
+    <string msgid="1486535517437947103" name="abc_searchview_description_submit">"Invia query"</string>
+    <string msgid="2293578557972875415" name="abc_searchview_description_voice">"Ricerca vocale"</string>
+    <string msgid="8875138169939072951" name="abc_shareactionprovider_share_with">"Condividi con"</string>
+    <string msgid="9055268688411532828" name="abc_shareactionprovider_share_with_application">"Condividi tramite <ns1:g id="APPLICATION_NAME">%s</ns1:g>"</string>
+    <string msgid="1656852541809559762" name="abc_toolbar_collapse_description">"Comprimi"</string>
+    <string name="account">Account</string>
+    <string name="active_devices">Dispositivi attivi</string>
+    <string name="add_a_passkey">Aggiungi una passkey</string>
+    <string name="add_authenticator_application">Aggiungi app di autenticazione</string>
+    <string name="add_backup_code_verification">Aggiungi verifica codice di backup</string>
+    <string name="add_email_address">Aggiungi indirizzo email</string>
+    <string name="add_password">Aggiungi password</string>
+    <string name="add_phone_number">Aggiungi numero di telefono</string>
+    <string name="add_sms_code_verification">Aggiungi verifica codice SMS</string>
+    <string name="add_two_step_verification">Aggiungi verifica in due passaggi</string>
+    <string name="alternatively_if_your_authenticator_supports_totp">In alternativa, se il tuo autenticatore supporta gli URI TOTP, puoi anche copiare l\'URI completo.</string>
+    <string name="an_error_occurred">Si è verificato un errore</string>
+    <string name="and_connector">e l\'</string>
+    <string msgid="8397015543330865059" name="android.credentials.TYPE_PASSWORD_CREDENTIAL">"Password"</string>
+    <string msgid="3929015085059320822" name="androidx.credentials.TYPE_PUBLIC_KEY_CREDENTIAL">"Passkey"</string>
+    <string msgid="8719607706653693137" name="androidx_compose_foundation_autofill">"Compilazione automatica"</string>
+    <string msgid="1150566100598813236" name="androidx_compose_ui_autofill">"Compilazione automatica"</string>
+    <string name="are_you_sure_you_want_to_delete_your_account">Sei sicuro di voler eliminare il tuo account? Questa azione è permanente e irreversibile.</string>
+    <string name="authenticator_app">App di autenticazione</string>
+    <string name="authenticator_application">App di autenticazione</string>
+    <string name="back">Indietro</string>
+    <string name="backup_code">Codice di backup</string>
+    <string name="backup_codes">Codici di backup</string>
+    <string name="backup_codes_are_now_enabled">I codici di backup sono ora abilitati. Puoi usarne uno per accedere al tuo account, se perdi l\'accesso al tuo dispositivo di autenticazione. Ogni codice può essere usato solo una volta.</string>
+    <string msgid="881409763997275156" name="call_notification_answer_action">"Rispondi"</string>
+    <string msgid="8793775615905189152" name="call_notification_answer_video_action">"Video"</string>
+    <string msgid="3229508546291798546" name="call_notification_decline_action">"Rifiuta"</string>
+    <string msgid="2659457946726154263" name="call_notification_hang_up_action">"Riaggancia"</string>
+    <string msgid="6107532579223922871" name="call_notification_incoming_text">"Chiamata in arrivo"</string>
+    <string msgid="8623827134497363134" name="call_notification_ongoing_text">"Chiamata in corso"</string>
+    <string msgid="59049573811482460" name="call_notification_screening_text">"Applicazione filtro a chiamata in arrivo"</string>
+    <string name="change_password">Cambia password</string>
+    <string name="check_your_email">Controlla la tua email</string>
+    <string name="check_your_phone">Controlla il tuo telefono</string>
+    <string name="choose_a_username">Scegli un nome utente</string>
+    <string name="choose_how_you_d_like_to_receive_your_two_step_verification_code">Scegli come vorresti ricevere il tuo codice di verifica in due passaggi.</string>
+    <string name="choose_photo">Scegli foto</string>
+    <string name="close">Chiudi</string>
+    <string msgid="406453423630273620" name="close_drawer">"Chiudi il menu di navigazione"</string>
+    <string msgid="7573152094250666567" name="close_sheet">"Chiudi il foglio"</string>
+    <string msgid="2523291102206661146" name="common_google_play_services_enable_button">Attiva</string>
+    <string msgid="227660514972886228" name="common_google_play_services_enable_text">%1$s non funzionerà se non attivi Google Play Services.</string>
+    <string msgid="5122002158466380389" name="common_google_play_services_enable_title">Attiva Google Play Services</string>
+    <string msgid="7153882981874058840" name="common_google_play_services_install_button">Installa</string>
+    <string name="common_google_play_services_install_text">L\'app %1$s non funzionerà senza Google Play Services, non presente sul tuo dispositivo.</string>
+    <string msgid="7215213145546190223" name="common_google_play_services_install_title">Installa Google Play Services</string>
+    <string name="common_google_play_services_notification_channel_name">Disponibilità di Google Play Services</string>
+    <string name="common_google_play_services_notification_ticker">Errore Google Play Services</string>
+    <string name="common_google_play_services_unknown_issue">%1$s sta riscontrando problemi con Google Play Services. Riprova.</string>
+    <string name="common_google_play_services_unsupported_text">%1$s non funzionerà senza Google Play Services, non supportati dal tuo dispositivo.</string>
+    <string msgid="6556509956452265614" name="common_google_play_services_update_button">Aggiorna</string>
+    <string msgid="9053896323427875356" name="common_google_play_services_update_text">%1$s non funzionerà se non aggiorni Google Play Services.</string>
+    <string msgid="6006316683626838685" name="common_google_play_services_update_title">Aggiorna Google Play Services</string>
+    <string name="common_google_play_services_updating_text">%1$s non funzionerà senza Google Play Services, attualmente in fase di aggiornamento.</string>
+    <string name="common_google_play_services_wear_update_text">È richiesta una nuova versione di Google Play Services. L\'aggiornamento automatico verrà eseguito a breve.</string>
+    <string name="common_open_on_phone">Apri sul telefono</string>
+    <string name="common_signin_button_text">Accedi</string>
+    <string name="common_signin_button_text_long">Accedi con Google</string>
+    <string name="complete_your_profile">Completa il tuo profilo</string>
+    <string msgid="5912733858573823945" name="confirm_device_credential_password">"Utilizza password"</string>
+    <string name="confirm_password">Conferma password</string>
+    <string name="connect_account">Collega account</string>
+    <string name="connected_accounts">Account collegati</string>
+    <string name="continue_text">Continua</string>
+    <string name="continue_to">Continua su %1$s</string>
+    <string name="copied_to_clipboard">Copiato negli appunti</string>
+    <string name="copy_to_clipboard">Copia negli appunti</string>
+    <string msgid="3260749812566568062" name="copy_toast_msg">"Link copiato negli appunti"</string>
+    <string name="country">Paese</string>
+    <string name="create_a_unique_password">Crea una password unica</string>
+    <string name="create_your_account">Crea il tuo account</string>
+    <string name="created">Creato: %1$s</string>
+    <string name="current_password">Password attuale</string>
+    <string msgid="8038256446254964252" name="default_error_message">"Valore non valido"</string>
+    <string msgid="4776854077120974966" name="default_error_msg">"Errore sconosciuto"</string>
+    <string msgid="6312721426453364202" name="default_popup_window_title">"Finestra popup"</string>
+    <string name="default_text">Predefinito</string>
+    <string name="delete_account">Elimina account</string>
+    <string name="desktop_device">Dispositivo desktop</string>
+    <string name="didn_t_receive_a_code">"Non hai ricevuto un codice? "</string>
+    <string name="didn_t_receive_a_code_resend">Non hai ricevuto un codice? Reinvia (%1$d)</string>
+    <string name="done">Fatto</string>
+    <string name="download">Scarica</string>
+    <string msgid="1890207353314751437" name="dropdown_menu">"Menu a discesa"</string>
+    <string name="edit_avatar">Modifica avatar</string>
+    <string name="email_address">Indirizzo email</string>
+    <string name="email_addresses">Indirizzi email</string>
+    <string name="email_code">Codice email</string>
+    <string name="email_code_to">Codice email a %1$s</string>
+    <string name="email_code_to_email">Codice email a %1$s</string>
+    <string name="email_support">Supporto email</string>
+    <string name="enter_a_backup_code">Inserisci un codice di backup</string>
+    <string name="enter_password">Inserisci la password</string>
+    <string name="enter_the_email_address_you_d_like_to_use">Inserisci l\'indirizzo email che vorresti usare</string>
+    <string name="enter_the_password_associated_with_your_account">Inserisci la password associata al tuo account</string>
+    <string name="enter_the_phone_number_you_d_like_to_use">Inserisci il numero di telefono che vorresti usare</string>
+    <string name="enter_the_verification_code_from_your_authenticator_application">Inserisci il codice di verifica dalla tua app di autenticazione</string>
+    <string name="enter_the_verification_code_sent_to">Inserisci il codice di verifica inviato a %1$s</string>
+    <string name="enter_you_email_or_username">Inserisci la tua email o nome utente</string>
+    <string name="enter_your_current_password_to_set_a_new_one">Inserisci la tua password attuale per impostarne una nuova</string>
+    <string name="enter_your_email">Inserisci la tua email</string>
+    <string name="enter_your_password">Inserisci la tua password</string>
+    <string name="enter_your_phone_number">Inserisci il tuo numero di telefono</string>
+    <string name="enter_your_username">Inserisci il tuo nome utente</string>
+    <string name="facing_issues_you_can_use_any_of_these_methods_to_sign_in">Hai problemi? Puoi usare uno di questi metodi per accedere.</string>
+    <string name="failed_to_save_file">Impossibile salvare il file: %1$s</string>
+    <string msgid="4566929209979330987" name="fallback_menu_item_copy_link">"Copia link"</string>
+    <string msgid="3413186855122069269" name="fallback_menu_item_open_in_browser">"Apri nel browser"</string>
+    <string msgid="7145444925855055364" name="fallback_menu_item_share_link">"Condividi link"</string>
+    <string msgid="1072308044213194243" name="fingerprint_dialog_touch_sensor">"Tocca sensore impronte"</string>
+    <string msgid="8216738333501875566" name="fingerprint_error_hw_not_available">"Hardware per l\'impronta non disponibile."</string>
+    <string msgid="6306988885793029438" name="fingerprint_error_hw_not_present">"Questo dispositivo non è dotato di sensore di impronte"</string>
+    <string msgid="7291787166416782245" name="fingerprint_error_lockout">"È stato effettuato un numero eccessivo di tentativi. Riprova più tardi."</string>
+    <string msgid="7520712796891883488" name="fingerprint_error_no_fingerprints">"Nessuna impronta digitale registrata."</string>
+    <string msgid="7627716295344353987" name="fingerprint_error_user_canceled">"Operazione di autenticazione dell\'impronta annullata dall\'utente."</string>
+    <string msgid="3873359464293253009" name="fingerprint_not_recognized">"Non riconosciuta"</string>
+    <string name="first_enter_the_code_sent_to_your_email_address">Prima, inserisci il codice inviato al tuo indirizzo email</string>
+    <string name="first_enter_the_code_sent_to_your_phone">Prima, inserisci il codice inviato al tuo telefono</string>
+    <string name="first_name">Nome</string>
+    <string name="forgot_password">Password dimenticata?</string>
+    <string msgid="3791785319221634505" name="generic_error_no_device_credential">"Non hai impostato PIN, sequenza o password."</string>
+    <string msgid="1807436368654974044" name="generic_error_no_keyguard">"Questo dispositivo non supporta il PIN, la sequenza o la password."</string>
+    <string msgid="7309881387583143581" name="generic_error_user_canceled">"Autenticazione annullata dall\'utente."</string>
+    <string name="get_help">Ottieni aiuto</string>
+    <string name="i_agree_to_the">Accetto i</string>
+    <string name="if_you_have_trouble_signing_into_your_account">Se hai problemi ad accedere al tuo account, inviaci un\'email e lavoreremo con te per ripristinare l\'accesso il prima possibile.</string>
+    <string msgid="6827826412747255547" name="in_progress">"In corso"</string>
+    <string name="incorrect_verification_code">Codice di verifica errato</string>
+    <string msgid="7933458017204019916" name="indeterminate">"Elemento parzialmente selezionato"</string>
+    <string name="it_is_recommended_to_sign_out">Si consiglia di uscire da tutti gli altri dispositivi che potrebbero aver usato la tua vecchia password.</string>
+    <string name="last_name">Cognome</string>
+    <string name="last_used">Ultimo utilizzo: %1$s</string>
+    <string name="link_another_login_option">Collega un\'altra opzione di accesso al tuo account. Dovrai verificarla prima che possa essere usata.</string>
+    <string name="linked">Collegato</string>
+    <string name="log_out">Esci</string>
+    <string name="logo">Logo</string>
+    <string msgid="2988463736136100848" name="m3c_bottom_sheet_collapse_description">"Comprimi il riquadro inferiore"</string>
+    <string msgid="1555567894577437024" name="m3c_bottom_sheet_dismiss_description">"Chiudi il riquadro inferiore"</string>
+    <string msgid="8403354765404029791" name="m3c_bottom_sheet_drag_handle_description">"Punto di trascinamento"</string>
+    <string msgid="6670819569745899763" name="m3c_bottom_sheet_expand_description">"Espandi il riquadro inferiore"</string>
+    <string msgid="3010635850035863127" name="m3c_bottom_sheet_pane_title">"Riquadro inferiore"</string>
+    <string msgid="8166741421776570875" name="m3c_date_input_headline">"Data inserita"</string>
+    <string msgid="229313757840775812" name="m3c_date_input_headline_description">"Data inserita: %1$s"</string>
+    <string msgid="6116910750161463197" name="m3c_date_input_invalid_for_pattern">"La data non corrisponde al pattern previsto: %1$s"</string>
+    <string msgid="2521768508935305279" name="m3c_date_input_invalid_not_allowed">"Data non consentita: %1$s"</string>
+    <string msgid="7052898923934555305" name="m3c_date_input_invalid_year_range">"La data non rientra nell\'intervallo di anni previsto (%1$s-%2$s)"</string>
+    <string msgid="2895559812010326913" name="m3c_date_input_label">"Data"</string>
+    <string msgid="1237013946323089826" name="m3c_date_input_no_input_description">"Nessuna selezione"</string>
+    <string msgid="7306227249789210568" name="m3c_date_input_title">"Seleziona data"</string>
+    <string msgid="7605002211875882969" name="m3c_date_picker_headline">"Data selezionata"</string>
+    <string msgid="3664277305226978227" name="m3c_date_picker_headline_description">"Selezione attuale: %1$s"</string>
+    <string msgid="8436650776581492840" name="m3c_date_picker_navigate_to_year_description">"Vai all\'anno %1$s"</string>
+    <string msgid="5811000998184572395" name="m3c_date_picker_no_selection_description">"Nessuna selezione"</string>
+    <string msgid="7813882352367152251" name="m3c_date_picker_scroll_to_earlier_years">"Scorri per visualizzare gli anni precedenti"</string>
+    <string msgid="5727367015496556177" name="m3c_date_picker_scroll_to_later_years">"Scorri per visualizzare gli anni successivi"</string>
+    <string msgid="1804346892470238807" name="m3c_date_picker_switch_to_calendar_mode">"Passa alla modalità di immissione calendario"</string>
+    <string msgid="395627960681594326" name="m3c_date_picker_switch_to_day_selection">"Scorri per selezionare un anno o tocca per tornare alla selezione di un giorno"</string>
+    <string msgid="2219746470065162704" name="m3c_date_picker_switch_to_input_mode">"Passa alla modalità di immissione testo"</string>
+    <string msgid="7142101321095356500" name="m3c_date_picker_switch_to_next_month">"Passa al mese successivo"</string>
+    <string msgid="228438865139394590" name="m3c_date_picker_switch_to_previous_month">"Passa al mese precedente"</string>
+    <string msgid="791651718641787594" name="m3c_date_picker_switch_to_year_selection">"Passa alla selezione di un anno"</string>
+    <string msgid="7430790972741451689" name="m3c_date_picker_title">"Seleziona data"</string>
+    <string msgid="3199387177749801575" name="m3c_date_picker_today_description">"Oggi"</string>
+    <string msgid="2068382232816991922" name="m3c_date_picker_year_picker_pane_title">"Selettore dell\'anno visibile"</string>
+    <string msgid="3190049423327661366" name="m3c_date_range_input_invalid_range_input">"Intervallo di date inserito non valido"</string>
+    <string msgid="3148384720560189467" name="m3c_date_range_input_title">"Inserisci date"</string>
+    <string msgid="2138321128465719402" name="m3c_date_range_picker_day_in_range">"Nell\'intervallo"</string>
+    <string msgid="4947636797751277713" name="m3c_date_range_picker_end_headline">"Data di fine"</string>
+    <string msgid="602077859540990149" name="m3c_date_range_picker_scroll_to_next_month">"Scorri per visualizzare il mese successivo"</string>
+    <string msgid="4592174524846109496" name="m3c_date_range_picker_scroll_to_previous_month">"Scorri per visualizzare il mese precedente"</string>
+    <string msgid="4665981448952749820" name="m3c_date_range_picker_start_headline">"Data di inizio"</string>
+    <string msgid="3134165431120340385" name="m3c_date_range_picker_title">"Seleziona date"</string>
+    <string msgid="7617233117134790350" name="m3c_dialog">"Finestra di dialogo"</string>
+    <string msgid="3177828188723359358" name="m3c_dropdown_menu_collapsed">"Compresso"</string>
+    <string msgid="2360841780724299882" name="m3c_dropdown_menu_expanded">"Espanso"</string>
+    <string msgid="8687821690726149911" name="m3c_dropdown_menu_toggle">"Attiva/disattiva menu a discesa"</string>
+    <string msgid="6072492480528318635" name="m3c_floating_toolbar_collapse">"Comprimi la barra degli strumenti"</string>
+    <string msgid="6880757017246780255" name="m3c_floating_toolbar_expand">"Espandi la barra degli strumenti"</string>
+    <string msgid="6152806324422087846" name="m3c_search_bar_search">"Cerca"</string>
+    <string msgid="6152755701819882931" name="m3c_snackbar_dismiss">"Chiudi"</string>
+    <string msgid="3868801555855510515" name="m3c_snackbar_pane_title">"Avviso"</string>
+    <string msgid="7655536806087401899" name="m3c_suggestions_available">"Suggerimenti sotto"</string>
+    <string msgid="409352516511718051" name="m3c_time_input_dialog_title">"Inserisci l\'ora"</string>
+    <string msgid="2786685010796619560" name="m3c_time_picker_am">"AM"</string>
+    <string msgid="7412665527536641863" name="m3c_time_picker_dialog_title">"Seleziona l\'ora"</string>
+    <string msgid="2349193472625211372" name="m3c_time_picker_hour">"Ora"</string>
+    <string msgid="9179527532316922345" name="m3c_time_picker_hour_24h_suffix">"%1$d ore"</string>
+    <string msgid="8876759303332837035" name="m3c_time_picker_hour_selection">"Seleziona l\'ora"</string>
+    <string msgid="3458167507790628988" name="m3c_time_picker_hour_suffix">"%1$d in punto"</string>
+    <string msgid="6973808109666874069" name="m3c_time_picker_hour_text_field">"per l\'ora"</string>
+    <string msgid="4313071914266462005" name="m3c_time_picker_minute">"Minuto"</string>
+    <string msgid="4699133535056739733" name="m3c_time_picker_minute_selection">"Seleziona i minuti"</string>
+    <string msgid="5064177921781937179" name="m3c_time_picker_minute_suffix">"%1$d minuti"</string>
+    <string msgid="7661234488295443182" name="m3c_time_picker_minute_text_field">"per i minuti"</string>
+    <string msgid="5865171949528594571" name="m3c_time_picker_period_toggle_description">"Seleziona AM o PM"</string>
+    <string msgid="6616362054113087709" name="m3c_time_picker_pm">"PM"</string>
+    <string msgid="4323189593686596153" name="m3c_time_picker_toggle_keyboard">"Passa alla modalità di immissione testo"</string>
+    <string msgid="1380272826693645088" name="m3c_time_picker_toggle_touch">"Passa alla modalità orologio"</string>
+    <string msgid="1805687647081129904" name="m3c_tooltip_long_press_label">"Mostra descrizione comando"</string>
+    <string msgid="5460405025248574620" name="m3c_tooltip_pane_description">"Descrizione comando"</string>
+    <string msgid="6564222473543418073" name="m3c_wide_navigation_rail_close_rail">"Chiudi modalità laterale"</string>
+    <string msgid="8350283435461615411" name="m3c_wide_navigation_rail_pane_title">"Modalità di navigazione laterale"</string>
+    <string msgid="8471891128988107974" name="mc2_snackbar_pane_title">"Avviso"</string>
+    <string name="mfa_reserved">MFA riservato</string>
+    <string name="mobile_device">Dispositivo mobile</string>
+    <string name="more_options">Altre opzioni</string>
+    <string name="name_of_passkey">Nome della passkey</string>
+    <string msgid="542007171693138492" name="navigation_menu">"Menu di navigazione"</string>
+    <string name="new_password">Nuova password</string>
+    <string name="next">Avanti</string>
+    <string name="no_email_clients_installed_on_device">Nessun client email installato sul dispositivo.</string>
+    <string msgid="6610465462668679431" name="not_selected">"Opzione non selezionata"</string>
+    <string name="open_user_profile">Apri profilo utente</string>
+    <string name="or">o</string>
+    <string name="or_sign_in_with_another_method">Oppure, accedi con un altro metodo</string>
+    <string name="passkey_icon">Icona passkey</string>
+    <string name="passkeys">Passkey</string>
+    <string name="password">Password</string>
+    <string name="password_filler" translatable="false">•••••••••••••••••••••••••</string>
+    <string name="phone_number">Numero di telefono</string>
+    <string name="phone_number_will_be_removed">%1$s verrà rimosso da questo account. Non potrai più accedere usando questo numero di telefono.</string>
+    <string name="primary">Principale</string>
+    <string name="privacy_policy">Informativa sulla Privacy</string>
+    <string name="profile">Profilo</string>
+    <string name="profile_details">Dettagli profilo</string>
+    <string msgid="5941395253238309765" name="range_end">"Fine intervallo"</string>
+    <string msgid="7097486360902471446" name="range_start">"Inizio intervallo"</string>
+    <string name="reconnect">Riconnetti</string>
+    <string name="regenerate">Rigenera</string>
+    <string name="remove">Rimuovi</string>
+    <string name="remove_connection">Rimuovi connessione</string>
+    <string name="remove_email">Rimuovi email</string>
+    <string name="remove_phone_number">Rimuovi numero di telefono</string>
+    <string name="remove_photo">Rimuovi foto</string>
+    <string name="remove_two_step_verification">Rimuovi verifica in due passaggi</string>
+    <string name="rename">Rinomina</string>
+    <string name="rename_passkey">Rinomina passkey</string>
+    <string name="resend">Reinvia</string>
+    <string name="resend_with_pararm">Reinvia (%1$d)</string>
+    <string name="reset_password">Reimposta password</string>
+    <string name="reset_your_password">Reimposta la tua password</string>
+    <string name="save">Salva</string>
+    <string name="saved_to_downloads">Salvato in Download: %1$s</string>
+    <string name="scan_qr_code_instead">Scansiona il codice QR invece</string>
+    <string msgid="6264217191555673260" name="search_menu_title">"Cerca"</string>
+    <string name="secured_by">Protetto da</string>
+    <string name="security">Sicurezza</string>
+    <string name="select_an_existing_phone_number">Seleziona un numero di telefono esistente per registrarti alla verifica in due passaggi con codice SMS o aggiungine uno nuovo.</string>
+    <string msgid="6043586758067023" name="selected">"Elemento selezionato"</string>
+    <string name="send_email_to">Invia email a %1$s</string>
+    <string name="send_sms_code">Invia codice SMS</string>
+    <string name="send_sms_code_to">Invia codice SMS a %1$s</string>
+    <string name="send_sms_code_to_phone">Invia codice SMS a %1$s</string>
+    <string name="set_as_default">Imposta come predefinito</string>
+    <string name="set_as_primary">Imposta come principale</string>
+    <string name="set_new_password">Imposta una nuova password</string>
+    <string name="set_up_a_new_sign_in_method">Configura un nuovo metodo di accesso nel tuo autenticatore e inserisci la Chiave fornita di seguito.\n\nAssicurati che le password basate sul tempo o monouso siano abilitate, quindi completa il collegamento del tuo account.</string>
+    <string name="sign_in_with">Accedi con %1$s</string>
+    <string name="sign_in_with_your_passkey">Accedi con la tua passkey</string>
+    <string name="sign_in_with_your_password">Accedi con la tua password</string>
+    <string name="sign_out_of_all_other_devices">Esci da tutti gli altri dispositivi</string>
+    <string name="sign_out_of_this_device">Esci da questo dispositivo</string>
+    <string name="skip">Salta</string>
+    <string name="sms_code">Codice SMS</string>
+    <string name="sms_code_with_number">Codice SMS %1$s</string>
+    <string msgid="2792228137354697160" name="snackbar_pane_title">"Avviso"</string>
+    <string name="something_went_wrong_please_try_again">Qualcosa è andato storto, riprova</string>
+    <string msgid="4139871816613051306" name="state_empty">"Vuoto"</string>
+    <string msgid="5834637030682409883" name="state_off">"Off"</string>
+    <string msgid="1490883874751719580" name="state_on">"On"</string>
+    <string msgid="6277540029070332960" name="status_bar_notification_info_overflow">"999+"</string>
+    <string name="success">Successo</string>
+    <string name="support_clerk_com" translatable="false">support@clerk.com</string>
+    <string msgid="2561197295334830845" name="switch_role">"Opzione"</string>
+    <string msgid="1672349317127674378" name="tab">"Scheda"</string>
+    <string name="take_a_photo">Scatta una foto</string>
+    <string msgid="5946805113151406391" name="template_percent">"<ns1:g id="PERCENTAGE">%1$d</ns1:g> percento."</string>
+    <string name="terms_of_service">Termini di Servizio</string>
+    <string name="there_are_no_available_phone_numbers">Non ci sono numeri di telefono disponibili per registrarsi alla verifica in due passaggi con codice SMS, aggiungine uno nuovo.</string>
+    <string name="this_device">Questo dispositivo</string>
+    <string name="to_continue">Per continuare</string>
+    <string name="to_continue_please_enter_the_verification_code_generated_by_your_authenticator_app">Per continuare, inserisci il codice di verifica generato dalla tua app di autenticazione</string>
+    <string name="to_continue_to">Per continuare su %1$s</string>
+    <string msgid="3765533235322692011" name="tooltip_description">"Descrizione comando"</string>
+    <string msgid="3124740595719787496" name="tooltip_label">"Mostra descrizione comando"</string>
+    <string name="two_step_verification">Verifica in due passaggi</string>
+    <string name="two_step_verification_is_now_enabled">La verifica in due passaggi è ora abilitata. Quando accedi, dovrai inserire un codice di verifica da questa app di autenticazione come passaggio aggiuntivo.\n\nSalva questi codici di backup e conservali in un posto sicuro. Se perdi l\'accesso al tuo dispositivo di autenticazione, puoi usare i codici di backup per accedere.</string>
+    <string name="type_delete_to_continue">Digita \"DELETE\" per continuare</string>
+    <string name="unverified">Non verificato</string>
+    <string name="update_password">Aggiorna password</string>
+    <string name="update_profile">Aggiorna profilo</string>
+    <string name="use_a_backup_code">Usa un codice di backup</string>
+    <string name="use_a_different_method">Usa un metodo diverso</string>
+    <string name="use_another_method">Usa un altro metodo</string>
+    <string name="use_email_address">Usa indirizzo email</string>
+    <string name="use_email_address_or_username">Usa indirizzo email o nome utente</string>
+    <string name="use_phone_number">Usa numero di telefono</string>
+    <string name="use_username">Usa nome utente</string>
+    <string name="use_your_authenticator_app">Usa la tua app di autenticazione</string>
+    <string name="use_your_passkey">Usa la tua passkey</string>
+    <string name="user_avatar">Avatar utente</string>
+    <string name="username">Nome utente</string>
+    <string name="using_your_passkey">L\'uso della tua passkey conferma che sei tu. Il tuo dispositivo potrebbe richiedere l\'impronta digitale, il volto o il blocco schermo.</string>
+    <string name="verification_codes_will_no_longer_be_required">I codici di verifica da questo autenticatore non saranno più richiesti durante l\'accesso.</string>
+    <string name="verify">Verifica</string>
+    <string name="verify_authenticator_app">Verifica app di autenticazione</string>
+    <string name="verify_email_address">Verifica indirizzo email</string>
+    <string name="verify_phone_number">Verifica numero di telefono</string>
+    <string name="verifying">Verifica in corso…</string>
+    <string name="welcome_please_fill_in_the_details_to_get_started">Benvenuto! Compila i dettagli per iniziare.</string>
+    <string name="welcome_sign_in_to_continue">Benvenuto! Accedi per continuare.</string>
+    <string name="when_signing_in_you_will_need_to_enter_a_verification_code">Quando accedi, dovrai inserire un codice di verifica inviato a questo numero di telefono come passaggio aggiuntivo.\n\nSalva questi codici di backup e conservali in un posto sicuro. Se perdi l\'accesso al tuo dispositivo di autenticazione, puoi usare i codici di backup per accedere.</string>
+    <string name="you_can_change_the_passkey_name">Puoi cambiare il nome della passkey per trovarla più facilmente</string>
+    <string name="you_ll_need_to_verify_this_email_address">Dovrai verificare questo indirizzo email prima che possa essere aggiunto al tuo account</string>
+    <string name="your_backup_code">Il tuo codice di backup è quello che ottieni quando configuri l\'autenticazione a due fattori.</string>
+</resources>

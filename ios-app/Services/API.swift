@@ -174,20 +174,206 @@ class API {
         return response.workspaces
     }
     
-    func createWorkspace(name: String, description: String?, currency: String) async throws -> Workspace {
+    func createWorkspace(name: String, avatar: String, currency: String, currencySymbol: String) async throws -> Workspace {
         let url = URL(string: "\(baseURL)/workspaces")!
         
         struct CreatePayload: Codable {
             let name: String
-            let description: String?
+            let avatar: String
             let currency: String
+            let currencySymbol: String
         }
         
-        let payload = CreatePayload(name: name, description: description, currency: currency)
+        let payload = CreatePayload(name: name, avatar: avatar, currency: currency, currencySymbol: currencySymbol)
         let body = try JSONEncoder().encode(payload)
         let data = try await makeAuthenticatedRequest(url: url, method: "POST", body: body)
         
-        return try JSONDecoder().decode(Workspace.self, from: data)
+        struct WorkspaceResponse: Codable {
+            let workspace: Workspace
+        }
+        
+        let response = try JSONDecoder().decode(WorkspaceResponse.self, from: data)
+        return response.workspace
+    }
+    
+    // MARK: - User Profile
+    
+    func getUserProfile(userId: String) async throws -> UserProfile? {
+        let url = URL(string: "\(supabaseURL)/rest/v1/user_profiles?user_id=eq.\(userId)&select=*")!
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(supabaseAnonKey, forHTTPHeaderField: "apikey")
+        
+        // Add Clerk JWT token for RLS
+        let token = try await getClerkToken()
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            throw APIError.invalidResponse
+        }
+        
+        let profiles = try JSONDecoder().decode([UserProfile].self, from: data)
+        return profiles.first
+    }
+    
+    func updateUserProfile(userId: String, updates: [String: Any]) async throws -> UserProfile {
+        let url = URL(string: "\(supabaseURL)/rest/v1/user_profiles?user_id=eq.\(userId)")!
+        
+        var payload = updates
+        payload["user_id"] = userId
+        
+        let body = try JSONSerialization.data(withJSONObject: payload)
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "PATCH"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("return=representation", forHTTPHeaderField: "Prefer")
+        request.setValue(supabaseAnonKey, forHTTPHeaderField: "apikey")
+        
+        let token = try await getClerkToken()
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.httpBody = body
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            throw APIError.invalidResponse
+        }
+        
+        let profiles = try JSONDecoder().decode([UserProfile].self, from: data)
+        guard let profile = profiles.first else {
+            throw APIError.invalidResponse
+        }
+        return profile
+    }
+    
+    func updateDisplayName(userId: String, displayName: String) async throws -> UserProfile {
+        return try await updateUserProfile(userId: userId, updates: ["display_name": displayName])
+    }
+    
+    func updateLegalName(userId: String, firstName: String, lastName: String) async throws -> UserProfile {
+        return try await updateUserProfile(userId: userId, updates: [
+            "legal_first_name": firstName,
+            "legal_last_name": lastName
+        ])
+    }
+    
+    func updatePhoneNumber(userId: String, phoneNumber: String) async throws -> UserProfile {
+        return try await updateUserProfile(userId: userId, updates: ["phone_number": phoneNumber])
+    }
+    
+    func updateDateOfBirth(userId: String, dateOfBirth: String) async throws -> UserProfile {
+        return try await updateUserProfile(userId: userId, updates: ["date_of_birth": dateOfBirth])
+    }
+    
+    func updateAddress(userId: String, line1: String?, line2: String?, city: String?, state: String?, zipCode: String?, country: String?) async throws -> UserProfile {
+        var updates: [String: Any] = [:]
+        if let line1 = line1 { updates["address_line1"] = line1 }
+        if let line2 = line2 { updates["address_line2"] = line2 }
+        if let city = city { updates["city"] = city }
+        if let state = state { updates["state"] = state }
+        if let zipCode = zipCode { updates["zip_code"] = zipCode }
+        if let country = country { updates["country"] = country }
+        
+        return try await updateUserProfile(userId: userId, updates: updates)
+    }
+    
+    // MARK: - Workspace Details
+    
+    func getWorkspace(id: String) async throws -> Workspace {
+        let url = URL(string: "\(baseURL)/workspaces/\(id)")!
+        let data = try await makeAuthenticatedRequest(url: url)
+        
+        struct WorkspaceResponse: Codable {
+            let workspace: Workspace
+        }
+        
+        let response = try JSONDecoder().decode(WorkspaceResponse.self, from: data)
+        return response.workspace
+    }
+    
+    func updateWorkspace(id: String, updates: [String: Any]) async throws -> Workspace {
+        let url = URL(string: "\(baseURL)/workspaces/\(id)")!
+        let body = try JSONSerialization.data(withJSONObject: updates)
+        let data = try await makeAuthenticatedRequest(url: url, method: "PATCH", body: body)
+        
+        struct WorkspaceResponse: Codable {
+            let workspace: Workspace
+        }
+        
+        let response = try JSONDecoder().decode(WorkspaceResponse.self, from: data)
+        return response.workspace
+    }
+    
+    func deleteWorkspace(id: String) async throws {
+        let url = URL(string: "\(baseURL)/workspaces/\(id)")!
+        _ = try await makeAuthenticatedRequest(url: url, method: "DELETE")
+    }
+    
+    func getWorkspaceMembers(workspaceId: String) async throws -> [WorkspaceMember] {
+        let url = URL(string: "\(baseURL)/workspaces/\(workspaceId)/members")!
+        let data = try await makeAuthenticatedRequest(url: url)
+        
+        struct MembersResponse: Codable {
+            let members: [WorkspaceMember]
+        }
+        
+        let response = try JSONDecoder().decode(MembersResponse.self, from: data)
+        return response.members
+    }
+    
+    // MARK: - Image Upload
+    
+    func uploadAvatar(imageData: Data) async throws -> String {
+        let url = URL(string: "\(baseURL)/upload-avatar")!
+        
+        // Create multipart form data
+        let boundary = UUID().uuidString
+        var body = Data()
+        
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"avatar.jpg\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
+        body.append(imageData)
+        body.append("\r\n".data(using: .utf8)!)
+        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        
+        let token = try await getClerkToken()
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.httpBody = body
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            throw APIError.invalidResponse
+        }
+        
+        struct UploadResponse: Codable {
+            let url: String
+        }
+        
+        let uploadResponse = try JSONDecoder().decode(UploadResponse.self, from: data)
+        return uploadResponse.url
+    }
+    
+    func uploadWorkspaceAvatar(workspaceId: String, imageData: Data) async throws -> String {
+        // Upload image and get URL
+        let imageUrl = try await uploadAvatar(imageData: imageData)
+        
+        // Update workspace with new avatar URL
+        let workspace = try await updateWorkspace(id: workspaceId, updates: ["avatar": imageUrl])
+        return imageUrl
     }
 }
 

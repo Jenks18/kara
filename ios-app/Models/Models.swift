@@ -63,11 +63,47 @@ struct Workspace: Identifiable, Codable {
     let name: String
     let description: String?
     let currency: String
+    let currencySymbol: String?
+    let address: String?
+    let avatarUrl: String?
     let createdAt: String
     
     enum CodingKeys: String, CodingKey {
-        case id, name, description, currency
+        case id, name, description, currency, address
+        case currencySymbol = "currency_symbol"
+        case avatarUrl = "avatar_url"
         case createdAt = "created_at"
+    }
+    
+    var avatarURL: URL? {
+        guard let avatarUrl = avatarUrl else { return nil }
+        return URL(string: avatarUrl)
+    }
+    
+    var displayCurrencySymbol: String {
+        if let symbol = currencySymbol, !symbol.isEmpty {
+            return symbol
+        }
+        
+        // Fallback to computed symbol
+        switch currency {
+        case "KSH": return "KSh"
+        case "USD": return "$"
+        case "EUR": return "€"
+        case "GBP": return "£"
+        case "JPY": return "¥"
+        case "AUD": return "A$"
+        case "CAD": return "C$"
+        case "CHF": return "Fr"
+        case "CNY": return "¥"
+        case "INR": return "₹"
+        case "ZAR": return "R"
+        case "NGN": return "₦"
+        case "GHS": return "₵"
+        case "TZS": return "TSh"
+        case "UGX": return "USh"
+        default: return currency
+        }
     }
     
     var initials: String {
@@ -98,4 +134,86 @@ struct User: Codable {
     let email: String
     let name: String?
     let avatar_url: String?
+}
+
+// MARK: - User Profile Model
+
+struct UserProfile: Identifiable, Codable {
+    let id: String
+    let user_id: String
+    let user_email: String
+    var display_name: String?
+    var first_name: String?
+    var last_name: String?
+    var avatar_emoji: String
+    var avatar_color: String
+    var avatar_image_url: String?
+    var phone_number: String?
+    var legal_first_name: String?
+    var legal_last_name: String?
+    var date_of_birth: String?
+    var address_line1: String?
+    var address_line2: String?
+    var city: String?
+    var state: String?
+    var zip_code: String?
+    var country: String
+    let created_at: String
+    let updated_at: String
+    
+    var fullName: String {
+        if let first = first_name, let last = last_name {
+            return "\(first) \(last)"
+        }
+        return display_name ?? user_email
+    }
+    
+    var legalFullName: String? {
+        if let first = legal_first_name, let last = legal_last_name {
+            return "\(first) \(last)"
+        }
+        return nil
+    }
+    
+    var fullAddress: String? {
+        var components: [String] = []
+        if let line1 = address_line1 { components.append(line1) }
+        if let line2 = address_line2 { components.append(line2) }
+        if let city = city { components.append(city) }
+        if let state = state { components.append(state) }
+        if let zip = zip_code { components.append(zip) }
+        return components.isEmpty ? nil : components.joined(separator: ", ")
+    }
+}
+
+// MARK: - Workspace Member
+
+struct WorkspaceMember: Identifiable, Codable {
+    let id: String
+    let userId: String
+    let workspaceId: String
+    let email: String
+    let role: String
+    let displayName: String?
+    let firstName: String?
+    let lastName: String?
+    let avatarEmoji: String?
+    let avatarColor: String?
+    let avatarImageUrl: String?
+    let joinedAt: String
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case userId = "user_id"
+        case workspaceId = "workspace_id"
+        case email
+        case role
+        case displayName = "display_name"
+        case firstName = "first_name"
+        case lastName = "last_name"
+        case avatarEmoji = "avatar_emoji"
+        case avatarColor = "avatar_color"
+        case avatarImageUrl = "avatar_image_url"
+        case joinedAt = "joined_at"
+    }
 }

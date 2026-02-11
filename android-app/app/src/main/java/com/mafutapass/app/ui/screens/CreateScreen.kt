@@ -8,7 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,7 +26,7 @@ fun CreateScreen() {
             icon = Icons.Filled.Receipt,
             label = "Scan Receipt",
             description = "Capture fuel receipt with camera",
-            onClick = { /* TODO */ }
+            onClick = { /* TODO: Implement receipt scanner */ }
         ),
         CreateOption(
             icon = Icons.Filled.ChatBubble,
@@ -59,7 +59,10 @@ fun CreateScreen() {
             Spacer(modifier = Modifier.height(12.dp))
         }
     }
+    
+    // TODO: Add Receipt Scanner Dialog when camera is implemented
 }
+
 
 data class CreateOption(
     val icon: ImageVector,

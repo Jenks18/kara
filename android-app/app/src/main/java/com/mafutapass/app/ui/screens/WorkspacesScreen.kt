@@ -22,7 +22,10 @@ import com.mafutapass.app.data.Workspace
 import com.mafutapass.app.ui.theme.*
 
 @Composable
-fun WorkspacesScreen() {
+fun WorkspacesScreen(
+    onNavigateToNewWorkspace: () -> Unit = {},
+    onNavigateToWorkspaceDetail: (String) -> Unit = {}
+) {
     // Mock data
     val workspaces = remember {
         listOf(
@@ -77,13 +80,16 @@ fun WorkspacesScreen() {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(workspaces) { workspace ->
-                WorkspaceCard(workspace)
+                WorkspaceCard(
+                    workspace = workspace,
+                    onClick = { onNavigateToWorkspaceDetail(workspace.id) }
+                )
             }
             
             item {
                 // Add workspace button
                 Button(
-                    onClick = { /* TODO */ },
+                    onClick = onNavigateToNewWorkspace,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
@@ -110,7 +116,7 @@ fun WorkspacesScreen() {
 }
 
 @Composable
-fun WorkspaceCard(workspace: Workspace) {
+fun WorkspaceCard(workspace: Workspace, onClick: () -> Unit = {}) {
     var showMenu by remember { mutableStateOf(false) }
     
     Surface(
@@ -119,7 +125,7 @@ fun WorkspaceCard(workspace: Workspace) {
         shadowElevation = 1.dp,
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { }
+            .clickable(onClick = onClick)
     ) {
         Row(
             modifier = Modifier

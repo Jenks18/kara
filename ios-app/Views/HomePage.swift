@@ -107,7 +107,7 @@ struct HomePage: View {
                         }
                     }
                     .padding(16)
-                    .padding(.bottom, 80)
+                    .padding(.bottom, 16)
                 }
             }
         }

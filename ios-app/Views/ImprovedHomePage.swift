@@ -2,7 +2,7 @@ import SwiftUI
 
 // Native iOS design with proper contrast and readability
 struct ImprovedHomePage: View {
-    @EnvironmentObject var authManager: AuthManager
+    @EnvironmentObject var authManager: ClerkAuthManager
     @State private var reports: [ExpenseReport] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
@@ -346,5 +346,5 @@ struct StatusBadge: View {
 
 #Preview {
     ImprovedHomePage()
-        .environmentObject(AuthManager.shared)
+        .environmentObject(ClerkAuthManager.shared)
 }

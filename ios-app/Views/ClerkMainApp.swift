@@ -36,13 +36,13 @@ struct AuthenticatedApp: View {
                 }
             
             // Create Tab
-            CameraView()
+            ReceiptCaptureView()
                 .tabItem {
                     Label("Scan", systemImage: "camera.fill")
                 }
             
             // Account Tab
-            ClerkAccountPage()
+            AccountPage()
                 .tabItem {
                     Label("Account", systemImage: "person.fill")
                 }

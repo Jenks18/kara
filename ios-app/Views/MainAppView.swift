@@ -3,34 +3,29 @@ import SwiftUI
 // Main app with tab navigation matching web app
 // Default to Reports (Inbox hidden as chat not implemented)
 struct MainAppView: View {
-    @State private var selectedTab: BottomNavView.Tab = .reports
-    
     var body: some View {
-        ZStack {
-            // Content area
-            Group {
-                switch selectedTab {
-                // case .inbox:  // Hidden - chat not implemented
-                //     HomePage()
-                case .reports:
-                    ReportsPage()
-                case .create:
-                    CreateExpensePage()
-                case .workspaces:
-                    WorkspacesPage()
-                case .account:
-                    AccountPage()
+        TabView {
+            ReportsPage()
+                .tabItem {
+                    Label("Reports", systemImage: "doc.text.fill")
                 }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
             
-            // Bottom navigation
-            VStack {
-                Spacer()
-                BottomNavView(selectedTab: $selectedTab)
-            }
-            .ignoresSafeArea(.keyboard)
+            CreateExpensePage()
+                .tabItem {
+                    Label("Create", systemImage: "plus.circle.fill")
+                }
+            
+            WorkspacesPage()
+                .tabItem {
+                    Label("Workspaces", systemImage: "briefcase.fill")
+                }
+            
+            AccountPage()
+                .tabItem {
+                    Label("Account", systemImage: "person.fill")
+                }
         }
+        .tint(Color(red: 0.063, green: 0.725, blue: 0.506))
     }
 }
 

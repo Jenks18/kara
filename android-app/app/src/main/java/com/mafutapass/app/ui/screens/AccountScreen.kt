@@ -9,7 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -18,10 +18,27 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.clerk.api.Clerk
 import com.mafutapass.app.ui.theme.*
+import kotlinx.coroutines.launch
+
+data class MenuItem(
+    val icon: ImageVector,
+    val title: String,
+    val showExternal: Boolean,
+    val showChevron: Boolean = !showExternal
+)
 
 @Composable
-fun AccountScreen() {
+fun AccountScreen(
+    onNavigateToProfile: () -> Unit = {},
+    onNavigateToPreferences: () -> Unit = {},
+    onNavigateToSecurity: () -> Unit = {},
+    onNavigateToAbout: () -> Unit = {},
+    onSignOut: () -> Unit = {}
+) {
+    val scope = rememberCoroutineScope()
+    val user by Clerk.userFlow.collectAsState(initial = null)
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -62,13 +79,18 @@ fun AccountScreen() {
                 
                 Column {
                     Text(
-                        text = "Ian Njenga",
+                        text = user?.let { 
+                            listOfNotNull(
+                                it.firstName,
+                                it.lastName
+                            ).joinToString(" ").takeIf { name -> name.isNotBlank() }
+                        } ?: "Guest User",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = Gray900
                     )
                     Text(
-                        text = "foronjenga19@gmail.com",
+                        text = user?.emailAddresses?.firstOrNull()?.emailAddress ?: "user@example.com",
                         style = MaterialTheme.typography.bodyMedium,
                         color = Gray500
                     )
@@ -88,7 +110,14 @@ fun AccountScreen() {
                         MenuItem(Icons.Filled.Person, "Profile", false),
                         MenuItem(Icons.Filled.Settings, "Preferences", false),
                         MenuItem(Icons.Filled.Shield, "Security", false)
-                    )
+                    ),
+                    onItemClick = { item ->
+                        when (item.title) {
+                            "Profile" -> onNavigateToProfile()
+                            "Preferences" -> onNavigateToPreferences()
+                            "Security" -> onNavigateToSecurity()
+                        }
+                    }
                 )
             }
             
@@ -100,7 +129,12 @@ fun AccountScreen() {
                         MenuItem(Icons.Filled.Star, "What's new", true),
                         MenuItem(Icons.Filled.Info, "About", false),
                         MenuItem(Icons.Filled.Build, "Troubleshoot", false)
-                    )
+                    ),
+                    onItemClick = { item ->
+                        when (item.title) {
+                            "About" -> onNavigateToAbout()
+                        }
+                    }
                 )
             }
             
@@ -112,7 +146,11 @@ fun AccountScreen() {
                     shadowElevation = 1.dp,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { }
+                        .clickable { 
+                            scope.launch {
+                                Clerk.signOut()
+                            }
+                        }
                 ) {
                     Row(
                         modifier = Modifier.padding(16.dp),
@@ -137,15 +175,12 @@ fun AccountScreen() {
     }
 }
 
-data class MenuItem(
-    val icon: ImageVector,
-    val title: String,
-    val showExternal: Boolean,
-    val showChevron: Boolean = !showExternal
-)
-
 @Composable
-fun MenuSection(title: String, items: List<MenuItem>) {
+fun MenuSection(
+    title: String,
+    items: List<MenuItem>,
+    onItemClick: (MenuItem) -> Unit = {}
+) {
     Column {
         Text(
             text = title,
@@ -166,7 +201,7 @@ fun MenuSection(title: String, items: List<MenuItem>) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { }
+                            .clickable { onItemClick(item) }
                             .padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {

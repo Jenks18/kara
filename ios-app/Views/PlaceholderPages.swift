@@ -111,7 +111,7 @@ struct AccountPage: View {
                         .cornerRadius(12)
                     }
                     .padding(.horizontal, 16)
-                    .padding(.bottom, 100) // Extra space for tab bar
+                    .padding(.bottom, 24) // Changed from 100 to 24 for tighter bottom spacing
                 }
             }
         }
@@ -166,3 +166,4 @@ struct MenuItemRow: View {
 }
 
 // MARK: - Workspaces Page (Matching Web App)
+

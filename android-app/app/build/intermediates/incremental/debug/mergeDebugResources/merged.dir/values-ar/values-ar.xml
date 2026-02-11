@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:ns1="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="a_text_message_containing_a_verification_code_will_be_sent">سيتم إرسال رسالة نصية تحتوي على رمز تحقق إلى رقم الهاتف هذا. قد تنطبق رسوم الرسائل والبيانات.</string>
+    <string msgid="5976598919945601918" name="abc_action_bar_home_description">"التوجه إلى المنزل"</string>
+    <string msgid="8388173803310557296" name="abc_action_bar_up_description">"التنقل إلى أعلى"</string>
+    <string msgid="3937310113216875497" name="abc_action_menu_overflow_description">"خيارات أكثر"</string>
+    <string msgid="4692188335987374352" name="abc_action_mode_done">"تم"</string>
+    <string msgid="1189761859438369441" name="abc_activity_chooser_view_see_all">"عرض الكل"</string>
+    <string msgid="2165779757652331008" name="abc_activitychooserview_choose_application">"اختيار تطبيق"</string>
+    <string msgid="4215997306490295099" name="abc_capital_off">"إيقاف"</string>
+    <string msgid="884982626291842264" name="abc_capital_on">"مفعّلة"</string>
+    <string msgid="8833365367933412986" name="abc_menu_alt_shortcut_label">"Alt+"</string>
+    <string msgid="2223301931652355242" name="abc_menu_ctrl_shortcut_label">"Ctrl+"</string>
+    <string msgid="838001238306846836" name="abc_menu_delete_shortcut_label">"حذف"</string>
+    <string msgid="7986526966204849475" name="abc_menu_enter_shortcut_label">"enter"</string>
+    <string msgid="375214403600139847" name="abc_menu_function_shortcut_label">"Function+"</string>
+    <string msgid="4192209724446364286" name="abc_menu_meta_shortcut_label">"Meta+"</string>
+    <string msgid="4741552369836443843" name="abc_menu_shift_shortcut_label">"Shift+"</string>
+    <string msgid="5473865519181928982" name="abc_menu_space_shortcut_label">"فضاء"</string>
+    <string msgid="6180552449598693998" name="abc_menu_sym_shortcut_label">"Sym+"</string>
+    <string msgid="5520303668377388990" name="abc_prepend_shortcut_label">"القائمة+"</string>
+    <string msgid="7208076849092622260" name="abc_search_hint">"بحث…"</string>
+    <string msgid="3741173234950517107" name="abc_searchview_description_clear">"محو طلب البحث"</string>
+    <string msgid="693312494995508443" name="abc_searchview_description_query">"طلب بحث"</string>
+    <string msgid="3417662926640357176" name="abc_searchview_description_search">"البحث"</string>
+    <string msgid="1486535517437947103" name="abc_searchview_description_submit">"إرسال طلب البحث"</string>
+    <string msgid="2293578557972875415" name="abc_searchview_description_voice">"بحث صوتي"</string>
+    <string msgid="8875138169939072951" name="abc_shareactionprovider_share_with">"مشاركة مع"</string>
+    <string msgid="9055268688411532828" name="abc_shareactionprovider_share_with_application">"مشاركة مع <ns1:g id="APPLICATION_NAME">%s</ns1:g>"</string>
+    <string msgid="1656852541809559762" name="abc_toolbar_collapse_description">"تصغير"</string>
+    <string name="account">الحساب</string>
+    <string name="active_devices">الأجهزة النشطة</string>
+    <string name="add_a_passkey">إضافة مفتاح مرور</string>
+    <string name="add_authenticator_application">إضافة تطبيق المصادقة</string>
+    <string name="add_backup_code_verification">إضافة التحقق برمز النسخ الاحتياطي</string>
+    <string name="add_email_address">إضافة عنوان بريد إلكتروني</string>
+    <string name="add_password">إضافة كلمة مرور</string>
+    <string name="add_phone_number">إضافة رقم هاتف</string>
+    <string name="add_sms_code_verification">إضافة التحقق برمز الرسائل النصية</string>
+    <string name="add_two_step_verification">إضافة التحقق بخطوتين</string>
+    <string name="alternatively_if_your_authenticator_supports_totp">بدلاً من ذلك، إذا كان تطبيق المصادقة الخاص بك يدعم URIs الخاصة بـ TOTP، يمكنك أيضاً نسخ URI الكامل.</string>
+    <string name="an_error_occurred">حدث خطأ</string>
+    <string name="and_connector">و</string>
+    <string msgid="8397015543330865059" name="android.credentials.TYPE_PASSWORD_CREDENTIAL">"كلمة المرور"</string>
+    <string msgid="3929015085059320822" name="androidx.credentials.TYPE_PUBLIC_KEY_CREDENTIAL">"مفتاح المرور"</string>
+    <string msgid="8719607706653693137" name="androidx_compose_foundation_autofill">"الملء التلقائي"</string>
+    <string msgid="1150566100598813236" name="androidx_compose_ui_autofill">"الملء التلقائي"</string>
+    <string name="are_you_sure_you_want_to_delete_your_account">هل أنت متأكد أنك تريد حذف حسابك؟ هذا الإجراء دائم ولا يمكن التراجع عنه.</string>
+    <string name="authenticator_app">تطبيق المصادقة</string>
+    <string name="authenticator_application">تطبيق المصادقة</string>
+    <string name="back">رجوع</string>
+    <string name="backup_code">رمز النسخ الاحتياطي</string>
+    <string name="backup_codes">رموز النسخ الاحتياطي</string>
+    <string name="backup_codes_are_now_enabled">تم تفعيل رموز النسخ الاحتياطي الآن. يمكنك استخدام أحدها لتسجيل الدخول إلى حسابك، إذا فقدت الوصول إلى جهاز المصادقة الخاص بك. يمكن استخدام كل رمز مرة واحدة فقط.</string>
+    <string msgid="881409763997275156" name="call_notification_answer_action">"ردّ"</string>
+    <string msgid="8793775615905189152" name="call_notification_answer_video_action">"فيديو"</string>
+    <string msgid="3229508546291798546" name="call_notification_decline_action">"رفض"</string>
+    <string msgid="2659457946726154263" name="call_notification_hang_up_action">"قطع الاتصال"</string>
+    <string msgid="6107532579223922871" name="call_notification_incoming_text">"مكالمة واردة"</string>
+    <string msgid="8623827134497363134" name="call_notification_ongoing_text">"مكالمة جارية"</string>
+    <string msgid="59049573811482460" name="call_notification_screening_text">"يتم فحص المكالمة الواردة"</string>
+    <string name="change_password">تغيير كلمة المرور</string>
+    <string name="check_your_email">تحقق من بريدك الإلكتروني</string>
+    <string name="check_your_phone">تحقق من هاتفك</string>
+    <string name="choose_a_username">اختر اسم مستخدم</string>
+    <string name="choose_how_you_d_like_to_receive_your_two_step_verification_code">اختر كيف تريد استلام رمز التحقق بخطوتين.</string>
+    <string name="choose_photo">اختر صورة</string>
+    <string name="close">إغلاق</string>
+    <string msgid="406453423630273620" name="close_drawer">"إغلاق قائمة التنقل"</string>
+    <string msgid="7573152094250666567" name="close_sheet">"إغلاق الورقة"</string>
+    <string msgid="2523291102206661146" name="common_google_play_services_enable_button">تفعيل</string>
+    <string msgid="227660514972886228" name="common_google_play_services_enable_text">‏لن يعمل %1$s ما لم يتم تفعيل خدمات Google Play.</string>
+    <string msgid="5122002158466380389" name="common_google_play_services_enable_title">‏تفعيل خدمات Google Play</string>
+    <string msgid="7153882981874058840" name="common_google_play_services_install_button">تثبيت</string>
+    <string name="common_google_play_services_install_text">‏لن يتم تشغيل %1$s بدون خدمات Google Play، والتي لا تتوفر على جهازك.</string>
+    <string msgid="7215213145546190223" name="common_google_play_services_install_title">‏الحصول على خدمات Google Play</string>
+    <string name="common_google_play_services_notification_channel_name">‏مدى توفّر خدمات Google Play</string>
+    <string name="common_google_play_services_notification_ticker">‏خطأ في خدمات Google Play</string>
+    <string name="common_google_play_services_unknown_issue">‏لدى %1$s مشكلة في خدمات Google Play. يُرجى إعادة المحاولة.</string>
+    <string name="common_google_play_services_unsupported_text">‏لن يتم تشغيل %1$s بدون خدمات Google Play التي لا يوفرها جهازك.</string>
+    <string msgid="6556509956452265614" name="common_google_play_services_update_button">تحديث</string>
+    <string msgid="9053896323427875356" name="common_google_play_services_update_text">‏لن يتم تشغيل %1$s ما لم يتم تحديث خدمات Google Play.</string>
+    <string msgid="6006316683626838685" name="common_google_play_services_update_title">‏تحديث خدمات Google Play</string>
+    <string name="common_google_play_services_updating_text">‏لن يتم تشغيل %1$s بدون خدمات Google Play، والتي يتم تحديثها حاليًا.</string>
+    <string name="common_google_play_services_wear_update_text">‏يجب توفر إصدار جديد من خدمات Google Play. سيتم تحديثها تلقائيًا قريبًا.</string>
+    <string name="common_open_on_phone">فتح على الهاتف</string>
+    <string name="common_signin_button_text">تسجل الدخول</string>
+    <string name="common_signin_button_text_long">‏تسجيل الدخول عبر Google</string>
+    <string name="complete_your_profile">أكمل ملفك الشخصي</string>
+    <string msgid="5912733858573823945" name="confirm_device_credential_password">"استخدام كلمة المرور"</string>
+    <string name="confirm_password">تأكيد كلمة المرور</string>
+    <string name="connect_account">ربط الحساب</string>
+    <string name="connected_accounts">الحسابات المتصلة</string>
+    <string name="continue_text">متابعة</string>
+    <string name="continue_to">متابعة إلى %1$s</string>
+    <string name="copied_to_clipboard">تم النسخ إلى الحافظة</string>
+    <string name="copy_to_clipboard">نسخ إلى الحافظة</string>
+    <string msgid="3260749812566568062" name="copy_toast_msg">"تم نسخ الرابط إلى الحافظة."</string>
+    <string name="country">البلد</string>
+    <string name="create_a_unique_password">أنشئ كلمة مرور فريدة</string>
+    <string name="create_your_account">أنشئ حسابك</string>
+    <string name="created">تم الإنشاء: %1$s</string>
+    <string name="current_password">كلمة المرور الحالية</string>
+    <string msgid="8038256446254964252" name="default_error_message">"إدخال غير صالح"</string>
+    <string msgid="4776854077120974966" name="default_error_msg">"خطأ غير معروف"</string>
+    <string msgid="6312721426453364202" name="default_popup_window_title">"نافذة منبثقة"</string>
+    <string name="default_text">افتراضي</string>
+    <string name="delete_account">حذف الحساب</string>
+    <string name="desktop_device">جهاز سطح المكتب</string>
+    <string name="didn_t_receive_a_code">"لم تستلم رمزاً؟ "</string>
+    <string name="didn_t_receive_a_code_resend">لم تستلم رمزاً؟ أعد الإرسال (%1$d)</string>
+    <string name="done">تم</string>
+    <string name="download">تنزيل</string>
+    <string msgid="1890207353314751437" name="dropdown_menu">"قائمة منسدلة"</string>
+    <string name="edit_avatar">تحرير الصورة الرمزية</string>
+    <string name="email_address">عنوان البريد الإلكتروني</string>
+    <string name="email_addresses">عناوين البريد الإلكتروني</string>
+    <string name="email_code">رمز البريد الإلكتروني</string>
+    <string name="email_code_to">رمز البريد الإلكتروني إلى %1$s</string>
+    <string name="email_code_to_email">رمز البريد الإلكتروني إلى %1$s</string>
+    <string name="email_support">دعم البريد الإلكتروني</string>
+    <string name="enter_a_backup_code">أدخل رمز النسخ الاحتياطي</string>
+    <string name="enter_password">أدخل كلمة المرور</string>
+    <string name="enter_the_email_address_you_d_like_to_use">أدخل عنوان البريد الإلكتروني الذي تريد استخدامه</string>
+    <string name="enter_the_password_associated_with_your_account">أدخل كلمة المرور المرتبطة بحسابك</string>
+    <string name="enter_the_phone_number_you_d_like_to_use">أدخل رقم الهاتف الذي تريد استخدامه</string>
+    <string name="enter_the_verification_code_from_your_authenticator_application">أدخل رمز التحقق من تطبيق المصادقة الخاص بك</string>
+    <string name="enter_the_verification_code_sent_to">أدخل رمز التحقق المرسل إلى %1$s</string>
+    <string name="enter_you_email_or_username">أدخل بريدك الإلكتروني أو اسم المستخدم</string>
+    <string name="enter_your_current_password_to_set_a_new_one">أدخل كلمة المرور الحالية الخاصة بك لتعيين واحدة جديدة</string>
+    <string name="enter_your_email">أدخل بريدك الإلكتروني</string>
+    <string name="enter_your_password">أدخل كلمة المرور الخاصة بك</string>
+    <string name="enter_your_phone_number">أدخل رقم هاتفك</string>
+    <string name="enter_your_username">أدخل اسم المستخدم الخاص بك</string>
+    <string name="facing_issues_you_can_use_any_of_these_methods_to_sign_in">تواجه مشاكل؟ يمكنك استخدام أي من هذه الطرق لتسجيل الدخول.</string>
+    <string name="failed_to_save_file">فشل حفظ الملف: %1$s</string>
+    <string msgid="4566929209979330987" name="fallback_menu_item_copy_link">"نسخ الرابط"</string>
+    <string msgid="3413186855122069269" name="fallback_menu_item_open_in_browser">"فتح في المتصفح"</string>
+    <string msgid="7145444925855055364" name="fallback_menu_item_share_link">"مشاركة الرابط"</string>
+    <string msgid="1072308044213194243" name="fingerprint_dialog_touch_sensor">"المس زر استشعار بصمة الإصبع"</string>
+    <string msgid="8216738333501875566" name="fingerprint_error_hw_not_available">"جهاز بصمة الإصبع غير متاح."</string>
+    <string msgid="6306988885793029438" name="fingerprint_error_hw_not_present">"لا يحتوي هذا الجهاز على جهاز استشعار بصمات الأصابع."</string>
+    <string msgid="7291787166416782245" name="fingerprint_error_lockout">"تم إجراء محاولات كثيرة جدًا. يُرجى المحاولة مرة أخرى لاحقًا."</string>
+    <string msgid="7520712796891883488" name="fingerprint_error_no_fingerprints">"ليست هناك بصمات إصبع مسجَّلة."</string>
+    <string msgid="7627716295344353987" name="fingerprint_error_user_canceled">"تم إلغاء تشغيل بصمة الإصبع بواسطة المستخدم."</string>
+    <string msgid="3873359464293253009" name="fingerprint_not_recognized">"لم يتم التعرف عليها."</string>
+    <string name="first_enter_the_code_sent_to_your_email_address">أولاً، أدخل الرمز المرسل إلى عنوان بريدك الإلكتروني</string>
+    <string name="first_enter_the_code_sent_to_your_phone">أولاً، أدخل الرمز المرسل إلى هاتفك</string>
+    <string name="first_name">الاسم الأول</string>
+    <string name="forgot_password">نسيت كلمة المرور؟</string>
+    <string msgid="3791785319221634505" name="generic_error_no_device_credential">"لم يتم ضبط رقم تعريف شخصي أو نقش أو كلمة مرور."</string>
+    <string msgid="1807436368654974044" name="generic_error_no_keyguard">"هذا الجهاز لا يتيح استخدام رقم تعريف شخصي أو نقش أو كلمة مرور."</string>
+    <string msgid="7309881387583143581" name="generic_error_user_canceled">"ألغى المستخدم المصادقة."</string>
+    <string name="get_help">احصل على المساعدة</string>
+    <string name="i_agree_to_the">أوافق على</string>
+    <string name="if_you_have_trouble_signing_into_your_account">إذا واجهت مشكلة في تسجيل الدخول إلى حسابك، أرسل لنا بريداً إلكترونياً وسنعمل معك لاستعادة الوصول في أقرب وقت ممكن.</string>
+    <string msgid="6827826412747255547" name="in_progress">"قيد التقدم"</string>
+    <string name="incorrect_verification_code">رمز التحقق غير صحيح</string>
+    <string msgid="7933458017204019916" name="indeterminate">"تم وضع علامة في المربّع بشكل جزئي"</string>
+    <string name="it_is_recommended_to_sign_out">يُنصح بتسجيل الخروج من جميع الأجهزة الأخرى التي قد تكون استخدمت كلمة المرور القديمة.</string>
+    <string name="last_name">اسم العائلة</string>
+    <string name="last_used">آخر استخدام: %1$s</string>
+    <string name="link_another_login_option">اربط خيار تسجيل دخول آخر بحسابك. ستحتاج إلى التحقق منه قبل استخدامه.</string>
+    <string name="linked">مربوط</string>
+    <string name="log_out">تسجيل الخروج</string>
+    <string name="logo">الشعار</string>
+    <string msgid="2988463736136100848" name="m3c_bottom_sheet_collapse_description">"تصغير البطاقة السفلية"</string>
+    <string msgid="1555567894577437024" name="m3c_bottom_sheet_dismiss_description">"إغلاق البطاقة السفلية"</string>
+    <string msgid="8403354765404029791" name="m3c_bottom_sheet_drag_handle_description">"مقبض السحب"</string>
+    <string msgid="6670819569745899763" name="m3c_bottom_sheet_expand_description">"توسيع البطاقة السفلية"</string>
+    <string msgid="3010635850035863127" name="m3c_bottom_sheet_pane_title">"بطاقة سفلية"</string>
+    <string msgid="8166741421776570875" name="m3c_date_input_headline">"التاريخ الذي تم إدخاله"</string>
+    <string msgid="229313757840775812" name="m3c_date_input_headline_description">"‏التاريخ الذي تم إدخاله: %1$s"</string>
+    <string msgid="6116910750161463197" name="m3c_date_input_invalid_for_pattern">"‏لا يتوافق التاريخ مع النمط المتوقَّع: %1$s"</string>
+    <string msgid="2521768508935305279" name="m3c_date_input_invalid_not_allowed">"‏التاريخ غير مسموح به: %1$s"</string>
+    <string msgid="7052898923934555305" name="m3c_date_input_invalid_year_range">"‏التاريخ خارج نطاق السنوات المتوقَّع: ‎%1$s - %2$s"</string>
+    <string msgid="2895559812010326913" name="m3c_date_input_label">"التاريخ"</string>
+    <string msgid="1237013946323089826" name="m3c_date_input_no_input_description">"بدون تاريخ"</string>
+    <string msgid="7306227249789210568" name="m3c_date_input_title">"اختيار تاريخ"</string>
+    <string msgid="7605002211875882969" name="m3c_date_picker_headline">"التاريخ المحدَّد"</string>
+    <string msgid="3664277305226978227" name="m3c_date_picker_headline_description">"‏الاختيار الحالي: %1$s"</string>
+    <string msgid="8436650776581492840" name="m3c_date_picker_navigate_to_year_description">"‏الانتقال إلى سنة %1$s"</string>
+    <string msgid="5811000998184572395" name="m3c_date_picker_no_selection_description">"بدون تاريخ"</string>
+    <string msgid="7813882352367152251" name="m3c_date_picker_scroll_to_earlier_years">"انتقِل للأسفل أو للأعلى لإظهار السنوات السابقة."</string>
+    <string msgid="5727367015496556177" name="m3c_date_picker_scroll_to_later_years">"انتقِل للأسفل أو للأعلى لإظهار السنوات التالية."</string>
+    <string msgid="1804346892470238807" name="m3c_date_picker_switch_to_calendar_mode">"التبديل إلى وضع \"الإدخال في التقويم\""</string>
+    <string msgid="395627960681594326" name="m3c_date_picker_switch_to_day_selection">"مرِّر سريعًا لتحديد سنة، أو انقر للرجوع إلى تحديد يوم."</string>
+    <string msgid="2219746470065162704" name="m3c_date_picker_switch_to_input_mode">"التبديل إلى \"وضع إدخال النص\""</string>
+    <string msgid="7142101321095356500" name="m3c_date_picker_switch_to_next_month">"التغيير إلى الشهر التالي"</string>
+    <string msgid="228438865139394590" name="m3c_date_picker_switch_to_previous_month">"التغيير إلى الشهر السابق"</string>
+    <string msgid="791651718641787594" name="m3c_date_picker_switch_to_year_selection">"التبديل لاختيار سنة"</string>
+    <string msgid="7430790972741451689" name="m3c_date_picker_title">"اختيار تاريخ"</string>
+    <string msgid="3199387177749801575" name="m3c_date_picker_today_description">"اليوم"</string>
+    <string msgid="2068382232816991922" name="m3c_date_picker_year_picker_pane_title">"أداة اختيار السنوات مرئية"</string>
+    <string msgid="3190049423327661366" name="m3c_date_range_input_invalid_range_input">"إدخال نطاق زمني غير صالح"</string>
+    <string msgid="3148384720560189467" name="m3c_date_range_input_title">"إدخال التواريخ"</string>
+    <string msgid="2138321128465719402" name="m3c_date_range_picker_day_in_range">"في النطاق"</string>
+    <string msgid="4947636797751277713" name="m3c_date_range_picker_end_headline">"تاريخ الانتهاء"</string>
+    <string msgid="602077859540990149" name="m3c_date_range_picker_scroll_to_next_month">"انتقِل للأسفل أو للأعلى لإظهار الشهر التالي."</string>
+    <string msgid="4592174524846109496" name="m3c_date_range_picker_scroll_to_previous_month">"انتقِل للأسفل أو للأعلى لإظهار الشهر السابق."</string>
+    <string msgid="4665981448952749820" name="m3c_date_range_picker_start_headline">"تاريخ البدء"</string>
+    <string msgid="3134165431120340385" name="m3c_date_range_picker_title">"اختيار التواريخ"</string>
+    <string msgid="7617233117134790350" name="m3c_dialog">"مربّع حوار"</string>
+    <string msgid="3177828188723359358" name="m3c_dropdown_menu_collapsed">"مصغَّرة"</string>
+    <string msgid="2360841780724299882" name="m3c_dropdown_menu_expanded">"موسَّعة"</string>
+    <string msgid="8687821690726149911" name="m3c_dropdown_menu_toggle">"توسيع القائمة المنسدلة أو تصغيرها"</string>
+    <string msgid="6072492480528318635" name="m3c_floating_toolbar_collapse">"تصغير شريط الأدوات"</string>
+    <string msgid="6880757017246780255" name="m3c_floating_toolbar_expand">"توسيع شريط الأدوات"</string>
+    <string msgid="6152806324422087846" name="m3c_search_bar_search">"شريط بحث"</string>
+    <string msgid="6152755701819882931" name="m3c_snackbar_dismiss">"إغلاق"</string>
+    <string msgid="3868801555855510515" name="m3c_snackbar_pane_title">"تنبيه"</string>
+    <string msgid="7655536806087401899" name="m3c_suggestions_available">"إليك الاقتراحات"</string>
+    <string msgid="409352516511718051" name="m3c_time_input_dialog_title">"إدخال الوقت"</string>
+    <string msgid="2786685010796619560" name="m3c_time_picker_am">"ص"</string>
+    <string msgid="7412665527536641863" name="m3c_time_picker_dialog_title">"اختيار الوقت"</string>
+    <string msgid="2349193472625211372" name="m3c_time_picker_hour">"ساعة"</string>
+    <string msgid="9179527532316922345" name="m3c_time_picker_hour_24h_suffix">"‏%1$d ساعة"</string>
+    <string msgid="8876759303332837035" name="m3c_time_picker_hour_selection">"اختيار الساعة"</string>
+    <string msgid="3458167507790628988" name="m3c_time_picker_hour_suffix">"‏الساعة %1$d"</string>
+    <string msgid="6973808109666874069" name="m3c_time_picker_hour_text_field">"الساعات"</string>
+    <string msgid="4313071914266462005" name="m3c_time_picker_minute">"دقيقة"</string>
+    <string msgid="4699133535056739733" name="m3c_time_picker_minute_selection">"اختيار الدقائق"</string>
+    <string msgid="5064177921781937179" name="m3c_time_picker_minute_suffix">"‏%1$d دقيقة"</string>
+    <string msgid="7661234488295443182" name="m3c_time_picker_minute_text_field">"الدقائق"</string>
+    <string msgid="5865171949528594571" name="m3c_time_picker_period_toggle_description">"يُرجى اختيار \"ص\" أو \"م\"."</string>
+    <string msgid="6616362054113087709" name="m3c_time_picker_pm">"م"</string>
+    <string msgid="4323189593686596153" name="m3c_time_picker_toggle_keyboard">"التبديل إلى وضع \"إدخال النص\""</string>
+    <string msgid="1380272826693645088" name="m3c_time_picker_toggle_touch">"التبديل إلى وضع \"الساعة\""</string>
+    <string msgid="1805687647081129904" name="m3c_tooltip_long_press_label">"إظهار التلميح"</string>
+    <string msgid="5460405025248574620" name="m3c_tooltip_pane_description">"تلميح"</string>
+    <string msgid="6564222473543418073" name="m3c_wide_navigation_rail_close_rail">"إغلاق الشريط"</string>
+    <string msgid="8350283435461615411" name="m3c_wide_navigation_rail_pane_title">"شريط التنقّل"</string>
+    <string msgid="8471891128988107974" name="mc2_snackbar_pane_title">"تنبيه"</string>
+    <string name="mfa_reserved">MFA محجوز</string>
+    <string name="mobile_device">جهاز محمول</string>
+    <string name="more_options">خيارات أكثر</string>
+    <string name="name_of_passkey">اسم مفتاح المرور</string>
+    <string msgid="542007171693138492" name="navigation_menu">"قائمة تنقل"</string>
+    <string name="new_password">كلمة مرور جديدة</string>
+    <string name="next">التالي</string>
+    <string name="no_email_clients_installed_on_device">لا توجد تطبيقات بريد إلكتروني مثبتة على الجهاز.</string>
+    <string msgid="6610465462668679431" name="not_selected">"غير محدّد"</string>
+    <string name="open_user_profile">فتح ملف المستخدم الشخصي</string>
+    <string name="or">أو</string>
+    <string name="or_sign_in_with_another_method">أو، سجل الدخول بطريقة أخرى</string>
+    <string name="passkey_icon">أيقونة مفتاح المرور</string>
+    <string name="passkeys">مفاتيح المرور</string>
+    <string name="password">كلمة المرور</string>
+    <string name="password_filler" translatable="false">•••••••••••••••••••••••••</string>
+    <string name="phone_number">رقم الهاتف</string>
+    <string name="phone_number_will_be_removed">سيتم إزالة %1$s من هذا الحساب. لن تتمكن بعد الآن من تسجيل الدخول باستخدام رقم الهاتف هذا.</string>
+    <string name="primary">أساسي</string>
+    <string name="privacy_policy">سياسة الخصوصية</string>
+    <string name="profile">الملف الشخصي</string>
+    <string name="profile_details">تفاصيل الملف الشخصي</string>
+    <string msgid="5941395253238309765" name="range_end">"نهاية النطاق"</string>
+    <string msgid="7097486360902471446" name="range_start">"بداية النطاق"</string>
+    <string name="reconnect">إعادة الاتصال</string>
+    <string name="regenerate">إعادة توليد</string>
+    <string name="remove">إزالة</string>
+    <string name="remove_connection">إزالة الاتصال</string>
+    <string name="remove_email">إزالة البريد الإلكتروني</string>
+    <string name="remove_phone_number">إزالة رقم الهاتف</string>
+    <string name="remove_photo">إزالة الصورة</string>
+    <string name="remove_two_step_verification">إزالة التحقق بخطوتين</string>
+    <string name="rename">إعادة تسمية</string>
+    <string name="rename_passkey">إعادة تسمية مفتاح المرور</string>
+    <string name="resend">أعد الإرسال</string>
+    <string name="resend_with_pararm">أعد الإرسال (%1$d)</string>
+    <string name="reset_password">إعادة تعيين كلمة المرور</string>
+    <string name="reset_your_password">إعادة تعيين كلمة المرور الخاصة بك</string>
+    <string name="save">حفظ</string>
+    <string name="saved_to_downloads">تم الحفظ في التنزيلات: %1$s</string>
+    <string name="scan_qr_code_instead">امسح رمز QR بدلاً من ذلك</string>
+    <string msgid="6264217191555673260" name="search_menu_title">"البحث"</string>
+    <string name="secured_by">محمي بواسطة</string>
+    <string name="security">الأمان</string>
+    <string name="select_an_existing_phone_number">اختر رقم هاتف موجود للتسجيل في التحقق بخطوتين برمز الرسائل النصية أو أضف رقماً جديداً.</string>
+    <string msgid="6043586758067023" name="selected">"محدّد"</string>
+    <string name="send_email_to">إرسال بريد إلكتروني إلى %1$s</string>
+    <string name="send_sms_code">إرسال رمز الرسائل النصية</string>
+    <string name="send_sms_code_to">إرسال رمز الرسائل النصية إلى %1$s</string>
+    <string name="send_sms_code_to_phone">إرسال رمز الرسائل النصية إلى %1$s</string>
+    <string name="set_as_default">تعيين كافتراضي</string>
+    <string name="set_as_primary">تعيين كأساسي</string>
+    <string name="set_new_password">تعيين كلمة مرور جديدة</string>
+    <string name="set_up_a_new_sign_in_method">قم بإعداد طريقة تسجيل دخول جديدة في تطبيق المصادقة الخاص بك وأدخل المفتاح المقدم أدناه.\n\nتأكد من تفعيل كلمات المرور المستندة إلى الوقت أو لمرة واحدة، ثم أنهي ربط حسابك.</string>
+    <string name="sign_in_with">تسجيل الدخول باستخدام %1$s</string>
+    <string name="sign_in_with_your_passkey">سجل الدخول باستخدام مفتاح المرور الخاص بك</string>
+    <string name="sign_in_with_your_password">سجل الدخول باستخدام كلمة المرور الخاصة بك</string>
+    <string name="sign_out_of_all_other_devices">تسجيل الخروج من جميع الأجهزة الأخرى</string>
+    <string name="sign_out_of_this_device">تسجيل الخروج من هذا الجهاز</string>
+    <string name="skip">تخطي</string>
+    <string name="sms_code">رمز الرسائل النصية</string>
+    <string name="sms_code_with_number">رمز الرسائل النصية %1$s</string>
+    <string msgid="2792228137354697160" name="snackbar_pane_title">"تنبيه"</string>
+    <string name="something_went_wrong_please_try_again">حدث خطأ ما، يرجى المحاولة مرة أخرى</string>
+    <string msgid="4139871816613051306" name="state_empty">"حقل فارغ"</string>
+    <string msgid="5834637030682409883" name="state_off">"غير مفعَّل"</string>
+    <string msgid="1490883874751719580" name="state_on">"مفعَّل"</string>
+    <string msgid="6277540029070332960" name="status_bar_notification_info_overflow">"999+"</string>
+    <string name="success">نجح</string>
+    <string name="support_clerk_com" translatable="false">support@clerk.com</string>
+    <string msgid="2561197295334830845" name="switch_role">"تبديل"</string>
+    <string msgid="1672349317127674378" name="tab">"علامة تبويب"</string>
+    <string name="take_a_photo">التقاط صورة</string>
+    <string msgid="5946805113151406391" name="template_percent">"<ns1:g id="PERCENTAGE">%1$d</ns1:g> في المئة."</string>
+    <string name="terms_of_service">شروط الخدمة</string>
+    <string name="there_are_no_available_phone_numbers">لا توجد أرقام هواتف متاحة للتسجيل في التحقق بخطوتين برمز الرسائل النصية، يرجى إضافة رقم جديد.</string>
+    <string name="this_device">هذا الجهاز</string>
+    <string name="to_continue">للمتابعة</string>
+    <string name="to_continue_please_enter_the_verification_code_generated_by_your_authenticator_app">للمتابعة، يرجى إدخال رمز التحقق الذي تم إنشاؤه بواسطة تطبيق المصادقة الخاص بك</string>
+    <string name="to_continue_to">للمتابعة إلى %1$s</string>
+    <string msgid="3765533235322692011" name="tooltip_description">"تلميح"</string>
+    <string msgid="3124740595719787496" name="tooltip_label">"إظهار التلميح"</string>
+    <string name="two_step_verification">التحقق بخطوتين</string>
+    <string name="two_step_verification_is_now_enabled">تم تفعيل التحقق بخطوتين الآن. عند تسجيل الدخول، ستحتاج إلى إدخال رمز تحقق من تطبيق المصادقة هذا كخطوة إضافية.\n\nاحفظ رموز النسخ الاحتياطي هذه واحفظها في مكان آمن. إذا فقدت الوصول إلى جهاز المصادقة الخاص بك، يمكنك استخدام رموز النسخ الاحتياطي لتسجيل الدخول.</string>
+    <string name="type_delete_to_continue">اكتب \"DELETE\" للمتابعة</string>
+    <string name="unverified">غير محقق</string>
+    <string name="update_password">تحديث كلمة المرور</string>
+    <string name="update_profile">تحديث الملف الشخصي</string>
+    <string name="use_a_backup_code">استخدم رمز النسخ الاحتياطي</string>
+    <string name="use_a_different_method">استخدم طريقة مختلفة</string>
+    <string name="use_another_method">استخدم طريقة أخرى</string>
+    <string name="use_email_address">استخدم عنوان البريد الإلكتروني</string>
+    <string name="use_email_address_or_username">استخدم عنوان البريد الإلكتروني أو اسم المستخدم</string>
+    <string name="use_phone_number">استخدم رقم الهاتف</string>
+    <string name="use_username">استخدم اسم المستخدم</string>
+    <string name="use_your_authenticator_app">استخدم تطبيق المصادقة الخاص بك</string>
+    <string name="use_your_passkey">استخدم مفتاح المرور الخاص بك</string>
+    <string name="user_avatar">صورة المستخدم الرمزية</string>
+    <string name="username">اسم المستخدم</string>
+    <string name="using_your_passkey">استخدام مفتاح المرور الخاص بك يؤكد أنك أنت. قد يطلب جهازك بصمة الإصبع أو الوجه أو قفل الشاشة.</string>
+    <string name="verification_codes_will_no_longer_be_required">لن تكون رموز التحقق من تطبيق المصادقة هذا مطلوبة بعد الآن عند تسجيل الدخول.</string>
+    <string name="verify">تحقق</string>
+    <string name="verify_authenticator_app">التحقق من تطبيق المصادقة</string>
+    <string name="verify_email_address">التحقق من عنوان البريد الإلكتروني</string>
+    <string name="verify_phone_number">التحقق من رقم الهاتف</string>
+    <string name="verifying">جارٍ التحقق…</string>
+    <string name="welcome_please_fill_in_the_details_to_get_started">مرحباً! يرجى ملء التفاصيل للبدء.</string>
+    <string name="welcome_sign_in_to_continue">مرحباً! سجل الدخول للمتابعة.</string>
+    <string name="when_signing_in_you_will_need_to_enter_a_verification_code">عند تسجيل الدخول، ستحتاج إلى إدخال رمز تحقق يتم إرساله إلى رقم الهاتف هذا كخطوة إضافية.\n\nاحفظ رموز النسخ الاحتياطي هذه واحفظها في مكان آمن. إذا فقدت الوصول إلى جهاز المصادقة الخاص بك، يمكنك استخدام رموز النسخ الاحتياطي لتسجيل الدخول.</string>
+    <string name="you_can_change_the_passkey_name">يمكنك تغيير اسم مفتاح المرور لتسهيل العثور عليه</string>
+    <string name="you_ll_need_to_verify_this_email_address">ستحتاج إلى التحقق من عنوان البريد الإلكتروني هذا قبل إضافته إلى حسابك</string>
+    <string name="your_backup_code">رمز النسخ الاحتياطي الخاص بك هو الذي تحصل عليه عند إعداد المصادقة ذات الخطوتين.</string>
+</resources>
