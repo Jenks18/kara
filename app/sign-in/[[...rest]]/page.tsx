@@ -6,8 +6,8 @@ export default function SignInPage({
   searchParams: { mobile?: string }
 }) {
   // If coming from mobile app, redirect to mobile-redirect endpoint after sign in
-  const isMobile = searchParams.mobile === 'true'
-  const redirectUrl = isMobile ? '/api/auth/mobile-redirect' : '/reports'
+  const isMobile = searchParams.mobile === 'android'
+  const redirectUrl = isMobile ? '/api/auth/android-callback' : '/reports'
   
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 p-4">

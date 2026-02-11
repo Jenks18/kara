@@ -38,13 +38,14 @@
             </intent-filter>
             
             <!-- OAuth callback for Clerk -->
+            <!-- OAuth callback from web app -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
                     android:scheme="mafutapass"
-                    android:host="oauth" />
+                    android:host="auth" />
             </intent-filter>
         </activity>
     </application>

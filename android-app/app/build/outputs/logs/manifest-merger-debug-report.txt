@@ -1,9 +1,9 @@
 -- Merging decision tree log ---
 manifest
-ADDED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:2:1-52:12
-INJECTED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:2:1-52:12
-INJECTED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:2:1-52:12
-INJECTED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:2:1-52:12
+ADDED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:2:1-53:12
+INJECTED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:2:1-53:12
+INJECTED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:2:1-53:12
+INJECTED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:2:1-53:12
 MERGED from [androidx.navigation:navigation-common:2.7.7] /Users/iannjenga/.gradle/caches/8.13/transforms/aaec8ab6566055e99a6a50e03f39a7bc/transformed/navigation-common-2.7.7/AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.navigation:navigation-runtime:2.7.7] /Users/iannjenga/.gradle/caches/8.13/transforms/631c7dfbc4b65a05fbaa40c7ee599576/transformed/navigation-runtime-2.7.7/AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.navigation:navigation-common-ktx:2.7.7] /Users/iannjenga/.gradle/caches/8.13/transforms/e321f5aed9fe26fb399ce296a0ad8cfc/transformed/navigation-common-ktx-2.7.7/AndroidManifest.xml:2:1-7:12
@@ -221,8 +221,8 @@ ADDED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/Andro
 	android:name
 		ADDED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:12:19-67
 application
-ADDED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:14:5-50:19
-INJECTED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:14:5-50:19
+ADDED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:14:5-51:19
+INJECTED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:14:5-51:19
 MERGED from [com.clerk:clerk-android-api:0.1.31] /Users/iannjenga/.gradle/caches/8.13/transforms/db491e259c3d42b9e7b982698dabdf48/transformed/jetified-clerk-android-api-0.1.31/AndroidManifest.xml:10:5-32:19
 MERGED from [com.clerk:clerk-android-api:0.1.31] /Users/iannjenga/.gradle/caches/8.13/transforms/db491e259c3d42b9e7b982698dabdf48/transformed/jetified-clerk-android-api-0.1.31/AndroidManifest.xml:10:5-32:19
 MERGED from [androidx.compose.ui:ui-tooling-android:1.10.1] /Users/iannjenga/.gradle/caches/8.13/transforms/0e0d3958174ce91df5bd555cb21e41be/transformed/jetified-ui-tooling/AndroidManifest.xml:22:5-26:19
@@ -326,7 +326,7 @@ ADDED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/Andro
 	android:name
 		ADDED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:26:13-49
 activity#com.mafutapass.app.MainActivity
-ADDED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:30:9-49:20
+ADDED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:30:9-50:20
 	android:launchMode
 		ADDED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:33:13-44
 	android:exported
@@ -345,26 +345,26 @@ category#android.intent.category.LAUNCHER
 ADDED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:37:17-77
 	android:name
 		ADDED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:37:27-74
-intent-filter#action:name:android.intent.action.VIEW+category:name:android.intent.category.BROWSABLE+category:name:android.intent.category.DEFAULT+data:host:oauth+data:scheme:mafutapass
-ADDED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:41:13-48:29
+intent-filter#action:name:android.intent.action.VIEW+category:name:android.intent.category.BROWSABLE+category:name:android.intent.category.DEFAULT+data:host:auth+data:scheme:mafutapass
+ADDED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:42:13-49:29
 action#android.intent.action.VIEW
-ADDED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:42:17-69
+ADDED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:43:17-69
 	android:name
-		ADDED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:42:25-66
+		ADDED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:43:25-66
 category#android.intent.category.DEFAULT
-ADDED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:43:17-76
+ADDED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:44:17-76
 	android:name
-		ADDED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:43:27-73
+		ADDED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:44:27-73
 category#android.intent.category.BROWSABLE
-ADDED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:44:17-78
+ADDED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:45:17-78
 	android:name
-		ADDED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:44:27-75
+		ADDED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:45:27-75
 data
-ADDED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:45:17-47:44
+ADDED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:46:17-48:43
 	android:host
-		ADDED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:47:21-41
+		ADDED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:48:21-40
 	android:scheme
-		ADDED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:46:21-48
+		ADDED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:47:21-48
 uses-sdk
 INJECTED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from /Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml

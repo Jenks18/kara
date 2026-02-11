@@ -1,6 +1,7 @@
 package com.mafutapass.app
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -30,9 +31,14 @@ import com.mafutapass.app.ui.screens.*
 import com.mafutapass.app.ui.theme.MafutaPassTheme
 import com.mafutapass.app.viewmodel.AuthViewModel
 import com.mafutapass.app.viewmodel.AuthState
+import com.mafutapass.app.viewmodel.OAuthViewModel
 import kotlinx.coroutines.launch
+import androidx.compose.runtime.mutableStateOf
 
 class MainActivity : ComponentActivity() {
+    // Store OAuth callback URI to handle in composable
+    private val oauthCallbackUri = mutableStateOf<Uri?>(null)
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
@@ -50,7 +56,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MafutaPassApp()
+                    MafutaPassApp(oauthCallbackUri = oauthCallbackUri.value)
                 }
             }
         }
@@ -66,28 +72,32 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         
-        // Handle OAuth callback deep link
+        // Handle auth callback from web app
         intent.data?.let { uri ->
-            Log.d("MainActivity", "Received deep link: $uri")
-            if (uri.scheme == "mafutapass" && uri.host == "oauth") {
-                val sessionToken = uri.getQueryParameter("session")
-                if (sessionToken != null) {
-                    Log.d("MainActivity", "✅ Received session from web OAuth: ${sessionToken.take(20)}...")
-                    // Store session and navigate to home
-                    // TODO: Store session token and update auth state
-                } else {
-                    Log.e("MainActivity", "❌ No session token in callback")
-                }
+            Log.d("MainActivity", "📥 Received deep link: $uri")
+            if (uri.scheme == "mafutapass" && uri.host == "auth") {
+                Log.d("MainActivity", "🔐 Processing auth callback")
+                // Store URI to be handled by composable
+                oauthCallbackUri.value = uri
             }
         }
     }
 }
 
 @Composable
-fun MafutaPassApp() {
+fun MafutaPassApp(oauthCallbackUri: Uri? = null) {
     val authViewModel: AuthViewModel = viewModel()
+    val oauthViewModel: OAuthViewModel = viewModel()
     val authState by authViewModel.authState.collectAsState()
     val navController = rememberNavController()
+    
+    // Handle auth callback when received
+    if (oauthCallbackUri != null) {
+        androidx.compose.runtime.LaunchedEffect(oauthCallbackUri) {
+            Log.d("MafutaPassApp", "⚙️ Handling auth callback")
+            oauthViewModel.handleAuthCallback(oauthCallbackUri)
+        }
+    }
 
     when (authState) {
         AuthState.Loading -> {
