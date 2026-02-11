@@ -1,6 +1,14 @@
 import { SignIn } from '@clerk/nextjs'
 
-export default function SignInPage() {
+export default function SignInPage({
+  searchParams,
+}: {
+  searchParams: { mobile?: string }
+}) {
+  // If coming from mobile app, redirect to mobile-redirect endpoint after sign in
+  const isMobile = searchParams.mobile === 'true'
+  const redirectUrl = isMobile ? '/api/auth/mobile-redirect' : '/reports'
+  
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 p-4">
       <div className="w-full max-w-md">
@@ -17,6 +25,9 @@ export default function SignInPage() {
               footerActionLink: 'text-emerald-600 hover:text-emerald-700'
             }
           }}
+          signUpUrl="/sign-up"
+          redirectUrl={redirectUrl}
+          routing="hash"
         />
       </div>
     </div>
