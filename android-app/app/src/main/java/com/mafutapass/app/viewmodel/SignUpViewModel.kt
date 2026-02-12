@@ -4,6 +4,7 @@ import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.mafutapass.app.auth.ClerkAuthManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,75 +31,54 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
             _uiState.value = SignUpUiState.Loading
             
             try {
-                Log.d("SignUpViewModel", "📤 Signing up: $email, username: $username")
+                Log.d("SignUpViewModel", "📤 Signing up via Clerk Frontend API: $email")
                 
-                val json = JSONObject().apply {
-                    put("email", email)
-                    put("password", password)
-                    put("username", username)
-                    put("firstName", firstName)
-                    put("lastName", lastName)
-                }
+                // Call Clerk Frontend API directly from Android
+                val result = ClerkAuthManager.signUp(
+                    email = email,
+                    password = password,
+                    username = username,
+                    firstName = firstName,
+                    lastName = lastName
+                )
                 
-                val requestBody = json.toString()
-                    .toRequestBody("application/json".toMediaType())
-                
-                val request = Request.Builder()
-                    .url("https://www.mafutapass.com/api/auth/signup")
-                    .post(requestBody)
-                    .addHeader("Content-Type", "application/json")
-                    .build()
-                
-                val (response, responseBody) = withContext(Dispatchers.IO) {
-                    val resp = httpClient.newCall(request).execute()
-                    val body = resp.body?.string() ?: ""
-                    Pair(resp, body)
-                }
-                
-                Log.d("SignUpViewModel", "📥 Response code: ${response.code}")
-                Log.d("SignUpViewModel", "📥 Response body: $responseBody")
-                
-                if (!response.isSuccessful) {
-                    val errorJson = JSONObject(responseBody)
-                    val errorMessage = errorJson.optString("error", "Sign up failed")
-                    Log.e("SignUpViewModel", "❌ Sign up failed: $errorMessage")
-                    _uiState.value = SignUpUiState.Error(errorMessage)
-                    return@launch
-                }
-                
-                val jsonResponse = JSONObject(responseBody)
-                
-                if (!jsonResponse.optBoolean("success", false)) {
-                    val error = jsonResponse.optString("error", "Unknown error")
-                    Log.e("SignUpViewModel", "❌ Sign up unsuccessful: $error")
-                    _uiState.value = SignUpUiState.Error(error)
+                if (!result.success) {
+                    Log.e("SignUpViewModel", "❌ Sign up failed: ${result.error}")
+                    _uiState.value = SignUpUiState.Error(result.error ?: "Sign up failed")
                     return@launch
                 }
                 
                 // Check if email verification is needed
-                if (jsonResponse.optBoolean("needsVerification", false)) {
-                    val userId = jsonResponse.getString("userId")
-                    val userEmail = jsonResponse.getString("email")
-                    val emailAddressId = jsonResponse.getString("emailAddressId")
-                    Log.d("SignUpViewModel", "📧 Email verification required for: $userEmail")
-                    _uiState.value = SignUpUiState.NeedsVerification(userId, userEmail, emailAddressId)
+                if (result.needsVerification) {
+                    Log.d("SignUpViewModel", "📧 Email verification required - check your inbox")
+                    _uiState.value = SignUpUiState.NeedsVerification(
+                        signUpId = result.signUpId ?: "",
+                        email = email,
+                        username = username,
+                        firstName = firstName,
+                        lastName = lastName
+                    )
                     return@launch
                 }
                 
-                // Store token and mark as signed in
-                val token = jsonResponse.getString("token")
-                val userId = jsonResponse.getString("userId")
-                
-                val prefs = getApplication<Application>().getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
-                prefs.edit().apply {
-                    putString("session_token", token)
-                    putString("user_id", userId)
-                    putString("user_email", email)
-                    putBoolean("is_new_user", false)
-                }.commit()
-                
-                Log.d("SignUpViewModel", "✅ Sign up successful!")
-                _uiState.value = SignUpUiState.Success
+                // If no verification needed, store token and complete
+                if (result.token != null) {
+                    // Create Supabase profile in background
+                    createSupabaseProfile(result.token, email, username, firstName, lastName)
+                    
+                    val prefs = getApplication<Application>().getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
+                    prefs.edit().apply {
+                        putString("session_token", result.token)
+                        putString("user_email", email)
+                        putBoolean("is_new_user", false)
+                    }.commit()
+                    
+                    Log.d("SignUpViewModel", "✅ Sign up successful!")
+                    _uiState.value = SignUpUiState.Success
+                } else {
+                    Log.e("SignUpViewModel", "❌ No token received")
+                    _uiState.value = SignUpUiState.Error("Sign up incomplete")
+                }
                 
             } catch (e: Exception) {
                 Log.e("SignUpViewModel", "❌ Sign up error: ${e.message}", e)
@@ -107,63 +87,36 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun verifyEmail(userId: String, emailAddressId: String, code: String) {
+    fun verifyEmail(signUpId: String, code: String, email: String, username: String, firstName: String, lastName: String) {
         viewModelScope.launch {
             _uiState.value = SignUpUiState.Loading
             
             try {
-                Log.d("SignUpViewModel", "Verifying email with code via Clerk API")
+                Log.d("SignUpViewModel", "Verifying email code via Clerk Frontend API")
                 
-                val json = JSONObject().apply {
-                    put("userId", userId)
-                    put("emailAddressId", emailAddressId)
-                    put("code", code)
-                }
+                // Verify with Clerk Frontend API
+                val result = ClerkAuthManager.verifyEmailCode(signUpId, code)
                 
-                val requestBody = json.toString()
-                    .toRequestBody("application/json".toMediaType())
-                
-                val request = Request.Builder()
-                    .url("https://www.mafutapass.com/api/auth/verify-email")
-                    .post(requestBody)
-                    .addHeader("Content-Type", "application/json")
-                    .build()
-                
-                val (response, responseBody) = withContext(Dispatchers.IO) {
-                    val resp = httpClient.newCall(request).execute()
-                    val body = resp.body?.string() ?: ""
-                    Pair(resp, body)
-                }
-                
-                Log.d("SignUpViewModel", "📥 Verification response: ${response.code}")
-                Log.d("SignUpViewModel", "📥 Response body: $responseBody")
-                
-                if (!response.isSuccessful) {
-                    val errorJson = JSONObject(responseBody)
-                    val errorMessage = errorJson.optString("error", "Verification failed")
-                    Log.e("SignUpViewModel", "❌ Verification failed: $errorMessage")
-                    _uiState.value = SignUpUiState.Error(errorMessage)
+                if (!result.success) {
+                    Log.e("SignUpViewModel", "❌ Verification failed: ${result.error}")
+                    _uiState.value = SignUpUiState.Error(result.error ?: "Invalid code")
                     return@launch
                 }
                 
-                val jsonResponse = JSONObject(responseBody)
-                
-                if (!jsonResponse.optBoolean("success", false)) {
-                    val error = jsonResponse.optString("error", "Verification failed")
-                    Log.e("SignUpViewModel", "❌ Verification unsuccessful: $error")
-                    _uiState.value = SignUpUiState.Error(error)
+                val token = result.token
+                if (token == null) {
+                    Log.e("SignUpViewModel", "❌ No token after verification")
+                    _uiState.value = SignUpUiState.Error("Verification incomplete")
                     return@launch
                 }
                 
-                // Store token and mark as signed in
-                val token = jsonResponse.getString("token")
-                val verifiedUserId = jsonResponse.getString("userId")
-                val email = jsonResponse.getString("email")
+                // Create Supabase profile in background
+                createSupabaseProfile(token, email, username, firstName, lastName)
                 
+                // Store token
                 val prefs = getApplication<Application>().getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
                 prefs.edit().apply {
                     putString("session_token", token)
-                    putString("user_id", verifiedUserId)
                     putString("user_email", email)
                     putBoolean("is_new_user", false)
                 }.commit()
@@ -177,12 +130,64 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
             }
         }
     }
+    
+    private suspend fun createSupabaseProfile(
+        token: String,
+        email: String,
+        username: String,
+        firstName: String,
+        lastName: String
+    ) {
+        try {
+            Log.d("SignUpViewModel", "Creating Supabase profile...")
+            
+            val json = JSONObject().apply {
+                put("token", token)
+                put("email", email)
+                put("username", username)
+                put("firstName", firstName)
+                put("lastName", lastName)
+            }
+            
+            val requestBody = json.toString()
+                .toRequestBody("application/json".toMediaType())
+            
+            val request = Request.Builder()
+                .url("https://www.mafutapass.com/api/auth/create-profile")
+                .post(requestBody)
+                .addHeader("Content-Type", "application/json")
+                .build()
+            
+            val (response, responseBody) = withContext(Dispatchers.IO) {
+                val resp = httpClient.newCall(request).execute()
+                val body = resp.body?.string() ?: ""
+                Pair(resp, body)
+            }
+            
+            if (response.isSuccessful) {
+                Log.d("SignUpViewModel", "✅ Supabase profile created")
+            } else {
+                Log.e("SignUpViewModel", "⚠️ Supabase profile creation failed: $responseBody")
+                // Don't fail the whole flow - user can still use the app
+            }
+            
+        } catch (e: Exception) {
+            Log.e("SignUpViewModel", "⚠️ Error creating Supabase profile: ${e.message}")
+            // Don't fail the whole flow
+        }
+    }
 
     sealed interface SignUpUiState {
         data object SignedOut : SignUpUiState
         data object Loading : SignUpUiState
         data object Success : SignUpUiState
-        data class NeedsVerification(val userId: String, val email: String, val emailAddressId: String) : SignUpUiState
+        data class NeedsVerification(
+            val signUpId: String,
+            val email: String,
+            val username: String,
+            val firstName: String,
+            val lastName: String
+        ) : SignUpUiState
         data class Error(val message: String) : SignUpUiState
     }
 }

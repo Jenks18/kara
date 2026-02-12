@@ -449,13 +449,16 @@ fun SignUpView() {
         val verificationState = state as SignUpViewModel.SignUpUiState.NeedsVerification
         EmailVerificationScreen(
             email = verificationState.email,
-            userId = verificationState.userId,
+            userId = verificationState.signUpId,
             onVerify = { code ->
                 android.util.Log.d("SignUpView", "Verifying email with code: $code")
                 viewModel.verifyEmail(
-                    verificationState.userId,
-                    verificationState.emailAddressId,
-                    code
+                    verificationState.signUpId,
+                    code,
+                    verificationState.email,
+                    verificationState.username,
+                    verificationState.firstName,
+                    verificationState.lastName
                 )
             },
             pending = state is SignUpViewModel.SignUpUiState.Loading,
