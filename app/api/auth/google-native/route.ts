@@ -132,6 +132,10 @@ export async function POST(request: NextRequest) {
       console.log('✅ Session created:', session.id);
     } catch (error: any) {
       console.error('❌ Failed to create session:', error.message);
+      console.error('Full Clerk error:', JSON.stringify(error, null, 2));
+      if (error.errors && Array.isArray(error.errors)) {
+        console.error('Clerk error details:', JSON.stringify(error.errors, null, 2));
+      }
       throw error;
     }
 
