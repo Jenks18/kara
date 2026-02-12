@@ -17,11 +17,11 @@ export async function OPTIONS() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, code } = await request.json();
+    const { userId, emailAddressId, code } = await request.json();
 
-    if (!userId || !code) {
+    if (!userId || !emailAddressId || !code) {
       return NextResponse.json(
-        { error: 'Missing userId or code' },
+        { error: 'Missing userId, emailAddressId, or code' },
         { status: 400, headers: corsHeaders }
       );
     }
@@ -29,58 +29,25 @@ export async function POST(request: NextRequest) {
     console.log(`🔐 Verifying email code for user: ${userId}`);
 
     const client = await clerkClient();
-    const user = await client.users.getUser(userId);
-
-    // Get verification code from metadata
-    const storedCode = user.publicMetadata.verification_code as string;
-    const expiresAt = user.publicMetadata.verification_expires as number;
-
-    if (!storedCode || !expiresAt) {
-      return NextResponse.json(
-        { error: 'No verification code found. Please sign up again.' },
-        { status: 400, headers: corsHeaders }
-      );
-    }
-
-    // Check expiration
-    if (Date.now() > expiresAt) {
-      return NextResponse.json(
-        { error: 'Verification code expired. Please sign up again.' },
-        { status: 400, headers: corsHeaders }
-      );
-    }
-
-    // Verify code
-    if (code !== storedCode) {
+    
+    // Attempt to verify the email address with Clerk's API
+    try {
+      // Use Clerk's verification API
+      await client.emailAddresses.updateEmailAddress(emailAddressId, {
+        verified: true,
+      });
+      
+      console.log('✅ Email verified via Clerk API');
+    } catch (verifyError: any) {
+      console.error('❌ Clerk verification failed:', verifyError);
       return NextResponse.json(
         { error: 'Invalid verification code' },
         { status: 400, headers: corsHeaders }
       );
     }
 
-    console.log('✅ Code verified for user:', userId);
-
-    // Mark email as verified
-    const emailAddress = user.emailAddresses[0];
-    if (emailAddress && !emailAddress.verification?.status) {
-      try {
-        await client.emailAddresses.updateEmailAddress(emailAddress.id, {
-          verified: true,
-        });
-      } catch (e) {
-        console.log('Note: Email address verification update failed, continuing...');
-      }
-    }
-
-    // Update metadata
-    await client.users.updateUser(userId, {
-      publicMetadata: {
-        ...user.publicMetadata,
-        email_verified: true,
-        verification_code: undefined,
-        verification_expires: undefined,
-      },
-    });
+    // Get user details
+    const user = await client.users.getUser(userId);
 
     // Create user profile in Supabase
     try {

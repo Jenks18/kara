@@ -452,7 +452,11 @@ fun SignUpView() {
             userId = verificationState.userId,
             onVerify = { code ->
                 android.util.Log.d("SignUpView", "Verifying email with code: $code")
-                viewModel.verifyEmail(verificationState.userId, code)
+                viewModel.verifyEmail(
+                    verificationState.userId,
+                    verificationState.emailAddressId,
+                    code
+                )
             },
             pending = state is SignUpViewModel.SignUpUiState.Loading,
             errorMessage = (state as? SignUpViewModel.SignUpUiState.Error)?.message

@@ -79,8 +79,9 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
                 if (jsonResponse.optBoolean("needsVerification", false)) {
                     val userId = jsonResponse.getString("userId")
                     val userEmail = jsonResponse.getString("email")
-                    Log.d("SignUpViewModel", "📧 Email verification required for: $userEmail (userId: $userId)")
-                    _uiState.value = SignUpUiState.NeedsVerification(userId, userEmail)
+                    val emailAddressId = jsonResponse.getString("emailAddressId")
+                    Log.d("SignUpViewModel", "📧 Email verification required for: $userEmail")
+                    _uiState.value = SignUpUiState.NeedsVerification(userId, userEmail, emailAddressId)
                     return@launch
                 }
                 
@@ -106,15 +107,16 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun verifyEmail(userId: String, code: String) {
+    fun verifyEmail(userId: String, emailAddressId: String, code: String) {
         viewModelScope.launch {
             _uiState.value = SignUpUiState.Loading
             
             try {
-                Log.d("SignUpViewModel", "Verifying email with code: $code (userId: $userId)")
+                Log.d("SignUpViewModel", "Verifying email with code via Clerk API")
                 
                 val json = JSONObject().apply {
                     put("userId", userId)
+                    put("emailAddressId", emailAddressId)
                     put("code", code)
                 }
                 
@@ -180,7 +182,7 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
         data object SignedOut : SignUpUiState
         data object Loading : SignUpUiState
         data object Success : SignUpUiState
-        data class NeedsVerification(val userId: String, val email: String) : SignUpUiState
+        data class NeedsVerification(val userId: String, val email: String, val emailAddressId: String) : SignUpUiState
         data class Error(val message: String) : SignUpUiState
     }
 }

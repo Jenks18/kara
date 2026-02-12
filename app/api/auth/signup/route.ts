@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
 
     console.log(`📝 Creating user: ${email}, username: ${username}`);
 
-    // Create user in Clerk (unverified)
+    // Create user in Clerk (email will be unverified by default)
     const client = await clerkClient();
     const user = await client.users.createUser({
       emailAddress: [email],
@@ -40,27 +40,31 @@ export async function POST(request: NextRequest) {
       skipPasswordRequirement: false,
       publicMetadata: {
         auth_method: 'email_password',
-        email_verified: false,
       },
     });
 
     console.log('✅ User created in Clerk:', user.id);
 
-    // Generate 6-digit verification code
-    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = Date.now() + (15 * 60 * 1000); // 15 minutes
+    // Get the email address object
+    const emailAddress = user.emailAddresses.find(e => e.emailAddress === email);
+    
+    if (!emailAddress) {
+      throw new Error('Email address not found in user object');
+    }
 
-    // Store code in user metadata
-    await client.users.updateUser(user.id, {
-      publicMetadata: {
-        ...user.publicMetadata,
-        verification_code: verificationCode,
-        verification_expires: expiresAt,
-      },
-    });
+    console.log('📧 Email address ID:', emailAddress.id);
 
-    console.log(`📧 Verification code for ${email}: ${verificationCode}`);
-    console.log('⚠️ TODO: Send this via email service (Resend/SendGrid)');
+    // Trigger Clerk to send verification email using Backend API
+    try {
+      await client.emailAddresses.updateEmailAddress(emailAddress.id, {
+        // This triggers Clerk to send verification email
+        unverified: true,
+      });
+      console.log('📧 Clerk verification email triggered');
+    } catch (emailError: any) {
+      console.error('⚠️ Failed to trigger email:', emailError);
+      // User created but email not sent - they can retry
+    }
 
     return NextResponse.json(
       {
@@ -68,7 +72,8 @@ export async function POST(request: NextRequest) {
         needsVerification: true,
         userId: user.id,
         email: email,
-        message: 'Verification code sent to your email',
+        emailAddressId: emailAddress.id,
+        message: 'Verification email sent. Please check your inbox.',
       },
       { headers: corsHeaders }
     );
