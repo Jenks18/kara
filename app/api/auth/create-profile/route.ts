@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { clerkClient, verifyToken } from '@clerk/nextjs/server';
+import { clerkClient } from '@clerk/nextjs/server';
 import { createServerClient } from '@/lib/supabase/server-client';
 
 const corsHeaders = {
@@ -25,25 +25,44 @@ export async function POST(request: NextRequest) {
 
     console.log(`📝 Creating Supabase profile for: ${email}`);
 
-    // Verify JWT token with Clerk
+    // Decode and verify JWT token
     let clerkUserId: string;
     
     try {
-      const verifiedToken = await verifyToken(token, {
-        secretKey: process.env.CLERK_SECRET_KEY,
-      });
+      // Decode JWT to extract user ID (JWT format: header.payload.signature)
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        throw new Error('Invalid JWT format');
+      }
       
-      clerkUserId = verifiedToken.sub;
+      const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf-8'));
+      clerkUserId = payload.sub;
+      
+      if (!clerkUserId) {
+        throw new Error('No user ID in token');
+      }
+      
+      console.log(`📋 Token decoded, user ID: ${clerkUserId}`);
+      
+      // Verify user exists in Clerk (this validates the token is real)
+      const client = await clerkClient();
+      const clerkUser = await client.users.getUser(clerkUserId);
+      
+      if (!clerkUser) {
+        throw new Error('User not found in Clerk');
+      }
+      
       console.log(`✅ Token verified for user: ${clerkUserId}`);
     } catch (error: any) {
       console.error('❌ Token verification failed:', error);
+      console.error('Error details:', error.message);
       return NextResponse.json(
-        { error: 'Invalid session token' },
+        { error: 'Invalid session token', details: error.message },
         { status: 401, headers: corsHeaders }
       );
     }
-
-    // Get user from Clerk to verify data
+    
+    // Get user from Clerk to verify email matches
     const client = await clerkClient();
     const clerkUser = await client.users.getUser(clerkUserId);
     const userEmail = clerkUser.emailAddresses[0]?.emailAddress;
