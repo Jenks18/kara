@@ -79,38 +79,10 @@ export async function POST(request: NextRequest) {
     );
   } catch (error: any) {
     console.error('❌ Error creating user:', error);
-          'Authorization': `Bearer ${clerkPublishableKey}`,
-        },
-        body: JSON.stringify({
-          strategy: 'email_code',
-        }),
-      }
-    );
-
-    if (!verificationResponse.ok) {
-      const errorData = await verificationResponse.json();
-      console.error('❌ Failed to prepare verification:', errorData);
-      throw new Error('Failed to send verification email');
-    }
-
-    console.log('📧 Verification email sent via Clerk');
-
-    return NextResponse.json(
-      {
-        success: true,
-        needsVerification: true,
-        signUpId: signUpId,
-        email: email,
-        message: 'Verification code sent to your email',
-      },
-      { headers: corsHeaders }
-    );
-  } catch (error: any) {
-    console.error('❌ Error creating sign-up:', error);
     
     // Check for specific Clerk errors
     let errorMessage = 'Sign up failed';
-    if (error.errors && Array.isArray(error.errors)) {
+    if (error.errors &&Array.isArray(error.errors)) {
       const firstError = error.errors[0];
       if (firstError.message) {
         errorMessage = firstError.message;
