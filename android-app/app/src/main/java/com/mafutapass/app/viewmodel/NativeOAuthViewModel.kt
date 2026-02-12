@@ -14,12 +14,17 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
+import okhttp3.Dns
+import java.net.InetAddress
+import java.net.UnknownHostException
 
 /**
  * NATIVE Google OAuth ViewModel
@@ -46,7 +51,30 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
     val oauthState: StateFlow<NativeOAuthState> = _oauthState.asStateFlow()
 
     private val credentialManager = CredentialManager.create(application)
+    
+    // Custom DNS resolver with better error messages and IPv4 preference
+    private val customDns = object : Dns {
+        override fun lookup(hostname: String): List<InetAddress> {
+            try {
+                Log.d(TAG, "🔍 DNS lookup for: $hostname")
+                val allAddresses = InetAddress.getAllByName(hostname)
+                
+                // Prefer IPv4 addresses (fixes Android emulator IPv6 issues)
+                val ipv4Addresses = allAddresses.filter { it.address.size == 4 }
+                val addresses = if (ipv4Addresses.isNotEmpty()) ipv4Addresses else allAddresses.toList()
+                
+                Log.d(TAG, "✅ Resolved $hostname to ${addresses.size} address(es): ${addresses.joinToString { it.hostAddress ?: "unknown" }}")
+                return addresses
+            } catch (e: UnknownHostException) {
+                Log.e(TAG, "❌ DNS lookup failed for $hostname: ${e.message}")
+                Log.e(TAG, "💡 Try restarting the emulator or check network settings")
+                throw e
+            }
+        }
+    }
+    
     private val httpClient = OkHttpClient.Builder()
+        .dns(customDns)
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .build()
@@ -120,8 +148,12 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
                 .post(requestBody)
                 .build()
 
-            val response = httpClient.newCall(request).execute()
-            val responseBody = response.body?.string() ?: ""
+            // Execute HTTP request on IO dispatcher (not main thread)
+            val (response, responseBody) = withContext(Dispatchers.IO) {
+                val resp = httpClient.newCall(request).execute()
+                val body = resp.body?.string() ?: ""
+                Pair(resp, body)
+            }
 
             if (!response.isSuccessful) {
                 Log.e(TAG, "❌ Backend error: $responseBody")
@@ -150,8 +182,8 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
             _oauthState.value = NativeOAuthState.Success(sessionToken, userId, email)
 
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Backend communication error", e)
-            _oauthState.value = NativeOAuthState.Error("Network error: ${e.message}")
+            Log.e(TAG, "❌ Backend communication error: ${e.javaClass.simpleName}: ${e.message}", e)
+            _oauthState.value = NativeOAuthState.Error("Network error: ${e.javaClass.simpleName}: ${e.message}")
         }
     }
 

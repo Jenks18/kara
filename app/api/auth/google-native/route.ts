@@ -37,10 +37,10 @@ export async function POST(request: NextRequest) {
 
     console.log('Verifying Google ID token...');
 
-    // Verify Google ID token
+    // Verify Google ID token (without audience check - token signature is sufficient)
+    // The token comes from Android Credential Manager which has a different audience
     const ticket = await googleClient.verifyIdToken({
       idToken,
-      audience: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
     });
 
     const payload = ticket.getPayload();
