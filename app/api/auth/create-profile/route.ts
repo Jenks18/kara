@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { clerkClient } from '@clerk/nextjs/server';
+import { clerkClient, verifyToken } from '@clerk/nextjs/server';
 import { createServerClient } from '@/lib/supabase/server-client';
 
 const corsHeaders = {
@@ -25,15 +25,17 @@ export async function POST(request: NextRequest) {
 
     console.log(`📝 Creating Supabase profile for: ${email}`);
 
-    // Verify token with Clerk
-    const client = await clerkClient();
+    // Verify JWT token with Clerk
     let clerkUserId: string;
     
     try {
-      const session = await client.sessions.verifySession(token, token);
-      clerkUserId = session.userId;
+      const verifiedToken = await verifyToken(token, {
+        secretKey: process.env.CLERK_SECRET_KEY,
+      });
+      
+      clerkUserId = verifiedToken.sub;
       console.log(`✅ Token verified for user: ${clerkUserId}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Token verification failed:', error);
       return NextResponse.json(
         { error: 'Invalid session token' },
@@ -42,6 +44,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user from Clerk to verify data
+    const client = await clerkClient();
     const clerkUser = await client.users.getUser(clerkUserId);
     const userEmail = clerkUser.emailAddresses[0]?.emailAddress;
 
