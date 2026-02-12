@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { clerkClient } from '@clerk/nextjs/server';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const clerkPublishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,63 +18,88 @@ export async function OPTIONS() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, code } = await request.json();
+    const { signUpId, code } = await request.json();
 
-    if (!userId || !code) {
+    if (!signUpId || !code) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Missing signUpId or code' },
         { status: 400, headers: corsHeaders }
       );
     }
 
-    console.log(`🔐 Verifying email for user: ${userId}`);
+    console.log(`🔐 Verifying email code for sign-up: ${signUpId}`);
 
+    // Step 1: Attempt verification using Frontend API
+    const verifyResponse = await fetch(
+      `https://api.clerk.com/v1/client/sign_ups/${signUpId}/attempt_verification`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${clerkPublishableKey}`,
+        },
+        body: JSON.stringify({
+          strategy: 'email_code',
+          code: code,
+        }),
+      }
+    );
+
+    if (!verifyResponse.ok) {
+      const errorData = await verifyResponse.json();
+      console.error('❌ Verification failed:', errorData);
+      
+      const errorMessage = errorData.errors?.[0]?.message || 'Invalid verification code';
+      return NextResponse.json(
+        { error: errorMessage },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
+    const verifyData = await verifyResponse.json();
+    
+    // Check if verification was successful and user was created
+    if (verifyData.status !== 'complete' || !verifyData.created_user_id) {
+      return NextResponse.json(
+        { error: 'Verification incomplete. Please try again.' },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
+    const userId = verifyData.created_user_id;
+    console.log('✅ Email verified, user created:', userId);
+
+    // Step 2: Get user details from Clerk Backend API
     const client = await clerkClient();
     const user = await client.users.getUser(userId);
 
-    // Check verification code from metadata
-    const storedCode = user.publicMetadata.verification_code as string;
-    const expiresAt = user.publicMetadata.verification_expires as number;
+    // Step 3: Create user profile in Supabase
+    try {
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .insert({
+          user_id: userId,
+          first_name: user.firstName || '',
+          last_name: user.lastName || '',
+          display_name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || '',
+          user_email: user.emailAddresses[0]?.emailAddress || '',
+          updated_at: new Date().toISOString(),
+        });
 
-    if (!storedCode) {
-      return NextResponse.json(
-        { error: 'No verification code found. Please sign up again.' },
-        { status: 400, headers: corsHeaders }
-      );
+      if (profileError) {
+        console.error('⚠️ Failed to create profile:', profileError);
+      } else {
+        console.log('✅ User profile created in Supabase');
+      }
+    } catch (profileErr) {
+      console.error('⚠️ Error creating profile:', profileErr);
     }
 
-    // Check if code expired
-    if (Date.now() > expiresAt) {
-      return NextResponse.json(
-        { error: 'Verification code expired. Please sign up again.' },
-        { status: 400, headers: corsHeaders }
-      );
-    }
-
-    // Verify code
-    if (code !== storedCode) {
-      return NextResponse.json(
-        { error: 'Invalid verification code' },
-        { status: 400, headers: corsHeaders }
-      );
-    }
-
-    // Mark email as verified
-    await client.users.updateUser(userId, {
-      publicMetadata: {
-        ...user.publicMetadata,
-        email_verified: true,
-        verification_code: undefined,
-        verification_expires: undefined,
-      },
-    });
-
-    console.log('✅ Email verified for user:', userId);
-
-    // Create sign-in token
+    // Step 4: Create sign-in token
     const signInToken = await client.signInTokens.createSignInToken({
-      userId: user.id,
-      expiresInSeconds: 86400, // 24 hours
+      userId: userId,
+      expiresInSeconds: 2592000, // 30 days
     });
 
     console.log('✅ Sign-in token created');
@@ -78,6 +108,21 @@ export async function POST(request: NextRequest) {
       {
         success: true,
         token: signInToken.token,
+        userId: userId,
+        email: user.emailAddresses[0]?.emailAddress,
+        message: 'Email verified successfully',
+      },
+      { headers: corsHeaders }
+    );
+  } catch (error: any) {
+    console.error('❌ Error verifying email:', error);
+    
+    return NextResponse.json(
+      { error: 'Failed to verify email' },
+      { status: 500, headers: corsHeaders }
+    );
+  }
+}
         userId: user.id,
         email: user.emailAddresses[0]?.emailAddress || '',
         user: {

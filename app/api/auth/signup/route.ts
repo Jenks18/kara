@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const clerkPublishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -26,89 +27,70 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`📝 Creating user: ${email}, username: ${username}`);
+    console.log(`📝 Creating sign-up via Frontend API: ${email}, username: ${username}`);
 
-    // Create user in Clerk with unverified email
-    const client = await clerkClient();
-    const user = await client.users.createUser({
-      emailAddress: [email],
-      password: password,
-      username: username,
-      firstName: firstName,
-      lastName: lastName,
-      skipPasswordChecks: false,
-      skipPasswordRequirement: false,
-      publicMetadata: {
-        auth_method: 'email_password',
+    // Step 1: Create sign_up using Clerk's Frontend API
+    const signUpResponse = await fetch('https://api.clerk.com/v1/client/sign_ups', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${clerkPublishableKey}`,
       },
+      body: JSON.stringify({
+        email_address: email,
+        password: password,
+        username: username,
+        first_name: firstName,
+        last_name: lastName,
+      }),
     });
 
-    console.log('✅ User created in Clerk:', user.id);
+    if (!signUpResponse.ok) {
+      const errorData = await signUpResponse.json();
+      console.error('❌ Frontend API sign-up failed:', errorData);
+      throw new Error(errorData.errors?.[0]?.message || 'Sign up failed');
+    }
 
-    // Get the email address object
-    const emailAddress = user.emailAddresses.find(e => e.emailAddress === email);
+    const signUpData = await signUpResponse.json();
+    const signUpId = signUpData.id;
     
-    if (!emailAddress) {
-      throw new Error('Email address not found in user object');
-    }
+    console.log('✅ Sign-up created:', signUpId);
 
-    console.log('📧 Email address ID:', emailAddress.id);
-
-    // Mark email as verified (Clerk's backend API doesn't send verification emails automatically)
-    // For production: integrate Clerk's frontend SDK or use custom email service
-    console.log('✅ Marking email as verified for native mobile app');
-    try {
-      await client.emailAddresses.updateEmailAddress(emailAddress.id, {
-        verified: true,
-      });
-    } catch (updateError: any) {
-      console.error('⚠️ Failed to verify email:', updateError);
-      // Continue anyway - user can verify later
-    }
-
-    // Auto-create user profile in Supabase
-    try {
-      const supabase = createClient(supabaseUrl, supabaseServiceKey);
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .insert({
-          user_id: user.id,
-          first_name: firstName,
-          last_name: lastName,
-          display_name: `${firstName} ${lastName}`.trim(),
-          user_email: email,
-          updated_at: new Date().toISOString(),
-        });
-
-      if (profileError) {
-        console.error('⚠️ Failed to create profile:', profileError);
-      } else {
-        console.log('✅ User profile created in Supabase');
+    // Step 2: Prepare email verification (triggers Clerk to send email)
+    const verificationResponse = await fetch(
+      `https://api.clerk.com/v1/client/sign_ups/${signUpId}/prepare_verification`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${clerkPublishableKey}`,
+        },
+        body: JSON.stringify({
+          strategy: 'email_code',
+        }),
       }
-    } catch (profileErr) {
-      console.error('⚠️ Error creating profile:', profileErr);
+    );
+
+    if (!verificationResponse.ok) {
+      const errorData = await verificationResponse.json();
+      console.error('❌ Failed to prepare verification:', errorData);
+      throw new Error('Failed to send verification email');
     }
 
-    // Create sign-in token for immediate login
-    const signInToken = await client.signInTokens.createSignInToken({
-      userId: user.id,
-      expiresInSeconds: 2592000, // 30 days
-    });
-
-    console.log('✅ Sign-in token created');
+    console.log('📧 Verification email sent via Clerk');
 
     return NextResponse.json(
       {
         success: true,
-        token: signInToken.token,
-        userId: user.id,
+        needsVerification: true,
+        signUpId: signUpId,
         email: email,
-        message: 'Account created successfully',
+        message: 'Verification code sent to your email',
       },
       { headers: corsHeaders }
     );
   } catch (error: any) {
-    console.error('❌ Error creating user:', error);
+    console.error('❌ Error creating sign-up:', error);
     
     // Check for specific Clerk errors
     let errorMessage = 'Sign up failed';

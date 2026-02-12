@@ -77,11 +77,10 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
                 
                 // Check if email verification is needed
                 if (jsonResponse.optBoolean("needsVerification", false)) {
-                    val userId = jsonResponse.getString("userId")
+                    val signUpId = jsonResponse.getString("signUpId")
                     val userEmail = jsonResponse.getString("email")
-                    val emailAddressId = jsonResponse.getString("emailAddressId")
-                    Log.d("SignUpViewModel", "📧 Email verification required for: $userEmail (emailAddressId: $emailAddressId)")
-                    _uiState.value = SignUpUiState.NeedsVerification(userId, userEmail, emailAddressId)
+                    Log.d("SignUpViewModel", "📧 Email verification required for: $userEmail (signUpId: $signUpId)")
+                    _uiState.value = SignUpUiState.NeedsVerification(signUpId, userEmail)
                     return@launch
                 }
                 
@@ -107,16 +106,15 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun verifyEmail(userId: String, emailAddressId: String, code: String) {
+    fun verifyEmail(signUpId: String, code: String) {
         viewModelScope.launch {
             _uiState.value = SignUpUiState.Loading
             
             try {
-                Log.d("SignUpViewModel", "Verifying email with Clerk code: $code (emailAddressId: $emailAddressId)")
+                Log.d("SignUpViewModel", "Verifying email with Clerk code: $code (signUpId: $signUpId)")
                 
                 val json = JSONObject().apply {
-                    put("userId", userId)
-                    put("emailAddressId", emailAddressId)
+                    put("signUpId", signUpId)
                     put("code", code)
                 }
                 
@@ -182,7 +180,7 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
         data object SignedOut : SignUpUiState
         data object Loading : SignUpUiState
         data object Success : SignUpUiState
-        data class NeedsVerification(val userId: String, val email: String, val emailAddressId: String) : SignUpUiState
+        data class NeedsVerification(val signUpId: String, val email: String) : SignUpUiState
         data class Error(val message: String) : SignUpUiState
     }
 }
