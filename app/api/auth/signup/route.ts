@@ -4,7 +4,6 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const clerkPublishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -27,42 +26,54 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`📝 Creating sign-up via Frontend API: ${email}, username: ${username}`);
+    console.log(`📝 Creating user: ${email}, username: ${username}`);
 
-    // Step 1: Create sign_up using Clerk's Frontend API
-    const signUpResponse = await fetch('https://api.clerk.com/v1/client/sign_ups', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${clerkPublishableKey}`,
+    // Create user in Clerk (unverified)
+    const client = await clerkClient();
+    const user = await client.users.createUser({
+      emailAddress: [email],
+      password: password,
+      username: username,
+      firstName: firstName,
+      lastName: lastName,
+      skipPasswordChecks: false,
+      skipPasswordRequirement: false,
+      publicMetadata: {
+        auth_method: 'email_password',
+        email_verified: false,
       },
-      body: JSON.stringify({
-        email_address: email,
-        password: password,
-        username: username,
-        first_name: firstName,
-        last_name: lastName,
-      }),
     });
 
-    if (!signUpResponse.ok) {
-      const errorData = await signUpResponse.json();
-      console.error('❌ Frontend API sign-up failed:', errorData);
-      throw new Error(errorData.errors?.[0]?.message || 'Sign up failed');
-    }
+    console.log('✅ User created in Clerk:', user.id);
 
-    const signUpData = await signUpResponse.json();
-    const signUpId = signUpData.id;
-    
-    console.log('✅ Sign-up created:', signUpId);
+    // Generate 6-digit verification code
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + (15 * 60 * 1000); // 15 minutes
 
-    // Step 2: Prepare email verification (triggers Clerk to send email)
-    const verificationResponse = await fetch(
-      `https://api.clerk.com/v1/client/sign_ups/${signUpId}/prepare_verification`,
+    // Store code in user metadata
+    await client.users.updateUser(user.id, {
+      publicMetadata: {
+        ...user.publicMetadata,
+        verification_code: verificationCode,
+        verification_expires: expiresAt,
+      },
+    });
+
+    console.log(`📧 Verification code for ${email}: ${verificationCode}`);
+    console.log('⚠️ TODO: Send this via email service (Resend/SendGrid)');
+
+    return NextResponse.json(
       {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+        success: true,
+        needsVerification: true,
+        userId: user.id,
+        email: email,
+        message: 'Verification code sent to your email',
+      },
+      { headers: corsHeaders }
+    );
+  } catch (error: any) {
+    console.error('❌ Error creating user:', error);
           'Authorization': `Bearer ${clerkPublishableKey}`,
         },
         body: JSON.stringify({
