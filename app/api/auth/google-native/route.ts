@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const { email, sub: googleId, name, picture } = payload;
     console.log(`📧 Email from token:`, email);
     console.log(`🆔 Google ID:`, googleId);
 
@@ -129,6 +130,7 @@ export async function POST(request: NextRequest) {
     try {
       signInToken = await clerk.signInTokens.createSignInToken({
         userId: user.id,
+        expiresInSeconds: 86400, // 24 hours
       });
       console.log('✅ Sign-in token created:', signInToken.id);
     } catch (error: any) {
