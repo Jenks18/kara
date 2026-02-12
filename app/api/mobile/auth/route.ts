@@ -68,6 +68,15 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Check if session exists
+    if (!session) {
+      console.error('No session returned from Supabase sign-in');
+      return NextResponse.json(
+        { error: 'Failed to create database session' },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({
       success: true,
       supabase_token: session.access_token,
