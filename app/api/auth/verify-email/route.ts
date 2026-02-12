@@ -123,14 +123,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-      { headers: corsHeaders }
-    );
-  } catch (error: any) {
-    console.error('❌ Error verifying email:', error);
-    
-    return NextResponse.json(
-      { error: 'Verification failed' },
-      { status: 500, headers: corsHeaders }
-    );
-  }
-}
