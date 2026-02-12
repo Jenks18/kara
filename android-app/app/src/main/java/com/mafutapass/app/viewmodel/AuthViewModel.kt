@@ -33,45 +33,28 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     
     private fun checkAuthState() {
         try {
-            Log.d("AuthViewModel", "Checking auth state...")
+            Log.d("AuthViewModel", "========== Checking auth state ==========")
             
             // Check if we have a stored token (our native OAuth approach)
             val storedToken = prefs.getString("session_token", null)
             val storedUserId = prefs.getString("user_id", null)
+            val storedEmail = prefs.getString("user_email", null)
+            
+            Log.d("AuthViewModel", "Token exists: ${storedToken != null}")
+            Log.d("AuthViewModel", "UserId exists: ${storedUserId != null}")
+            Log.d("AuthViewModel", "Email: $storedEmail")
             
             if (storedToken != null && storedUserId != null) {
-                Log.d("AuthViewModel", "✓ Found stored session token for user: $storedUserId")
+                Log.d("AuthViewModel", "✅ Found stored session - Setting SignedIn")
                 _authState.value = AuthState.SignedIn
+                Log.d("AuthViewModel", "Current state value: ${_authState.value}")
                 return
             }
             
-            Log.d("AuthViewModel", "No stored token, setting SignedOut")
+            Log.d("AuthViewModel", "❌ No stored token - Setting SignedOut")
             _authState.value = AuthState.SignedOut
+            Log.d("AuthViewModel", "Current state value: ${_authState.value}")
             
-            // Skip Clerk SDK flow monitoring for now to avoid crashes
-            return
-            
-            /* Disabled to prevent crashes
-            // Fallback: Monitor Clerk SDK flows (for web-based OAuth)
-            combine(Clerk.isInitialized, Clerk.userFlow, Clerk.sessionFlow) { isInitialized, user, session ->
-                Log.d("AuthViewModel", "Auth state update - initialized: $isInitialized, user: ${user?.id}, session: ${session?.id}")
-                _authState.value = when {
-                    !isInitialized -> {
-                        Log.d("AuthViewModel", "State: Loading (not initialized)")
-                        AuthState.Loading
-                    }
-                    user != null && session != null -> {
-                        Log.d("AuthViewModel", "✓ State: SignedIn (user: ${user.id}, session: ${session.id})")
-                        AuthState.SignedIn
-                    }
-                    else -> {
-                        Log.d("AuthViewModel", "State: SignedOut (no active session)")
-                        AuthState.SignedOut
-                    }
-                }
-            }
-            .launchIn(viewModelScope)
-            */
         } catch (e: Exception) {
             Log.e("AuthViewModel", "❌ Error in checkAuthState", e)
             _authState.value = AuthState.SignedOut
@@ -79,23 +62,34 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     }
     
     fun refreshAuthState() {
-        Log.d("AuthViewModel", "Refreshing auth state...")
+        Log.d("AuthViewModel", "📱 refreshAuthState() called")
         checkAuthState()
     }
 
     fun signOut() {
         try {
-            Log.d("AuthViewModel", "🚪 Signing out...")
+            Log.d("AuthViewModel", "========== SIGN OUT INITIATED ==========")
             
-            // Clear stored token and user data immediately
-            prefs.edit().clear().apply()
+            // Log current state before clearing
+            val tokenBefore = prefs.getString("session_token", null)
+            Log.d("AuthViewModel", "Token before clear: ${if (tokenBefore != null) "EXISTS" else "NULL"}")
             
-            Log.d("AuthViewModel", "🗑️ Cleared SharedPreferences")
+            // Clear stored token and user data using commit() for synchronous write
+            val cleared = prefs.edit()
+                .clear()
+                .commit()  // Use commit() instead of apply() for immediate sync write
+            
+            Log.d("AuthViewModel", "SharedPreferences cleared: $cleared")
+            
+            // Verify it was cleared
+            val tokenAfter = prefs.getString("session_token", null)
+            Log.d("AuthViewModel", "Token after clear: ${if (tokenAfter != null) "STILL EXISTS!" else "NULL (good)"}")
             
             // Immediately update state
             _authState.value = AuthState.SignedOut
             
-            Log.d("AuthViewModel", "✅ Auth state set to SignedOut - should trigger UI update")
+            Log.d("AuthViewModel", "✅ Auth state set to: ${_authState.value}")
+            Log.d("AuthViewModel", "========== SIGN OUT COMPLETE ==========")
             
         } catch (e: Exception) {
             Log.e("AuthViewModel", "❌ Error during sign out", e)
