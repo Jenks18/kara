@@ -123,16 +123,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-        userId: user.id,
-        email: user.emailAddresses[0]?.emailAddress || '',
-        user: {
-          id: user.id,
-          email: user.emailAddresses[0]?.emailAddress || '',
-          firstName: user.firstName,
-          lastName: user.lastName,
-          username: user.username,
-        },
-      },
       { headers: corsHeaders }
     );
   } catch (error: any) {
