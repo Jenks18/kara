@@ -47,6 +47,40 @@ fun SignInOrUpScreen() {
     val oAuthViewModel: NativeOAuthViewModel = viewModel()
     val oauthState by oAuthViewModel.oauthState.collectAsState()
 
+    // Handle OAuth success - consume the sign-in token
+    LaunchedEffect(oauthState) {
+        if (oauthState is com.mafutapass.app.viewmodel.NativeOAuthState.Success) {
+            val successState = oauthState as com.mafutapass.app.viewmodel.NativeOAuthState.Success
+            val token = successState.sessionToken
+            
+            scope.launch {
+                try {
+                    android.util.Log.d("SignInScreen", "🎫 Attempting to consume sign-in token...")
+                    
+                    // Try to create a SignIn with the ticket using the map-based params
+                    SignIn.create(
+                        params = mapOf(
+                            "strategy" to "ticket",
+                            "ticket" to token
+                        )
+                    ).onSuccess {
+                        android.util.Log.d("SignInScreen", "✅ Session created from sign-in token!")
+                        // The Clerk.sessionFlow should now be active
+                        // AuthViewModel will detect the session and navigate
+                    }.onFailure { error ->
+                        android.util.Log.e("SignInScreen", "❌ Failed to create session from ticket")
+                        android.util.Log.e("SignInScreen", "Error details: $error")
+                        // Reset OAuth state so user can try again
+                        oAuthViewModel.resetState()
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("SignInScreen", "❌ Exception creating session from ticket: ${e.message}", e)
+                    oAuthViewModel.resetState()
+                }
+            }
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
