@@ -33,7 +33,7 @@ import com.clerk.api.network.serialization.onSuccess
 import com.clerk.api.network.serialization.onFailure
 import com.clerk.api.network.serialization.errorMessage
 import com.mafutapass.app.ui.theme.*
-import com.mafutapass.app.viewmodel.OAuthViewModel
+import com.mafutapass.app.viewmodel.NativeOAuthViewModel
 import com.mafutapass.app.viewmodel.SignInViewModel
 import com.mafutapass.app.viewmodel.SignUpViewModel
 import kotlinx.coroutines.launch
@@ -44,7 +44,7 @@ fun SignInOrUpScreen() {
     var isSignUp by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
-    val oAuthViewModel: OAuthViewModel = viewModel()
+    val oAuthViewModel: NativeOAuthViewModel = viewModel()
     val oauthState by oAuthViewModel.oauthState.collectAsState()
 
     Box(
@@ -99,7 +99,7 @@ fun SignInOrUpScreen() {
                     // Google Sign-In Button (using Credential Manager + Supabase ID token auth)
                     OutlinedButton(
                         onClick = { oAuthViewModel.signInWithGoogle(context) },
-                        enabled = oauthState !is com.mafutapass.app.viewmodel.OAuthState.Loading,
+                        enabled = oauthState !is com.mafutapass.app.viewmodel.NativeOAuthState.Loading,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(48.dp),
@@ -109,7 +109,7 @@ fun SignInOrUpScreen() {
                         ),
                         border = BorderStroke(1.dp, Gray300)
                     ) {
-                        if (oauthState is com.mafutapass.app.viewmodel.OAuthState.Loading) {
+                        if (oauthState is com.mafutapass.app.viewmodel.NativeOAuthState.Loading) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(20.dp),
                                 strokeWidth = 2.dp,
@@ -139,9 +139,9 @@ fun SignInOrUpScreen() {
                     }
                     
                     // Show error if OAuth failed
-                    if (oauthState is com.mafutapass.app.viewmodel.OAuthState.Error) {
+                    if (oauthState is com.mafutapass.app.viewmodel.NativeOAuthState.Error) {
                         Text(
-                            text = (oauthState as com.mafutapass.app.viewmodel.OAuthState.Error).message,
+                            text = (oauthState as com.mafutapass.app.viewmodel.NativeOAuthState.Error).message,
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.fillMaxWidth()
