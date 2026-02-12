@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
 
     console.log(`📝 Creating user: ${email}, username: ${username}`);
 
-    // Create user in Clerk - mark as unverified initially
+    // Create user in Clerk with unverified email
     const client = await clerkClient();
     const user = await client.users.createUser({
       emailAddress: [email],
@@ -40,31 +40,27 @@ export async function POST(request: NextRequest) {
       skipPasswordRequirement: false,
       publicMetadata: {
         auth_method: 'email_password',
-        email_verified: false, // Track verification in metadata
       },
     });
 
     console.log('✅ User created in Clerk:', user.id);
 
-    // Generate verification code
-    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    // Get the email address object
+    const emailAddress = user.emailAddresses.find(e => e.emailAddress === email);
     
-    // Store verification code in Clerk's public metadata (expires in 15 minutes)
-    await client.users.updateUser(user.id, {
-      publicMetadata: {
-        ...user.publicMetadata,
-        verification_code: verificationCode,
-        verification_expires: Date.now() + (15 * 60 * 1000), // 15 minutes
-      },
+    if (!emailAddress) {
+      throw new Error('Email address not found in user object');
+    }
+
+    // Trigger Clerk's email verification
+    console.log('📧 Sending verification email via Clerk...');
+    await client.emailAddresses.createEmailAddress({
+      userId: user.id,
     });
 
-    console.log('✅ Verification code generated');
+    // The email address is created but unverified - Clerk will send verification email
 
-    // TODO: Send verification email (using Resend, SendGrid, or another service)
-    // For now, log it (in production, you'd send an actual email)
-    console.log(`📧 Verification code for ${email}: ${verificationCode}`);
-
-    // Auto-create user profile in Supabase (but mark as unverified)
+    // Auto-create user profile in Supabase
     try {
       const supabase = createClient(supabaseUrl, supabaseServiceKey);
       const { error: profileError } = await supabase
@@ -93,7 +89,8 @@ export async function POST(request: NextRequest) {
         needsVerification: true,
         userId: user.id,
         email: email,
-        message: 'Verification code sent to your email',
+        emailAddressId: emailAddress.id,
+        message: 'Verification email sent. Please check your inbox.',
       },
       { headers: corsHeaders }
     );
