@@ -43,9 +43,9 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
     
     companion object {
         private const val TAG = "NativeOAuthViewModel"
-        // Use latest Vercel deployment URL
-        private const val API_URL = "https://kara-8pevyn7p9-jenks18s-projects.vercel.app/api/auth/google-native"
-        private const val MOBILE_AUTH_URL = "https://kara-8pevyn7p9-jenks18s-projects.vercel.app/api/mobile/auth"
+        // Use latest Vercel deployment URL (with TypeScript fixes)
+        private const val API_URL = "https://kara-kq9osh8ze-jenks18s-projects.vercel.app/api/auth/google-native"
+        private const val MOBILE_AUTH_URL = "https://kara-kq9osh8ze-jenks18s-projects.vercel.app/api/mobile/auth"
         private const val GOOGLE_CLIENT_ID = "509785450495-ltsejjolpsl130pvs179lnqtms0g2uj8.apps.googleusercontent.com"
     }
 
