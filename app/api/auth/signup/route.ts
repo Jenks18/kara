@@ -54,17 +54,10 @@ export async function POST(request: NextRequest) {
 
     console.log('📧 Email address ID:', emailAddress.id);
 
-    // Trigger Clerk to send verification email using Backend API
-    try {
-      await client.emailAddresses.updateEmailAddress(emailAddress.id, {
-        // This triggers Clerk to send verification email
-        unverified: true,
-      });
-      console.log('📧 Clerk verification email triggered');
-    } catch (emailError: any) {
-      console.error('⚠️ Failed to trigger email:', emailError);
-      // User created but email not sent - they can retry
-    }
+    // Note: Clerk's Backend API cannot trigger verification emails
+    // This requires Frontend API or webhooks
+    // For now, verification will be manual (any code accepted)
+    console.log('⚠️ Email verification will be manual (Clerk Backend API limitation)');
 
     return NextResponse.json(
       {
@@ -73,7 +66,7 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         email: email,
         emailAddressId: emailAddress.id,
-        message: 'Verification email sent. Please check your inbox.',
+        message: 'Account created. Enter any 6-digit code to continue (verification coming soon).',
       },
       { headers: corsHeaders }
     );
