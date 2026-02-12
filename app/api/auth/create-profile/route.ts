@@ -90,23 +90,11 @@ export async function POST(request: NextRequest) {
     // This is MORE SECURE than service role key - function has limited scope
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
     
-    // Check if profile already exists
-    const { data: existingProfile } = await supabase
-      .from('user_profiles')
-      .select('id')
-      .eq('clerk_user_id', clerkUserId)
-      .single();
-
-    if (existingProfile) {
-      console.log('✅ Profile already exists');
-      return NextResponse.json(
-        { success: true, message: 'Profile already exists' },
-        { headers: corsHeaders }
-      );
-    }
-
     // Create new profile using secure function (bypasses RLS with minimal privileges)
+    // Don't check if exists first - RLS would block it. Let function handle duplicates.
     const fullName = [firstName, lastName].filter(Boolean).join(' ') || null;
+    
+    console.log(`📝 Calling create_user_profile RPC for: ${email}`);
     
     const { data: profile, error: profileError } = await supabase
       .rpc('create_user_profile', {
