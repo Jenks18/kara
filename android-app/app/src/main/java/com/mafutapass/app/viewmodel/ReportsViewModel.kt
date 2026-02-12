@@ -6,14 +6,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mafutapass.app.data.ExpenseItem
 import com.mafutapass.app.data.ExpenseReport
-import com.mafutapass.app.data.Repository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class ReportsViewModel : ViewModel() {
     private val TAG = "ReportsViewModel"
-    private val repository = Repository()
 
     private val _expenseItems = MutableStateFlow<List<ExpenseItem>>(emptyList())
     val expenseItems: StateFlow<List<ExpenseItem>> = _expenseItems
@@ -28,7 +26,12 @@ class ReportsViewModel : ViewModel() {
     val error: StateFlow<String?> = _error
 
     init {
-        fetchExpenseData()
+        try {
+            fetchExpenseData()
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start data fetch: ${e.message}", e)
+            _error.value = "Failed to initialize"
+        }
     }
 
     private fun fetchExpenseData() {
@@ -49,6 +52,9 @@ class ReportsViewModel : ViewModel() {
             } catch (e: Exception) {
                 Log.e(TAG, "❌ Error fetching expense data: ${e.message}", e)
                 _error.value = e.message ?: "Failed to load data"
+                // Set empty lists even on error
+                _expenseReports.value = emptyList()
+                _expenseItems.value = emptyList()
             } finally {
                 _isLoading.value = false
             }

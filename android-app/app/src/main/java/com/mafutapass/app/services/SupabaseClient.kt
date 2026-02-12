@@ -26,27 +26,33 @@ object SupabaseDataClient {
      * Initialize or update the Supabase client with auth token
      */
     fun init(context: Context) {
-        val prefs = context.getSharedPreferences("clerk_session", Context.MODE_PRIVATE)
-        val token = prefs.getString("supabase_token", null)
-        
-        // Only reinitialize if token changed
-        if (token != currentToken) {
-            currentToken = token
-            Log.d(TAG, "Initializing Supabase client with ${if (token != null) "auth token" else "no token"}")
+        try {
+            val prefs = context.getSharedPreferences("clerk_session", Context.MODE_PRIVATE)
+            val token = prefs.getString("supabase_token", null)
             
-            client = createSupabaseClient(
-                supabaseUrl = SUPABASE_URL,
-                supabaseKey = SUPABASE_ANON_KEY
-            ) {
-                install(Postgrest)
-                install(Auth) {
-                    // Set the access token from SharedPreferences
-                    token?.let {
-                        autoSaveToStorage = false
-                        autoLoadFromStorage = false
+            // Only reinitialize if token changed
+            if (token != currentToken) {
+                currentToken = token
+                Log.d(TAG, "Initializing Supabase client with ${if (token != null) "auth token" else "no token"}")
+                
+                client = createSupabaseClient(
+                    supabaseUrl = SUPABASE_URL,
+                    supabaseKey = SUPABASE_ANON_KEY
+                ) {
+                    install(Postgrest)
+                    install(Auth) {
+                        // Set the access token from SharedPreferences
+                        token?.let {
+                            autoSaveToStorage = false
+                            autoLoadFromStorage = false
+                        }
                     }
                 }
             }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to initialize Supabase client: ${e.message}", e)
+            client = null
+            currentToken = null
         }
     }
     

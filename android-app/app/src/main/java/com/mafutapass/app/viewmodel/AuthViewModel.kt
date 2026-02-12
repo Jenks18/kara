@@ -21,7 +21,12 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     private val prefs = application.getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
     
     init {
-        checkAuthState()
+        try {
+            checkAuthState()
+        } catch (e: Exception) {
+            Log.e("AuthViewModel", "Error initializing auth state", e)
+            _authState.value = AuthState.SignedOut
+        }
     }
     
     private fun checkAuthState() {
