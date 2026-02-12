@@ -51,7 +51,7 @@ fun SignInOrUpScreen() {
     LaunchedEffect(oauthState) {
         if (oauthState is com.mafutapass.app.viewmodel.NativeOAuthState.Success) {
             val successState = oauthState as com.mafutapass.app.viewmodel.NativeOAuthState.Success
-            val token = successState.sessionToken
+            val token = successState.token
             val userId = successState.userId
             val email = successState.email
             
@@ -67,22 +67,10 @@ fun SignInOrUpScreen() {
             android.util.Log.d("SignInScreen", "✅ Session token stored successfully!")
             android.util.Log.d("SignInScreen", "User: $email (ID: $userId)")
             android.util.Log.d("SignInScreen", "Token: ${token.take(30)}...")
+            android.util.Log.d("SignInScreen", "💡 Token ready for API calls")
             
-            // Don't try to consume with Clerk SDK - the SDK has issues
-            // The token is already valid and can be used for API calls
-            // Let's manually trigger the Clerk state by signing in with the token
-            
-            scope.launch {
-                try {
-                    // Try to use Clerk.setSession() if available
-                    android.util.Log.d("SignInScreen", "🔄 Setting Clerk session...")
-                    Clerk.setSession(token)
-                    android.util.Log.d("SignInScreen", "✅ Clerk session set!")
-                } catch (e: Exception) {
-                    android.util.Log.e("SignInScreen", "⚠️  Could not set Clerk session: ${e.message}")
-                    android.util.Log.d("SignInScreen", "💡 Will use token directly for API calls")
-                }
-            }
+            // Don't use Clerk SDK - it has session management issues
+            // The token is stored and can be used directly for authenticated API calls
         }
     }
 

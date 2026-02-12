@@ -43,8 +43,8 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
     
     companion object {
         private const val TAG = "NativeOAuthViewModel"
-        // Native Google OAuth endpoint
-        private const val API_URL = "https://mafutapass.com/api/auth/google-native"
+        // Use direct Vercel deployment URL (custom domain has routing issues)
+        private const val API_URL = "https://kara-qg6a26u7c-jenks18s-projects.vercel.app/api/auth/google-native"
         private const val GOOGLE_CLIENT_ID = "509785450495-ltsejjolpsl130pvs179lnqtms0g2uj8.apps.googleusercontent.com"
     }
 
@@ -156,8 +156,12 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
                 Pair(resp, body)
             }
 
+            Log.d(TAG, "📥 Response code: ${response.code}")
+            Log.d(TAG, "📥 Response body: $responseBody")
+
             if (!response.isSuccessful) {
-                Log.e(TAG, "❌ Backend error: $responseBody")
+                Log.e(TAG, "❌ Backend HTTP error ${response.code}")
+                Log.e(TAG, "❌ Error body: $responseBody")
                 _oauthState.value = NativeOAuthState.Error("Server error: ${response.code}")
                 return
             }
@@ -171,8 +175,9 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
                 return
             }
 
-            // Backend may return either sessionToken or signInToken depending on what worked
-            val token = jsonResponse.optString("sessionToken", null) 
+            // Backend returns "token" field (Clerk sign-in token)
+            val token = jsonResponse.optString("token", null) 
+                ?: jsonResponse.optString("sessionToken", null)
                 ?: jsonResponse.optString("signInToken", null)
             
             if (token == null) {
@@ -211,6 +216,6 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
 sealed class NativeOAuthState {
     object Idle : NativeOAuthState()
     object Loading : NativeOAuthState()
-    data class Success(val sessionToken: String, val userId: String, val email: String) : NativeOAuthState()
+    data class Success(val token: String, val userId: String, val email: String) : NativeOAuthState()
     data class Error(val message: String) : NativeOAuthState()
 }

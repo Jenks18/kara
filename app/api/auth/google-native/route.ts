@@ -130,16 +130,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create a fresh session (don't reuse old sessions - they can't generate JWTs)
-    console.log(`🎫 Creating fresh session for user ${user.id}`);
-    let session;
+    // Create a sign-in token (works in production, unlike createSession)
+    console.log(`🎫 Creating sign-in token for user ${user.id}`);
+    let signInToken;
     try {
-      session = await clerk.sessions.createSession({
+      signInToken = await clerk.signInTokens.createSignInToken({
         userId: user.id,
+        expiresInSeconds: 86400, // 24 hours
       });
-      console.log('✅ Session created:', session.id);
+      console.log('✅ Sign-in token created:', signInToken.id);
+      console.log('Token:', signInToken.token);
     } catch (error: any) {
-      console.error('❌ Failed to create session:', error.message);
+      console.error('❌ Failed to create sign-in token:', error.message);
       console.error('Full Clerk error:', JSON.stringify(error, null, 2));
       if (error.errors && Array.isArray(error.errors)) {
         console.error('Clerk error details:', JSON.stringify(error.errors, null, 2));
@@ -147,22 +149,13 @@ export async function POST(request: NextRequest) {
       throw error;
     }
 
-    // Get session JWT token
-    console.log('🔑 Getting session JWT token...');
-    let sessionToken;
-    try {
-      sessionToken = await clerk.sessions.getToken(session.id, 'clerk-session');
-      console.log('✅ Session JWT acquired');
-    } catch (error: any) {
-      console.error('❌ Failed to get session token:', error.message);
-      throw error;
-    }
-
-    console.log('🎉 Native auth completed successfully (session JWT)');
+    console.log('🎉 Native auth completed successfully (sign-in token)');
 
     return NextResponse.json({
       success: true,
-      sessionToken,
+      token: signInToken.token,
+      userId: user.id,
+      email: email,
       user: {
         id: user.id,
         email: user.emailAddresses[0]?.emailAddress,
