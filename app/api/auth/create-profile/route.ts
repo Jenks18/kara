@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { clerkClient } from '@clerk/nextjs/server';
-import { createClient } from '@/lib/supabase/server';
+import { createServerClient } from '@/lib/supabase/server-client';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create Supabase profile
-    const supabase = await createClient();
+    const supabase = await createServerClient();
     
     // Check if profile already exists
     const { data: existingProfile } = await supabase
