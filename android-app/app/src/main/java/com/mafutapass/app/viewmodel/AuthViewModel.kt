@@ -22,15 +22,19 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     
     init {
         try {
+            Log.d("AuthViewModel", "Initializing AuthViewModel...")
             checkAuthState()
+            Log.d("AuthViewModel", "✅ AuthViewModel initialized")
         } catch (e: Exception) {
-            Log.e("AuthViewModel", "Error initializing auth state", e)
+            Log.e("AuthViewModel", "❌ Error initializing auth state", e)
             _authState.value = AuthState.SignedOut
         }
     }
     
     private fun checkAuthState() {
         try {
+            Log.d("AuthViewModel", "Checking auth state...")
+            
             // Check if we have a stored token (our native OAuth approach)
             val storedToken = prefs.getString("session_token", null)
             val storedUserId = prefs.getString("user_id", null)
@@ -41,6 +45,13 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                 return
             }
             
+            Log.d("AuthViewModel", "No stored token, setting SignedOut")
+            _authState.value = AuthState.SignedOut
+            
+            // Skip Clerk SDK flow monitoring for now to avoid crashes
+            return
+            
+            /* Disabled to prevent crashes
             // Fallback: Monitor Clerk SDK flows (for web-based OAuth)
             combine(Clerk.isInitialized, Clerk.userFlow, Clerk.sessionFlow) { isInitialized, user, session ->
                 Log.d("AuthViewModel", "Auth state update - initialized: $isInitialized, user: ${user?.id}, session: ${session?.id}")
@@ -60,8 +71,9 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
             .launchIn(viewModelScope)
+            */
         } catch (e: Exception) {
-            Log.e("AuthViewModel", "Error in checkAuthState", e)
+            Log.e("AuthViewModel", "❌ Error in checkAuthState", e)
             _authState.value = AuthState.SignedOut
         }
     }

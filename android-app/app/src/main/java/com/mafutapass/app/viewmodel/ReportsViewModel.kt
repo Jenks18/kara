@@ -27,38 +27,26 @@ class ReportsViewModel : ViewModel() {
 
     init {
         try {
+            Log.d(TAG, "Initializing ReportsViewModel...")
             fetchExpenseData()
+            Log.d(TAG, "✅ ReportsViewModel initialized")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to start data fetch: ${e.message}", e)
+            Log.e(TAG, "❌ Failed to start data fetch: ${e.message}", e)
             _error.value = "Failed to initialize"
+            _isLoading.value = false
         }
     }
 
     private fun fetchExpenseData() {
-        viewModelScope.launch {
-            try {
-                _isLoading.value = true
-                _error.value = null
-                
-                Log.d(TAG, "🔄 Fetching expense data...")
-                
-                // For now, use empty data until Supabase is properly configured
-                // TODO: Implement Supabase data fetching once auth is stable
-                _expenseReports.value = emptyList()
-                _expenseItems.value = emptyList()
-                
-                Log.d(TAG, "✅ Data fetch complete")
-                
-            } catch (e: Exception) {
-                Log.e(TAG, "❌ Error fetching expense data: ${e.message}", e)
-                _error.value = e.message ?: "Failed to load data"
-                // Set empty lists even on error
-                _expenseReports.value = emptyList()
-                _expenseItems.value = emptyList()
-            } finally {
-                _isLoading.value = false
-            }
-        }
+        Log.d(TAG, "🔄 Fetching expense data...")
+        
+        // No async work, just set empty lists immediately
+        _expenseReports.value = emptyList()
+        _expenseItems.value = emptyList()
+        _isLoading.value = false
+        _error.value = null
+        
+        Log.d(TAG, "✅ Data fetch complete (empty lists)")
     }
     
     /**
