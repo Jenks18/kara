@@ -40,17 +40,24 @@ export async function POST(request: NextRequest) {
     console.log('📱 Native Google OAuth - Starting verification');
     console.log('Token length:', idToken.length);
     console.log('Token prefix:', idToken.substring(0, 50));
+    console.log('Request URL:', request.url);
+    console.log('Request method:', request.method);
 
     // Verify Google ID token (without audience check - token signature is sufficient)
     // The token comes from Android Credential Manager which has a different audience
     let ticket;
     try {
+      console.log('🔍 Calling Google verifyIdToken...');
       ticket = await googleClient.verifyIdToken({
         idToken,
       });
       console.log('✅ Google token verified successfully');
     } catch (error: any) {
-      console.error('❌ Google token verification failed:', error.message);
+      console.error('❌ Google token verification failed');
+      console.error('Error name:', error.name);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      console.error('Full error:', JSON.stringify(error, null, 2));
       throw error;
     }
 
