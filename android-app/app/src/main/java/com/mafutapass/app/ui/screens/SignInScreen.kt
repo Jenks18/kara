@@ -55,20 +55,27 @@ fun SignInOrUpScreen() {
             val token = successState.token
             val userId = successState.userId
             val email = successState.email
+            val supabaseToken = successState.supabaseToken
             
-            // Store the token for API calls
+            // Store the tokens for API calls
             val prefs = context.getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
             prefs.edit().apply {
                 putString("session_token", token)
                 putString("user_id", userId)
                 putString("user_email", email)
+                if (supabaseToken != null) {
+                    putString("supabase_token", supabaseToken)
+                }
                 apply()
             }
             
-            android.util.Log.d("SignInScreen", "✅ Session token stored successfully!")
+            android.util.Log.d("SignInScreen", "✅ Tokens stored successfully!")
             android.util.Log.d("SignInScreen", "User: $email (ID: $userId)")
-            android.util.Log.d("SignInScreen", "Token: ${token.take(30)}...")
-            android.util.Log.d("SignInScreen", "💡 Token ready for API calls")
+            android.util.Log.d("SignInScreen", "Clerk token: ${token.take(30)}...")
+            if (supabaseToken != null) {
+                android.util.Log.d("SignInScreen", "Supabase token: ${supabaseToken.take(30)}...")
+            }
+            android.util.Log.d("SignInScreen", "💡 Tokens ready for API calls")
             
             // Refresh auth state to navigate to main app
             authViewModel.refreshAuthState()

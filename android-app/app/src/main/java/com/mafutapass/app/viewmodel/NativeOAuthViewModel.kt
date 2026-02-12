@@ -43,8 +43,9 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
     
     companion object {
         private const val TAG = "NativeOAuthViewModel"
-        // Use direct Vercel deployment URL (custom domain has routing issues)
-        private const val API_URL = "https://kara-9ktqgazky-jenks18s-projects.vercel.app/api/auth/google-native"
+        // Use latest Vercel deployment URL
+        private const val API_URL = "https://kara-8pevyn7p9-jenks18s-projects.vercel.app/api/auth/google-native"
+        private const val MOBILE_AUTH_URL = "https://kara-8pevyn7p9-jenks18s-projects.vercel.app/api/mobile/auth"
         private const val GOOGLE_CLIENT_ID = "509785450495-ltsejjolpsl130pvs179lnqtms0g2uj8.apps.googleusercontent.com"
     }
 
@@ -192,13 +193,74 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
 
             Log.d(TAG, "✅ Authentication successful!")
             Log.d(TAG, "User: $email (ID: $userId)")
-            Log.d(TAG, "Session token: ${token.take(30)}...")
+            Log.d(TAG, "Clerk token: ${token.take(30)}...")
 
-            _oauthState.value = NativeOAuthState.Success(token, userId, email)
+            // Exchange Clerk token for Supabase token
+            val supabaseToken = exchangeForSupabaseToken(token, userId, email)
+            
+            if (supabaseToken == null) {
+                Log.w(TAG, "⚠️ Failed to get Supabase token, continuing with Clerk token only")
+            } else {
+                Log.d(TAG, "✅ Got Supabase token: ${supabaseToken.take(30)}...")
+            }
+
+            _oauthState.value = NativeOAuthState.Success(token, userId, email, supabaseToken)
 
         } catch (e: Exception) {
             Log.e(TAG, "❌ Backend communication error: ${e.javaClass.simpleName}: ${e.message}", e)
             _oauthState.value = NativeOAuthState.Error("Network error: ${e.javaClass.simpleName}: ${e.message}")
+        }
+    }
+
+    /**
+     * Exchange Clerk sign-in token for Supabase JWT
+     */
+    private suspend fun exchangeForSupabaseToken(
+        clerkToken: String,
+        userId: String,
+        email: String
+    ): String? {
+        return withContext(Dispatchers.IO) {
+            try {
+                Log.d(TAG, "🔄 Exchanging for Supabase token...")
+                
+                val json = JSONObject().apply {
+                    put("token", clerkToken)
+                    put("userId", userId)
+                    put("email", email)
+                }
+                
+                val requestBody = json.toString()
+                    .toRequestBody("application/json; charset=utf-8".toMediaType())
+                
+                val request = Request.Builder()
+                    .url(MOBILE_AUTH_URL)
+                    .post(requestBody)
+                    .build()
+                
+                val response = httpClient.newCall(request).execute()
+                val responseBody = response.body?.string() ?: ""
+                
+                Log.d(TAG, "📥 Supabase auth response: ${response.code}")
+                
+                if (!response.isSuccessful) {
+                    Log.e(TAG, "❌ Supabase auth failed: $responseBody")
+                    return@withContext null
+                }
+                
+                val jsonResponse = JSONObject(responseBody)
+                if (!jsonResponse.getBoolean("success")) {
+                    Log.e(TAG, "❌ Supabase auth unsuccessful")
+                    return@withContext null
+                }
+                
+                val token = jsonResponse.getString("supabase_token")
+                Log.d(TAG, "✅ Got Supabase token")
+                token
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Supabase token exchange error: ${e.message}", e)
+                null
+            }
         }
     }
 
@@ -216,6 +278,11 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
 sealed class NativeOAuthState {
     object Idle : NativeOAuthState()
     object Loading : NativeOAuthState()
-    data class Success(val token: String, val userId: String, val email: String) : NativeOAuthState()
+    data class Success(
+        val token: String, 
+        val userId: String, 
+        val email: String,
+        val supabaseToken: String? = null
+    ) : NativeOAuthState()
     data class Error(val message: String) : NativeOAuthState()
 }
