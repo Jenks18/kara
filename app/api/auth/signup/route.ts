@@ -52,13 +52,19 @@ export async function POST(request: NextRequest) {
       throw new Error('Email address not found in user object');
     }
 
-    // Trigger Clerk's email verification
-    console.log('📧 Sending verification email via Clerk...');
-    await client.emailAddresses.createEmailAddress({
-      userId: user.id,
-    });
+    console.log('📧 Email address ID:', emailAddress.id);
 
-    // The email address is created but unverified - Clerk will send verification email
+    // Mark email as verified (Clerk's backend API doesn't send verification emails automatically)
+    // For production: integrate Clerk's frontend SDK or use custom email service
+    console.log('✅ Marking email as verified for native mobile app');
+    try {
+      await client.emailAddresses.updateEmailAddress(emailAddress.id, {
+        verified: true,
+      });
+    } catch (updateError: any) {
+      console.error('⚠️ Failed to verify email:', updateError);
+      // Continue anyway - user can verify later
+    }
 
     // Auto-create user profile in Supabase
     try {
@@ -83,14 +89,20 @@ export async function POST(request: NextRequest) {
       console.error('⚠️ Error creating profile:', profileErr);
     }
 
+    // Create sign-in token for immediate login
+    const signInToken = await client.signInTokens.createSignInToken({
+      userId: user.id,
+    });
+
+    console.log('✅ Sign-in token created');
+
     return NextResponse.json(
       {
         success: true,
-        needsVerification: true,
+        token: signInToken.token,
         userId: user.id,
         email: email,
-        emailAddressId: emailAddress.id,
-        message: 'Verification email sent. Please check your inbox.',
+        message: 'Account created successfully',
       },
       { headers: corsHeaders }
     );
