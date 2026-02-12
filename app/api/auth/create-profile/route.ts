@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { clerkClient } from '@clerk/nextjs/server';
-import { createServerClient } from '@/lib/supabase/server-client';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -75,8 +78,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create Supabase profile
-    const supabase = await createServerClient();
+    // Create Supabase profile using service role (bypasses RLS for user creation)
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
     // Check if profile already exists
     const { data: existingProfile } = await supabase
