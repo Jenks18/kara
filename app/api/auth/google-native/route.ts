@@ -130,26 +130,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create a real session and get the JWT token
-    console.log(`🎫 Creating session for user ${user.id}`);
+    // Create a fresh session (don't reuse old sessions - they can't generate JWTs)
+    console.log(`🎫 Creating fresh session for user ${user.id}`);
     let session;
     try {
-      // Check if user has existing sessions and get the most recent active one
-      const sessions = await clerk.sessions.getSessionList({ userId: user.id });
-      const activeSessions = sessions.data.filter(s => s.status === 'active');
-      
-      if (activeSessions.length > 0) {
-        console.log(`📌 Found ${activeSessions.length} active session (s), reusing most recent`);
-        session = activeSessions[0];
-      } else {
-        console.log('Creating new session...');
-        session = await clerk.sessions.createSession({
-          userId: user.id,
-        });
-      }
-      console.log('✅ Session ready:', session.id);
+      session = await clerk.sessions.createSession({
+        userId: user.id,
+      });
+      console.log('✅ Session created:', session.id);
     } catch (error: any) {
-      console.error('❌ Failed to get/create session:', error.message);
+      console.error('❌ Failed to create session:', error.message);
       console.error('Full Clerk error:', JSON.stringify(error, null, 2));
       if (error.errors && Array.isArray(error.errors)) {
         console.error('Clerk error details:', JSON.stringify(error.errors, null, 2));
