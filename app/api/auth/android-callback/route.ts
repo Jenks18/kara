@@ -29,10 +29,13 @@ export async function GET(request: NextRequest) {
 
     console.log('Android OAuth success - sending JWT to app');
 
-    // Send JWT to Android app via deep link
-    const deepLink = `mafutapass://auth?jwt=${jwt}`;
+    // Android Intent URI - more reliable than custom scheme
+    const intentUri = `intent://auth?jwt=${encodeURIComponent(jwt)}#Intent;scheme=mafutapass;package=com.mafutapass.app;end`;
     
-    // Use HTML with JavaScript for reliable redirect (302 doesn't work with custom schemes)
+    // Fallback deep link
+    const deepLink = `mafutapass://auth?jwt=${encodeURIComponent(jwt)}`;
+    
+    // Use HTML with multiple redirect attempts for maximum compatibility
     const html = `
 <!DOCTYPE html>
 <html>
@@ -65,55 +68,68 @@ export async function GET(request: NextRequest) {
       to { transform: rotate(360deg); }
     }
     h1 { margin: 0 0 10px 0; font-size: 24px; }
-    p { margin: 5px 0; opacity: 0.9; }
+    p { margin: 5px 0; opacity: 0.9; font-size: 16px; }
     button {
       margin-top: 20px;
-      padding: 12px 24px;
-      font-size: 16px;
+      padding: 14px 28px;
+      font-size: 18px;
+      font-weight: 600;
       color: white;
       background: rgba(255,255,255,0.2);
       border: 2px solid white;
-      border-radius: 8px;
+      border-radius: 12px;
       cursor: pointer;
+      display: none;
     }
-    button:hover {
-      background: rgba(255,255,255,0.3);
+    button:active {
+      background: rgba(255,255,255,0.4);
+      transform: scale(0.98);
     }
   </style>
 </head>
 <body>
-  <div class="spinner"></div>
+  <div class="spinner" id="spinner"></div>
   <h1>✅ Sign In Successful!</h1>
-  <p>Returning to MafutaPass app...</p>
-  <button onclick="tryAgain()" style="display: none;" id="retryBtn">Tap to Open App</button>
+  <p id="status">Returning to MafutaPass app...</p>
+  <button onclick="openApp()" id="openBtn">Open MafutaPass App</button>
   
   <script>
+    const intentUri = "${intentUri}";
     const deepLink = "${deepLink}";
-    let redirected = false;
+    let attemptCount = 0;
     
-    function tryAgain() {
-      window.location.href = deepLink;
+    function openApp() {
+      // Try intent URI first (most reliable on Android)
+      try {
+        window.location.href = intentUri;
+        attemptCount++;
+      } catch (e) {
+        // Fallback to deep link
+        window.location.href = deepLink;
+      }
     }
     
-    // Try to redirect immediately
-    window.location.href = deepLink;
-    redirected = true;
+    // Try opening immediately
+    openApp();
     
-    // Show manual button after 2 seconds if still here
+    // Show button after 1.5 seconds if still here
     setTimeout(function() {
       if (!document.hidden) {
-        document.getElementById('retryBtn').style.display = 'block';
-        document.querySelector('.spinner').style.display = 'none';
-        document.querySelector('p').textContent = 'If the app didn\\'t open automatically:';
+        document.getElementById('spinner').style.display = 'none';
+        document.getElementById('status').textContent = 'Tap below to open the app:';
+        document.getElementById('openBtn').style.display = 'block';
       }
-    }, 2000);
+    }, 1500);
     
-    // Detect if user returns to this page (redirect failed)
+    // Try again if user comes back to tab
+    let hidden = false;
     document.addEventListener('visibilitychange', function() {
-      if (!document.hidden && redirected) {
-        document.getElementById('retryBtn').style.display = 'block';
-        document.querySelector('.spinner').style.display = 'none';
+      if (!document.hidden && hidden && attemptCount === 1) {
+        // User came back - try again
+        document.getElementById('openBtn').style.display = 'block';
+        document.getElementById('spinner').style.display = 'none';
       }
+      hidden = document.hidden;
     });
   </script>
 </body>
