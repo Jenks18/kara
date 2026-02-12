@@ -46,8 +46,9 @@ fun SignInOrUpScreen() {
     val context = LocalContext.current
     val oAuthViewModel: NativeOAuthViewModel = viewModel()
     val oauthState by oAuthViewModel.oauthState.collectAsState()
+    val authViewModel: com.mafutapass.app.viewmodel.AuthViewModel = viewModel()
 
-    // Handle OAuth success - Store the token and let data flow
+    // Handle OAuth success - Store the token and trigger sign-in
     LaunchedEffect(oauthState) {
         if (oauthState is com.mafutapass.app.viewmodel.NativeOAuthState.Success) {
             val successState = oauthState as com.mafutapass.app.viewmodel.NativeOAuthState.Success
@@ -69,8 +70,8 @@ fun SignInOrUpScreen() {
             android.util.Log.d("SignInScreen", "Token: ${token.take(30)}...")
             android.util.Log.d("SignInScreen", "💡 Token ready for API calls")
             
-            // Don't use Clerk SDK - it has session management issues
-            // The token is stored and can be used directly for authenticated API calls
+            // Refresh auth state to navigate to main app
+            authViewModel.refreshAuthState()
         }
     }
 

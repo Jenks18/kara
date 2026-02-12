@@ -38,7 +38,20 @@ fun AccountScreen(
     onSignOut: () -> Unit = {}
 ) {
     val scope = rememberCoroutineScope()
-    val user by Clerk.userFlow.collectAsState(initial = null)
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val prefs = context.getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
+    
+    // Get stored user data (from our native OAuth)
+    val userEmail = prefs.getString("user_email", null)
+    val userId = prefs.getString("user_id", null)
+    
+    // Fallback to Clerk SDK user if available (for web OAuth)
+    val clerkUser by Clerk.userFlow.collectAsState(initial = null)
+    
+    // Use stored data first, fallback to Clerk SDK
+    val displayEmail = userEmail ?: clerkUser?.emailAddresses?.firstOrNull()?.emailAddress ?: "User"
+    val displayName = userEmail?.substringBefore("@") ?: clerkUser?.firstName ?: "User"
+    
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -79,18 +92,13 @@ fun AccountScreen(
                 
                 Column {
                     Text(
-                        text = user?.let { 
-                            listOfNotNull(
-                                it.firstName,
-                                it.lastName
-                            ).joinToString(" ").takeIf { name -> name.isNotBlank() }
-                        } ?: "Guest User",
+                        text = displayName,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = Gray900
                     )
                     Text(
-                        text = user?.emailAddresses?.firstOrNull()?.emailAddress ?: "user@example.com",
+                        text = displayEmail,
                         style = MaterialTheme.typography.bodyMedium,
                         color = Gray500
                     )
@@ -147,9 +155,7 @@ fun AccountScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { 
-                            scope.launch {
-                                Clerk.signOut()
-                            }
+                            onSignOut()
                         }
                 ) {
                     Row(

@@ -116,16 +116,23 @@ export async function POST(request: NextRequest) {
       // Create new Clerk user with Google as verified OAuth provider
       console.log(`🆕 Creating new Clerk user for ${email}`);
       try {
+        const firstName = name?.split(' ')[0] || email.split('@')[0];
+        const lastName = name?.split(' ').slice(1).join(' ') || '';
+        
         user = await clerk.users.createUser({
           emailAddress: [email],
-          firstName: name?.split(' ')[0],
-          lastName: name?.split(' ').slice(1).join(' '),
+          firstName: firstName,
+          lastName: lastName.length > 0 ? lastName : undefined,
           skipPasswordChecks: true, // OAuth user doesn't need password
           skipPasswordRequirement: true,
         });
         console.log('✅ User created successfully:', user.id);
       } catch (error: any) {
         console.error('❌ Failed to create user:', error.message);
+        console.error('Full Clerk error:', JSON.stringify(error, null, 2));
+        if (error.errors && Array.isArray(error.errors)) {
+          console.error('Clerk error details:', JSON.stringify(error.errors, null, 2));
+        }
         throw error;
       }
     }

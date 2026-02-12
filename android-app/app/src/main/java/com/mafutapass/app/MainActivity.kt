@@ -18,6 +18,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
@@ -67,7 +70,15 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MafutaPassApp() {
-    val authViewModel: AuthViewModel = viewModel()
+    val context = LocalContext.current
+    val authViewModel: AuthViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                @Suppress("UNCHECKED_CAST")
+                return AuthViewModel(context.applicationContext as android.app.Application) as T
+            }
+        }
+    )
     val authState by authViewModel.authState.collectAsState()
     val navController = rememberNavController()
 
