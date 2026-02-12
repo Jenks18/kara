@@ -92,6 +92,7 @@ export async function POST(request: NextRequest) {
     // Create sign-in token for immediate login
     const signInToken = await client.signInTokens.createSignInToken({
       userId: user.id,
+      expiresInSeconds: 2592000, // 30 days
     });
 
     console.log('✅ Sign-in token created');
