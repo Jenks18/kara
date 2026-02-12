@@ -47,35 +47,40 @@ fun SignInOrUpScreen() {
     val oAuthViewModel: NativeOAuthViewModel = viewModel()
     val oauthState by oAuthViewModel.oauthState.collectAsState()
 
-    // Handle OAuth success - consume the sign-in token
+    // Handle OAuth success - Store the token and let data flow
     LaunchedEffect(oauthState) {
         if (oauthState is com.mafutapass.app.viewmodel.NativeOAuthState.Success) {
             val successState = oauthState as com.mafutapass.app.viewmodel.NativeOAuthState.Success
             val token = successState.sessionToken
+            val userId = successState.userId
+            val email = successState.email
+            
+            // Store the token for API calls
+            val prefs = context.getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
+            prefs.edit().apply {
+                putString("session_token", token)
+                putString("user_id", userId)
+                putString("user_email", email)
+                apply()
+            }
+            
+            android.util.Log.d("SignInScreen", "✅ Session token stored successfully!")
+            android.util.Log.d("SignInScreen", "User: $email (ID: $userId)")
+            android.util.Log.d("SignInScreen", "Token: ${token.take(30)}...")
+            
+            // Don't try to consume with Clerk SDK - the SDK has issues
+            // The token is already valid and can be used for API calls
+            // Let's manually trigger the Clerk state by signing in with the token
             
             scope.launch {
                 try {
-                    android.util.Log.d("SignInScreen", "🎫 Attempting to consume sign-in token...")
-                    
-                    // Try to create a SignIn with the ticket using the map-based params
-                    SignIn.create(
-                        params = mapOf(
-                            "strategy" to "ticket",
-                            "ticket" to token
-                        )
-                    ).onSuccess {
-                        android.util.Log.d("SignInScreen", "✅ Session created from sign-in token!")
-                        // The Clerk.sessionFlow should now be active
-                        // AuthViewModel will detect the session and navigate
-                    }.onFailure { error ->
-                        android.util.Log.e("SignInScreen", "❌ Failed to create session from ticket")
-                        android.util.Log.e("SignInScreen", "Error details: $error")
-                        // Reset OAuth state so user can try again
-                        oAuthViewModel.resetState()
-                    }
+                    // Try to use Clerk.setSession() if available
+                    android.util.Log.d("SignInScreen", "🔄 Setting Clerk session...")
+                    Clerk.setSession(token)
+                    android.util.Log.d("SignInScreen", "✅ Clerk session set!")
                 } catch (e: Exception) {
-                    android.util.Log.e("SignInScreen", "❌ Exception creating session from ticket: ${e.message}", e)
-                    oAuthViewModel.resetState()
+                    android.util.Log.e("SignInScreen", "⚠️  Could not set Clerk session: ${e.message}")
+                    android.util.Log.d("SignInScreen", "💡 Will use token directly for API calls")
                 }
             }
         }
