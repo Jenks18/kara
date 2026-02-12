@@ -1,20 +1,19 @@
 
 package com.mafutapass.app.viewmodel
 
-import android.app.Application
 import android.util.Log
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mafutapass.app.data.ExpenseItem
 import com.mafutapass.app.data.ExpenseReport
-import com.mafutapass.app.services.ExpenseDataService
+import com.mafutapass.app.data.Repository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class ReportsViewModel(application: Application) : AndroidViewModel(application) {
+class ReportsViewModel : ViewModel() {
     private val TAG = "ReportsViewModel"
-    private val dataService = ExpenseDataService(application.applicationContext)
+    private val repository = Repository()
 
     private val _expenseItems = MutableStateFlow<List<ExpenseItem>>(emptyList())
     val expenseItems: StateFlow<List<ExpenseItem>> = _expenseItems
@@ -38,16 +37,14 @@ class ReportsViewModel(application: Application) : AndroidViewModel(application)
                 _isLoading.value = true
                 _error.value = null
                 
-                Log.d(TAG, "🔄 Fetching expense data from Supabase...")
+                Log.d(TAG, "🔄 Fetching expense data...")
                 
-                // Fetch reports and items from Supabase
-                val reports = dataService.getExpenseReports()
-                val items = dataService.getAllExpenseItems()
+                // For now, use empty data until Supabase is properly configured
+                // TODO: Implement Supabase data fetching once auth is stable
+                _expenseReports.value = emptyList()
+                _expenseItems.value = emptyList()
                 
-                _expenseReports.value = reports
-                _expenseItems.value = items
-                
-                Log.d(TAG, "✅ Loaded ${reports.size} reports and ${items.size} items")
+                Log.d(TAG, "✅ Data fetch complete")
                 
             } catch (e: Exception) {
                 Log.e(TAG, "❌ Error fetching expense data: ${e.message}", e)

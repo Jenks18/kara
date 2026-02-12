@@ -54,8 +54,11 @@ object SupabaseDataClient {
      * Get the Supabase client instance
      * Make sure to call init() first
      */
-    fun getClient(): SupabaseClient {
-        return client ?: throw IllegalStateException("SupabaseDataClient not initialized. Call init() first.")
+    fun getClient(): SupabaseClient? {
+        if (client == null) {
+            Log.w(TAG, "SupabaseDataClient not initialized yet")
+        }
+        return client
     }
     
     /**

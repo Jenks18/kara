@@ -27,6 +27,10 @@ class ExpenseDataService(private val context: Context) {
             }
             
             val client = SupabaseDataClient.getClient()
+            if (client == null) {
+                Log.w(TAG, "Supabase client not available")
+                return emptyList()
+            }
             
             Log.d(TAG, "Fetching expense reports from Supabase...")
             
@@ -55,6 +59,10 @@ class ExpenseDataService(private val context: Context) {
             }
             
             val client = SupabaseDataClient.getClient()
+            if (client == null) {
+                Log.w(TAG, "Supabase client not available")
+                return emptyList()
+            }
             
             Log.d(TAG, "Fetching expense items for report $reportId...")
             
@@ -84,6 +92,10 @@ class ExpenseDataService(private val context: Context) {
             }
             
             val client = SupabaseDataClient.getClient()
+            if (client == null) {
+                Log.w(TAG, "Supabase client not available")
+                return emptyList()
+            }
             
             Log.d(TAG, "Fetching all expense items...")
             
@@ -112,6 +124,10 @@ class ExpenseDataService(private val context: Context) {
             }
             
             val client = SupabaseDataClient.getClient()
+            if (client == null) {
+                Log.w(TAG, "Supabase client not available")
+                return emptyList()
+            }
             
             Log.d(TAG, "Fetching workspaces...")
             
