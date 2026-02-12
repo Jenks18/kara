@@ -133,8 +133,31 @@ export async function POST(request: NextRequest) {
         if (error.errors && Array.isArray(error.errors)) {
           console.error('Clerk error details:', JSON.stringify(error.errors, null, 2));
         }
-        throw error;
+        
+        // If user creation failed, try searching again (might already exist with different email case)
+        console.log('🔄 Retrying user search...');
+        try {
+          const retryUsers = await clerk.users.getUserList({ emailAddress: [email] });
+          if (retryUsers.data.length > 0) {
+            user = retryUsers.data[0];
+            console.log('✅ Found user on retry:', user.id);
+          } else {
+            // Still can't find/create user
+            throw error;
+          }
+        } catch (retryError) {
+          console.error('❌ Retry also failed');
+          throw error;
+        }
       }
+    }
+    
+    if (!user) {
+      console.error('❌ No user found or created');
+      return NextResponse.json(
+        { error: 'Failed to authenticate user' },
+        { status: 500, headers: corsHeaders }
+      );
     }
 
     // Create a sign-in token (works in production, unlike createSession)
