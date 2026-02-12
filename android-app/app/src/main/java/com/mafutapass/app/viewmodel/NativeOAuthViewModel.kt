@@ -44,7 +44,7 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
     companion object {
         private const val TAG = "NativeOAuthViewModel"
         // Use direct Vercel deployment URL to bypass any caching/protection issues
-        private const val API_URL = "https://kara-9mndqx0ki-jenks18s-projects.vercel.app/api/auth/google-native"
+        private const val API_URL = "https://kara-3g01lwnms-jenks18s-projects.vercel.app/api/auth/google-native"
         private const val GOOGLE_CLIENT_ID = "509785450495-ltsejjolpsl130pvs179lnqtms0g2uj8.apps.googleusercontent.com"
     }
 
@@ -171,16 +171,25 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
                 return
             }
 
-            val sessionToken = jsonResponse.getString("sessionToken")
+            // Backend may return either sessionToken or signInToken depending on what worked
+            val token = jsonResponse.optString("sessionToken", null) 
+                ?: jsonResponse.optString("signInToken", null)
+            
+            if (token == null) {
+                Log.e(TAG, "❌ No token in response")
+                _oauthState.value = NativeOAuthState.Error("No authentication token received")
+                return
+            }
+            
             val userObj = jsonResponse.getJSONObject("user")
             val userId = userObj.getString("id")
             val email = userObj.optString("email", "")
 
             Log.d(TAG, "✅ Authentication successful!")
             Log.d(TAG, "User: $email (ID: $userId)")
-            Log.d(TAG, "Session token: ${sessionToken.take(30)}...")
+            Log.d(TAG, "Session token: ${token.take(30)}...")
 
-            _oauthState.value = NativeOAuthState.Success(sessionToken, userId, email)
+            _oauthState.value = NativeOAuthState.Success(token, userId, email)
 
         } catch (e: Exception) {
             Log.e(TAG, "❌ Backend communication error: ${e.javaClass.simpleName}: ${e.message}", e)

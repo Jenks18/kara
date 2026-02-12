@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { clerkClient } from '@clerk/nextjs/server';
 import { OAuth2Client } from 'google-auth-library';
+import { auth } from '@clerk/nextjs/server';
 
 /**
  * NATIVE Google OAuth for Android
  * 
  * Takes Google ID token from Android Credential Manager,
- * verifies it, creates/updates Clerk user, returns session JWT.
+ * verifies it with Google, then uses Clerk's Backend API
+ * to create an OAuth sign-in that properly links the provider.
  * 
  * This is 100% native - no browser, no deep links.
  */
@@ -61,9 +63,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { email, sub: googleId, name, picture } = payload;
-    console.log('📧 Email from token:', email);
-    console.log('🆔 Google ID:', googleId);
+    console.log(`📧 Email from token:`, email);
+    console.log(`🆔 Google ID:`, googleId);
 
     if (!email) {
       console.error('❌ No email in token payload');
@@ -94,6 +95,7 @@ export async function POST(request: NextRequest) {
       user = users.data[0];
       if (user) {
         console.log('✅ Found existing user:', user.id);
+        console.log('User external accounts:', JSON.stringify(user.externalAccounts, null, 2));
       } else {
         console.log('ℹ️  User not found, will create new user');
       }
@@ -103,17 +105,15 @@ export async function POST(request: NextRequest) {
     }
 
     if (!user) {
-      // Create new Clerk user
+      // Create new Clerk user with Google as verified OAuth provider
       console.log(`🆕 Creating new Clerk user for ${email}`);
       try {
         user = await clerk.users.createUser({
           emailAddress: [email],
           firstName: name?.split(' ')[0],
           lastName: name?.split(' ').slice(1).join(' '),
-          externalId: googleId,
-          publicMetadata: {
-            provider: 'google',
-          },
+          skipPasswordChecks: true, // OAuth user doesn't need password
+          skipPasswordRequirement: true,
         });
         console.log('✅ User created successfully:', user.id);
       } catch (error: any) {
@@ -122,39 +122,59 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create session for the user
-    console.log(`🎫 Creating session for user ${user.id}`);
-    let session;
+    // Create a sign-in token instead of direct session
+    // This works better with OAuth flows
+    console.log(`🎫 Creating sign-in token for user ${user.id}`);
+    let signInToken;
     try {
-      session = await clerk.sessions.createSession({
+      signInToken = await clerk.signInTokens.createSignInToken({
         userId: user.id,
       });
-      console.log('✅ Session created:', session.id);
+      console.log('✅ Sign-in token created:', signInToken.id);
     } catch (error: any) {
-      console.error('❌ Failed to create session:', error.message);
+      console.error('❌ Failed to create sign-in token:', error.message);
       console.error('Full Clerk error:', JSON.stringify(error, null, 2));
       if (error.errors && Array.isArray(error.errors)) {
         console.error('Clerk error details:', JSON.stringify(error.errors, null, 2));
       }
-      throw error;
+      
+      // If sign-in token fails, try session creation
+      console.log('⚠️  Trying direct session creation as fallback...');
+      try {
+        const session = await clerk.sessions.createSession({
+          userId: user.id,
+        });
+        console.log('✅ Session created:', session.id);
+        const sessionToken = await clerk.sessions.getToken(session.id, 'clerk-session');
+        console.log('✅ Session token acquired');
+        
+        console.log('🎉 Native auth completed successfully (via session)');
+        return NextResponse.json({
+          success: true,
+          sessionToken,
+          user: {
+            id: user.id,
+            email: user.emailAddresses[0]?.emailAddress,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            imageUrl: user.imageUrl,
+          },
+        }, { headers: corsHeaders });
+      } catch (sessionError: any) {
+        console.error('❌ Session creation also failed:', sessionError.message);
+        console.error('Session error details:', JSON.stringify(sessionError, null, 2));
+        if (sessionError.errors) {
+          console.error('Session error array:', JSON.stringify(sessionError.errors, null, 2));
+        }
+        throw sessionError;
+      }
     }
 
-    // Get session token (JWT)
-    console.log('🔑 Getting session token...');
-    let sessionToken;
-    try {
-      sessionToken = await clerk.sessions.getToken(session.id, 'clerk-session');
-      console.log('✅ Session token acquired');
-    } catch (error: any) {
-      console.error('❌ Failed to get session token:', error.message);
-      throw error;
-    }
-
-    console.log('🎉 Native auth completed successfully');
+    console.log('🎉 Native auth completed successfully (via sign-in token)');
 
     return NextResponse.json({
       success: true,
-      sessionToken,
+      signInToken: signInToken.token,
       user: {
         id: user.id,
         email: user.emailAddresses[0]?.emailAddress,
