@@ -4,11 +4,16 @@ import { NextResponse } from 'next/server'
 const isPublicRoute = createRouteMatcher([
   '/sign-in(.*)',
   '/sign-up(.*)',
-  '/api/auth/google-native',
+  '/api/auth/google-native(.*)',
 ])
 
 export default clerkMiddleware(
   async (auth, req) => {
+    // Allow public API routes without authentication
+    if (isPublicRoute(req)) {
+      return NextResponse.next()
+    }
+    
     // Redirect root to reports (inbox disabled)
     if (req.nextUrl.pathname === '/') {
       const { userId } = await auth()
@@ -21,10 +26,8 @@ export default clerkMiddleware(
       }
     }
     
-    // Protect all routes except sign-in and sign-up
-    if (!isPublicRoute(req)) {
-      await auth.protect()
-    }
+    // Protect all other routes
+    await auth.protect()
   }
 )
 
