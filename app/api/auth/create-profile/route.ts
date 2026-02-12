@@ -3,7 +3,7 @@ import { clerkClient, verifyToken } from '@clerk/nextjs/server';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -86,8 +86,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create Supabase profile using service role (bypasses RLS for user creation)
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Create Supabase profile using SECURITY DEFINER function
+    // This is MORE SECURE than service role key - function has limited scope
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
     
     // Check if profile already exists
     const { data: existingProfile } = await supabase
@@ -104,22 +105,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create new profile
+    // Create new profile using secure function (bypasses RLS with minimal privileges)
+    const fullName = [firstName, lastName].filter(Boolean).join(' ') || null;
+    
     const { data: profile, error: profileError } = await supabase
-      .from('user_profiles')
-      .insert({
-        clerk_user_id: clerkUserId,
-        email: email,
-        username: username || null,
-        first_name: firstName || null,
-        last_name: lastName || null,
-        avatar_url: null,
-      })
-      .select()
-      .single();
+      .rpc('create_user_profile', {
+        p_clerk_user_id: clerkUserId,
+        p_email: email,
+        p_full_name: fullName,
+        p_username: username || null,
+      });
 
     if (profileError) {
       console.error('❌ Failed to create profile:', profileError);
+      
+      // Check if it's a duplicate user error
+      if (profileError.message?.includes('already exists')) {
+        return NextResponse.json(
+          { success: true, message: 'Profile already exists' },
+          { headers: corsHeaders }
+        );
+      }
+      
       return NextResponse.json(
         { error: 'Failed to create profile', details: profileError.message },
         { status: 500, headers: corsHeaders }
@@ -132,7 +139,7 @@ export async function POST(request: NextRequest) {
       {
         success: true,
         userId: clerkUserId,
-        profileId: profile.id,
+        profileId: profile?.id,
       },
       { headers: corsHeaders }
     );
