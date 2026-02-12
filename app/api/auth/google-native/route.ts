@@ -13,6 +13,17 @@ import { OAuth2Client } from 'google-auth-library';
 
 const googleClient = new OAuth2Client(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '509785450495-ltsejjolpsl130pvs179lnqtms0g2uj8.apps.googleusercontent.com');
 
+// CORS headers for mobile app
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
+
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { idToken } = await request.json();
@@ -20,7 +31,7 @@ export async function POST(request: NextRequest) {
     if (!idToken) {
       return NextResponse.json(
         { error: 'Missing ID token' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -36,7 +47,7 @@ export async function POST(request: NextRequest) {
     if (!payload) {
       return NextResponse.json(
         { error: 'Invalid token payload' },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       );
     }
 
@@ -45,7 +56,7 @@ export async function POST(request: NextRequest) {
     if (!email) {
       return NextResponse.json(
         { error: 'Email not found in token' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -98,7 +109,7 @@ export async function POST(request: NextRequest) {
         lastName: user.lastName,
         imageUrl: user.imageUrl,
       },
-    });
+    }, { headers: corsHeaders });
 
   } catch (error: any) {
     console.error('Native auth error:', error);
@@ -107,7 +118,7 @@ export async function POST(request: NextRequest) {
         error: 'Authentication failed',
         details: error.message,
       },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
