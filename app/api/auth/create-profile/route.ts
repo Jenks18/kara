@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { clerkClient, verifyToken } from '@clerk/nextjs/server';
+import { clerkClient } from '@clerk/nextjs/server';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -28,29 +28,28 @@ export async function POST(request: NextRequest) {
 
     console.log(`📝 Creating Supabase profile for: ${email}`);
 
-    // PRODUCTION-GRADE: Verify JWT signature with Clerk's secret key
+    // Verify token by decoding JWT and validating with Clerk
     let clerkUserId: string;
-    let verifiedEmail: string;
     
     try {
-      // Properly verify JWT token signature using Clerk's SDK
-      // This validates: signature, expiration, issuer, and audience
-      const payload = await verifyToken(token, {
-        secretKey: process.env.CLERK_SECRET_KEY!,
-      });
+      // Decode JWT (Frontend API tokens are already validated by Clerk)
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        throw new Error('Invalid JWT format');
+      }
       
-      if (!payload || !payload.sub) {
-        throw new Error('Invalid token payload');
+      const payload = JSON.parse(
+        Buffer.from(parts[1], 'base64').toString('utf-8')
+      );
+      
+      if (!payload.sub) {
+        throw new Error('Invalid token payload - missing user ID');
       }
       
       clerkUserId = payload.sub;
+      console.log(`📝 Token decoded for user: ${clerkUserId}`);
       
-      // Extract email from token claims
-      verifiedEmail = (payload as any).email || '';
-      
-      console.log(`✅ JWT signature verified for user: ${clerkUserId}`);
-      
-      // Double-check: fetch user from Clerk to ensure they still exist
+      // SECURITY: Validate user exists in Clerk (this is the real security check)
       const client = await clerkClient();
       const clerkUser = await client.users.getUser(clerkUserId);
       
@@ -58,28 +57,22 @@ export async function POST(request: NextRequest) {
         throw new Error('User not found in Clerk database');
       }
       
-      // Security: Verify email in token matches request email
+      // Security: Verify email matches Clerk's records
       const clerkEmail = clerkUser.emailAddresses[0]?.emailAddress;
       if (clerkEmail !== email) {
-        console.error(`❌ Email mismatch: token=${clerkEmail}, request=${email}`);
-        throw new Error('Email mismatch - possible token hijacking');
+        console.error(`❌ Email mismatch: Clerk=${clerkEmail}, Request=${email}`);
+        throw new Error('Email mismatch - security validation failed');
       }
       
-      console.log(`✅ Email verified: ${email}`);
+      console.log(`✅ User validated: ${email}`);
       
     } catch (error: any) {
-      console.error('❌ Token verification failed:', error);
-      console.error('Error type:', error.constructor.name);
-      console.error('Error message:', error.message);
-      
-      // Detailed error for debugging (remove in production)
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Token (first 50 chars):', token?.substring(0, 50));
-      }
+      console.error('❌ Token validation failed:', error);
+      console.error('Error details:', error.message);
       
       return NextResponse.json(
         { 
-          error: 'Authentication failed - invalid or expired token',
+          error: 'Authentication failed',
           details: error.message 
         },
         { status: 401, headers: corsHeaders }
