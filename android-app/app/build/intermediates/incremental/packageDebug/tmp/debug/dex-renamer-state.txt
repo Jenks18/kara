@@ -1,4 +1,4 @@
-#Thu Feb 12 09:53:59 EST 2026
+#Thu Feb 12 15:32:31 EST 2026
 base.0=/Users/iannjenga/Documents/GitHub/Kara/android-app/app/build/intermediates/dex/debug/mergeExtDexDebug/classes.dex
 base.1=/Users/iannjenga/Documents/GitHub/Kara/android-app/app/build/intermediates/dex/debug/mergeProjectDexDebug/0/classes.dex
 base.10=/Users/iannjenga/Documents/GitHub/Kara/android-app/app/build/intermediates/dex/debug/mergeExtDexDebug/classes3.dex

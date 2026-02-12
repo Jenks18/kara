@@ -43,9 +43,10 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
     
     companion object {
         private const val TAG = "NativeOAuthViewModel"
-        // Use latest Vercel deployment URL (with TypeScript fixes)
-        private const val API_URL = "https://kara-kq9osh8ze-jenks18s-projects.vercel.app/api/auth/google-native"
-        private const val MOBILE_AUTH_URL = "https://kara-kq9osh8ze-jenks18s-projects.vercel.app/api/mobile/auth"
+        // Use production domain (always points to latest deployment)
+        private const val API_URL = "https://www.mafutapass.com/api/auth/google-native"
+        private const val COMPLETE_SIGNUP_URL = "https://www.mafutapass.com/api/auth/complete-google-signup"
+        private const val MOBILE_AUTH_URL = "https://www.mafutapass.com/api/mobile/auth"
         private const val GOOGLE_CLIENT_ID = "509785450495-ltsejjolpsl130pvs179lnqtms0g2uj8.apps.googleusercontent.com"
     }
 
@@ -169,7 +170,27 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
 
             val jsonResponse = JSONObject(responseBody)
             
-            if (!jsonResponse.getBoolean("success")) {
+            // Check if new user needs to select username
+            if (jsonResponse.optBoolean("needsUsername", false)) {
+                val pendingToken = jsonResponse.getString("pendingSignupToken")
+                val email = jsonResponse.getString("email")
+                val firstName = jsonResponse.getString("firstName")
+                val lastName = jsonResponse.optString("lastName", "")
+                
+                Log.d(TAG, "📝 New user - username selection required")
+                Log.d(TAG, "Email: $email")
+                
+                _oauthState.value = NativeOAuthState.PendingUsername(
+                    pendingSignupToken = pendingToken,
+                    email = email,
+                    firstName = firstName,
+                    lastName = lastName
+                )
+                return
+            }
+            
+            // Use optBoolean to avoid JSONException if field is missing
+            if (!jsonResponse.optBoolean("success", false)) {
                 val error = jsonResponse.optString("error", "Unknown error")
                 Log.e(TAG, "❌ Auth failed: $error")
                 _oauthState.value = NativeOAuthState.Error(error)
@@ -190,9 +211,13 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
             val userObj = jsonResponse.getJSONObject("user")
             val userId = userObj.getString("id")
             val email = userObj.optString("email", "")
+            val isNewUser = jsonResponse.optBoolean("isNewUser", false)
+            val firstName = userObj.optString("firstName", null)
+            val lastName = userObj.optString("lastName", null)
 
             Log.d(TAG, "✅ Authentication successful!")
             Log.d(TAG, "User: $email (ID: $userId)")
+            Log.d(TAG, "Is new user: $isNewUser")
             Log.d(TAG, "Clerk token: ${token.take(30)}...")
 
             // Exchange Clerk token for Supabase token
@@ -204,7 +229,15 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
                 Log.d(TAG, "✅ Got Supabase token: ${supabaseToken.take(30)}...")
             }
 
-            _oauthState.value = NativeOAuthState.Success(token, userId, email, supabaseToken)
+            _oauthState.value = NativeOAuthState.Success(
+                token = token,
+                userId = userId,
+                email = email,
+                supabaseToken = supabaseToken,
+                isNewUser = isNewUser,
+                firstName = firstName,
+                lastName = lastName
+            )
 
         } catch (e: Exception) {
             Log.e(TAG, "❌ Backend communication error: ${e.javaClass.simpleName}: ${e.message}", e)
@@ -263,6 +296,98 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
             }
         }
     }
+    
+    /**
+     * Complete Google sign-up by submitting chosen username.
+     * Called after user selects their username on the username setup screen.
+     */
+    fun completeGoogleSignup(username: String, pendingSignupToken: String) {
+        viewModelScope.launch {
+            try {
+                Log.d(TAG, "🚀 Completing Google sign-up with username: $username")
+                _oauthState.value = NativeOAuthState.Loading
+                
+                val json = JSONObject().apply {
+                    put("username", username)
+                    put("pendingSignupToken", pendingSignupToken)
+                }
+                
+                val requestBody = json.toString()
+                    .toRequestBody("application/json; charset=utf-8".toMediaType())
+                
+                val request = Request.Builder()
+                    .url(COMPLETE_SIGNUP_URL)
+                    .post(requestBody)
+                    .build()
+                
+                val (response, responseBody) = withContext(Dispatchers.IO) {
+                    val resp = httpClient.newCall(request).execute()
+                    val body = resp.body?.string() ?: ""
+                    Pair(resp, body)
+                }
+                
+                Log.d(TAG, "📥 Complete signup response: ${response.code}")
+                Log.d(TAG, "📥 Response body: $responseBody")
+                
+                if (!response.isSuccessful) {
+                    // Try to parse error as JSON, but handle HTML responses
+                    val error = try {
+                        val errorJson = JSONObject(responseBody)
+                        errorJson.optString("error", "Failed to complete signup")
+                    } catch (e: Exception) {
+                        Log.e(TAG, "❌ Non-JSON error response: ${responseBody.take(200)}")
+                        "Server error (${response.code}): ${if (responseBody.contains("<!DOCTYPE")) "HTML error page" else responseBody.take(100)}"
+                    }
+                    Log.e(TAG, "❌ Complete signup failed: $error")
+                    _oauthState.value = NativeOAuthState.Error(error)
+                    return@launch
+                }
+                
+                val jsonResponse = try {
+                    JSONObject(responseBody)
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ Invalid JSON response: ${responseBody.take(200)}")
+                    _oauthState.value = NativeOAuthState.Error("Invalid server response")
+                    return@launch
+                }
+                
+                // Use optBoolean to avoid JSONException if field is missing
+                if (!jsonResponse.optBoolean("success", false)) {
+                    val error = jsonResponse.optString("error", "Unknown error")
+                    Log.e(TAG, "❌ Signup unsuccessful: $error")
+                    _oauthState.value = NativeOAuthState.Error(error)
+                    return@launch
+                }
+                
+                val token = jsonResponse.getString("token")
+                val userObj = jsonResponse.getJSONObject("user")
+                val userId = userObj.getString("id")
+                val email = userObj.getString("email")
+                val firstName = userObj.optString("firstName", null)
+                val lastName = userObj.optString("lastName", null)
+                
+                Log.d(TAG, "✅ Signup completed successfully!")
+                Log.d(TAG, "User: $email (ID: $userId)")
+                
+                // Exchange for Supabase token
+                val supabaseToken = exchangeForSupabaseToken(token, userId, email)
+                
+                _oauthState.value = NativeOAuthState.Success(
+                    token = token,
+                    userId = userId,
+                    email = email,
+                    supabaseToken = supabaseToken,
+                    isNewUser = true,
+                    firstName = firstName,
+                    lastName = lastName
+                )
+                
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Complete signup error: ${e.message}", e)
+                _oauthState.value = NativeOAuthState.Error("Failed to complete signup: ${e.message}")
+            }
+        }
+    }
 
     /**
      * Reset the OAuth state to idle
@@ -278,11 +403,20 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
 sealed class NativeOAuthState {
     object Idle : NativeOAuthState()
     object Loading : NativeOAuthState()
+    data class PendingUsername(
+        val pendingSignupToken: String,
+        val email: String,
+        val firstName: String,
+        val lastName: String
+    ) : NativeOAuthState()
     data class Success(
         val token: String, 
         val userId: String, 
         val email: String,
-        val supabaseToken: String? = null
+        val supabaseToken: String? = null,
+        val isNewUser: Boolean = false,
+        val firstName: String? = null,
+        val lastName: String? = null
     ) : NativeOAuthState()
     data class Error(val message: String) : NativeOAuthState()
 }

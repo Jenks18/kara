@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation'
 import { AvatarProvider } from '@/contexts/AvatarContext'
 import { UserProfileInit } from './UserProfileInit'
+import { AutoProfileSetup } from './AutoProfileSetup'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -15,6 +16,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   
   return (
     <AvatarProvider>
+      <AutoProfileSetup />
       <UserProfileInit />
       {children}
     </AvatarProvider>

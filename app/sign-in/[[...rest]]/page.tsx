@@ -14,6 +14,7 @@ export default async function SignInPage({
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 p-4">
       <div className="w-full max-w-md">
         <SignIn 
+          forceRedirectUrl={redirectUrl}
           appearance={{
             elements: {
               rootBox: 'w-full',
@@ -27,7 +28,6 @@ export default async function SignInPage({
             }
           }}
           signUpUrl="/sign-up"
-          redirectUrl={redirectUrl}
           routing="hash"
         />
       </div>

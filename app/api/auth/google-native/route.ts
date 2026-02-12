@@ -113,79 +113,95 @@ export async function POST(request: NextRequest) {
     }
 
     if (!user) {
-      // Create new Clerk user with Google as verified OAuth provider
-      console.log(`🆕 Creating new Clerk user for ${email}`);
-      try {
-        const firstName = name?.split(' ')[0] || email.split('@')[0];
-        const lastName = name?.split(' ').slice(1).join(' ') || '';
-        
-        user = await clerk.users.createUser({
-          emailAddress: [email],
-          firstName: firstName,
-          lastName: lastName.length > 0 ? lastName : undefined,
-          skipPasswordChecks: true, // OAuth user doesn't need password
-          skipPasswordRequirement: true,
-        });
-        console.log('✅ User created successfully:', user.id);
-      } catch (error: any) {
-        console.error('❌ Failed to create user:', error.message);
-        console.error('Full Clerk error:', JSON.stringify(error, null, 2));
-        if (error.errors && Array.isArray(error.errors)) {
-          console.error('Clerk error details:', JSON.stringify(error.errors, null, 2));
-        }
-        
-        // If user creation failed, try searching again (might already exist with different email case)
-        console.log('🔄 Retrying user search...');
-        try {
-          const retryUsers = await clerk.users.getUserList({ emailAddress: [email] });
-          if (retryUsers.data.length > 0) {
-            user = retryUsers.data[0];
-            console.log('✅ Found user on retry:', user.id);
-          } else {
-            // Still can't find/create user
-            throw error;
-          }
-        } catch (retryError) {
-          console.error('❌ Retry also failed');
-          throw error;
-        }
+      // New user - don't create Clerk account yet!
+      // Return verified Google info so Android can collect username first
+      console.log(`🆕 New user - username required: ${email}`);
+      console.log(`Name from Google: ${name}`);
+      console.log(`Google ID: ${googleId}`);
+      
+      const firstName = name?.split(' ')[0] || email.split('@')[0];
+      const lastName = name?.split(' ').slice(1).join(' ') || '';
+      
+      // Sign the verified Google data with JWT so it can be verified later
+      const crypto = await import('crypto');
+      const jwt = await import('jsonwebtoken');
+      
+      const secretKey = process.env.CLERK_SECRET_KEY;
+      if (!secretKey) {
+        throw new Error('CLERK_SECRET_KEY not configured');
       }
+      
+      const pendingSignup = {
+        email: email,
+        googleId: googleId,
+        firstName: firstName,
+        lastName: lastName,
+        verified: true,
+        exp: Math.floor(Date.now() / 1000) + (60 * 15), // 15 minutes to complete signup
+      };
+      
+      const signedToken = jwt.sign(pendingSignup, secretKey, { algorithm: 'HS256' });
+      
+      console.log('✅ Google token verified - awaiting username selection');
+      
+      return NextResponse.json({
+        needsUsername: true,
+        pendingSignupToken: signedToken,
+        email: email,
+        firstName: firstName,
+        lastName: lastName,
+      }, {
+        headers: corsHeaders,
+      });
     }
     
-    if (!user) {
-      console.error('❌ No user found or created');
-      return NextResponse.json(
-        { error: 'Failed to authenticate user' },
-        { status: 500, headers: corsHeaders }
-      );
-    }
-
-    // Create a sign-in token (works in production, unlike createSession)
-    console.log(`🎫 Creating sign-in token for user ${user.id}`);
-    let signInToken;
+    // Existing user - create sign-in token
+    console.log('✅ Existing user found:', user.id);
+    
+    // Create sign-in token for OAuth (no password check needed)
+    const signInToken = await clerk.signInTokens.createSignInToken({
+      userId: user.id,
+      expiresInSeconds: 86400, // 24 hours
+    });
+    
+    console.log('✅ Sign-in token created for existing user');
+    console.log('🎉 Native auth completed successfully');
+    
+    // Auto-create/update user profile in Supabase
     try {
-      signInToken = await clerk.signInTokens.createSignInToken({
-        userId: user.id,
-        expiresInSeconds: 86400, // 24 hours
-      });
-      console.log('✅ Sign-in token created:', signInToken.id);
-      console.log('Token:', signInToken.token);
-    } catch (error: any) {
-      console.error('❌ Failed to create sign-in token:', error.message);
-      console.error('Full Clerk error:', JSON.stringify(error, null, 2));
-      if (error.errors && Array.isArray(error.errors)) {
-        console.error('Clerk error details:', JSON.stringify(error.errors, null, 2));
-      }
-      throw error;
-    }
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    console.log('🎉 Native auth completed successfully (sign-in token)');
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .upsert({
+          user_id: user.id,
+          first_name: user.firstName || '',
+          last_name: user.lastName || '',
+          display_name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'User',
+          user_email: email,
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id',
+        });
+
+      if (profileError) {
+        console.error('⚠️ Failed to create profile:', profileError);
+      } else {
+        console.log('✅ User profile created/updated in Supabase');
+      }
+    } catch (profileErr) {
+      console.error('⚠️ Error creating profile:', profileErr);
+    }
 
     return NextResponse.json({
       success: true,
       token: signInToken.token,
       userId: user.id,
       email: email,
+      isNewUser: false, // Existing user
       user: {
         id: user.id,
         email: user.emailAddresses[0]?.emailAddress,

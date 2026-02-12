@@ -23,6 +23,8 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clerk.api.Clerk
 import com.clerk.api.sso.OAuthProvider
@@ -48,40 +50,101 @@ fun SignInOrUpScreen() {
     val oauthState by oAuthViewModel.oauthState.collectAsState()
     val authViewModel: com.mafutapass.app.viewmodel.AuthViewModel = viewModel()
 
+    // Reset OAuth state when screen is first shown
+    LaunchedEffect(Unit) {
+        android.util.Log.d("SignInScreen", "SignInScreen composed - resetting OAuth state")
+        oAuthViewModel.resetState()
+    }    
+    // Log OAuth state changes
+    LaunchedEffect(oauthState) {
+        android.util.Log.d("SignInScreen", "OAuth state changed to: ${oauthState::class.simpleName}")
+        
+        when (oauthState) {
+            is com.mafutapass.app.viewmodel.NativeOAuthState.PendingUsername -> {
+                val pendingState = (oauthState as com.mafutapass.app.viewmodel.NativeOAuthState.PendingUsername)
+                android.util.Log.d("SignInScreen", "🔤 Username selection required for: ${pendingState.email}")
+            }
+            is com.mafutapass.app.viewmodel.NativeOAuthState.Error -> {
+                val errorMsg = (oauthState as com.mafutapass.app.viewmodel.NativeOAuthState.Error).message
+                android.util.Log.e("SignInScreen", "❌ OAuth Error: $errorMsg")
+            }
+            is com.mafutapass.app.viewmodel.NativeOAuthState.Loading -> {
+                android.util.Log.d("SignInScreen", "⏳ OAuth Loading...")
+            }
+            is com.mafutapass.app.viewmodel.NativeOAuthState.Idle -> {
+                android.util.Log.d("SignInScreen", "💤 OAuth Idle")
+            }
+            else -> {}
+        }
+    }
     // Handle OAuth success - Store the token and trigger sign-in
     LaunchedEffect(oauthState) {
         if (oauthState is com.mafutapass.app.viewmodel.NativeOAuthState.Success) {
+            android.util.Log.d("SignInScreen", "========== OAuth Success Detected ==========")
+            
             val successState = oauthState as com.mafutapass.app.viewmodel.NativeOAuthState.Success
             val token = successState.token
             val userId = successState.userId
             val email = successState.email
             val supabaseToken = successState.supabaseToken
+            val isNewUser = successState.isNewUser
+            val firstName = successState.firstName
+            val lastName = successState.lastName
             
-            // Store the tokens for API calls
+            android.util.Log.d("SignInScreen", "Is new user: $isNewUser")
+            android.util.Log.d("SignInScreen", "Name: $firstName $lastName")
+            
+            // Store the tokens and user info for API calls using commit() for synchronous write
             val prefs = context.getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
-            prefs.edit().apply {
+            val stored = prefs.edit().apply {
                 putString("session_token", token)
                 putString("user_id", userId)
                 putString("user_email", email)
+                putBoolean("is_new_user", isNewUser)
+                if (firstName != null) {
+                    putString("first_name", firstName)
+                }
+                if (lastName != null) {
+                    putString("last_name", lastName)
+                }
                 if (supabaseToken != null) {
                     putString("supabase_token", supabaseToken)
                 }
-                apply()
-            }
+            }.commit()  // Use commit() for immediate write
             
-            android.util.Log.d("SignInScreen", "✅ Tokens stored successfully!")
+            android.util.Log.d("SignInScreen", "Tokens stored: $stored")
             android.util.Log.d("SignInScreen", "User: $email (ID: $userId)")
             android.util.Log.d("SignInScreen", "Clerk token: ${token.take(30)}...")
             if (supabaseToken != null) {
                 android.util.Log.d("SignInScreen", "Supabase token: ${supabaseToken.take(30)}...")
             }
-            android.util.Log.d("SignInScreen", "💡 Tokens ready for API calls")
             
-            // Refresh auth state to navigate to main app
+            // Refresh auth state to navigate to main app (or profile setup if new user)
             authViewModel.refreshAuthState()
+            
+            // Reset OAuth state after handling
+            oAuthViewModel.resetState()
         }
     }
 
+    // Show username setup screen if pending username selection
+    if (oauthState is com.mafutapass.app.viewmodel.NativeOAuthState.PendingUsername) {
+        val pendingState = oauthState as com.mafutapass.app.viewmodel.NativeOAuthState.PendingUsername
+        
+        GoogleUsernameSetupScreen(
+            email = pendingState.email,
+            firstName = pendingState.firstName,
+            lastName = pendingState.lastName,
+            onComplete = { username ->
+                android.util.Log.d("SignInScreen", "Username selected: $username")
+                oAuthViewModel.completeGoogleSignup(username, pendingState.pendingSignupToken)
+            },
+            pending = oauthState is com.mafutapass.app.viewmodel.NativeOAuthState.Loading,
+            errorMessage = (oauthState as? com.mafutapass.app.viewmodel.NativeOAuthState.Error)?.message
+        )
+        return
+    }
+    
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -133,7 +196,10 @@ fun SignInOrUpScreen() {
                 ) {
                     // Google Sign-In Button (using Credential Manager + Supabase ID token auth)
                     OutlinedButton(
-                        onClick = { oAuthViewModel.signInWithGoogle(context) },
+                        onClick = {
+                            android.util.Log.d("SignInScreen", "🔘 Google Sign-In button clicked (Sign ${if (isSignUp) "Up" else "In"})")
+                            oAuthViewModel.signInWithGoogle(context)
+                        },
                         enabled = oauthState !is com.mafutapass.app.viewmodel.NativeOAuthState.Loading,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -350,39 +416,59 @@ fun SignInView(viewModel: SignInViewModel = viewModel()) {
 }
 
 @Composable
-fun SignUpView(viewModel: SignUpViewModel = viewModel()) {
+fun SignUpView() {
+    val context = LocalContext.current
+    val viewModel: SignUpViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                @Suppress("UNCHECKED_CAST")
+                return SignUpViewModel(context.applicationContext as android.app.Application) as T
+            }
+        }
+    )
+    val authViewModel: com.mafutapass.app.viewmodel.AuthViewModel = viewModel()
+    
+    var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var firstName by remember { mutableStateOf("") }
+    var lastName by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
-    var verificationCode by remember { mutableStateOf("") }
     val state by viewModel.uiState.collectAsState()
+
+    // Handle successful sign-up
+    LaunchedEffect(state) {
+        if (state is SignUpViewModel.SignUpUiState.Success) {
+            android.util.Log.d("SignUpView", "✅ Sign up successful - refreshing auth")
+            authViewModel.refreshAuthState()
+        }
+    }
 
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = if (state is SignUpViewModel.SignUpUiState.NeedsVerification) "Verify your email" else "Create your account",
+            text = "Create your account",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = Gray900
         )
 
-        when (state) {
-            is SignUpViewModel.SignUpUiState.NeedsVerification -> {
-                Text(
-                    text = "Enter the verification code sent to your email address.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Gray600
-                )
+        Text(
+            text = "Start your expense management journey with MafutaPass.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Gray600
+        )
 
-                Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-                OutlinedTextField(
-                    value = verificationCode,
-                    onValueChange = { verificationCode = it },
-                    label = { Text("Verification code") },
-                    placeholder = { Text("Enter code") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        // Username field
+        OutlinedTextField(
+            value = username,
+            onValueChange = { username = it },
+                    label = { Text("Username") },
+                    placeholder = { Text("Choose a username") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -393,48 +479,39 @@ fun SignUpView(viewModel: SignUpViewModel = viewModel()) {
                     enabled = state !is SignUpViewModel.SignUpUiState.Loading
                 )
 
-                if (state is SignUpViewModel.SignUpUiState.Error) {
-                    Text(
-                        text = (state as SignUpViewModel.SignUpUiState.Error).message,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Button(
-                    onClick = { 
-                        if (verificationCode.isNotBlank()) {
-                            viewModel.verify(verificationCode)
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Emerald600),
-                    shape = RoundedCornerShape(8.dp),
-                    enabled = state !is SignUpViewModel.SignUpUiState.Loading && verificationCode.isNotBlank()
-                ) {
-                    if (state is SignUpViewModel.SignUpUiState.Loading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            color = Color.White,
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Text("Verify", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                    }
-                }
-            }
-            else -> {
-                Text(
-                    text = "Start your expense management journey with MafutaPass.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Gray600
+                // First name field
+                OutlinedTextField(
+                    value = firstName,
+                    onValueChange = { firstName = it },
+                    label = { Text("First name") },
+                    placeholder = { Text("Your first name") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Emerald600,
+                        focusedLabelColor = Emerald600,
+                        cursorColor = Emerald600
+                    ),
+                    enabled = state !is SignUpViewModel.SignUpUiState.Loading
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                // Last name field
+                OutlinedTextField(
+                    value = lastName,
+                    onValueChange = { lastName = it },
+                    label = { Text("Last name") },
+                    placeholder = { Text("Your last name") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Emerald600,
+                        focusedLabelColor = Emerald600,
+                        cursorColor = Emerald600
+                    ),
+                    enabled = state !is SignUpViewModel.SignUpUiState.Loading
+                )
 
                 OutlinedTextField(
                     value = email,
@@ -489,8 +566,9 @@ fun SignUpView(viewModel: SignUpViewModel = viewModel()) {
 
                 Button(
                     onClick = { 
-                        if (email.isNotBlank() && password.isNotBlank()) {
-                            viewModel.signUp(email, password)
+                        if (username.isNotBlank() && email.isNotBlank() && password.isNotBlank() && 
+                            firstName.isNotBlank() && lastName.isNotBlank()) {
+                            viewModel.signUp(email, password, username, firstName, lastName)
                         }
                     },
                     modifier = Modifier
@@ -498,7 +576,9 @@ fun SignUpView(viewModel: SignUpViewModel = viewModel()) {
                         .height(48.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Emerald600),
                     shape = RoundedCornerShape(8.dp),
-                    enabled = state !is SignUpViewModel.SignUpUiState.Loading && email.isNotBlank() && password.isNotBlank()
+                    enabled = state !is SignUpViewModel.SignUpUiState.Loading && 
+                              username.isNotBlank() && email.isNotBlank() && password.isNotBlank() &&
+                              firstName.isNotBlank() && lastName.isNotBlank()
                 ) {
                     if (state is SignUpViewModel.SignUpUiState.Loading) {
                         CircularProgressIndicator(
@@ -510,7 +590,5 @@ fun SignUpView(viewModel: SignUpViewModel = viewModel()) {
                         Text("Continue", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                     }
                 }
-            }
         }
     }
-}

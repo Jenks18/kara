@@ -5,18 +5,21 @@ const isPublicRoute = createRouteMatcher([
   '/sign-in(.*)',
   '/sign-up(.*)',
   '/api/auth/google-native(.*)',
+  '/api/auth/signup(.*)', // Email/password sign-up for mobile
   '/api/auth/verify-token(.*)',
+  '/api/user-profile(.*)', // Profile API for mobile
+  '/api/update-username(.*)', // Username update for mobile
   '/api/mobile/(.*)', // Mobile-specific API routes
 ])
 
 export default clerkMiddleware(
   async (auth, req) => {
-    // Allow public API routes without authentication
+    // Allow public API routes and onboarding without authentication
     if (isPublicRoute(req)) {
       return NextResponse.next()
     }
     
-    // Redirect root to reports (inbox disabled)
+    // Redirect root to reports
     if (req.nextUrl.pathname === '/') {
       const { userId } = await auth()
       if (userId) {

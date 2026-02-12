@@ -107,6 +107,7 @@ object ClerkAuthManager {
     suspend fun signUp(
         email: String,
         password: String,
+        username: String,
         firstName: String,
         lastName: String
     ): AuthResult = withContext(Dispatchers.IO) {
@@ -121,6 +122,7 @@ object ClerkAuthManager {
             val requestBody = JSONObject().apply {
                 put("email_address", email)
                 put("password", password)
+                put("username", username)
                 put("first_name", firstName)
                 put("last_name", lastName)
             }
