@@ -32,5 +32,9 @@ export default clerkMiddleware(
 )
 
 export const config = {
-  matcher: ['/((?!.*\\..*|_next).*)', '/', '/(api|trpc)(.*)'],
+  matcher: [
+    '/((?!.*\\..*|_next|api/auth/google-native).*)',
+    '/',
+    '/(api|trpc)((?!/auth/google-native).*)'
+  ],
 }
