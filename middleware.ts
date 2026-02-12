@@ -5,6 +5,7 @@ const isPublicRoute = createRouteMatcher([
   '/sign-in(.*)',
   '/sign-up(.*)',
   '/api/auth/google-native(.*)',
+  '/api/auth/complete-google-signup(.*)', // Google OAuth username completion
   '/api/auth/signup(.*)', // Email/password sign-up for mobile
   '/api/auth/verify-token(.*)',
   '/api/user-profile(.*)', // Profile API for mobile
