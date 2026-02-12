@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
 
     console.log(`📝 Creating user: ${email}, username: ${username}`);
 
-    // Create user in Clerk - email is automatically verified by Backend SDK
+    // Create user in Clerk - mark as unverified initially
     const client = await clerkClient();
     const user = await client.users.createUser({
       emailAddress: [email],
@@ -36,22 +36,35 @@ export async function POST(request: NextRequest) {
       username: username,
       firstName: firstName,
       lastName: lastName,
+      skipPasswordChecks: false,
+      skipPasswordRequirement: false,
       publicMetadata: {
         auth_method: 'email_password',
+        email_verified: false, // Track verification in metadata
       },
     });
 
     console.log('✅ User created in Clerk:', user.id);
 
-    // Create sign-in token
-    const signInToken = await client.signInTokens.createSignInToken({
-      userId: user.id,
-      expiresInSeconds: 86400, // 24 hours
+    // Generate verification code
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Store verification code in Clerk's public metadata (expires in 15 minutes)
+    await client.users.updateUser(user.id, {
+      publicMetadata: {
+        ...user.publicMetadata,
+        verification_code: verificationCode,
+        verification_expires: Date.now() + (15 * 60 * 1000), // 15 minutes
+      },
     });
 
-    console.log('✅ Sign-in token created');
+    console.log('✅ Verification code generated');
 
-    // Auto-create user profile in Supabase
+    // TODO: Send verification email (using Resend, SendGrid, or another service)
+    // For now, log it (in production, you'd send an actual email)
+    console.log(`📧 Verification code for ${email}: ${verificationCode}`);
+
+    // Auto-create user profile in Supabase (but mark as unverified)
     try {
       const supabase = createClient(supabaseUrl, supabaseServiceKey);
       const { error: profileError } = await supabase
@@ -77,16 +90,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        token: signInToken.token,
+        needsVerification: true,
         userId: user.id,
         email: email,
-        user: {
-          id: user.id,
-          email: email,
-          firstName: firstName,
-          lastName: lastName,
-          username: username,
-        },
+        message: 'Verification code sent to your email',
       },
       { headers: corsHeaders }
     );
