@@ -79,33 +79,28 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     }
     
     fun refreshAuthState() {
+        Log.d("AuthViewModel", "Refreshing auth state...")
         checkAuthState()
     }
 
     fun signOut() {
-        viewModelScope.launch {
-            try {
-                Log.d("AuthViewModel", "🚪 Signing out...")
-                
-                // Clear stored token and user data
-                prefs.edit().clear().apply()
-                
-                // Immediately update state
-                _authState.value = AuthState.SignedOut
-                
-                Log.d("AuthViewModel", "✅ Signed out successfully")
-                
-                // Try to sign out from Clerk SDK too (but don't wait for it)
-                try {
-                    Clerk.signOut()
-                } catch (e: Exception) {
-                    Log.w("AuthViewModel", "Clerk SDK sign out failed (non-critical): ${e.message}")
-                }
-            } catch (e: Exception) {
-                Log.e("AuthViewModel", "Error during sign out", e)
-                // Still force sign out state even if there's an error
-                _authState.value = AuthState.SignedOut
-            }
+        try {
+            Log.d("AuthViewModel", "🚪 Signing out...")
+            
+            // Clear stored token and user data immediately
+            prefs.edit().clear().apply()
+            
+            Log.d("AuthViewModel", "🗑️ Cleared SharedPreferences")
+            
+            // Immediately update state
+            _authState.value = AuthState.SignedOut
+            
+            Log.d("AuthViewModel", "✅ Auth state set to SignedOut - should trigger UI update")
+            
+        } catch (e: Exception) {
+            Log.e("AuthViewModel", "❌ Error during sign out", e)
+            // Still force sign out state even if there's an error
+            _authState.value = AuthState.SignedOut
         }
     }
 }
