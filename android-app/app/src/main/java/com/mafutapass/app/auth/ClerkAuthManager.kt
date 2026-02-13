@@ -634,9 +634,11 @@ object ClerkAuthManager {
      */
     suspend fun exchangeSignInToken(signInToken: String): AuthResult = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "🔑 Exchanging sign-in token for session...")
+            Log.d(TAG, "🔑 Exchanging sign-in token via backend proxy...")
             
-            val url = URL("${ClerkConfig.FRONTEND_API}/v1/tickets/accept")
+            // Call our backend proxy instead of Clerk Frontend API directly
+            // This avoids Cloudflare bot protection blocking the Android app
+            val url = URL("https://www.mafutapass.com/api/auth/exchange-token")
             val connection = url.openConnection() as HttpURLConnection
             
             connection.requestMethod = "POST"
@@ -644,8 +646,7 @@ object ClerkAuthManager {
             connection.doOutput = true
             
             val requestBody = JSONObject().apply {
-                put("strategy", "ticket")
-                put("ticket", signInToken)
+                put("signInToken", signInToken)
             }
             
             connection.outputStream.use { os ->
@@ -676,22 +677,26 @@ object ClerkAuthManager {
                 )
             }
             
-            // Parse successful response to get JWT token
+            // Parse backend response (simplified format)
             val json = JSONObject(responseBody)
-            val client = json.getJSONObject("client")
-            val sessions = client.getJSONArray("sessions")
             
-            if (sessions.length() == 0) {
-                Log.e(TAG, "❌ No sessions in token exchange response")
+            if (!json.optBoolean("success", false)) {
+                val errorMessage = json.optString("error", "Token exchange failed")
                 return@withContext AuthResult(
                     success = false,
-                    error = "No session created"
+                    error = errorMessage
                 )
             }
             
-            val session = sessions.getJSONObject(0)
-            val lastActiveToken = session.getJSONObject("last_active_token")
-            val jwt = lastActiveToken.getString("jwt")
+            val jwt = json.optString("token", null)
+            
+            if (jwt == null) {
+                Log.e(TAG, "❌ No JWT token in response")
+                return@withContext AuthResult(
+                    success = false,
+                    error = "No session token received"
+                )
+            }
             
             Log.d(TAG, "✅ Sign-in token exchanged successfully!")
             
