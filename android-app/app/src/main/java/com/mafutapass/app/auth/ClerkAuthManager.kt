@@ -37,7 +37,7 @@ object ClerkAuthManager {
         try {
             Log.d(TAG, "🔐 Step 1: Starting sign-in with identifier: $email")
             
-            // Step 1: Create sign-in with identifier
+            // Step 1: Create sign-in with identifier and strategy
             val url1 = URL("${ClerkConfig.FRONTEND_API}/v1/client/sign_ins")
             val connection1 = url1.openConnection() as HttpURLConnection
             
@@ -47,6 +47,7 @@ object ClerkAuthManager {
             
             val requestBody1 = JSONObject().apply {
                 put("identifier", email)
+                put("strategy", "password")
             }
             
             connection1.outputStream.use { os ->
@@ -61,6 +62,7 @@ object ClerkAuthManager {
             }
             
             Log.d(TAG, "📥 Step 1 response code: $responseCode1")
+            Log.d(TAG, "📥 Step 1 response: ${responseBody1.take(500)}")
             
             if (responseCode1 != HttpURLConnection.HTTP_OK) {
                 return@withContext AuthResult(
