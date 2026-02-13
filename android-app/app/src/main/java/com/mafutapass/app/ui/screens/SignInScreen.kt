@@ -434,6 +434,8 @@ fun SignUpView() {
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+    var captchaToken by remember { mutableStateOf<String?>(null) }
+    var captchaError by remember { mutableStateOf<String?>(null) }
     val state by viewModel.uiState.collectAsState()
 
     // Handle successful sign-up
@@ -465,6 +467,21 @@ fun SignUpView() {
             errorMessage = (state as? SignUpViewModel.SignUpUiState.Error)?.message
         )
         return
+    }
+
+    // Invisible Turnstile CAPTCHA widget (runs in background)
+    Box(modifier = Modifier.size(0.dp)) {
+        com.mafutapass.app.utils.TurnstileWidget(
+            onTokenReceived = { token ->
+                android.util.Log.d("SignUpView", "✅ CAPTCHA token received: ${token.take(20)}...")
+                captchaToken = token
+                captchaError = null
+            },
+            onError = { error ->
+                android.util.Log.e("SignUpView", "❌ CAPTCHA error: $error")
+                captchaError = error
+            }
+        )
     }
 
     Column(
@@ -585,13 +602,32 @@ fun SignUpView() {
                     )
                 }
 
+                // Show CAPTCHA error if any
+                if (captchaError != null) {
+                    Text(
+                        text = "CAPTCHA error: $captchaError",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
+                // Show waiting for CAPTCHA message
+                if (captchaToken == null && captchaError == null) {
+                    Text(
+                        text = "Loading security check...",
+                        color = Gray600,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Button(
                     onClick = { 
                         if (username.isNotBlank() && email.isNotBlank() && password.isNotBlank() && 
-                            firstName.isNotBlank() && lastName.isNotBlank()) {
-                            viewModel.signUp(email, password, username, firstName, lastName)
+                            firstName.isNotBlank() && lastName.isNotBlank() && captchaToken != null) {
+                            android.util.Log.d("SignUpView", "🚀 Signing up with CAPTCHA token: ${captchaToken?.take(20)}...")
+                            viewModel.signUp(email, password, username, firstName, lastName, captchaToken)
                         }
                     },
                     modifier = Modifier
@@ -601,7 +637,7 @@ fun SignUpView() {
                     shape = RoundedCornerShape(8.dp),
                     enabled = state !is SignUpViewModel.SignUpUiState.Loading && 
                               username.isNotBlank() && email.isNotBlank() && password.isNotBlank() &&
-                              firstName.isNotBlank() && lastName.isNotBlank()
+                              firstName.isNotBlank() && lastName.isNotBlank() && captchaToken != null
                 ) {
                     if (state is SignUpViewModel.SignUpUiState.Loading) {
                         CircularProgressIndicator(
