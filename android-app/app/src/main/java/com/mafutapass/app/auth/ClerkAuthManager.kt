@@ -634,7 +634,7 @@ object ClerkAuthManager {
         try {
             Log.d(TAG, "📧 Verifying email code via backend: $email")
             
-            val url = URL("${ClerkConfig.BACKEND_URL}/api/auth/mobile-verify")
+            val url = URL("https://www.mafutapass.com/api/auth/mobile-verify")
             val connection = url.openConnection() as HttpURLConnection
             
             connection.requestMethod = "POST"
