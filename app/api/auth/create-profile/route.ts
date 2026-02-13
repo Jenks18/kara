@@ -6,7 +6,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': 'https://www.mafutapass.com', // Only your domain
+  'Access-Control-Allow-Origin': '*', // Allow Android app (not from browser)
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
@@ -19,7 +19,10 @@ export async function POST(request: NextRequest) {
   try {
     const { token, email, username, firstName, lastName } = await request.json();
 
+    console.log(`📥 Profile creation request for: ${email}`);
+
     if (!token || !email) {
+      console.error('❌ Missing required fields:', { hasToken: !!token, hasEmail: !!email });
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400, headers: corsHeaders }
@@ -35,12 +38,15 @@ export async function POST(request: NextRequest) {
       // Decode JWT (Frontend API tokens are already validated by Clerk)
       const parts = token.split('.');
       if (parts.length !== 3) {
+        console.error('❌ Invalid JWT format - parts:', parts.length);
         throw new Error('Invalid JWT format');
       }
       
       const payload = JSON.parse(
         Buffer.from(parts[1], 'base64').toString('utf-8')
       );
+      
+      console.log('📋 JWT payload decoded:', { sub: payload.sub, email: payload.email });
       
       if (!payload.sub) {
         throw new Error('Invalid token payload - missing user ID');
