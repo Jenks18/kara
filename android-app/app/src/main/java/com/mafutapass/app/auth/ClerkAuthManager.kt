@@ -67,6 +67,25 @@ object ClerkAuthManager {
             
             val json = JSONObject(responseBody)
             val client = json.getJSONObject("client")
+            
+            // Check if email verification is needed first
+            val signIns = client.optJSONArray("sign_ins")
+            if (signIns != null && signIns.length() > 0) {
+                val signIn = signIns.getJSONObject(0)
+                val status = signIn.optString("status", "")
+                
+                // If needs first factor (email verification)
+                if (status == "needs_first_factor") {
+                    val signInId = signIn.getString("id")
+                    Log.d(TAG, "📧 Email verification required for sign-in: $signInId")
+                    return@withContext AuthResult(
+                        success = true,
+                        needsVerification = true,
+                        signUpId = signInId// Reusing signUpId field for sign-in ID
+                    )
+                }
+            }
+            
             val sessions = client.getJSONArray("sessions")
             
             if (sessions.length() == 0) {
