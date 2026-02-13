@@ -20,21 +20,35 @@ SET search_path = public
 AS $$
 DECLARE
   new_profile user_profiles;
+  v_first_name TEXT;
+  v_last_name TEXT;
 BEGIN
-  -- Insert new user profile
+  -- Split full_name into first and last names
+  IF p_full_name IS NOT NULL THEN
+    v_first_name := split_part(p_full_name, ' ', 1);
+    v_last_name := CASE 
+      WHEN array_length(string_to_array(p_full_name, ' '), 1) > 1 
+      THEN substring(p_full_name from length(v_first_name) + 2)
+      ELSE NULL
+    END;
+  END IF;
+
+  -- Insert new user profile (column names match user_profiles table)
   INSERT INTO user_profiles (
-    clerk_user_id,
-    email,
-    full_name,
-    username,
+    user_id,
+    user_email,
+    display_name,
+    first_name,
+    last_name,
     created_at,
     updated_at
   )
   VALUES (
     p_clerk_user_id,
     p_email,
-    p_full_name,
-    p_username,
+    p_username,  -- Use username as display_name
+    v_first_name,
+    v_last_name,
     NOW(),
     NOW()
   )
