@@ -109,9 +109,14 @@ export async function POST(req: NextRequest) {
     }
     
     console.log('📧 Primary email:', primaryEmail.emailAddress);
+    console.log('📧 Verification object:', JSON.stringify(primaryEmail.verification, null, 2));
     console.log('📧 Verification status:', primaryEmail.verification?.status);
     
-    if (primaryEmail.verification?.status !== 'verified') {
+    // More explicit check - only proceed if explicitly verified
+    const isVerified = primaryEmail.verification?.status === 'verified';
+    console.log('📧 Is verified?:', isVerified);
+    
+    if (!isVerified) {
       console.log('📧 Email not verified - user needs to verify');
       
       // Email was already sent during sign-up, just inform user
