@@ -35,6 +35,8 @@ object ClerkAuthManager {
     
     suspend fun signIn(email: String, password: String): AuthResult = withContext(Dispatchers.IO) {
         try {
+            Log.d(TAG, "🔐 Signing in: $email")
+            
             val url = URL("${ClerkConfig.FRONTEND_API}/v1/client/sign_ins")
             val connection = url.openConnection() as HttpURLConnection
             
@@ -58,6 +60,9 @@ object ClerkAuthManager {
                 connection.errorStream?.bufferedReader()?.use { it.readText() } ?: ""
             }
             
+            Log.d(TAG, "📥 Sign-in response code: $responseCode")
+            Log.d(TAG, "📥 Sign-in response: ${responseBody.take(1000)}")
+            
             if (responseCode != HttpURLConnection.HTTP_OK) {
                 return@withContext AuthResult(
                     success = false,
@@ -68,11 +73,16 @@ object ClerkAuthManager {
             val json = JSONObject(responseBody)
             val client = json.getJSONObject("client")
             
+            Log.d(TAG, "🔍 Checking for sign_ins array...")
+            
             // Check if email verification is needed first
             val signIns = client.optJSONArray("sign_ins")
+            Log.d(TAG, "🔍 Found sign_ins: ${signIns != null}, length: ${signIns?.length() ?: 0}")
+            
             if (signIns != null && signIns.length() > 0) {
                 val signIn = signIns.getJSONObject(0)
                 val status = signIn.optString("status", "")
+                Log.d(TAG, "🔍 Sign-in status: '$status'")
                 
                 // If needs first factor (email verification)
                 if (status == "needs_first_factor") {
@@ -81,12 +91,14 @@ object ClerkAuthManager {
                     return@withContext AuthResult(
                         success = true,
                         needsVerification = true,
-                        signUpId = signInId// Reusing signUpId field for sign-in ID
+                        signUpId = signInId // Reusing signUpId field for sign-in ID
                     )
                 }
             }
             
+            Log.d(TAG, "🔍 Checking for sessions array...")
             val sessions = client.getJSONArray("sessions")
+            Log.d(TAG, "🔍 Found sessions: ${sessions.length()}")
             
             if (sessions.length() == 0) {
                 return@withContext AuthResult(
