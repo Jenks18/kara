@@ -34,9 +34,10 @@ export async function POST(req: NextRequest) {
       console.log('🆔 Looking up user by userId:', userId);
       try {
         user = await client.users.getUser(userId);
-        console.log('✅ User found by userId');
-      } catch (error) {
-        console.log('❌ User not found by userId:', userId);
+        console.log('✅ User found by userId:', user.id, 'email:', user.emailAddresses[0]?.emailAddress);
+      } catch (error: any) {
+        console.error('❌ Error looking up user by userId:', userId, 'Error:', error.message || error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
         return NextResponse.json(
           { error: 'Invalid email or password' },
           { status: 401, headers: corsHeaders }
