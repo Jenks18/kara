@@ -27,7 +27,8 @@ data class AuthResult(
     val signUpId: String? = null,
     val emailAddressId: String? = null,
     val userId: String? = null,
-    val email: String? = null
+    val email: String? = null,
+    val signInToken: String? = null
 )
 
 object ClerkAuthManager {
@@ -585,14 +586,14 @@ object ClerkAuthManager {
                 
                 if (responseJson.getBoolean("success")) {
                     val userId = responseJson.getString("userId")
-                    val token = responseJson.optString("token", null)
+                    val signInToken = responseJson.optString("signInToken", null)
                     
-                    Log.d(TAG, "✅ Backend sign-up successful! userId=$userId, token=${if(token != null) "received" else "none"}")
+                    Log.d(TAG, "✅ Backend sign-up successful! userId=$userId, signInToken=${if(signInToken != null) "received" else "none"}")
                     
                     AuthResult(
                         success = true,
                         userId = userId,
-                        token = token,
+                        signInToken = signInToken,
                         email = email
                     )
                 } else {
@@ -623,6 +624,87 @@ object ClerkAuthManager {
             AuthResult(
                 success = false,
                 error = "Sign up failed: ${e.message}"
+            )
+        }
+    }
+    
+    /**
+     * Exchange sign-in token for session JWT (industry best practice)
+     * This is a single-use token from backend that gets exchanged for a proper session
+     */
+    suspend fun exchangeSignInToken(signInToken: String): AuthResult = withContext(Dispatchers.IO) {
+        try {
+            Log.d(TAG, "🔑 Exchanging sign-in token for session...")
+            
+            val url = URL("${ClerkConfig.FRONTEND_API}/v1/tickets/accept")
+            val connection = url.openConnection() as HttpURLConnection
+            
+            connection.requestMethod = "POST"
+            connection.setRequestProperty("Content-Type", "application/json")
+            connection.doOutput = true
+            
+            val requestBody = JSONObject().apply {
+                put("strategy", "ticket")
+                put("ticket", signInToken)
+            }
+            
+            connection.outputStream.use { os ->
+                os.write(requestBody.toString().toByteArray())
+            }
+            
+            val responseCode = connection.responseCode
+            val responseBody = if (responseCode == HttpURLConnection.HTTP_OK) {
+                connection.inputStream.bufferedReader().use { it.readText() }
+            } else {
+                connection.errorStream?.bufferedReader()?.use { it.readText() } ?: ""
+            }
+            
+            Log.d(TAG, "📥 Token exchange response code: $responseCode")
+            Log.d(TAG, "📥 Token exchange response: ${responseBody.take(500)}")
+            
+            if (responseCode != HttpURLConnection.HTTP_OK) {
+                val errorMessage = try {
+                    val errorJson = JSONObject(responseBody)
+                    errorJson.optString("error", "Token exchange failed")
+                } catch (e: Exception) {
+                    "Token exchange failed"
+                }
+                
+                return@withContext AuthResult(
+                    success = false,
+                    error = errorMessage
+                )
+            }
+            
+            // Parse successful response to get JWT token
+            val json = JSONObject(responseBody)
+            val client = json.getJSONObject("client")
+            val sessions = client.getJSONArray("sessions")
+            
+            if (sessions.length() == 0) {
+                Log.e(TAG, "❌ No sessions in token exchange response")
+                return@withContext AuthResult(
+                    success = false,
+                    error = "No session created"
+                )
+            }
+            
+            val session = sessions.getJSONObject(0)
+            val lastActiveToken = session.getJSONObject("last_active_token")
+            val jwt = lastActiveToken.getString("jwt")
+            
+            Log.d(TAG, "✅ Sign-in token exchanged successfully!")
+            
+            AuthResult(
+                success = true,
+                token = jwt
+            )
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Token exchange exception: ${e.message}", e)
+            AuthResult(
+                success = false,
+                error = "Token exchange failed: ${e.message}"
             )
         }
     }

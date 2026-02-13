@@ -48,35 +48,35 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
                     return@launch
                 }
                 
-                Log.d("SignUpViewModel", "✅ Account created! Waiting 5s for password to propagate...")
-                
-                // Wait 5 seconds for Clerk to fully propagate the password
-                // Backend SDK creates user but Frontend API needs time to sync
-                kotlinx.coroutines.delay(5000)
-                
-                // Now sign in to get the session token
-                val signInResult = ClerkAuthManager.signInViaBackend(
-                    email = email,
-                    password = password,
-                    userId = result.userId
-                )
-                
-                if (!signInResult.success) {
-                    Log.e("SignUpViewModel", "❌ Auto sign-in failed: ${signInResult.error}")
-                    _uiState.value = SignUpUiState.Error(
-                        "Account created successfully! Please sign in manually."
-                    )
-                    return@launch
-                }
-                
-                val token = signInResult.token
-                if (token == null) {
-                    Log.e("SignUpViewModel", "❌ No token after sign-in")
+                // Get sign-in token from sign-up result
+                val signInToken = result.signInToken
+                if (signInToken == null) {
+                    Log.e("SignUpViewModel", "❌ No sign-in token received")
                     _uiState.value = SignUpUiState.Error("Account created. Please sign in manually.")
                     return@launch
                 }
                 
-                // Token received - create profile and store token
+                Log.d("SignUpViewModel", "✅ Account created! Exchanging sign-in token...")
+                
+                // Exchange sign-in token for session JWT (industry best practice)
+                val tokenExchangeResult = ClerkAuthManager.exchangeSignInToken(signInToken)
+                
+                if (!tokenExchangeResult.success) {
+                    Log.e("SignUpViewModel", "❌ Token exchange failed: ${tokenExchangeResult.error}")
+                    _uiState.value = SignUpUiState.Error("Account created. Please sign in manually.")
+                    return@launch
+                }
+                
+                val token = tokenExchangeResult.token
+                if (token == null) {
+                    Log.e("SignUpViewModel", "❌ No JWT token after exchange")
+                    _uiState.value = SignUpUiState.Error("Account created. Please sign in manually.")
+                    return@launch
+                }
+                
+                Log.d("SignUpViewModel", "✅ JWT token obtained! Creating profile...")
+                
+                // Create Supabase profile in background
                 createSupabaseProfile(token, email, username, firstName, lastName)
                 
                 // Store token

@@ -43,12 +43,23 @@ export async function POST(req: NextRequest) {
     console.log('✅ User created:', clerkUser.id);
     console.log('📧 Email auto-verified by Backend SDK (no verification flow needed)');
 
+    // Create a sign-in token for immediate authentication (industry best practice)
+    // This is a single-use token that the client can exchange for a session
+    console.log('🔑 Creating sign-in token for immediate authentication...');
+    const signInToken = await client.signInTokens.createSignInToken({
+      userId: clerkUser.id,
+      expiresInSeconds: 300, // 5 minutes - single use
+    });
+    
+    console.log('✅ Sign-in token created successfully');
+
     return NextResponse.json(
       {
         success: true,
         userId: clerkUser.id,
         email: email,
-        message: 'Account created successfully. You can now sign in.'
+        signInToken: signInToken.token,
+        message: 'Account created successfully'
       },
       { status: 200, headers: corsHeaders }
     );
