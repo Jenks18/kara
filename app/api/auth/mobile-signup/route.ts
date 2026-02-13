@@ -26,53 +26,47 @@ export async function POST(req: NextRequest) {
     }
 
     // Create user in Clerk using Backend API (no CAPTCHA required)
+    // Key strategy: Create user WITHOUT email first, then add email as UNVERIFIED
+    // This ensures the email goes through proper verification flow
     const client = await clerkClient();
+    
+    console.log('📱 Step 1: Creating user without email address...');
     const clerkUser = await client.users.createUser({
-      emailAddress: [email],
+      // NO emailAddress here - we'll add it separately as unverified
       password: password,
       username: username,
       firstName: firstName,
       lastName: lastName,
       skipPasswordChecks: false,
       skipPasswordRequirement: false,
-      // Mark that this user was created via backend and needs verification
-      // We'll check this metadata in sign-in to force verification
+      // Mark that this user needs email verification
       unsafeMetadata: {
         needsEmailVerification: true,
         createdViaBackend: true,
       },
     });
 
-    console.log('✅ Clerk user created:', clerkUser.id);
-    console.log('📧 Email addresses:', JSON.stringify(clerkUser.emailAddresses, null, 2));
-
-    // Get the primary email address
-    const primaryEmail = clerkUser.emailAddresses.find(e => e.id === clerkUser.primaryEmailAddressId);
+    console.log('✅ User created without email:', clerkUser.id);
     
-    console.log('📧 Primary email verification status after creation:', primaryEmail?.verification?.status);
+    // Step 2: Add email address as UNVERIFIED
+    // This is the key - createEmailAddress with verified: false will trigger verification flow
+    console.log('📧 Step 2: Adding email address as unverified...');
+    const emailAddress = await client.emailAddresses.createEmailAddress({
+      userId: clerkUser.id,
+      emailAddress: email,
+      primary: true,
+      verified: false, // This is the key setting
+    });
     
-    // Step 1: Unverify the email address (Backend SDK auto-verifies it)
+    console.log('✅ Email added as unverified:', emailAddress.id);
+    console.log('📧 Email verification status:', emailAddress.verification?.status);
+    
+    // Step 3: Trigger verification email via Frontend API
+    // Now that we have an unverified email, this should work
     try {
-      if (primaryEmail) {
-        console.log('📧 Unverifying email address to force verification flow...');
-        
-        // Use Backend SDK to update email address status to unverified
-        await client.emailAddresses.updateEmailAddress(primaryEmail.id, {
-          verified: false,
-        });
-        
-        console.log('✅ Email marked as unverified');
-      }
-    } catch (unverifyError: any) {
-      console.error('⚠️ Failed to unverify email:', unverifyError.message);
-    }
-    
-    // Step 2: ALWAYS trigger verification email via Frontend API
-    // Even if Backend SDK marked it as verified, we want user to verify
-    try {
-      console.log('📧 Triggering verification email via Frontend API...');
+      console.log('📧 Step 3: Triggering verification email via Frontend API...');
       
-      // Start sign-in
+      // Start sign-in to get a session context
       const signInResponse = await fetch(`${process.env.NEXT_PUBLIC_CLERK_FRONTEND_API || 'https://clerk.mafutapass.com'}/v1/client/sign_ins`, {
         method: 'POST',
         headers: {
@@ -84,7 +78,8 @@ export async function POST(req: NextRequest) {
       });
       
       if (!signInResponse.ok) {
-        console.error('⚠️ Failed to start sign-in:', await signInResponse.text());
+        const errorText = await signInResponse.text();
+        console.error('⚠️ Failed to start sign-in:', errorText);
         throw new Error('Failed to start sign-in');
       }
       
@@ -102,15 +97,18 @@ export async function POST(req: NextRequest) {
           },
           body: JSON.stringify({
             strategy: 'email_code',
-            email_address_id: primaryEmail?.id,
+            email_address_id: emailAddress.id,
           }),
         });
         
         if (prepareResponse.ok) {
+          const prepareData = await prepareResponse.json();
           console.log('✅ Verification email sent successfully');
+          console.log('📧 Prepare response:', JSON.stringify(prepareData, null, 2));
         } else {
           const errorText = await prepareResponse.text();
           console.error('⚠️ Failed to prepare email verification:', errorText);
+          console.error('⚠️ Status code:', prepareResponse.status);
         }
       }
       
