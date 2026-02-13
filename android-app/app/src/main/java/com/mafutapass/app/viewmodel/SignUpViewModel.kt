@@ -61,19 +61,21 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
                         userId = result.userId
                     )
                     
+                    // Check for needsVerification FIRST (regardless of success flag)
+                    if (signInResult.needsVerification) {
+                        Log.d("SignUpViewModel", "📧 Email verification required")
+                        _uiState.value = SignUpUiState.NeedsVerification(
+                            signUpId = signInResult.userId ?: "",
+                            email = email,
+                            username = username,
+                            firstName = firstName,
+                            lastName = lastName
+                        )
+                        return@launch
+                    }
+                    
                     if (!signInResult.success) {
                         Log.e("SignUpViewModel", "❌ Auto sign-in failed: ${signInResult.error}")
-                        // If sign-in requires verification, show verification screen
-                        if (signInResult.needsVerification) {
-                            _uiState.value = SignUpUiState.NeedsVerification(
-                                signUpId = signInResult.userId ?: "",
-                                email = email,
-                                username = username,
-                                firstName = firstName,
-                                lastName = lastName
-                            )
-                            return@launch
-                        }
                         _uiState.value = SignUpUiState.Error("Account created but sign-in failed. Please sign in manually.")
                         return@launch
                     }
@@ -143,10 +145,10 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
             _uiState.value = SignUpUiState.Loading
             
             try {
-                Log.d("SignUpViewModel", "Verifying email code via Clerk Frontend API")
+                Log.d("SignUpViewModel", "Verifying email code via backend")
                 
-                // Verify with Clerk Frontend API
-                val result = ClerkAuthManager.verifyEmailCode(signUpId, code)
+                // Verify with backend (uses Clerk Frontend API internally)
+                val result = ClerkAuthManager.verifyEmailCode(email, code)
                 
                 if (!result.success) {
                     Log.e("SignUpViewModel", "❌ Verification failed: ${result.error}")

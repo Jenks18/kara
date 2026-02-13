@@ -486,7 +486,20 @@ object ClerkAuthManager {
                 
                 val responseJson = JSONObject(response)
                 
-                if (responseJson.getBoolean("success")) {
+                // Check for needsVerification FIRST (before trying to read token)
+                if (responseJson.optBoolean("needsVerification", false)) {
+                    // Email verification required
+                    val userId = responseJson.getString("userId")
+                    Log.d(TAG, "📧 Email verification required for user: $userId")
+                    
+                    AuthResult(
+                        success = true,
+                        needsVerification = true,
+                        userId = userId,
+                        email = email
+                    )
+                } else if (responseJson.getBoolean("success")) {
+                    // Normal sign-in with token
                     val token = responseJson.getString("token")
                     val userId = responseJson.getString("userId")
                     
@@ -495,17 +508,6 @@ object ClerkAuthManager {
                     AuthResult(
                         success = true,
                         token = token,
-                        userId = userId,
-                        email = email
-                    )
-                } else if (responseJson.optBoolean("needsVerification", false)) {
-                    // Email verification required
-                    val userId = responseJson.getString("userId")
-                    Log.d(TAG, "📧 Email verification required for user: $userId")
-                    
-                    AuthResult(
-                        success = true,
-                        needsVerification = true,
                         userId = userId,
                         email = email
                     )
@@ -626,13 +628,13 @@ object ClerkAuthManager {
     }
     
     /**
-     * Verify email with code sent by Clerk
+     * Verify email with code sent by Clerk (via backend)
      */
-    suspend fun verifyEmailCode(signUpId: String, code: String): AuthResult = withContext(Dispatchers.IO) {
+    suspend fun verifyEmailCode(email: String, code: String): AuthResult = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "Verifying email code for sign-up: $signUpId")
+            Log.d(TAG, "📧 Verifying email code via backend: $email")
             
-            val url = URL("${ClerkConfig.FRONTEND_API}/v1/client/sign_ups/$signUpId/attempt_verification")
+            val url = URL("${ClerkConfig.BACKEND_URL}/api/auth/mobile-verify")
             val connection = url.openConnection() as HttpURLConnection
             
             connection.requestMethod = "POST"
@@ -640,7 +642,7 @@ object ClerkAuthManager {
             connection.doOutput = true
             
             val requestBody = JSONObject().apply {
-                put("strategy", "email_code")
+                put("email", email)
                 put("code", code)
             }
             
@@ -655,18 +657,13 @@ object ClerkAuthManager {
                 connection.errorStream?.bufferedReader()?.use { it.readText() } ?: ""
             }
             
-            Log.d(TAG, "Verification response code: $responseCode")
-            Log.d(TAG, "Verification response: ${responseBody.take(500)}")
+            Log.d(TAG, "📥 Verification response code: $responseCode")
+            Log.d(TAG, "📥 Verification response: ${responseBody.take(500)}")
             
             if (responseCode != HttpURLConnection.HTTP_OK) {
                 val errorMessage = try {
                     val errorJson = JSONObject(responseBody)
-                    val errors = errorJson.optJSONArray("errors")
-                    if (errors != null && errors.length() > 0) {
-                        errors.getJSONObject(0).optString("message", "Invalid code")
-                    } else {
-                        "Invalid verification code"
-                    }
+                    errorJson.optString("error", "Invalid verification code")
                 } catch (e: Exception) {
                     "Invalid verification code"
                 }
