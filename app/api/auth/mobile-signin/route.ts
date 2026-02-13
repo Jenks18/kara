@@ -29,7 +29,10 @@ export async function POST(req: NextRequest) {
     // Get user by email
     const users = await client.users.getUserList({ emailAddress: [email] });
     
+    console.log('📥 Found users:', users.data?.length || 0);
+    
     if (!users.data || users.data.length === 0) {
+      console.log('❌ User not found for email:', email);
       return NextResponse.json(
         { error: 'Invalid email or password' },
         { status: 401, headers: corsHeaders }
@@ -47,9 +50,10 @@ export async function POST(req: NextRequest) {
       // Email was already sent during sign-up, just inform user
       return NextResponse.json(
         {
-          success: false,
+          success: true,  // Changed to true so Android recognizes this as a valid response
           needsVerification: true,
           userId: user.id,
+          email: email,
           message: 'Email verification required. Check your inbox for verification code.'
         },
         { status: 200, headers: corsHeaders }
