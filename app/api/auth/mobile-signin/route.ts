@@ -95,6 +95,7 @@ export async function POST(req: NextRequest) {
     // Check if email is verified
     console.log(`✅ [SIGNIN] User retrieved successfully after ${Date.now() - startTime}ms:`, user.id);
     console.log('📧 Checking email verification status...');
+    console.log('📧 User metadata:', JSON.stringify(user.unsafeMetadata, null, 2));
     console.log('📧 Email addresses:', JSON.stringify(user.emailAddresses, null, 2));
     console.log('📧 Primary email ID:', user.primaryEmailAddressId);
     
@@ -112,11 +113,16 @@ export async function POST(req: NextRequest) {
     console.log('📧 Verification object:', JSON.stringify(primaryEmail.verification, null, 2));
     console.log('📧 Verification status:', primaryEmail.verification?.status);
     
+    // Check if user was created via backend and needs verification (via metadata)
+    const needsVerificationMetadata = user.unsafeMetadata?.needsEmailVerification === true;
+    console.log('📧 Needs verification (metadata):', needsVerificationMetadata);
+    
     // More explicit check - only proceed if explicitly verified
     const isVerified = primaryEmail.verification?.status === 'verified';
-    console.log('📧 Is verified?:', isVerified);
+    console.log('📧 Is verified (Clerk status)?:', isVerified);
     
-    if (!isVerified) {
+    // Force verification if metadata flag is set, regardless of Clerk status
+    if (needsVerificationMetadata || !isVerified) {
       console.log('📧 Email not verified - user needs to verify');
       
       // Email was already sent during sign-up, just inform user

@@ -35,38 +35,45 @@ export async function POST(req: NextRequest) {
       lastName: lastName,
       skipPasswordChecks: false,
       skipPasswordRequirement: false,
+      // IMPORTANT: Don't verify email automatically - user must verify it
+      skipEmailAddressVerification: false,
+      // Mark that this user was created via backend and needs verification
+      unsafeMetadata: {
+        needsEmailVerification: true,
+        createdViaBackend: true,
+      },
     });
 
     console.log('✅ Clerk user created:', clerkUser.id);
+    console.log('📧 Email addresses:', JSON.stringify(clerkUser.emailAddresses, null, 2));
 
     // Get the primary email address
     const primaryEmail = clerkUser.emailAddresses.find(e => e.id === clerkUser.primaryEmailAddressId);
     
-    // Backend SDK doesn't automatically send verification emails
-    // We need to trigger it by attempting a sign-in via Frontend API
-    // This will cause Clerk to detect unverified email and send the code
-    if (primaryEmail && primaryEmail.verification?.status !== 'verified') {
-      try {
-        console.log('📧 Triggering verification email by initiating sign-in...');
-        
-        // Call Clerk Frontend API to start sign-in (will trigger verification email)
-        const signInResponse = await fetch(`${process.env.NEXT_PUBLIC_CLERK_FRONTEND_API || 'https://clerk.mafutapass.com'}/v1/client/sign_ins`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            identifier: email,
-          }),
-        });
-        
-        const signInData = await signInResponse.json();
-        console.log('📧 Sign-in initiated, verification email triggered');
-        
-      } catch (emailError: any) {
-        console.error('⚠️ Failed to trigger verification email:', emailError.message);
-        // Continue anyway - user can trigger it by trying to sign in
-      }
+    console.log('📧 Primary email verification status after creation:', primaryEmail?.verification?.status);
+    
+    // ALWAYS trigger verification email via Frontend API
+    // Even if Backend SDK marked it as verified, we want user to verify
+    try {
+      console.log('📧 Triggering verification email via Frontend API...');
+      
+      // Call Clerk Frontend API to start sign-in (will trigger verification email)
+      const signInResponse = await fetch(`${process.env.NEXT_PUBLIC_CLERK_FRONTEND_API || 'https://clerk.mafutapass.com'}/v1/client/sign_ins`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          identifier: email,
+        }),
+      });
+      
+      const signInData = await signInResponse.json();
+      console.log('📧 Sign-in initiated, verification email triggered');
+      
+    } catch (emailError: any) {
+      console.error('⚠️ Failed to trigger verification email:', emailError.message);
+      // Continue anyway - user can trigger it by trying to sign in
     }
 
     // Create user profile in Supabase
