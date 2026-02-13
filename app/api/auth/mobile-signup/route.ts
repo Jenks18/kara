@@ -43,14 +43,16 @@ export async function POST(req: NextRequest) {
     console.log('✅ User created:', clerkUser.id);
     console.log('📧 Email auto-verified by Backend SDK (no verification flow needed)');
 
-    // Create session token immediately to avoid password propagation delay
-    console.log('🔑 Creating session token for new user...');
-    const sessionToken = await client.sessions.createSessionToken({
+    // Create session immediately to avoid password propagation delay
+    console.log('🔑 Creating session for new user...');
+    const session = await client.sessions.createSession({
       userId: clerkUser.id,
-      expiresInSeconds: 604800, // 7 days
     });
     
-    console.log('✅ Session token created successfully');
+    // Generate session token from the session
+    const sessionToken = await client.sessions.getToken(session.id);
+    
+    console.log('✅ Session and token created successfully');
 
     return NextResponse.json(
       {
