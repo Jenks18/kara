@@ -51,12 +51,28 @@ export async function POST(req: NextRequest) {
     
     console.log('📧 Primary email verification status after creation:', primaryEmail?.verification?.status);
     
-    // ALWAYS trigger verification email via Frontend API
+    // Step 1: Unverify the email address (Backend SDK auto-verifies it)
+    try {
+      if (primaryEmail) {
+        console.log('📧 Unverifying email address to force verification flow...');
+        
+        // Use Backend SDK to update email address status to unverified
+        await client.emailAddresses.updateEmailAddress(primaryEmail.id, {
+          verified: false,
+        });
+        
+        console.log('✅ Email marked as unverified');
+      }
+    } catch (unverifyError: any) {
+      console.error('⚠️ Failed to unverify email:', unverifyError.message);
+    }
+    
+    // Step 2: ALWAYS trigger verification email via Frontend API
     // Even if Backend SDK marked it as verified, we want user to verify
     try {
       console.log('📧 Triggering verification email via Frontend API...');
       
-      // Step 1: Start sign-in
+      // Start sign-in
       const signInResponse = await fetch(`${process.env.NEXT_PUBLIC_CLERK_FRONTEND_API || 'https://clerk.mafutapass.com'}/v1/client/sign_ins`, {
         method: 'POST',
         headers: {
@@ -77,7 +93,7 @@ export async function POST(req: NextRequest) {
       
       console.log('📧 Sign-in initiated, ID:', signInId);
       
-      // Step 2: Prepare email verification (this sends the code)
+      // Prepare email verification (this sends the code)
       if (signInId) {
         const prepareResponse = await fetch(`${process.env.NEXT_PUBLIC_CLERK_FRONTEND_API || 'https://clerk.mafutapass.com'}/v1/client/sign_ins/${signInId}/prepare_first_factor`, {
           method: 'POST',
