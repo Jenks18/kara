@@ -42,31 +42,9 @@ export async function POST(req: NextRequest) {
     const primaryEmail = user.emailAddresses.find(e => e.id === user.primaryEmailAddressId);
     
     if (primaryEmail && primaryEmail.verification?.status !== 'verified') {
-      console.log('📧 Email not verified, triggering verification email...');
+      console.log('📧 Email not verified - user needs to verify');
       
-      // Trigger verification email by calling Frontend API
-      try {
-        const frontendAPI = process.env.NEXT_PUBLIC_CLERK_FRONTEND_API || 'https://clerk.mafutapass.com';
-        
-        const signInResponse = await fetch(`${frontendAPI}/v1/client/sign_ins`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            identifier: email,
-          }),
-        });
-        
-        if (signInResponse.ok) {
-          console.log('✅ Verification email triggered');
-        } else {
-          console.warn('⚠️ Failed to trigger verification email');
-        }
-      } catch (emailError: any) {
-        console.error('⚠️ Error triggering verification email:', emailError.message);
-      }
-      
+      // Email was already sent during sign-up, just inform user
       return NextResponse.json(
         {
           success: false,
