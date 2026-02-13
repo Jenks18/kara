@@ -61,90 +61,102 @@ export async function POST(req: NextRequest) {
     // We need to use the Frontend API for this part
     const frontendAPI = process.env.NEXT_PUBLIC_CLERK_FRONTEND_API || 'https://clerk.mafutapass.com';
     
-    // Step 1: Create sign-in
-    const signInResponse = await fetch(`${frontendAPI}/v1/client/sign_ins`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        identifier: email,
-      }),
-    });
+    try {
+      // Step 1: Create sign-in
+      const signInResponse = await fetch(`${frontendAPI}/v1/client/sign_ins`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          identifier: email,
+        }),
+      });
 
-    if (!signInResponse.ok) {
-      throw new Error('Failed to initiate sign-in');
-    }
+      if (!signInResponse.ok) {
+        console.error('❌ Failed to initiate sign-in:', await signInResponse.text());
+        throw new Error('Failed to initiate sign-in');
+      }
 
-    const signInData = await signInResponse.json();
-    const signInId = signInData.response?.sign_in?.id;
+      const signInData = await signInResponse.json();
+      console.log('📥 Sign-in response:', JSON.stringify(signInData).substring(0, 500));
+      
+      const signInId = signInData.response?.sign_in?.id || signInData.client?.sign_in?.id;
 
-    if (!signInId) {
-      throw new Error('Invalid sign-in response');
-    }
+      if (!signInId) {
+        console.error('❌ Invalid sign-in response, no sign_in ID found');
+        throw new Error('Invalid sign-in response');
+      }
 
-    // Extract cookies
-    const cookies = signInResponse.headers.getSetCookie();
-    const cookieHeader = cookies.map(c => c.split(';')[0]).join('; ');
+      // Extract cookies
+      const cookies = signInResponse.headers.getSetCookie();
+      const cookieHeader = cookies.map(c => c.split(';')[0]).join('; ');
 
-    // Step 2: Attempt password
-    const attemptResponse = await fetch(`${frontendAPI}/v1/client/sign_ins/${signInId}/attempt_first_factor`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Cookie': cookieHeader,
-      },
-      body: JSON.stringify({
-        strategy: 'password',
-        password: password,
-      }),
-    });
+      // Step 2: Attempt password
+      const attemptResponse = await fetch(`${frontendAPI}/v1/client/sign_ins/${signInId}/attempt_first_factor`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': cookieHeader,
+        },
+        body: JSON.stringify({
+          strategy: 'password',
+          password: password,
+        }),
+      });
 
-    const attemptData = await attemptResponse.json();
+      const attemptData = await attemptResponse.json();
 
-    if (!attemptResponse.ok) {
-      console.error('❌ Password attempt failed:', attemptData);
+      if (!attemptResponse.ok) {
+        console.error('❌ Password attempt failed:', attemptData);
+        return NextResponse.json(
+          { error: 'Invalid email or password' },
+          { status: 401, headers: corsHeaders }
+        );
+      }
+
+      // Check if session was created
+      const sessionId = attemptData.response?.created_session_id || 
+                        attemptData.client?.sign_in?.created_session_id;
+
+      if (!sessionId) {
+        console.error('❌ No session created:', JSON.stringify(attemptData).substring(0, 300));
+        return NextResponse.json(
+          { error: 'Failed to create session' },
+          { status: 500, headers: corsHeaders }
+        );
+      }
+
+      // Get session token
+      const session = attemptData.client?.sessions?.find((s: any) => s.id === sessionId);
+      const sessionToken = session?.last_active_token?.jwt;
+
+      if (!sessionToken) {
+        console.error('❌ No session token found');
+        return NextResponse.json(
+          { error: 'Failed to get session token' },
+          { status: 500, headers: corsHeaders }
+        );
+      }
+
+      console.log('✅ Sign-in successful');
+
       return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401, headers: corsHeaders }
+        {
+          success: true,
+          token: sessionToken,
+          userId: user.id,
+          email: email,
+        },
+        { status: 200, headers: corsHeaders }
       );
-    }
-
-    // Check if session was created
-    const sessionId = attemptData.response?.created_session_id || 
-                      attemptData.client?.sign_in?.created_session_id;
-
-    if (!sessionId) {
-      console.error('❌ No session created:', attemptData);
+    } catch (frontendError: any) {
+      console.error('❌ Frontend API error:', frontendError.message);
       return NextResponse.json(
-        { error: 'Failed to create session' },
+        { error: 'Sign-in failed: ' + frontendError.message },
         { status: 500, headers: corsHeaders }
       );
     }
-
-    // Get session token
-    const session = attemptData.client?.sessions?.find((s: any) => s.id === sessionId);
-    const sessionToken = session?.last_active_token?.jwt;
-
-    if (!sessionToken) {
-      console.error('❌ No session token found');
-      return NextResponse.json(
-        { error: 'Failed to get session token' },
-        { status: 500, headers: corsHeaders }
-      );
-    }
-
-    console.log('✅ Sign-in successful');
-
-    return NextResponse.json(
-      {
-        success: true,
-        token: sessionToken,
-        userId: user.id,
-        email: email,
-      },
-      { status: 200, headers: corsHeaders }
-    );
 
   } catch (error: any) {
     console.error('❌ Mobile sign-in error:', error);
