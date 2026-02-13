@@ -13,7 +13,8 @@ export async function OPTIONS() {
 
 export async function POST(req: NextRequest) {
   const startTime = Date.now();
-  console.log('🚀 [SIGNIN] Request received at', new Date().toISOString());
+  const version = 'v2.0.0-detailed-logging';
+  console.log('🚀 [SIGNIN] Request received at', new Date().toISOString(), 'version:', version);
   
   try {
     const body = await req.json();
@@ -70,7 +71,7 @@ export async function POST(req: NextRequest) {
         console.error(`❌ [SIGNIN] All retry attempts failed after ${Date.now() - startTime}ms`);
         console.error('❌ [SIGNIN] Last error:', JSON.stringify(lastError, Object.getOwnPropertyNames(lastError), 2));
         return NextResponse.json(
-          { error: 'Invalid email or password' },
+          { error: 'Invalid email or password', version, debug: 'all_retries_failed',elapsed: `${Date.now() - startTime}ms` },
           { status: 401, headers: corsHeaders }
         );
       }
@@ -83,7 +84,7 @@ export async function POST(req: NextRequest) {
       if (!users.data || users.data.length === 0) {
         console.log('❌ User not found for email:', email);
         return NextResponse.json(
-          { error: 'Invalid email or password' },
+          { error: 'Invalid email or password', version, debug: 'email_lookup_failed', elapsed: `${Date.now() - startTime}ms` },
           { status: 401, headers: corsHeaders }
         );
       }
@@ -182,7 +183,7 @@ export async function POST(req: NextRequest) {
       if (!attemptResponse.ok) {
         console.error('❌ Password attempt failed:', attemptData);
         return NextResponse.json(
-          { error: 'Invalid email or password' },
+          { error: 'Invalid email or password', version, debug: 'password_verification_failed', elapsed: `${Date.now() - startTime}ms` },
           { status: 401, headers: corsHeaders }
         );
       }
