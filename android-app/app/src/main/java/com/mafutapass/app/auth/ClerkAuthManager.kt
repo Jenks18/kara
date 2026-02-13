@@ -452,10 +452,11 @@ object ClerkAuthManager {
      */
     suspend fun signInViaBackend(
         email: String,
-        password: String
+        password: String,
+        userId: String? = null
     ): AuthResult = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "📱 Signing in via backend: $email")
+            Log.d(TAG, "📱 Signing in via backend: $email${if (userId != null) " (userId: $userId)" else ""}")
             
             val url = URL("https://www.mafutapass.com/api/auth/mobile-signin")
             val connection = url.openConnection() as HttpURLConnection
@@ -467,6 +468,9 @@ object ClerkAuthManager {
             val requestBody = JSONObject().apply {
                 put("email", email)
                 put("password", password)
+                if (userId != null) {
+                    put("userId", userId)
+                }
             }
             
             connection.outputStream.use { os ->

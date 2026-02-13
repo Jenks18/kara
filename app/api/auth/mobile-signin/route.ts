@@ -13,9 +13,9 @@ export async function OPTIONS() {
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, password } = await req.json();
+    const { email, password, userId } = await req.json();
 
-    console.log('📱 Mobile sign-in request:', { email });
+    console.log('📱 Mobile sign-in request:', { email, userId: userId ? 'provided' : 'not provided' });
 
     if (!email || !password) {
       return NextResponse.json(
@@ -26,20 +26,38 @@ export async function POST(req: NextRequest) {
 
     const client = await clerkClient();
     
-    // Get user by email
-    const users = await client.users.getUserList({ emailAddress: [email] });
+    // Get user by userId (if provided) or email
+    // Using userId avoids race condition after sign-up
+    let user;
     
-    console.log('📥 Found users:', users.data?.length || 0);
-    
-    if (!users.data || users.data.length === 0) {
-      console.log('❌ User not found for email:', email);
-      return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401, headers: corsHeaders }
-      );
+    if (userId) {
+      console.log('🆔 Looking up user by userId:', userId);
+      try {
+        user = await client.users.getUser(userId);
+        console.log('✅ User found by userId');
+      } catch (error) {
+        console.log('❌ User not found by userId:', userId);
+        return NextResponse.json(
+          { error: 'Invalid email or password' },
+          { status: 401, headers: corsHeaders }
+        );
+      }
+    } else {
+      console.log('📧 Looking up user by email');
+      const users = await client.users.getUserList({ emailAddress: [email] });
+      
+      console.log('📥 Found users:', users.data?.length || 0);
+      
+      if (!users.data || users.data.length === 0) {
+        console.log('❌ User not found for email:', email);
+        return NextResponse.json(
+          { error: 'Invalid email or password' },
+          { status: 401, headers: corsHeaders }
+        );
+      }
+      
+      user = users.data[0];
     }
-
-    const user = users.data[0];
     
     // Check if email is verified
     const primaryEmail = user.emailAddresses.find(e => e.id === user.primaryEmailAddressId);

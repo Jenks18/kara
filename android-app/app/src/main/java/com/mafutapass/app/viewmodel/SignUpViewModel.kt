@@ -54,8 +54,12 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
                     Log.d("SignUpViewModel", "✅ Account created! Signing in to complete setup...")
                     
                     // Automatically sign in with the credentials to get session token
-                    // Use backend sign-in to avoid Frontend API cookie issues
-                    val signInResult = ClerkAuthManager.signInViaBackend(email, password)
+                    // Pass userId to avoid race condition with email lookup
+                    val signInResult = ClerkAuthManager.signInViaBackend(
+                        email = email,
+                        password = password,
+                        userId = result.userId
+                    )
                     
                     if (!signInResult.success) {
                         Log.e("SignUpViewModel", "❌ Auto sign-in failed: ${signInResult.error}")
