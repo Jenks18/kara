@@ -28,16 +28,34 @@ export async function POST(req: NextRequest) {
     
     // Get user by userId (if provided) or email
     // Using userId avoids race condition after sign-up
+    // With retry logic for eventual consistency
     let user;
     
     if (userId) {
       console.log('🆔 Looking up user by userId:', userId);
-      try {
-        user = await client.users.getUser(userId);
-        console.log('✅ User found by userId:', user.id, 'email:', user.emailAddresses[0]?.emailAddress);
-      } catch (error: any) {
-        console.error('❌ Error looking up user by userId:', userId, 'Error:', error.message || error);
-        console.error('Error details:', JSON.stringify(error, null, 2));
+      
+      // Retry logic with exponential backoff (max 3 attempts over ~7 seconds)
+      let lastError: any;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          user = await client.users.getUser(userId);
+          console.log(`✅ User found by userId on attempt ${attempt}:`, user.id, 'email:', user.emailAddresses[0]?.emailAddress);
+          break; // Success, exit loop
+        } catch (error: any) {
+          lastError = error;
+          console.error(`❌ Attempt ${attempt}/3 - Error looking up user by userId:`, userId, 'Error:', error.message || error);
+          
+          if (attempt < 3) {
+            const delay = 1000 * Math.pow(2, attempt - 1); // 1s, 2s, 4s
+            console.log(`⏳ Waiting ${delay}ms before retry...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
+        }
+      }
+      
+      // If all retries failed, return error
+      if (!user) {
+        console.error('❌ All retry attempts failed. Last error:', JSON.stringify(lastError, null, 2));
         return NextResponse.json(
           { error: 'Invalid email or password' },
           { status: 401, headers: corsHeaders }
