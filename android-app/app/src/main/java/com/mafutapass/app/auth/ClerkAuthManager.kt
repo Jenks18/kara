@@ -79,6 +79,55 @@ object ClerkAuthManager {
             
             Log.d(TAG, "📥 Step 1: sign_in created with ID: $signInId, status: $status")
             
+            // Check supported first factors
+            val supportedFactors = signIn.optJSONArray("supported_first_factors")
+            var supportsPassword = false
+            var supportsTicket = false
+            
+            if (supportedFactors != null) {
+                for (i in 0 until supportedFactors.length()) {
+                    val factor = supportedFactors.getJSONObject(i)
+                    when (factor.getString("strategy")) {
+                        "password" -> supportsPassword = true
+                        "ticket" -> supportsTicket = true
+                    }
+                }
+            }
+            
+            Log.d(TAG, "🔍 Supported factors - password: $supportsPassword, ticket: $supportsTicket")
+            
+            // If email is unverified, Clerk requires email verification first (ticket strategy)
+            if (!supportsPassword && supportsTicket) {
+                Log.d(TAG, "📧 Email verification required - password not available yet")
+                
+                // Prepare email verification
+                val url3 = URL("${ClerkConfig.FRONTEND_API}/v1/client/sign_ins/$signInId/prepare_first_factor")
+                val connection3 = url3.openConnection() as HttpURLConnection
+                
+                connection3.requestMethod = "POST"
+                connection3.setRequestProperty("Content-Type", "application/json")
+                connection3.doOutput = true
+                
+                val requestBody3 = JSONObject().apply {
+                    put("strategy", "email_code")
+                    put("email_address_id", signIn.optString("identifier"))
+                }
+                
+                connection3.outputStream.use { os ->
+                    os.write(requestBody3.toString().toByteArray())
+                }
+                
+                val responseCode3 = connection3.responseCode
+                Log.d(TAG, "📧 Prepare verification response: $responseCode3")
+                
+                // Return that verification is needed
+                return@withContext AuthResult(
+                    success = true,
+                    needsVerification = true,
+                    signUpId = signInId
+                )
+            }
+            
             // Step 2: Attempt first factor (password)
             Log.d(TAG, "🔐 Step 2: Attempting password authentication")
             
