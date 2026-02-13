@@ -39,6 +39,36 @@ export async function POST(req: NextRequest) {
 
     console.log('✅ Clerk user created:', clerkUser.id);
 
+    // Get the primary email address
+    const primaryEmail = clerkUser.emailAddresses.find(e => e.id === clerkUser.primaryEmailAddressId);
+    
+    // Backend SDK doesn't automatically send verification emails
+    // We need to trigger it by attempting a sign-in via Frontend API
+    // This will cause Clerk to detect unverified email and send the code
+    if (primaryEmail && primaryEmail.verification.status !== 'verified') {
+      try {
+        console.log('📧 Triggering verification email by initiating sign-in...');
+        
+        // Call Clerk Frontend API to start sign-in (will trigger verification email)
+        const signInResponse = await fetch(`${process.env.NEXT_PUBLIC_CLERK_FRONTEND_API || 'https://clerk.mafutapass.com'}/v1/client/sign_ins`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            identifier: email,
+          }),
+        });
+        
+        const signInData = await signInResponse.json();
+        console.log('📧 Sign-in initiated, verification email triggered');
+        
+      } catch (emailError: any) {
+        console.error('⚠️ Failed to trigger verification email:', emailError.message);
+        // Continue anyway - user can trigger it by trying to sign in
+      }
+    }
+
     // Create user profile in Supabase
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -64,9 +94,6 @@ export async function POST(req: NextRequest) {
     } else {
       console.log('✅ Profile created in Supabase');
     }
-
-    // Email is unverified by default - user needs to verify
-    const primaryEmail = clerkUser.emailAddresses.find(e => e.id === clerkUser.primaryEmailAddressId);
 
     return NextResponse.json(
       {
