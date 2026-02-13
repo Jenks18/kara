@@ -109,42 +109,78 @@ object ClerkAuthManager {
             if (!supportsPassword && supportsTicket) {
                 Log.d(TAG, "📧 Email verification required - password not available yet")
                 
-                // First, we need to update the sign_in with the identifier
-                // by attempting with the email_code strategy
-                val url3 = URL("${ClerkConfig.FRONTEND_API}/v1/client/sign_ins/$signInId/prepare_first_factor")
-                val connection3 = url3.openConnection() as HttpURLConnection
+                // Step 2a: First, update the sign_in with the identifier using attempt_first_factor
+                Log.d(TAG, "🔐 Step 2a: Setting identifier with ticket strategy")
+                val url2a = URL("${ClerkConfig.FRONTEND_API}/v1/client/sign_ins/$signInId/attempt_first_factor")
+                val connection2a = url2a.openConnection() as HttpURLConnection
                 
-                connection3.requestMethod = "POST"
-                connection3.setRequestProperty("Content-Type", "application/json")
-                connection3.setRequestProperty("Cookie", cookies)  // Include cookies from first request
-                connection3.doOutput = true
+                connection2a.requestMethod = "POST"
+                connection2a.setRequestProperty("Content-Type", "application/json")
+                connection2a.setRequestProperty("Cookie", cookies)
+                connection2a.doOutput = true
                 
-                val requestBody3 = JSONObject().apply {
-                    put("strategy", "email_code")
-                    put("email_address", email)  // Use email_address instead of email_address_id
+                val requestBody2a = JSONObject().apply {
+                    put("strategy", "ticket")
+                    put("identifier", email)
                 }
                 
-                Log.d(TAG, "📤 Prepare verification request: $requestBody3")
+                Log.d(TAG, "📤 Set identifier request: $requestBody2a")
                 
-                connection3.outputStream.use { os ->
-                    os.write(requestBody3.toString().toByteArray())
+                connection2a.outputStream.use { os ->
+                    os.write(requestBody2a.toString().toByteArray())
                 }
                 
-                val responseCode3 = connection3.responseCode
-                val response3 = if (responseCode3 == 200) {
-                    connection3.inputStream.bufferedReader().use { it.readText() }
+                val responseCode2a = connection2a.responseCode
+                val response2a = if (responseCode2a == 200) {
+                    connection2a.inputStream.bufferedReader().use { it.readText() }
                 } else {
-                    connection3.errorStream?.bufferedReader()?.use { it.readText() } ?: "No error details"
+                    connection2a.errorStream?.bufferedReader()?.use { it.readText() } ?: "No error details"
                 }
                 
-                Log.d(TAG, "📧 Prepare verification response: $responseCode3")
-                Log.d(TAG, "📧 Prepare verification body: $response3")
+                Log.d(TAG, "📧 Set identifier response: $responseCode2a")
+                Log.d(TAG, "📧 Set identifier body: ${response2a.take(300)}")
                 
-                if (responseCode3 != 200) {
-                    Log.e(TAG, "❌ Failed to prepare email verification: $response3")
+                if (responseCode2a != 200) {
+                    Log.e(TAG, "❌ Failed to set identifier: $response2a")
                     return@withContext AuthResult(
                         success = false,
-                        error = "Failed to prepare email verification"
+                        error = "Failed to initiate email verification"
+                    )
+                }
+                
+                // Step 2b: Now prepare email code verification
+                Log.d(TAG, "📧 Step 2b: Preparing email code")
+                val url2b = URL("${ClerkConfig.FRONTEND_API}/v1/client/sign_ins/$signInId/prepare_first_factor")
+                val connection2b = url2b.openConnection() as HttpURLConnection
+                
+                connection2b.requestMethod = "POST"
+                connection2b.setRequestProperty("Content-Type", "application/json")
+                connection2b.setRequestProperty("Cookie", cookies)
+                connection2b.doOutput = true
+                
+                val requestBody2b = JSONObject().apply {
+                    put("strategy", "email_code")
+                }
+                
+                connection2b.outputStream.use { os ->
+                    os.write(requestBody2b.toString().toByteArray())
+                }
+                
+                val responseCode2b = connection2b.responseCode
+                val response2b = if (responseCode2b == 200) {
+                    connection2b.inputStream.bufferedReader().use { it.readText() }
+                } else {
+                    connection2b.errorStream?.bufferedReader()?.use { it.readText() } ?: "No error details"
+                }
+                
+                Log.d(TAG, "📧 Prepare email code response: $responseCode2b")
+                Log.d(TAG, "📧 Prepare email code body: ${response2b.take(300)}")
+                
+                if (responseCode2b != 200) {
+                    Log.e(TAG, "❌ Failed to prepare email code: $response2b")
+                    return@withContext AuthResult(
+                        success = false,
+                        error = "Failed to send verification email"
                     )
                 }
                 
