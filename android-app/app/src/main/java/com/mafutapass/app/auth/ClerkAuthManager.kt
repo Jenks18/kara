@@ -447,6 +447,96 @@ object ClerkAuthManager {
      * Sign up via backend API (bypasses CAPTCHA requirement)
      * Backend uses Clerk Backend SDK which doesn't require CAPTCHA
      */
+    /**
+     * Sign in via backend (bypasses Frontend API cookie issues)
+     */
+    suspend fun signInViaBackend(
+        email: String,
+        password: String
+    ): AuthResult = withContext(Dispatchers.IO) {
+        try {
+            Log.d(TAG, "📱 Signing in via backend: $email")
+            
+            val url = URL("https://www.mafutapass.com/api/auth/mobile-signin")
+            val connection = url.openConnection() as HttpURLConnection
+            
+            connection.requestMethod = "POST"
+            connection.setRequestProperty("Content-Type", "application/json")
+            connection.doOutput = true
+            
+            val requestBody = JSONObject().apply {
+                put("email", email)
+                put("password", password)
+            }
+            
+            connection.outputStream.use { os ->
+                os.write(requestBody.toString().toByteArray())
+            }
+            
+            val responseCode = connection.responseCode
+            Log.d(TAG, "📥 Backend sign-in response code: $responseCode")
+            
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                val response = connection.inputStream.bufferedReader().use { it.readText() }
+                Log.d(TAG, "📥 Backend sign-in response: $response")
+                
+                val responseJson = JSONObject(response)
+                
+                if (responseJson.getBoolean("success")) {
+                    val token = responseJson.getString("token")
+                    val userId = responseJson.getString("userId")
+                    
+                    Log.d(TAG, "✅ Backend sign-in successful! userId=$userId")
+                    
+                    AuthResult(
+                        success = true,
+                        token = token,
+                        userId = userId,
+                        email = email
+                    )
+                } else if (responseJson.optBoolean("needsVerification", false)) {
+                    // Email verification required
+                    val userId = responseJson.getString("userId")
+                    Log.d(TAG, "📧 Email verification required for user: $userId")
+                    
+                    AuthResult(
+                        success = true,
+                        needsVerification = true,
+                        userId = userId,
+                        email = email
+                    )
+                } else {
+                    val error = responseJson.optString("message", "Unknown error")
+                    Log.e(TAG, "❌ Backend sign-in failed: $error")
+                    AuthResult(success = false, error = error)
+                }
+            } else {
+                val errorResponse = connection.errorStream?.bufferedReader()?.use { it.readText() } ?: "No error details"
+                Log.e(TAG, "❌ Backend sign-in failed with code $responseCode: $errorResponse")
+                
+                // Try to parse error message from JSON response
+                val errorMessage = try {
+                    val errorJson = JSONObject(errorResponse)
+                    errorJson.optString("error", "Sign in failed")
+                } catch (e: Exception) {
+                    "Sign in failed: HTTP $responseCode"
+                }
+                
+                AuthResult(
+                    success = false,
+                    error = errorMessage
+                )
+            }
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Backend sign-in exception: ${e.message}", e)
+            AuthResult(
+                success = false,
+                error = "Sign in failed: ${e.message}"
+            )
+        }
+    }
+    
     suspend fun signUpViaBackend(
         email: String,
         password: String,

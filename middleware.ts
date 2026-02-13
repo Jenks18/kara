@@ -10,6 +10,7 @@ const isPublicRoute = createRouteMatcher([
   '/api/auth/verify-email(.*)', // Email verification
   '/api/auth/create-profile(.*)', // Profile creation after email verification
   '/api/auth/mobile-signup(.*)', // Backend sign-up (bypasses CAPTCHA)
+  '/api/auth/mobile-signin(.*)', // Backend sign-in (handles email verification)
   '/api/auth/verify-token(.*)',
   '/api/user-profile(.*)', // Profile API for mobile
   '/api/update-username(.*)', // Username update for mobile
