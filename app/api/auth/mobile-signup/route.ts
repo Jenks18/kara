@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     // Backend SDK doesn't automatically send verification emails
     // We need to trigger it by attempting a sign-in via Frontend API
     // This will cause Clerk to detect unverified email and send the code
-    if (primaryEmail && primaryEmail.verification.status !== 'verified') {
+    if (primaryEmail && primaryEmail.verification?.status !== 'verified') {
       try {
         console.log('📧 Triggering verification email by initiating sign-in...');
         
