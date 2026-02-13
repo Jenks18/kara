@@ -113,102 +113,18 @@ export async function POST(req: NextRequest) {
     console.log('📧 Verification object:', JSON.stringify(primaryEmail.verification, null, 2));
     console.log('📧 Verification status:', primaryEmail.verification?.status);
     
-    // Check if user was created via backend and needs verification (via metadata)
-    const needsVerificationMetadata = user.unsafeMetadata?.needsEmailVerification === true;
-    console.log('📧 Needs verification (metadata):', needsVerificationMetadata);
-    
-    // More explicit check - only proceed if explicitly verified
+    // Backend SDK auto-verifies emails, so we don't need to check verification status
+    // If you want email verification, you must use Frontend SDK (requires CAPTCHA)
     const isVerified = primaryEmail.verification?.status === 'verified';
     console.log('📧 Is verified (Clerk status)?:', isVerified);
     
-    // Force verification if metadata flag is set, regardless of Clerk status
-    if (needsVerificationMetadata || !isVerified) {
-      console.log('==========================================');
-      console.log('EMAIL VERIFICATION BLOCK ENTERED');
-      console.log('User ID:', user.id);
-      console.log('Email:', email);
-      console.log('Primary Email ID:', primaryEmail.id);
-      console.log('==========================================');
-      
-      // Send verification email via Frontend API
-      try {
-        const frontendAPI = process.env.NEXT_PUBLIC_CLERK_FRONTEND_API || 'https://clerk.mafutapass.com';
-        console.log('Frontend API URL:', frontendAPI);
-        
-        // Start sign-in to get session context
-        console.log('STEP 1: Initiating sign-in for verification...');
-        const signInResponse = await fetch(`${frontendAPI}/v1/client/sign_ins`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ identifier: email }),
-        });
-        
-        console.log('Sign-in response status:', signInResponse.status);
-        console.log('Sign-in response OK?:', signInResponse.ok);
-        
-        if (signInResponse.ok) {
-          const signInData = await signInResponse.json();
-          console.log('Sign-in data:', JSON.stringify(signInData, null, 2));
-          const signInId = signInData.response?.id;
-          
-          if (signInId) {
-            console.log('STEP 2: Got sign-in ID:', signInId);
-            console.log('STEP 3: Calling prepare_first_factor with email_code strategy...');
-            console.log('Email address ID:', primaryEmail.id);
-            
-            // Send verification email
-            const prepareResponse = await fetch(
-              `${frontendAPI}/v1/client/sign_ins/${signInId}/prepare_first_factor`,
-              {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  strategy: 'email_code',
-                  email_address_id: primaryEmail.id,
-                }),
-              }
-            );
-            
-            console.log('Prepare response status:', prepareResponse.status);
-            console.log('Prepare response OK?:', prepareResponse.ok);
-            
-            if (prepareResponse.ok) {
-              const prepareData = await prepareResponse.json();
-              console.log('==========================================');
-              console.log('SUCCESS: Verification email sent!');
-              console.log('Prepare response data:', JSON.stringify(prepareData, null, 2));
-              console.log('==========================================');
-            } else {
-              const errorText = await prepareResponse.text();
-              console.error('==========================================');
-              console.error('FAILED: Could not send verification email');
-              console.error('Error response:', errorText);
-              console.error('==========================================');
-            }
-          } else {
-            console.error('ERROR: No sign-in ID in response');
-          }
-        } else {
-          const errorText = await signInResponse.text();
-          console.error('ERROR: Sign-in request failed:', errorText);
-        }
-      } catch (emailError: any) {
-        console.error('==========================================');
-        console.error('EXCEPTION while sending verification email');
-        console.error('Error:', emailError.message);
-        console.error('Stack:', emailError.stack);
-        console.error('==========================================');
-      }
-      
+    // Check if email is verified (should always be true for Backend SDK users)
+    if (!isVerified) {
+      // Email is not verified (unusual for Backend SDK users)
+      console.error('⚠️ Email not verified for Backend SDK user:', user.id);
       return NextResponse.json(
-        {
-          success: true,
-          needsVerification: true,
-          userId: user.id,
-          email: email,
-          message: 'Email verification required. Check your inbox for verification code.'
-        },
-        { status: 200, headers: corsHeaders }
+        { error: 'Email verification issue. Please contact support.' },
+        { status: 500, headers: corsHeaders }
       );
     }
 

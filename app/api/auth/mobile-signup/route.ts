@@ -38,16 +38,10 @@ export async function POST(req: NextRequest) {
       lastName: lastName,
       skipPasswordChecks: false,
       skipPasswordRequirement: false,
-      // Mark that this user needs email verification
-      // The sign-in endpoint will check this and send verification email
-      unsafeMetadata: {
-        needsEmailVerification: true,
-        createdViaBackend: true,
-      },
     });
 
     console.log('✅ User created:', clerkUser.id);
-    console.log('📧 Verification will be handled during first sign-in attempt')
+    console.log('📧 Email auto-verified by Backend SDK (no verification flow needed)');
 
     // Create user profile in Supabase
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -80,10 +74,7 @@ export async function POST(req: NextRequest) {
         success: true,
         userId: clerkUser.id,
         email: email,
-        // Backend SDK users always need verification via sign-in
-        // Email verification happens through the sign-in flow
-        needsVerification: true,
-        message: 'Account created. Please check your email for verification code when signing in.'
+        message: 'Account created successfully. You can now sign in.'
       },
       { status: 200, headers: corsHeaders }
     );
