@@ -48,6 +48,52 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
                     return@launch
                 }
                 
+                // Backend sign-up creates account but doesn't return token
+                // User needs to sign in to get session token
+                if (result.needsVerification) {
+                    Log.d("SignUpViewModel", "✅ Account created! Signing in to complete setup...")
+                    
+                    // Automatically sign in with the credentials to get session token
+                    val signInResult = ClerkAuthManager.signIn(email, password)
+                    
+                    if (!signInResult.success) {
+                        Log.e("SignUpViewModel", "❌ Auto sign-in failed: ${signInResult.error}")
+                        // If sign-in requires verification, show verification screen
+                        if (signInResult.needsVerification) {
+                            _uiState.value = SignUpUiState.NeedsVerification(
+                                signUpId = signInResult.signUpId ?: "",
+                                email = email,
+                                username = username,
+                                firstName = firstName,
+                                lastName = lastName
+                            )
+                            return@launch
+                        }
+                        _uiState.value = SignUpUiState.Error("Account created but sign-in failed. Please sign in manually.")
+                        return@launch
+                    }
+                    
+                    // Sign-in successful, store token
+                    if (signInResult.token != null) {
+                        createSupabaseProfile(signInResult.token, email, username, firstName, lastName)
+                        
+                        val prefs = getApplication<Application>().getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
+                        prefs.edit().apply {
+                            putString("session_token", signInResult.token)
+                            putString("user_email", email)
+                            putBoolean("is_new_user", true)
+                        }.commit()
+                        
+                        Log.d("SignUpViewModel", "✅ Sign up and sign-in successful!")
+                        _uiState.value = SignUpUiState.Success
+                    } else {
+                        Log.e("SignUpViewModel", "❌ No token after sign-in")
+                        _uiState.value = SignUpUiState.Error("Account created. Please sign in manually.")
+                    }
+                    return@launch
+                }
+                
+                // Legacy path (shouldn't happen with backend sign-up)
                 // Check if email verification is needed
                 if (result.needsVerification) {
                     Log.d("SignUpViewModel", "📧 Email verification required - check your inbox")

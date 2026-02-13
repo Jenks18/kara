@@ -100,8 +100,10 @@ export async function POST(req: NextRequest) {
         success: true,
         userId: clerkUser.id,
         email: email,
-        emailVerified: primaryEmail?.verification?.status === 'verified',
-        needsVerification: primaryEmail?.verification?.status !== 'verified',
+        // Backend SDK users always need verification via sign-in
+        // Email verification happens through the sign-in flow
+        needsVerification: true,
+        message: 'Account created. Please check your email for verification code when signing in.'
       },
       { status: 200, headers: corsHeaders }
     );
