@@ -585,14 +585,14 @@ object ClerkAuthManager {
                 
                 if (responseJson.getBoolean("success")) {
                     val userId = responseJson.getString("userId")
-                    val needsVerification = responseJson.optBoolean("needsVerification", true)
+                    val token = responseJson.optString("token", null)
                     
-                    Log.d(TAG, "✅ Backend sign-up successful! userId=$userId, needsVerification=$needsVerification")
+                    Log.d(TAG, "✅ Backend sign-up successful! userId=$userId, token=${if(token != null) "received" else "none"}")
                     
                     AuthResult(
                         success = true,
                         userId = userId,
-                        needsVerification = needsVerification,
+                        token = token,
                         email = email
                     )
                 } else {

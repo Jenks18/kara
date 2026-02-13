@@ -43,38 +43,22 @@ export async function POST(req: NextRequest) {
     console.log('✅ User created:', clerkUser.id);
     console.log('📧 Email auto-verified by Backend SDK (no verification flow needed)');
 
-    // Create user profile in Supabase
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      throw new Error('Supabase credentials not configured');
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-    const { data: profile, error: profileError } = await supabase
-      .rpc('create_user_profile', {
-        p_clerk_user_id: clerkUser.id,
-        p_email: email,
-        p_full_name: `${firstName} ${lastName}`,
-        p_username: username,
-      });
-
-    if (profileError) {
-      console.error('❌ Profile creation error:', profileError);
-      // Don't fail the sign-up if profile creation fails
-      // User exists in Clerk, they can still log in
-    } else {
-      console.log('✅ Profile created in Supabase');
-    }
+    // Create session token immediately to avoid password propagation delay
+    console.log('🔑 Creating session token for new user...');
+    const sessionToken = await client.sessions.createSessionToken({
+      userId: clerkUser.id,
+      expiresInSeconds: 604800, // 7 days
+    });
+    
+    console.log('✅ Session token created successfully');
 
     return NextResponse.json(
       {
         success: true,
         userId: clerkUser.id,
         email: email,
-        message: 'Account created successfully. You can now sign in.'
+        token: sessionToken.jwt,
+        message: 'Account created successfully'
       },
       { status: 200, headers: corsHeaders }
     );
