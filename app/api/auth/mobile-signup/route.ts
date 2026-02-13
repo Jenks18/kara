@@ -35,9 +35,8 @@ export async function POST(req: NextRequest) {
       lastName: lastName,
       skipPasswordChecks: false,
       skipPasswordRequirement: false,
-      // IMPORTANT: Don't verify email automatically - user must verify it
-      skipEmailAddressVerification: false,
       // Mark that this user was created via backend and needs verification
+      // We'll check this metadata in sign-in to force verification
       unsafeMetadata: {
         needsEmailVerification: true,
         createdViaBackend: true,
