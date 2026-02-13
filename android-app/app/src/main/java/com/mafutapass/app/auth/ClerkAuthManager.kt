@@ -35,69 +35,107 @@ object ClerkAuthManager {
     
     suspend fun signIn(email: String, password: String): AuthResult = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "🔐 Signing in: $email")
+            Log.d(TAG, "🔐 Step 1: Starting sign-in with identifier: $email")
             
-            val url = URL("${ClerkConfig.FRONTEND_API}/v1/client/sign_ins")
-            val connection = url.openConnection() as HttpURLConnection
+            // Step 1: Create sign-in with identifier
+            val url1 = URL("${ClerkConfig.FRONTEND_API}/v1/client/sign_ins")
+            val connection1 = url1.openConnection() as HttpURLConnection
             
-            connection.requestMethod = "POST"
-            connection.setRequestProperty("Content-Type", "application/json")
-            connection.doOutput = true
+            connection1.requestMethod = "POST"
+            connection1.setRequestProperty("Content-Type", "application/json")
+            connection1.doOutput = true
             
-            val requestBody = JSONObject().apply {
+            val requestBody1 = JSONObject().apply {
                 put("identifier", email)
-                put("password", password)
             }
             
-            connection.outputStream.use { os ->
-                os.write(requestBody.toString().toByteArray())
+            connection1.outputStream.use { os ->
+                os.write(requestBody1.toString().toByteArray())
             }
             
-            val responseCode = connection.responseCode
-            val responseBody = if (responseCode == HttpURLConnection.HTTP_OK) {
-                connection.inputStream.bufferedReader().use { it.readText() }
+            val responseCode1 = connection1.responseCode
+            val responseBody1 = if (responseCode1 == HttpURLConnection.HTTP_OK) {
+                connection1.inputStream.bufferedReader().use { it.readText() }
             } else {
-                connection.errorStream?.bufferedReader()?.use { it.readText() } ?: ""
+                connection1.errorStream?.bufferedReader()?.use { it.readText() } ?: ""
             }
             
-            Log.d(TAG, "📥 Sign-in response code: $responseCode")
-            Log.d(TAG, "📥 Sign-in response: ${responseBody.take(1000)}")
+            Log.d(TAG, "📥 Step 1 response code: $responseCode1")
             
-            if (responseCode != HttpURLConnection.HTTP_OK) {
+            if (responseCode1 != HttpURLConnection.HTTP_OK) {
                 return@withContext AuthResult(
                     success = false,
                     error = "Invalid email or password"
                 )
             }
             
-            val json = JSONObject(responseBody)
-            val client = json.getJSONObject("client")
+            val json1 = JSONObject(responseBody1)
+            val client1 = json1.getJSONObject("client")
+            val signIn = client1.getJSONObject("sign_in")
+            val signInId = signIn.getString("id")
+            val status = signIn.getString("status")
             
-            Log.d(TAG, "🔍 Checking for sign_ins array...")
+            Log.d(TAG, "📥 Step 1: sign_in created with ID: $signInId, status: $status")
             
-            // Check if email verification is needed first
-            val signIns = client.optJSONArray("sign_ins")
-            Log.d(TAG, "🔍 Found sign_ins: ${signIns != null}, length: ${signIns?.length() ?: 0}")
+            // Step 2: Attempt first factor (password)
+            Log.d(TAG, "🔐 Step 2: Attempting password authentication")
             
-            if (signIns != null && signIns.length() > 0) {
-                val signIn = signIns.getJSONObject(0)
-                val status = signIn.optString("status", "")
-                Log.d(TAG, "🔍 Sign-in status: '$status'")
+            val url2 = URL("${ClerkConfig.FRONTEND_API}/v1/client/sign_ins/$signInId/attempt_first_factor")
+            val connection2 = url2.openConnection() as HttpURLConnection
+            
+            connection2.requestMethod = "POST"
+            connection2.setRequestProperty("Content-Type", "application/json")
+            connection2.doOutput = true
+            
+            val requestBody2 = JSONObject().apply {
+                put("strategy", "password")
+                put("password", password)
+            }
+            
+            connection2.outputStream.use { os ->
+                os.write(requestBody2.toString().toByteArray())
+            }
+            
+            val responseCode2 = connection2.responseCode
+            val responseBody2 = if (responseCode2 == HttpURLConnection.HTTP_OK) {
+                connection2.inputStream.bufferedReader().use { it.readText() }
+            } else {
+                connection2.errorStream?.bufferedReader()?.use { it.readText() } ?: ""
+            }
+            
+            Log.d(TAG, "📥 Step 2 response code: $responseCode2")
+            Log.d(TAG, "📥 Step 2 response: ${responseBody2.take(1000)}")
+            
+            if (responseCode2 != HttpURLConnection.HTTP_OK) {
+                return@withContext AuthResult(
+                    success = false,
+                    error = "Invalid email or password"
+                )
+            }
+            
+            val json2 = JSONObject(responseBody2)
+            val client2 = json2.getJSONObject("client")
+            
+            // Check if the sign_in needs email verification
+            val signIn2 = client2.optJSONObject("sign_in")
+            if (signIn2 != null) {
+                val status2 = signIn2.optString("status", "")
+                Log.d(TAG, "🔍 Sign-in status after password: '$status2'")
                 
-                // If needs first factor (email verification)
-                if (status == "needs_first_factor") {
-                    val signInId = signIn.getString("id")
-                    Log.d(TAG, "📧 Email verification required for sign-in: $signInId")
+                // If needs first factor verification (email code)
+                if (status2 == "needs_first_factor") {
+                    Log.d(TAG, "📧 Email verification required")
                     return@withContext AuthResult(
                         success = true,
                         needsVerification = true,
-                        signUpId = signInId // Reusing signUpId field for sign-in ID
+                        signUpId = signInId
                     )
                 }
             }
             
-            Log.d(TAG, "🔍 Checking for sessions array...")
-            val sessions = client.getJSONArray("sessions")
+            // Get the session
+            Log.d(TAG, "🔍 Checking for sessions...")
+            val sessions = client2.getJSONArray("sessions")
             Log.d(TAG, "🔍 Found sessions: ${sessions.length()}")
             
             if (sessions.length() == 0) {
