@@ -47,7 +47,7 @@ object ClerkAuthManager {
             
             val requestBody1 = JSONObject().apply {
                 put("identifier", email)
-                put("strategy", "password")
+                // Don't specify strategy yet - let Clerk tell us what's available
             }
             
             connection1.outputStream.use { os ->
