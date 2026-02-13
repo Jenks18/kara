@@ -444,28 +444,7 @@ fun SignUpView() {
         }
     }
 
-    // Show email verification screen if needed
-    if (state is SignUpViewModel.SignUpUiState.NeedsVerification) {
-        val verificationState = state as SignUpViewModel.SignUpUiState.NeedsVerification
-        EmailVerificationScreen(
-            email = verificationState.email,
-            userId = verificationState.signUpId,
-            onVerify = { code ->
-                android.util.Log.d("SignUpView", "Verifying email with code: $code")
-                viewModel.verifyEmail(
-                    verificationState.signUpId,
-                    code,
-                    verificationState.email,
-                    verificationState.username,
-                    verificationState.firstName,
-                    verificationState.lastName
-                )
-            },
-            pending = state is SignUpViewModel.SignUpUiState.Loading,
-            errorMessage = (state as? SignUpViewModel.SignUpUiState.Error)?.message
-        )
-        return
-    }
+    // Email verification not needed - Backend SDK auto-verifies emails
 
     // No CAPTCHA needed - Backend SDK handles sign-up securely
 
