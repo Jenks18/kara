@@ -123,12 +123,55 @@ export async function POST(req: NextRequest) {
     
     // Force verification if metadata flag is set, regardless of Clerk status
     if (needsVerificationMetadata || !isVerified) {
-      console.log('📧 Email not verified - user needs to verify');
+      console.log('📧 Email not verified - sending verification email...');
       
-      // Email was already sent during sign-up, just inform user
+      // Send verification email via Frontend API
+      try {
+        const frontendAPI = process.env.NEXT_PUBLIC_CLERK_FRONTEND_API || 'https://clerk.mafutapass.com';
+        
+        // Start sign-in to get session context
+        console.log('📧 Initiating sign-in for verification...');
+        const signInResponse = await fetch(`${frontendAPI}/v1/client/sign_ins`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identifier: email }),
+        });
+        
+        if (signInResponse.ok) {
+          const signInData = await signInResponse.json();
+          const signInId = signInData.response?.id;
+          
+          if (signInId) {
+            console.log('📧 Sign-in ID:', signInId, '- sending verification code...');
+            
+            // Send verification email
+            const prepareResponse = await fetch(
+              `${frontendAPI}/v1/client/sign_ins/${signInId}/prepare_first_factor`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  strategy: 'email_code',
+                  email_address_id: primaryEmail.id,
+                }),
+              }
+            );
+            
+            if (prepareResponse.ok) {
+              console.log('✅ Verification email sent successfully');
+            } else {
+              const errorText = await prepareResponse.text();
+              console.error('⚠️ Failed to send verification email:', errorText);
+            }
+          }
+        }
+      } catch (emailError: any) {
+        console.error('⚠️ Error sending verification email:', emailError.message);
+      }
+      
       return NextResponse.json(
         {
-          success: true,  // Changed to true so Android recognizes this as a valid response
+          success: true,
           needsVerification: true,
           userId: user.id,
           email: email,
