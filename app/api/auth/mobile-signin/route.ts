@@ -79,9 +79,25 @@ export async function POST(req: NextRequest) {
     }
     
     // Check if email is verified
+    console.log('✅ User retrieved successfully:', user.id);
+    console.log('📧 Checking email verification status...');
+    console.log('📧 Email addresses:', JSON.stringify(user.emailAddresses, null, 2));
+    console.log('📧 Primary email ID:', user.primaryEmailAddressId);
+    
     const primaryEmail = user.emailAddresses.find(e => e.id === user.primaryEmailAddressId);
     
-    if (primaryEmail && primaryEmail.verification?.status !== 'verified') {
+    if (!primaryEmail) {
+      console.error('❌ No primary email found for user!');
+      return NextResponse.json(
+        { error: 'Account configuration error' },
+        { status: 500, headers: corsHeaders }
+      );
+    }
+    
+    console.log('📧 Primary email:', primaryEmail.emailAddress);
+    console.log('📧 Verification status:', primaryEmail.verification?.status);
+    
+    if (primaryEmail.verification?.status !== 'verified') {
       console.log('📧 Email not verified - user needs to verify');
       
       // Email was already sent during sign-up, just inform user
@@ -97,6 +113,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    console.log('✅ Email is verified, proceeding with password authentication');
+    
     // Email is verified, verify password and create session token
     // Note: Clerk Backend SDK doesn't have password verification
     // We need to use the Frontend API for this part
