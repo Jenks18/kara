@@ -123,26 +123,38 @@ export async function POST(req: NextRequest) {
     
     // Force verification if metadata flag is set, regardless of Clerk status
     if (needsVerificationMetadata || !isVerified) {
-      console.log('📧 Email not verified - sending verification email...');
+      console.log('==========================================');
+      console.log('EMAIL VERIFICATION BLOCK ENTERED');
+      console.log('User ID:', user.id);
+      console.log('Email:', email);
+      console.log('Primary Email ID:', primaryEmail.id);
+      console.log('==========================================');
       
       // Send verification email via Frontend API
       try {
         const frontendAPI = process.env.NEXT_PUBLIC_CLERK_FRONTEND_API || 'https://clerk.mafutapass.com';
+        console.log('Frontend API URL:', frontendAPI);
         
         // Start sign-in to get session context
-        console.log('📧 Initiating sign-in for verification...');
+        console.log('STEP 1: Initiating sign-in for verification...');
         const signInResponse = await fetch(`${frontendAPI}/v1/client/sign_ins`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ identifier: email }),
         });
         
+        console.log('Sign-in response status:', signInResponse.status);
+        console.log('Sign-in response OK?:', signInResponse.ok);
+        
         if (signInResponse.ok) {
           const signInData = await signInResponse.json();
+          console.log('Sign-in data:', JSON.stringify(signInData, null, 2));
           const signInId = signInData.response?.id;
           
           if (signInId) {
-            console.log('📧 Sign-in ID:', signInId, '- sending verification code...');
+            console.log('STEP 2: Got sign-in ID:', signInId);
+            console.log('STEP 3: Calling prepare_first_factor with email_code strategy...');
+            console.log('Email address ID:', primaryEmail.id);
             
             // Send verification email
             const prepareResponse = await fetch(
@@ -157,16 +169,35 @@ export async function POST(req: NextRequest) {
               }
             );
             
+            console.log('Prepare response status:', prepareResponse.status);
+            console.log('Prepare response OK?:', prepareResponse.ok);
+            
             if (prepareResponse.ok) {
-              console.log('✅ Verification email sent successfully');
+              const prepareData = await prepareResponse.json();
+              console.log('==========================================');
+              console.log('SUCCESS: Verification email sent!');
+              console.log('Prepare response data:', JSON.stringify(prepareData, null, 2));
+              console.log('==========================================');
             } else {
               const errorText = await prepareResponse.text();
-              console.error('⚠️ Failed to send verification email:', errorText);
+              console.error('==========================================');
+              console.error('FAILED: Could not send verification email');
+              console.error('Error response:', errorText);
+              console.error('==========================================');
             }
+          } else {
+            console.error('ERROR: No sign-in ID in response');
           }
+        } else {
+          const errorText = await signInResponse.text();
+          console.error('ERROR: Sign-in request failed:', errorText);
         }
       } catch (emailError: any) {
-        console.error('⚠️ Error sending verification email:', emailError.message);
+        console.error('==========================================');
+        console.error('EXCEPTION while sending verification email');
+        console.error('Error:', emailError.message);
+        console.error('Stack:', emailError.stack);
+        console.error('==========================================');
       }
       
       return NextResponse.json(
