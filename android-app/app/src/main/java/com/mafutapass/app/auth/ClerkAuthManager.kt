@@ -322,9 +322,18 @@ object ClerkAuthManager {
             } else {
                 val errorResponse = connection.errorStream?.bufferedReader()?.use { it.readText() } ?: "No error details"
                 Log.e(TAG, "❌ Backend sign-up failed with code $responseCode: $errorResponse")
+                
+                // Try to parse error message from JSON response
+                val errorMessage = try {
+                    val errorJson = JSONObject(errorResponse)
+                    errorJson.optString("error", "Sign up failed")
+                } catch (e: Exception) {
+                    "Sign up failed: HTTP $responseCode"
+                }
+                
                 AuthResult(
                     success = false,
-                    error = "Sign up failed: HTTP $responseCode"
+                    error = errorMessage
                 )
             }
             
