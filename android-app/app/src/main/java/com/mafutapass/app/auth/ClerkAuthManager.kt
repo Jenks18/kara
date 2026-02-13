@@ -100,7 +100,8 @@ object ClerkAuthManager {
             if (!supportsPassword && supportsTicket) {
                 Log.d(TAG, "📧 Email verification required - password not available yet")
                 
-                // Prepare email verification
+                // First, we need to update the sign_in with the identifier
+                // by attempting with the email_code strategy
                 val url3 = URL("${ClerkConfig.FRONTEND_API}/v1/client/sign_ins/$signInId/prepare_first_factor")
                 val connection3 = url3.openConnection() as HttpURLConnection
                 
@@ -110,15 +111,32 @@ object ClerkAuthManager {
                 
                 val requestBody3 = JSONObject().apply {
                     put("strategy", "email_code")
-                    put("email_address_id", signIn.optString("identifier"))
+                    put("email_address", email)  // Use email_address instead of email_address_id
                 }
+                
+                Log.d(TAG, "📤 Prepare verification request: $requestBody3")
                 
                 connection3.outputStream.use { os ->
                     os.write(requestBody3.toString().toByteArray())
                 }
                 
                 val responseCode3 = connection3.responseCode
+                val response3 = if (responseCode3 == 200) {
+                    connection3.inputStream.bufferedReader().use { it.readText() }
+                } else {
+                    connection3.errorStream?.bufferedReader()?.use { it.readText() } ?: "No error details"
+                }
+                
                 Log.d(TAG, "📧 Prepare verification response: $responseCode3")
+                Log.d(TAG, "📧 Prepare verification body: $response3")
+                
+                if (responseCode3 != 200) {
+                    Log.e(TAG, "❌ Failed to prepare email verification: $response3")
+                    return@withContext AuthResult(
+                        success = false,
+                        error = "Failed to prepare email verification"
+                    )
+                }
                 
                 // Return that verification is needed
                 return@withContext AuthResult(
