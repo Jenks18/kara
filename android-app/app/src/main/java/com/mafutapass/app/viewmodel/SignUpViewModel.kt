@@ -26,15 +26,15 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
         .readTimeout(30, TimeUnit.SECONDS)
         .build()
 
-    fun signUp(email: String, password: String, username: String, firstName: String, lastName: String) {
+    fun signUp(email: String, password: String, username: String, firstName: String, lastName: String, captchaToken: String?) {
         viewModelScope.launch {
             _uiState.value = SignUpUiState.Loading
             
             try {
-                Log.d("SignUpViewModel", "📤 Signing up via Clerk Frontend API: $email")
+                Log.d("SignUpViewModel", "📱 Signing up via backend (bypasses CAPTCHA): $email")
                 
-                // Call Clerk Frontend API directly from Android
-                val result = ClerkAuthManager.signUp(
+                // Use backend route - no CAPTCHA needed
+                val result = ClerkAuthManager.signUpViaBackend(
                     email = email,
                     password = password,
                     username = username,
@@ -139,7 +139,8 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
         lastName: String
     ) {
         try {
-            Log.d("SignUpViewModel", "Creating Supabase profile...")
+            Log.d("SignUpViewModel", "📝 Creating Supabase profile for: $email")
+            Log.d("SignUpViewModel", "Token length: ${token.length}, first 30 chars: ${token.take(30)}")
             
             val json = JSONObject().apply {
                 put("token", token)
@@ -148,6 +149,8 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
                 put("firstName", firstName)
                 put("lastName", lastName)
             }
+            
+            Log.d("SignUpViewModel", "Request body: ${json.toString()}")
             
             val requestBody = json.toString()
                 .toRequestBody("application/json".toMediaType())
@@ -158,21 +161,28 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
                 .addHeader("Content-Type", "application/json")
                 .build()
             
+            Log.d("SignUpViewModel", "🌐 Sending request to: ${request.url}")
+            
             val (response, responseBody) = withContext(Dispatchers.IO) {
                 val resp = httpClient.newCall(request).execute()
                 val body = resp.body?.string() ?: ""
                 Pair(resp, body)
             }
             
+            Log.d("SignUpViewModel", "📥 Response code: ${response.code}")
+            Log.d("SignUpViewModel", "📥 Response body: $responseBody")
+            
             if (response.isSuccessful) {
-                Log.d("SignUpViewModel", "✅ Supabase profile created")
+                Log.d("SignUpViewModel", "✅ Supabase profile created successfully")
             } else {
-                Log.e("SignUpViewModel", "⚠️ Supabase profile creation failed: $responseBody")
+                Log.e("SignUpViewModel", "❌ Profile creation failed with code ${response.code}")
+                Log.e("SignUpViewModel", "❌ Error response: $responseBody")
                 // Don't fail the whole flow - user can still use the app
             }
             
         } catch (e: Exception) {
-            Log.e("SignUpViewModel", "⚠️ Error creating Supabase profile: ${e.message}")
+            Log.e("SignUpViewModel", "💥 Exception creating Supabase profile: ${e.message}")
+            Log.e("SignUpViewModel", "Stack trace: ", e)
             // Don't fail the whole flow
         }
     }
