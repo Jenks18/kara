@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
     try {
       console.log('📧 Triggering verification email via Frontend API...');
       
-      // Call Clerk Frontend API to start sign-in (will trigger verification email)
+      // Step 1: Start sign-in
       const signInResponse = await fetch(`${process.env.NEXT_PUBLIC_CLERK_FRONTEND_API || 'https://clerk.mafutapass.com'}/v1/client/sign_ins`, {
         method: 'POST',
         headers: {
@@ -67,8 +67,36 @@ export async function POST(req: NextRequest) {
         }),
       });
       
+      if (!signInResponse.ok) {
+        console.error('⚠️ Failed to start sign-in:', await signInResponse.text());
+        throw new Error('Failed to start sign-in');
+      }
+      
       const signInData = await signInResponse.json();
-      console.log('📧 Sign-in initiated, verification email triggered');
+      const signInId = signInData.response?.id;
+      
+      console.log('📧 Sign-in initiated, ID:', signInId);
+      
+      // Step 2: Prepare email verification (this sends the code)
+      if (signInId) {
+        const prepareResponse = await fetch(`${process.env.NEXT_PUBLIC_CLERK_FRONTEND_API || 'https://clerk.mafutapass.com'}/v1/client/sign_ins/${signInId}/prepare_first_factor`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            strategy: 'email_code',
+            email_address_id: primaryEmail?.id,
+          }),
+        });
+        
+        if (prepareResponse.ok) {
+          console.log('✅ Verification email sent successfully');
+        } else {
+          const errorText = await prepareResponse.text();
+          console.error('⚠️ Failed to prepare email verification:', errorText);
+        }
+      }
       
     } catch (emailError: any) {
       console.error('⚠️ Failed to trigger verification email:', emailError.message);
