@@ -55,6 +55,12 @@ object ClerkAuthManager {
             }
             
             val responseCode1 = connection1.responseCode
+            
+            // Extract cookies from response for subsequent requests
+            val cookies = connection1.headerFields["Set-Cookie"]?.joinToString("; ") { 
+                it.split(";")[0] // Get just the name=value part
+            } ?: ""
+            
             val responseBody1 = if (responseCode1 == HttpURLConnection.HTTP_OK) {
                 connection1.inputStream.bufferedReader().use { it.readText() }
             } else {
@@ -63,6 +69,9 @@ object ClerkAuthManager {
             
             Log.d(TAG, "📥 Step 1 response code: $responseCode1")
             Log.d(TAG, "📥 Step 1 response: ${responseBody1.take(500)}")
+            if (cookies.isNotEmpty()) {
+                Log.d(TAG, "🍪 Captured cookies for session")
+            }
             
             if (responseCode1 != HttpURLConnection.HTTP_OK) {
                 return@withContext AuthResult(
@@ -107,6 +116,7 @@ object ClerkAuthManager {
                 
                 connection3.requestMethod = "POST"
                 connection3.setRequestProperty("Content-Type", "application/json")
+                connection3.setRequestProperty("Cookie", cookies)  // Include cookies from first request
                 connection3.doOutput = true
                 
                 val requestBody3 = JSONObject().apply {
@@ -154,6 +164,7 @@ object ClerkAuthManager {
             
             connection2.requestMethod = "POST"
             connection2.setRequestProperty("Content-Type", "application/json")
+            connection2.setRequestProperty("Cookie", cookies)  // Include cookies from first request
             connection2.doOutput = true
             
             val requestBody2 = JSONObject().apply {
