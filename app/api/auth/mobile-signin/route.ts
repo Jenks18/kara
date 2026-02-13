@@ -12,8 +12,14 @@ export async function OPTIONS() {
 }
 
 export async function POST(req: NextRequest) {
+  const startTime = Date.now();
+  console.log('🚀 [SIGNIN] Request received at', new Date().toISOString());
+  
   try {
-    const { email, password, userId } = await req.json();
+    const body = await req.json();
+    console.log('📦 [SIGNIN] Request body:', JSON.stringify(body, null, 2));
+    
+    const { email, password, userId } = body;
 
     console.log('📱 Mobile sign-in request:', { email, userId: userId ? 'provided' : 'not provided' });
 
@@ -37,17 +43,23 @@ export async function POST(req: NextRequest) {
       // Retry logic with exponential backoff (max 3 attempts over ~7 seconds)
       let lastError: any;
       for (let attempt = 1; attempt <= 3; attempt++) {
+        const attemptStart = Date.now();
+        console.log(`🔄 [SIGNIN] Retry attempt ${attempt}/3 started at ${Date.now() - startTime}ms`);
+        
         try {
           user = await client.users.getUser(userId);
-          console.log(`✅ User found by userId on attempt ${attempt}:`, user.id, 'email:', user.emailAddresses[0]?.emailAddress);
+          console.log(`✅ [SIGNIN] User found on attempt ${attempt} (took ${Date.now() - attemptStart}ms):`, user.id, 'email:', user.emailAddresses[0]?.emailAddress);
           break; // Success, exit loop
         } catch (error: any) {
           lastError = error;
-          console.error(`❌ Attempt ${attempt}/3 - Error looking up user by userId:`, userId, 'Error:', error.message || error);
+          console.error(`❌ [SIGNIN] Attempt ${attempt}/3 failed after ${Date.now() - attemptStart}ms`);
+          console.error(`❌ [SIGNIN] Error:`, error.message || error);
+          console.error(`❌ [SIGNIN] Error status:`, error.status || 'N/A');
+          console.error(`❌ [SIGNIN] Error details:`, JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
           
           if (attempt < 3) {
             const delay = 1000 * Math.pow(2, attempt - 1); // 1s, 2s, 4s
-            console.log(`⏳ Waiting ${delay}ms before retry...`);
+            console.log(`⏳ [SIGNIN] Waiting ${delay}ms before retry (total elapsed: ${Date.now() - startTime}ms)`);
             await new Promise(resolve => setTimeout(resolve, delay));
           }
         }
@@ -55,14 +67,15 @@ export async function POST(req: NextRequest) {
       
       // If all retries failed, return error
       if (!user) {
-        console.error('❌ All retry attempts failed. Last error:', JSON.stringify(lastError, null, 2));
+        console.error(`❌ [SIGNIN] All retry attempts failed after ${Date.now() - startTime}ms`);
+        console.error('❌ [SIGNIN] Last error:', JSON.stringify(lastError, Object.getOwnPropertyNames(lastError), 2));
         return NextResponse.json(
           { error: 'Invalid email or password' },
           { status: 401, headers: corsHeaders }
         );
       }
     } else {
-      console.log('📧 Looking up user by email');
+      console.log(`📧 [SIGNIN] Looking up user by email at ${Date.now() - startTime}ms`);
       const users = await client.users.getUserList({ emailAddress: [email] });
       
       console.log('📥 Found users:', users.data?.length || 0);
@@ -79,7 +92,7 @@ export async function POST(req: NextRequest) {
     }
     
     // Check if email is verified
-    console.log('✅ User retrieved successfully:', user.id);
+    console.log(`✅ [SIGNIN] User retrieved successfully after ${Date.now() - startTime}ms:`, user.id);
     console.log('📧 Checking email verification status...');
     console.log('📧 Email addresses:', JSON.stringify(user.emailAddresses, null, 2));
     console.log('📧 Primary email ID:', user.primaryEmailAddressId);
@@ -211,6 +224,7 @@ export async function POST(req: NextRequest) {
       );
     } catch (frontendError: any) {
       console.error('❌ Frontend API error:', frontendError.message);
+      console.error(`❌ [SIGNIN] Total time: ${Date.now() - startTime}ms`);
       return NextResponse.json(
         { error: 'Sign-in failed: ' + frontendError.message },
         { status: 500, headers: corsHeaders }
@@ -219,6 +233,7 @@ export async function POST(req: NextRequest) {
 
   } catch (error: any) {
     console.error('❌ Mobile sign-in error:', error);
+    console.error(`❌ [SIGNIN] Total time: ${Date.now() - startTime}ms`);
     return NextResponse.json(
       { error: error.message || 'Sign-in failed' },
       { status: 500, headers: corsHeaders }
