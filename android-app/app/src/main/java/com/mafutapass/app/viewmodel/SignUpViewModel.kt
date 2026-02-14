@@ -115,8 +115,8 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
         }
 
         val jsonResponse = JSONObject(responseBody)
-        val signInToken = jsonResponse.optString("signInToken", null)
-        val userId = jsonResponse.optString("userId", null)
+        val signInToken = jsonResponse.optString("signInToken").takeIf { it.isNotEmpty() }
+        val userId = jsonResponse.optString("userId").takeIf { it.isNotEmpty() }
 
         SignupResult(
             success = true,
@@ -149,7 +149,8 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
         }
 
         val jsonResponse = JSONObject(responseBody)
-        return@withContext jsonResponse.optString("token", null)
+        val token = jsonResponse.optString("token")
+        return@withContext if (token.isNotEmpty()) token else null
     }
 
     private data class SignupResult(

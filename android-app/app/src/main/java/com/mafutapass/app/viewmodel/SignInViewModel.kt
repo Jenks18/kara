@@ -69,7 +69,8 @@ class SignInViewModel : ViewModel() {
         }
 
         val jsonResponse = JSONObject(responseBody)
-        return@withContext jsonResponse.optString("token", null)
+        val token = jsonResponse.optString("token")
+        return@withContext if (token.isNotEmpty()) token else null
     }
 
     sealed interface SignInUiState {
