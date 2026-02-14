@@ -43,33 +43,65 @@ export async function POST(req: NextRequest) {
     console.log('✅ User created:', clerkUser.id);
     console.log('📧 Email auto-verified by Backend SDK (no verification flow needed)');
 
-    // Create a session directly using Backend SDK (bypasses Cloudflare-protected Frontend API)
-    console.log('🔑 Creating session directly for immediate authentication...');
-    const session = await client.sessions.createSession({
+    // Create sign-in token, then exchange it on backend (bypasses Cloudflare blocking Android)
+    console.log('🔑 Creating sign-in token...');
+    const signInToken = await client.signInTokens.createSignInToken({
       userId: clerkUser.id,
+      expiresInSeconds: 300,
     });
     
-    console.log('✅ Session created successfully:', session.id);
+    console.log('✅ Sign-in token created, exchanging for JWT on backend...');
     
-    // Get the session token (JWT) using the correct Backend SDK method
-    const sessionToken = await client.sessions.getToken(session.id, 'default-session');
-    
-    if (!sessionToken) {
-      console.error('❌ No JWT token obtained from session');
+    // Exchange token on OUR backend (Cloudflare trusts us, not Android)
+    const frontendApi = process.env.NEXT_PUBLIC_CLERK_FRONTEND_API;
+    if (!frontendApi) {
+      console.error('❌ NEXT_PUBLIC_CLERK_FRONTEND_API not configured');
       return NextResponse.json(
-        { error: 'Failed to create session token' },
+        { error: 'Server configuration error' },
         { status: 500, headers: corsHeaders }
       );
     }
     
-    console.log('✅ Session JWT obtained - user can authenticate immediately');
+    const exchangeResponse = await fetch(`${frontendApi}/v1/tickets/accept`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'MafutaPass-Backend/1.0',
+      },
+      body: JSON.stringify({
+        strategy: 'ticket',
+        ticket: signInToken.token,
+      }),
+    });
+    
+    if (!exchangeResponse.ok) {
+      const errorText = await exchangeResponse.text();
+      console.error('❌ Token exchange failed:', exchangeResponse.status, errorText);
+      return NextResponse.json(
+        { error: 'Failed to authenticate user' },
+        { status: 500, headers: corsHeaders }
+      );
+    }
+    
+    const exchangeData = await exchangeResponse.json();
+    const jwt = exchangeData?.client?.sessions?.[0]?.last_active_token?.jwt;
+    
+    if (!jwt) {
+      console.error('❌ No JWT in exchange response');
+      return NextResponse.json(
+        { error: 'Failed to get session token' },
+        { status: 500, headers: corsHeaders }
+      );
+    }
+    
+    console.log('✅ JWT obtained successfully!');
 
     return NextResponse.json(
       {
         success: true,
         userId: clerkUser.id,
         email: email,
-        sessionToken: sessionToken.jwt,
+        sessionToken: jwt,
         message: 'Account created successfully'
       },
       { status: 200, headers: corsHeaders }
