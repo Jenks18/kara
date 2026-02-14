@@ -33,14 +33,33 @@ function getGlobalClient() {
 let originalFetch: any = null
 
 /**
- * Get authenticated Supabase client with fresh Clerk JWT
- * 
- * TRUE SINGLETON APPROACH:
+ * Extract headers into a plain Record, handling both Headers instances
+ * and plain objects. This prevents the bug where spreading a Headers
+ * instance produces {} and drops Content-Type (causing PGRST102).
+ */
+function headersToRecord(headers: any): Record<string, string> {
+  const result: Record<string, string> = {}
+  if (!headers) return result
+  if (headers instanceof Headers) {
+    headers.forEach((value: string, key: string) => {
+      result[key] = value
+    })
+  } else if (typeof headers === 'object') {
+    Object.entries(headers).forEach(([key, value]) => {
+      if (value !== undefined) result[key] = String(value)
+    })
+  }
+  return result
+}
+
+/**
+ * Get authenticated Supabase client with fresh Clerk JWT.
+ *
+ * TRUE SINGLETON + RLS APPROACH:
  * - Only ONE Supabase client instance ever created
- * - ONE GoTrueClient = no multiple instance warnings
- * - Gets fresh Clerk JWT on EVERY request (prevents expiration)
- * - Sets Authorization header dynamically
- * - Properly integrates with Clerk auth lifecycle
+ * - Gets fresh Clerk-minted Supabase JWT on EVERY request
+ * - Properly preserves ALL headers (Content-Type, Prefer, etc.)
+ * - RLS policies enforce access at the database level
  */
 export async function getSupabaseClient() {
   const client = getGlobalClient()
@@ -53,13 +72,15 @@ export async function getSupabaseClient() {
       try {
         const clerk = (window as any).Clerk
         if (clerk && clerk.session) {
-          // Get FRESH token for this request
+          // Get FRESH Supabase-compatible JWT from Clerk
           const token = await clerk.session.getToken({ template: 'supabase' })
           if (token) {
+            // Safely merge all existing headers + auth token
+            const existingHeaders = headersToRecord(options.headers)
             return originalFetch.call(client.rest, url, {
               ...options,
               headers: {
-                ...options.headers,
+                ...existingHeaders,
                 Authorization: `Bearer ${token}`,
               },
             })

@@ -40,58 +40,57 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
   return data
 }
 
+/**
+ * Update user profile directly via Supabase client with RLS enforcement.
+ * The Clerk-minted Supabase JWT ensures auth.uid() = user_id in RLS policies.
+ * No service role key, no server-side bypass — database enforces access.
+ */
 export async function updateUserProfile(
   userId: string,
   updates: Partial<Omit<UserProfile, 'id' | 'created_at' | 'updated_at'>>
 ): Promise<UserProfile | null> {
   const supabase = await getSupabaseClient()
-  
-  const payload: any = {
-    user_id: userId,
-    ...updates,
-  }
-  
-  try {
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .upsert(payload)
-      .select()
-      .single()
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .upsert(
+      {
+        user_id: userId,
+        ...updates,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id', ignoreDuplicates: false }
+    )
+    .select()
+    .single()
 
-    if (error) {
-      console.error('Error updating user profile:', error)
-      return null
-    }
-
-    return data
-  } catch (err) {
-    console.error('Exception updating user profile:', err)
+  if (error) {
+    console.error('Error updating user profile:', error)
     return null
   }
+
+  return data
 }
 
+/**
+ * Update avatar directly via Supabase client with RLS enforcement.
+ */
 export async function updateAvatar(
   userId: string,
   avatar: { emoji: string; color: string },
   userEmail?: string
 ): Promise<boolean> {
   const supabase = await getSupabaseClient()
-  const updateData: any = {
+  const updates: any = {
     user_id: userId,
     avatar_emoji: avatar.emoji,
     avatar_color: avatar.color,
+    updated_at: new Date().toISOString(),
   }
-  
-  if (userEmail) {
-    updateData.user_email = userEmail
-  }
+  if (userEmail) updates.user_email = userEmail
 
   const { error } = await supabase
     .from('user_profiles')
-    .upsert(updateData, {
-      onConflict: 'user_id',
-      ignoreDuplicates: false,
-    })
+    .upsert(updates, { onConflict: 'user_id', ignoreDuplicates: false })
 
   if (error) {
     console.error('Error updating avatar:', error)
