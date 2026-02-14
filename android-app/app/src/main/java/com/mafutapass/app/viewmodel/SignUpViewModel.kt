@@ -50,8 +50,41 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
                 
                 Log.d("SignUpViewModel", "✅ Account created successfully!")
                 
-                // Account created - show success and navigate to sign-in
-                _uiState.value = SignUpUiState.AccountCreated(email)
+                // Check if we received a sign-in token for automatic authentication
+                val signInToken = result.signInToken
+                if (signInToken != null) {
+                    Log.d("SignUpViewModel", "🔑 Sign-in token received, exchanging for session...")
+                    
+                    // Exchange sign-in token for JWT session token
+                    val tokenResult = ClerkAuthManager.exchangeSignInToken(signInToken)
+                    
+                    if (!tokenResult.success || tokenResult.token == null) {
+                        Log.e("SignUpViewModel", "❌ Token exchange failed: ${tokenResult.error}")
+                        _uiState.value = SignUpUiState.Error(tokenResult.error ?: "Authentication failed")
+                        return@launch
+                    }
+                    
+                    val jwt = tokenResult.token!!
+                    Log.d("SignUpViewModel", "✅ JWT received, creating profile...")
+                    
+                    // Create Supabase profile
+                    createSupabaseProfile(jwt, email, username, firstName, lastName)
+                    
+                    // Store token
+                    val prefs = getApplication<Application>().getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
+                    prefs.edit().apply {
+                        putString("session_token", jwt)
+                        putString("user_email", email)
+                        putBoolean("is_new_user", false)
+                    }.commit()
+                    
+                    Log.d("SignUpViewModel", "✅ Sign-up complete - automatically signed in!")
+                    _uiState.value = SignUpUiState.Success
+                } else {
+                    // Fallback: Account created but needs manual sign-in
+                    Log.d("SignUpViewModel", "⚠️ No sign-in token - user needs to sign in manually")
+                    _uiState.value = SignUpUiState.AccountCreated(email)
+                }
                 
             } catch (e: Exception) {
                 Log.e("SignUpViewModel", "❌ Sign up error: ${e.message}", e)
