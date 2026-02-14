@@ -27,6 +27,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log('🔄 Calling Clerk Frontend API:', `${frontendApi}/v1/tickets/accept`);
+    console.log('🎫 Token (first 50 chars):', signInToken.substring(0, 50) + '...');
+
     // Call Clerk's Frontend API to exchange token for session
     const response = await fetch(`${frontendApi}/v1/tickets/accept`, {
       method: 'POST',
@@ -43,8 +46,14 @@ export async function POST(request: NextRequest) {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('❌ Token exchange failed:', response.status, errorText);
+      console.error('❌ Request details:', {
+        url: `${frontendApi}/v1/tickets/accept`,
+        token: signInToken.substring(0, 50) + '...',
+        responseStatus: response.status,
+        responseHeaders: Object.fromEntries(response.headers.entries())
+      });
       return NextResponse.json(
-        { success: false, error: 'Token exchange failed' },
+        { success: false, error: 'Token exchange failed', details: errorText.substring(0, 200) },
         { status: response.status }
       );
     }
