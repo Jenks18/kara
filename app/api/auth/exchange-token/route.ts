@@ -40,25 +40,36 @@ export async function POST(request: NextRequest) {
     }
 
     // Create a session for the user using Backend SDK
-    const sessionToken = await client.sessions.createSession({
+    const session = await client.sessions.createSession({
       userId: userId,
     });
 
-    if (!sessionToken || !sessionToken.lastActiveToken?.jwt) {
-      console.error('❌ No JWT in session response');
+    if (!session || !session.id) {
+      console.error('❌ Failed to create session');
       return NextResponse.json(
         { success: false, error: 'Failed to create session' },
         { status: 500, headers: corsHeaders }
       );
     }
 
-    console.log('✅ Session created successfully! Session ID:', sessionToken.id);
+    // Get session token (JWT) from Backend SDK
+    const sessionToken = await client.sessions.getToken(session.id);
+
+    if (!sessionToken) {
+      console.error('❌ No JWT token for session');
+      return NextResponse.json(
+        { success: false, error: 'Failed to get session token' },
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
+    console.log('✅ Session created successfully! Session ID:', session.id);
 
     return NextResponse.json({
       success: true,
-      token: sessionToken.lastActiveToken.jwt,
+      token: sessionToken.jwt,
       userId: userId,
-      sessionId: sessionToken.id,
+      sessionId: session.id,
     }, { headers: corsHeaders });
 
   } catch (error: any) {
