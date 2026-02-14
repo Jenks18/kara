@@ -92,8 +92,8 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.5.0")
 
     // Clerk Authentication
-    implementation("com.clerk:clerk-android-api:0.1.31")
-    implementation("com.clerk:clerk-android-ui:0.1.5")
+    implementation("com.clerk:clerk-android-api:1.0.1")
+    implementation("com.clerk:clerk-android-ui:1.0.1")
 
     // Supabase (for stable OAuth) - using BOM for version management
     implementation(platform("io.github.jan-tennert.supabase:bom:2.0.0"))
