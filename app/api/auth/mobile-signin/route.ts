@@ -49,6 +49,7 @@ export async function POST(req: NextRequest) {
 
       const signInData = await signInResponse.json();
       const signInId = signInData.response?.id;
+      const clientObject = signInData.client; // Extract client object for state continuity
 
       if (!signInId) {
         console.error('❌ No sign-in ID received');
@@ -58,24 +59,21 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // Extract ALL cookies from step 1 to maintain session state
-      // Use getSetCookie() to get array of all Set-Cookie headers
-      const setCookieHeaders = signInResponse.headers.getSetCookie();
-      const cookies = setCookieHeaders.map(header => header.split(';')[0]).join('; ');
-      console.log(`🍪 Cookies from step 1: ${setCookieHeaders.length} cookies -`, cookies);
+      console.log('📦 Client object from step 1:', clientObject?.id ? 'Present' : 'Missing');
 
       // Step 2: Attempt first factor with ticket
+      // Include the client object from step 1 to maintain session state
       const attemptResponse = await fetch(
         `${frontendApi}/v1/client/sign_ins/${signInId}/attempt_first_factor?_clerk_js_version=4.70.0`,
         {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
-            ...(cookies && { 'Cookie': cookies }), // Include cookies for session continuity
           },
           body: JSON.stringify({ 
             strategy: 'ticket',
             ticket: signInToken,
+            client: clientObject, // Pass client object to maintain state
           }),
         }
       );
