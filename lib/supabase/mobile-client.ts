@@ -39,8 +39,9 @@ export async function createMobileClient(
 
   // Mint a Supabase-compatible JWT with the claims that RLS policies expect.
   // - iss: must be 'supabase' to match PostgREST config
-  // - sub: Clerk user ID → accessed via auth.uid() in RLS
-  // - email: user's email → accessed via auth.jwt()->>'email' in RLS
+  // - sub: Clerk user ID → accessed via (auth.jwt()->>'sub') in RLS
+  //   NOTE: Do NOT use auth.uid() — it casts sub to UUID, which fails for Clerk IDs
+  // - email: user's email → accessed via (auth.jwt()->>'email') in RLS
   // - aud/role: required by Supabase to treat this as an authenticated request
   const now = Math.floor(Date.now() / 1000);
   const supabaseToken = jwt.sign(

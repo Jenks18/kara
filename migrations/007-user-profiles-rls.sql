@@ -2,13 +2,14 @@
 -- MIGRATION 007: Clean RLS policies on user_profiles
 -- ========================================
 --
--- Drops ALL existing policies (including duplicates from prior runs)
--- and creates exactly 3 clean policies:
---   SELECT, INSERT, UPDATE — all enforcing user_id = auth.uid()::text
+-- SUPERSEDED by migration 008 which fixes ALL tables.
+-- Kept for history. If re-running, use 008 instead.
 --
--- No DELETE policy — profiles can only be deleted via service role (admin).
+-- NOTE: auth.uid()::text does NOT work with Clerk user IDs because
+-- auth.uid() casts the "sub" claim to UUID internally, and Clerk IDs
+-- like "user_xxxx" are not valid UUIDs.
+-- Use (auth.jwt()->>'sub') instead.
 --
--- IMPORTANT: Re-run this if you see duplicate policies.
 -- RUN: Execute in Supabase SQL Editor (Dashboard → SQL Editor)
 
 BEGIN;
@@ -44,18 +45,18 @@ ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "user_profiles_select"
   ON user_profiles FOR SELECT
   TO authenticated
-  USING (user_id = auth.uid()::text);
+  USING (user_id = (auth.jwt()->>'sub'));
 
 CREATE POLICY "user_profiles_insert"
   ON user_profiles FOR INSERT
   TO authenticated
-  WITH CHECK (user_id = auth.uid()::text);
+  WITH CHECK (user_id = (auth.jwt()->>'sub'));
 
 CREATE POLICY "user_profiles_update"
   ON user_profiles FOR UPDATE
   TO authenticated
-  USING (user_id = auth.uid()::text)
-  WITH CHECK (user_id = auth.uid()::text);
+  USING (user_id = (auth.jwt()->>'sub'))
+  WITH CHECK (user_id = (auth.jwt()->>'sub'));
 
 -- ========================================
 -- 4. VERIFICATION (should show exactly 3 rows)
