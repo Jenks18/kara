@@ -1,12 +1,10 @@
 /**
  * Shared utility: exchange a Clerk sign-in token for a session JWT.
  *
- * The Clerk Frontend API requires client context (__client cookie) to create
- * sessions and return JWTs. When calling from a server (no browser), we must:
- *   1. GET /v1/client          → initialize a client, capture cookies
- *   2. POST /v1/client/sign_ins → exchange ticket WITH those cookies
- *
- * This is the same flow browsers execute automatically via the Clerk JS SDK.
+ * The Clerk Frontend API requires:
+ *   1. A client context (__client cookie) — obtained via GET /v1/client
+ *   2. Form-encoded body (application/x-www-form-urlencoded) — NOT JSON
+ *      The JS SDK always sends form data; JSON bodies are silently ignored.
  */
 
 export async function exchangeSignInTokenForJwt(
@@ -33,9 +31,14 @@ export async function exchangeSignInTokenForJwt(
     const cookieString = extractSetCookies(clientRes);
     console.log('🍪 Clerk client initialized, cookies present:', cookieString.length > 0);
 
-    // Step 2: Exchange the sign-in token for a session (with client cookies)
+    // Step 2: Exchange the sign-in token using FORM-ENCODED body (critical!)
+    // Clerk Frontend API ignores JSON bodies — the JS SDK always uses form encoding.
+    const formBody = new URLSearchParams();
+    formBody.append('strategy', 'ticket');
+    formBody.append('ticket', signInTokenValue);
+
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/x-www-form-urlencoded',
     };
     if (cookieString) {
       headers['Cookie'] = cookieString;
@@ -46,7 +49,7 @@ export async function exchangeSignInTokenForJwt(
       {
         method: 'POST',
         headers,
-        body: JSON.stringify({ strategy: 'ticket', ticket: signInTokenValue }),
+        body: formBody.toString(),
         cache: 'no-store' as RequestCache,
       }
     );
@@ -58,6 +61,9 @@ export async function exchangeSignInTokenForJwt(
     }
 
     const data = await exchangeRes.json();
+
+    console.log('📋 Exchange response — sign_in status:', data.response?.status,
+      '| sessions:', data.client?.sessions?.length ?? 0);
 
     // Extract JWT — try multiple known paths in the Clerk response
     const jwt =
