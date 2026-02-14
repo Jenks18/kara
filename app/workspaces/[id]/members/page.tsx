@@ -41,12 +41,18 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
   const [showShareModal, setShowShareModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [inviteInput, setInviteInput] = useState('')
-
-  const shareUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/workspaces/${workspaceId}/join`
+  const [shareUrl, setShareUrl] = useState('')
 
   useEffect(() => {
     params.then(p => setWorkspaceId(p.id))
   }, [params])
+
+  // Compute share URL client-side to avoid hydration mismatch
+  useEffect(() => {
+    if (workspaceId) {
+      setShareUrl(`${window.location.origin}/workspaces/${workspaceId}/join`)
+    }
+  }, [workspaceId])
 
   useEffect(() => {
     async function fetchData() {

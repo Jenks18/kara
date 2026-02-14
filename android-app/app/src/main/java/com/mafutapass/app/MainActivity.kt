@@ -128,7 +128,29 @@ fun MafutaPassApp() {
                             )
                         }
                         composable("profile") {
-                            ProfileScreen(onBack = { navController.popBackStack() })
+                            ProfileScreen(
+                                onBack = { navController.popBackStack() },
+                                onNavigateToEditDisplayName = { navController.navigate("profile/edit-display-name") },
+                                onNavigateToEditLegalName = { navController.navigate("profile/edit-legal-name") },
+                                onNavigateToEditPhoneNumber = { navController.navigate("profile/edit-phone") },
+                                onNavigateToEditDateOfBirth = { navController.navigate("profile/edit-dob") },
+                                onNavigateToEditAddress = { navController.navigate("profile/edit-address") }
+                            )
+                        }
+                        composable("profile/edit-display-name") {
+                            EditDisplayNameScreen(onBack = { navController.popBackStack() })
+                        }
+                        composable("profile/edit-legal-name") {
+                            EditLegalNameScreen(onBack = { navController.popBackStack() })
+                        }
+                        composable("profile/edit-phone") {
+                            EditPhoneNumberScreen(onBack = { navController.popBackStack() })
+                        }
+                        composable("profile/edit-dob") {
+                            EditDateOfBirthScreen(onBack = { navController.popBackStack() })
+                        }
+                        composable("profile/edit-address") {
+                            EditAddressScreen(onBack = { navController.popBackStack() })
                         }
                         composable("preferences") {
                             PreferencesScreen(onBack = { navController.popBackStack() })
@@ -148,6 +170,22 @@ fun MafutaPassApp() {
                         composable("workspaces/{workspaceId}") { backStackEntry ->
                             val workspaceId = backStackEntry.arguments?.getString("workspaceId") ?: return@composable
                             WorkspaceDetailScreen(
+                                workspaceId = workspaceId,
+                                onBack = { navController.popBackStack() },
+                                onNavigateToOverview = { navController.navigate("workspaces/$workspaceId/overview") },
+                                onNavigateToMembers = { navController.navigate("workspaces/$workspaceId/members") }
+                            )
+                        }
+                        composable("workspaces/{workspaceId}/overview") { backStackEntry ->
+                            val workspaceId = backStackEntry.arguments?.getString("workspaceId") ?: return@composable
+                            WorkspaceOverviewScreen(
+                                workspaceId = workspaceId,
+                                onBack = { navController.popBackStack() }
+                            )
+                        }
+                        composable("workspaces/{workspaceId}/members") { backStackEntry ->
+                            val workspaceId = backStackEntry.arguments?.getString("workspaceId") ?: return@composable
+                            WorkspaceMembersScreen(
                                 workspaceId = workspaceId,
                                 onBack = { navController.popBackStack() }
                             )

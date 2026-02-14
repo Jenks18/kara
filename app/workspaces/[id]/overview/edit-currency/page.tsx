@@ -7,7 +7,7 @@ import { ChevronLeft, Search, Check } from 'lucide-react'
 export const dynamic = 'force-dynamic'
 
 const currencies = [
-  { code: 'KSH', symbol: 'KSh', name: 'Kenyan Shilling' },
+  { code: 'KES', symbol: 'KSh', name: 'Kenyan Shilling' },
   { code: 'USD', symbol: '$', name: 'US Dollar' },
   { code: 'EUR', symbol: '€', name: 'Euro' },
   { code: 'GBP', symbol: '£', name: 'British Pound' },

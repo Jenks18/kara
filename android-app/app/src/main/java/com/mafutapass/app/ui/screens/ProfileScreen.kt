@@ -1,7 +1,5 @@
 package com.mafutapass.app.ui.screens
 
-import android.app.DatePickerDialog
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -34,7 +32,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
-import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
 data class AvatarOption(
@@ -44,82 +41,64 @@ data class AvatarOption(
 )
 
 val AVATAR_OPTIONS = listOf(
-    AvatarOption("🐻", listOf(Color(0xFFB45309), Color(0xFF92400E)), "Bear"),
-    AvatarOption("🦁", listOf(Color(0xFFEA580C), Color(0xFFC2410C)), "Lion"),
-    AvatarOption("🐯", listOf(Color(0xFFC2410C), Color(0xFF9A3412)), "Tiger"),
-    AvatarOption("🦊", listOf(Color(0xFFDC2626), Color(0xFFB91C1C)), "Fox"),
-    AvatarOption("🐺", listOf(Color(0xFF334155), Color(0xFF1E293B)), "Wolf"),
-    AvatarOption("🦅", listOf(Color(0xFFA16207), Color(0xFF854D0E)), "Eagle"),
-    AvatarOption("🦉", listOf(Color(0xFF4338CA), Color(0xFF3730A3)), "Owl"),
-    AvatarOption("🐧", listOf(Color(0xFF475569), Color(0xFF334155)), "Penguin"),
-    AvatarOption("🐘", listOf(Color(0xFF374151), Color(0xFF1F2937)), "Elephant"),
-    AvatarOption("🦏", listOf(Color(0xFF57534E), Color(0xFF44403C)), "Rhino"),
-    AvatarOption("🦒", listOf(Color(0xFFD97706), Color(0xFFB45309)), "Giraffe"),
-    AvatarOption("🦓", listOf(Color(0xFF3F3F46), Color(0xFF27272A)), "Zebra"),
-    AvatarOption("🐆", listOf(Color(0xFFCA8A04), Color(0xFFA16207)), "Leopard"),
-    AvatarOption("🦈", listOf(Color(0xFF0E7490), Color(0xFF155E75)), "Shark"),
-    AvatarOption("🐙", listOf(Color(0xFF7C3AED), Color(0xFF6D28D9)), "Octopus"),
-    AvatarOption("🐬", listOf(Color(0xFF1D4ED8), Color(0xFF1E40AF)), "Dolphin"),
-    AvatarOption("🐳", listOf(Color(0xFF0369A1), Color(0xFF075985)), "Whale"),
-    AvatarOption("🦦", listOf(Color(0xFF0F766E), Color(0xFF115E59)), "Otter"),
-    AvatarOption("🦘", listOf(Color(0xFFA16207), Color(0xFFB45309)), "Kangaroo"),
-    AvatarOption("🦌", listOf(Color(0xFFB45309), Color(0xFFEA580C)), "Deer"),
-    AvatarOption("🐎", listOf(Color(0xFF57534E), Color(0xFF44403C)), "Horse"),
-    AvatarOption("🦬", listOf(Color(0xFF3F3F46), Color(0xFF374151)), "Bison"),
-    AvatarOption("🐿️", listOf(Color(0xFFEA580C), Color(0xFFB45309)), "Squirrel"),
-    AvatarOption("🦔", listOf(Color(0xFFD97706), Color(0xFFEA580C)), "Hedgehog"),
-    AvatarOption("🐢", listOf(Color(0xFF047857), Color(0xFF065F46)), "Turtle"),
-    AvatarOption("🐊", listOf(Color(0xFF15803D), Color(0xFF166534)), "Crocodile"),
-    AvatarOption("🦜", listOf(Color(0xFF059669), Color(0xFF047857)), "Parrot"),
-    AvatarOption("🦚", listOf(Color(0xFF2563EB), Color(0xFF1D4ED8)), "Peacock"),
+    AvatarOption("\uD83D\uDC3B", listOf(Color(0xFFB45309), Color(0xFF92400E)), "Bear"),
+    AvatarOption("\uD83E\uDD81", listOf(Color(0xFFEA580C), Color(0xFFC2410C)), "Lion"),
+    AvatarOption("\uD83D\uDC2F", listOf(Color(0xFFC2410C), Color(0xFF9A3412)), "Tiger"),
+    AvatarOption("\uD83E\uDD8A", listOf(Color(0xFFDC2626), Color(0xFFB91C1C)), "Fox"),
+    AvatarOption("\uD83D\uDC3A", listOf(Color(0xFF334155), Color(0xFF1E293B)), "Wolf"),
+    AvatarOption("\uD83E\uDD85", listOf(Color(0xFFA16207), Color(0xFF854D0E)), "Eagle"),
+    AvatarOption("\uD83E\uDD89", listOf(Color(0xFF4338CA), Color(0xFF3730A3)), "Owl"),
+    AvatarOption("\uD83D\uDC27", listOf(Color(0xFF475569), Color(0xFF334155)), "Penguin"),
+    AvatarOption("\uD83D\uDC18", listOf(Color(0xFF374151), Color(0xFF1F2937)), "Elephant"),
+    AvatarOption("\uD83E\uDD8F", listOf(Color(0xFF57534E), Color(0xFF44403C)), "Rhino"),
+    AvatarOption("\uD83E\uDD92", listOf(Color(0xFFD97706), Color(0xFFB45309)), "Giraffe"),
+    AvatarOption("\uD83E\uDD93", listOf(Color(0xFF3F3F46), Color(0xFF27272A)), "Zebra"),
+    AvatarOption("\uD83D\uDC06", listOf(Color(0xFFCA8A04), Color(0xFFA16207)), "Leopard"),
+    AvatarOption("\uD83E\uDD88", listOf(Color(0xFF0E7490), Color(0xFF155E75)), "Shark"),
+    AvatarOption("\uD83D\uDC19", listOf(Color(0xFF7C3AED), Color(0xFF6D28D9)), "Octopus"),
+    AvatarOption("\uD83D\uDC2C", listOf(Color(0xFF1D4ED8), Color(0xFF1E40AF)), "Dolphin"),
+    AvatarOption("\uD83D\uDC33", listOf(Color(0xFF0369A1), Color(0xFF075985)), "Whale"),
+    AvatarOption("\uD83E\uDDA6", listOf(Color(0xFF0F766E), Color(0xFF115E59)), "Otter"),
+    AvatarOption("\uD83E\uDD98", listOf(Color(0xFFA16207), Color(0xFFB45309)), "Kangaroo"),
+    AvatarOption("\uD83E\uDD8C", listOf(Color(0xFFB45309), Color(0xFFEA580C)), "Deer"),
+    AvatarOption("\uD83D\uDC0E", listOf(Color(0xFF57534E), Color(0xFF44403C)), "Horse"),
+    AvatarOption("\uD83E\uDDAC", listOf(Color(0xFF3F3F46), Color(0xFF374151)), "Bison"),
+    AvatarOption("\uD83D\uDC3F\uFE0F", listOf(Color(0xFFEA580C), Color(0xFFB45309)), "Squirrel"),
+    AvatarOption("\uD83E\uDD94", listOf(Color(0xFFD97706), Color(0xFFEA580C)), "Hedgehog"),
+    AvatarOption("\uD83D\uDC22", listOf(Color(0xFF047857), Color(0xFF065F46)), "Turtle"),
+    AvatarOption("\uD83D\uDC0A", listOf(Color(0xFF15803D), Color(0xFF166534)), "Crocodile"),
+    AvatarOption("\uD83E\uDD9C", listOf(Color(0xFF059669), Color(0xFF047857)), "Parrot"),
+    AvatarOption("\uD83E\uDD9A", listOf(Color(0xFF2563EB), Color(0xFF1D4ED8)), "Peacock"),
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen(onBack: () -> Unit) {
+fun ProfileScreen(
+    onBack: () -> Unit,
+    onNavigateToEditDisplayName: () -> Unit = {},
+    onNavigateToEditLegalName: () -> Unit = {},
+    onNavigateToEditPhoneNumber: () -> Unit = {},
+    onNavigateToEditDateOfBirth: () -> Unit = {},
+    onNavigateToEditAddress: () -> Unit = {}
+) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val prefs = context.getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
     val sessionToken = prefs.getString("session_token", null)
-    
+
     var showAvatarPicker by remember { mutableStateOf(false) }
     var selectedAvatar by remember { mutableStateOf(AVATAR_OPTIONS[0]) }
     var isLoading by remember { mutableStateOf(true) }
-    
+
     // Profile fields from API
     var displayName by remember { mutableStateOf("") }
     var userEmail by remember { mutableStateOf("") }
-    var username by remember { mutableStateOf("") }
     var phoneNumber by remember { mutableStateOf("") }
     var dateOfBirth by remember { mutableStateOf("") }
-    var legalFirstName by remember { mutableStateOf("") }
-    var legalLastName by remember { mutableStateOf("") }
     var legalName by remember { mutableStateOf("") }
-    var addressLine1 by remember { mutableStateOf("") }
-    var city by remember { mutableStateOf("") }
-    var state by remember { mutableStateOf("") }
-    var zipCode by remember { mutableStateOf("") }
-    var country by remember { mutableStateOf("") }
     var address by remember { mutableStateOf("") }
-    var showDatePicker by remember { mutableStateOf(false) }
-    
-    // Edit dialog state
-    var editMode by remember { mutableStateOf("") } // "display_name", "legal_name", "phone", "address"
-    var showEditDialog by remember { mutableStateOf(false) }
-    var isSaving by remember { mutableStateOf(false) }
-    
-    // Edit fields for each dialog
-    var editDisplayName by remember { mutableStateOf("") }
-    var editLegalFirst by remember { mutableStateOf("") }
-    var editLegalLast by remember { mutableStateOf("") }
-    var editPhone by remember { mutableStateOf("") }
-    var editAddr1 by remember { mutableStateOf("") }
-    var editCity by remember { mutableStateOf("") }
-    var editState by remember { mutableStateOf("") }
-    var editZip by remember { mutableStateOf("") }
-    var editCountry by remember { mutableStateOf("") }
-    
+
     val coroutineScope = rememberCoroutineScope()
-    
+
     // Fetch profile data from backend
     LaunchedEffect(sessionToken) {
         if (sessionToken != null) {
@@ -130,37 +109,35 @@ fun ProfileScreen(onBack: () -> Unit) {
                 if (result != null) {
                     val clerk = result.optJSONObject("clerk")
                     val profile = result.optJSONObject("profile")
-                    
-                    fun org.json.JSONObject.safeString(key: String): String {
+
+                    fun JSONObject.safeString(key: String): String {
                         val v = optString(key, "")
                         return if (v == "null" || v.isBlank()) "" else v
                     }
-                    
+
                     displayName = profile?.safeString("display_name")?.ifEmpty { null }
                         ?: clerk?.safeString("fullName")?.ifEmpty { null }
                         ?: ""
-                    
+
                     userEmail = clerk?.safeString("email") ?: ""
-                    username = clerk?.safeString("username") ?: ""
                     phoneNumber = profile?.safeString("phone_number") ?: ""
                     dateOfBirth = profile?.safeString("date_of_birth") ?: ""
-                    
-                    legalFirstName = profile?.safeString("legal_first_name") ?: ""
-                    legalLastName = profile?.safeString("legal_last_name") ?: ""
-                    legalName = listOf(legalFirstName, legalLastName).filter { it.isNotEmpty() }.joinToString(" ")
-                    
-                    addressLine1 = profile?.safeString("address_line1") ?: ""
-                    city = profile?.safeString("city") ?: ""
-                    state = profile?.safeString("state") ?: ""
-                    zipCode = profile?.safeString("zip_code") ?: ""
-                    country = profile?.safeString("country")?.let { if (it == "US" || it == "United States") "" else it } ?: ""
+
+                    val legalFirst = profile?.safeString("legal_first_name") ?: ""
+                    val legalLast = profile?.safeString("legal_last_name") ?: ""
+                    legalName = listOf(legalFirst, legalLast).filter { it.isNotEmpty() }.joinToString(" ")
+
+                    val addressLine1 = profile?.safeString("address_line1") ?: ""
+                    val city = profile?.safeString("city") ?: ""
+                    val state = profile?.safeString("state") ?: ""
+                    val zipCode = profile?.safeString("zip_code") ?: ""
                     address = listOfNotNull(
                         addressLine1.ifEmpty { null },
                         city.ifEmpty { null },
                         state.ifEmpty { null },
                         zipCode.ifEmpty { null }
                     ).joinToString(", ")
-                    
+
                     val avatarEmoji = profile?.safeString("avatar_emoji")?.ifEmpty { null }
                     if (avatarEmoji != null) {
                         AVATAR_OPTIONS.find { it.emoji == avatarEmoji }?.let {
@@ -176,38 +153,7 @@ fun ProfileScreen(onBack: () -> Unit) {
             isLoading = false
         }
     }
-    
-    // Helper to save profile fields
-    fun saveFields(fields: Map<String, String>, onDone: () -> Unit) {
-        if (sessionToken == null) return
-        isSaving = true
-        coroutineScope.launch {
-            try {
-                withContext(Dispatchers.IO) {
-                    val json = JSONObject()
-                    fields.forEach { (k, v) -> json.put(k, v) }
-                    val requestBody = json.toString()
-                        .toRequestBody("application/json".toMediaType())
-                    val request = Request.Builder()
-                        .url("https://www.mafutapass.com/api/auth/mobile-profile")
-                        .patch(requestBody)
-                        .addHeader("Authorization", "Bearer $sessionToken")
-                        .build()
-                    OkHttpClient.Builder()
-                        .connectTimeout(15, TimeUnit.SECONDS)
-                        .readTimeout(15, TimeUnit.SECONDS)
-                        .build()
-                        .newCall(request).execute()
-                }
-                onDone()
-            } catch (e: Exception) {
-                android.util.Log.e("ProfileScreen", "Save failed: ${e.message}")
-            }
-            isSaving = false
-            showEditDialog = false
-        }
-    }
-    
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -235,7 +181,7 @@ fun ProfileScreen(onBack: () -> Unit) {
             },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
         )
-        
+
         if (isLoading) {
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -307,17 +253,13 @@ fun ProfileScreen(onBack: () -> Unit) {
                     }
                 }
             }
-            
-            // Display name
+
+            // Display name - navigates to full-screen edit
             item {
                 ProfileField(
                     label = "Display name",
                     value = displayName.ifEmpty { "Not set" },
-                    onClick = {
-                        editMode = "display_name"
-                        editDisplayName = displayName
-                        showEditDialog = true
-                    }
+                    onClick = onNavigateToEditDisplayName
                 )
             }
 
@@ -346,290 +288,50 @@ fun ProfileScreen(onBack: () -> Unit) {
                     )
                 }
             }
-            
-            // Legal name
+
+            // Legal name - navigates to full-screen edit
             item {
                 ProfileField(
                     label = "Legal name",
                     value = legalName.ifEmpty { "Not set" },
-                    onClick = {
-                        editMode = "legal_name"
-                        editLegalFirst = legalFirstName
-                        editLegalLast = legalLastName
-                        showEditDialog = true
-                    }
+                    onClick = onNavigateToEditLegalName
                 )
             }
 
-            // Date of birth
+            // Date of birth - navigates to full-screen edit
             item {
                 ProfileField(
                     label = "Date of birth",
                     value = if (dateOfBirth.isNotEmpty()) DateUtils.formatFull(dateOfBirth) else "Not set",
-                    onClick = { showDatePicker = true }
+                    onClick = onNavigateToEditDateOfBirth
                 )
             }
-            
-            // Phone number
+
+            // Phone number - navigates to full-screen edit
             item {
                 ProfileField(
                     label = "Phone number",
                     value = phoneNumber.ifEmpty { "Not set" },
-                    onClick = {
-                        editMode = "phone"
-                        // Strip +254 prefix for editing
-                        val num = phoneNumber.replace(Regex("[\\s\\-]"), "")
-                        editPhone = when {
-                            num.startsWith("+254") -> num.substring(4)
-                            num.startsWith("254") -> num.substring(3)
-                            num.startsWith("0") -> num.substring(1)
-                            else -> num
-                        }
-                        showEditDialog = true
-                    }
+                    onClick = onNavigateToEditPhoneNumber
                 )
             }
-            
-            // Address
+
+            // Address - navigates to full-screen edit
             item {
                 ProfileField(
                     label = "Address",
                     value = address.ifEmpty { "Not set" },
-                    onClick = {
-                        editMode = "address"
-                        editAddr1 = addressLine1
-                        editCity = city
-                        editState = state
-                        editZip = zipCode
-                        editCountry = country
-                        showEditDialog = true
-                    }
+                    onClick = onNavigateToEditAddress
                 )
             }
-            
+
             // Bottom spacer
             item { Spacer(Modifier.height(16.dp)) }
         }
         } // end else
     }
-    
-    // ---- EDIT DIALOGS ----
-    if (showEditDialog) {
-        when (editMode) {
-            "display_name" -> {
-                AlertDialog(
-                    onDismissRequest = { if (!isSaving) showEditDialog = false },
-                    title = { Text("Display name") },
-                    text = {
-                        OutlinedTextField(
-                            value = editDisplayName,
-                            onValueChange = { editDisplayName = it },
-                            label = { Text("Display name") },
-                            singleLine = true,
-                            enabled = !isSaving,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    },
-                    confirmButton = {
-                        TextButton(
-                            onClick = {
-                                saveFields(mapOf("display_name" to editDisplayName)) {
-                                    displayName = editDisplayName
-                                }
-                            },
-                            enabled = !isSaving && editDisplayName.isNotBlank()
-                        ) { if (isSaving) CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp) else Text("Save") }
-                    },
-                    dismissButton = { TextButton(onClick = { showEditDialog = false }, enabled = !isSaving) { Text("Cancel") } }
-                )
-            }
-            "legal_name" -> {
-                AlertDialog(
-                    onDismissRequest = { if (!isSaving) showEditDialog = false },
-                    title = { Text("Legal name") },
-                    text = {
-                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            OutlinedTextField(
-                                value = editLegalFirst,
-                                onValueChange = { editLegalFirst = it },
-                                label = { Text("First name") },
-                                singleLine = true,
-                                enabled = !isSaving,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            OutlinedTextField(
-                                value = editLegalLast,
-                                onValueChange = { editLegalLast = it },
-                                label = { Text("Last name") },
-                                singleLine = true,
-                                enabled = !isSaving,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                    },
-                    confirmButton = {
-                        TextButton(
-                            onClick = {
-                                saveFields(mapOf(
-                                    "legal_first_name" to editLegalFirst.trim(),
-                                    "legal_last_name" to editLegalLast.trim()
-                                )) {
-                                    legalFirstName = editLegalFirst.trim()
-                                    legalLastName = editLegalLast.trim()
-                                    legalName = listOf(legalFirstName, legalLastName).filter { it.isNotEmpty() }.joinToString(" ")
-                                }
-                            },
-                            enabled = !isSaving
-                        ) { if (isSaving) CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp) else Text("Save") }
-                    },
-                    dismissButton = { TextButton(onClick = { showEditDialog = false }, enabled = !isSaving) { Text("Cancel") } }
-                )
-            }
-            "phone" -> {
-                AlertDialog(
-                    onDismissRequest = { if (!isSaving) showEditDialog = false },
-                    title = { Text("Phone number") },
-                    text = {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(
-                                "Enter your 9-digit Kenyan mobile number",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Gray500
-                            )
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(0.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                // Fixed +254 prefix
-                                Surface(
-                                    shape = RoundedCornerShape(topStart = 8.dp, bottomStart = 8.dp),
-                                    color = Color(0xFFF9FAFB),
-                                    border = BorderStroke(1.dp, Gray300),
-                                    modifier = Modifier.height(56.dp)
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 12.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                    ) {
-                                        Text("🇰🇪", fontSize = 18.sp)
-                                        Text("+254", fontWeight = FontWeight.Medium, color = Gray700)
-                                    }
-                                }
-                                // Phone input
-                                OutlinedTextField(
-                                    value = editPhone,
-                                    onValueChange = { v ->
-                                        val digits = v.filter { it.isDigit() }
-                                        if (digits.length <= 9) editPhone = digits
-                                    },
-                                    placeholder = { Text("712345678") },
-                                    singleLine = true,
-                                    enabled = !isSaving,
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(topEnd = 8.dp, bottomEnd = 8.dp)
-                                )
-                            }
-                        }
-                    },
-                    confirmButton = {
-                        TextButton(
-                            onClick = {
-                                val fullNumber = if (editPhone.isNotBlank()) "+254${editPhone.trim()}" else ""
-                                saveFields(mapOf("phone_number" to fullNumber)) {
-                                    phoneNumber = fullNumber
-                                }
-                            },
-                            enabled = !isSaving
-                        ) { if (isSaving) CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp) else Text("Save") }
-                    },
-                    dismissButton = { TextButton(onClick = { showEditDialog = false }, enabled = !isSaving) { Text("Cancel") } }
-                )
-            }
-            "address" -> {
-                AlertDialog(
-                    onDismissRequest = { if (!isSaving) showEditDialog = false },
-                    title = { Text("Address") },
-                    text = {
-                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            OutlinedTextField(
-                                value = editAddr1,
-                                onValueChange = { editAddr1 = it },
-                                label = { Text("Street address") },
-                                singleLine = true,
-                                enabled = !isSaving,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            OutlinedTextField(
-                                value = editCity,
-                                onValueChange = { editCity = it },
-                                label = { Text("City") },
-                                singleLine = true,
-                                enabled = !isSaving,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                OutlinedTextField(
-                                    value = editState,
-                                    onValueChange = { editState = it },
-                                    label = { Text("State") },
-                                    singleLine = true,
-                                    enabled = !isSaving,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                OutlinedTextField(
-                                    value = editZip,
-                                    onValueChange = { editZip = it },
-                                    label = { Text("ZIP") },
-                                    singleLine = true,
-                                    enabled = !isSaving,
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                            OutlinedTextField(
-                                value = editCountry,
-                                onValueChange = { editCountry = it },
-                                label = { Text("Country") },
-                                singleLine = true,
-                                enabled = !isSaving,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                    },
-                    confirmButton = {
-                        TextButton(
-                            onClick = {
-                                saveFields(mapOf(
-                                    "address_line1" to editAddr1.trim(),
-                                    "city" to editCity.trim(),
-                                    "state" to editState.trim(),
-                                    "zip_code" to editZip.trim(),
-                                    "country" to editCountry.trim()
-                                )) {
-                                    addressLine1 = editAddr1.trim()
-                                    city = editCity.trim()
-                                    state = editState.trim()
-                                    zipCode = editZip.trim()
-                                    country = editCountry.trim()
-                                    address = listOfNotNull(
-                                        addressLine1.ifEmpty { null },
-                                        city.ifEmpty { null },
-                                        state.ifEmpty { null },
-                                        zipCode.ifEmpty { null }
-                                    ).joinToString(", ")
-                                }
-                            },
-                            enabled = !isSaving
-                        ) { if (isSaving) CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp) else Text("Save") }
-                    },
-                    dismissButton = { TextButton(onClick = { showEditDialog = false }, enabled = !isSaving) { Text("Cancel") } }
-                )
-            }
-        }
-    }
-    
-    // Avatar Picker Dialog
+
+    // Avatar Picker Dialog (keep as dialog - webapp also uses a modal for avatar)
     if (showAvatarPicker) {
         Dialog(onDismissRequest = { showAvatarPicker = false }) {
             Surface(
@@ -685,36 +387,6 @@ fun ProfileScreen(onBack: () -> Unit) {
             }
         }
     }
-    
-    // Date picker dialog
-    if (showDatePicker) {
-        val calendar = Calendar.getInstance()
-        try {
-            if (dateOfBirth.isNotEmpty()) {
-                val parts = DateUtils.formatYMD(dateOfBirth).split("-")
-                if (parts.size == 3) {
-                    calendar.set(parts[0].toInt(), parts[1].toInt() - 1, parts[2].toInt())
-                }
-            }
-        } catch (_: Exception) {}
-        
-        DatePickerDialog(
-            context,
-            { _, year, month, day ->
-                val newDate = String.format("%04d-%02d-%02d", year, month + 1, day)
-                dateOfBirth = newDate
-                saveFields(mapOf("date_of_birth" to newDate)) {}
-                showDatePicker = false
-            },
-            calendar.get(Calendar.YEAR),
-            calendar.get(Calendar.MONTH),
-            calendar.get(Calendar.DAY_OF_MONTH)
-        ).apply {
-            setOnCancelListener { showDatePicker = false }
-            show()
-        }
-        showDatePicker = false
-    }
 }
 
 @Composable
@@ -751,7 +423,7 @@ fun ProfileField(
                     color = if (value == "Not set") Gray500 else Gray900
                 )
             }
-            
+
             Icon(
                 imageVector = Icons.Filled.ChevronRight,
                 contentDescription = "Edit",
@@ -764,7 +436,7 @@ fun ProfileField(
 /**
  * Fetch user profile from backend API using JWT token.
  */
-private fun fetchProfileData(token: String): JSONObject? {
+internal fun fetchProfileData(token: String): JSONObject? {
     val client = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(15, TimeUnit.SECONDS)
@@ -790,7 +462,7 @@ private fun fetchProfileData(token: String): JSONObject? {
 /**
  * Save avatar emoji to backend.
  */
-private fun saveAvatarToBackend(token: String, emoji: String) {
+internal fun saveAvatarToBackend(token: String, emoji: String) {
     try {
         val client = OkHttpClient.Builder()
             .connectTimeout(15, TimeUnit.SECONDS)
@@ -810,11 +482,11 @@ private fun saveAvatarToBackend(token: String, emoji: String) {
 
         val response = client.newCall(request).execute()
         if (response.isSuccessful) {
-            android.util.Log.d("ProfileScreen", "✅ Avatar saved successfully")
+            android.util.Log.d("ProfileScreen", "Avatar saved successfully")
         } else {
-            android.util.Log.e("ProfileScreen", "❌ Avatar save failed: ${response.code}")
+            android.util.Log.e("ProfileScreen", "Avatar save failed: ${response.code}")
         }
     } catch (e: Exception) {
-        android.util.Log.e("ProfileScreen", "❌ Error saving avatar: ${e.message}")
+        android.util.Log.e("ProfileScreen", "Error saving avatar: ${e.message}")
     }
 }

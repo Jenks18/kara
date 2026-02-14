@@ -16,7 +16,7 @@ export default function AddressPage() {
   const [city, setCity] = useState('')
   const [state, setState] = useState('')
   const [zipCode, setZipCode] = useState('')
-  const [country, setCountry] = useState('United States')
+  const [country, setCountry] = useState('Kenya')
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
 
@@ -32,7 +32,7 @@ export default function AddressPage() {
           setCity(profile.city || '')
           setState(profile.state || '')
           setZipCode(profile.zip_code || '')
-          setCountry(profile.country || 'United States')
+          setCountry(profile.country || 'Kenya')
         }
       } catch (error) {
         console.error('Error loading address:', error)
@@ -107,10 +107,12 @@ export default function AddressPage() {
             onChange={(e) => setCountry(e.target.value)}
             className="w-full px-4 py-4 bg-white border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 touch-manipulation"
           >
-            <option value="United States">United States</option>
             <option value="Kenya">Kenya</option>
+            <option value="United States">United States</option>
             <option value="United Kingdom">United Kingdom</option>
             <option value="Canada">Canada</option>
+            <option value="Tanzania">Tanzania</option>
+            <option value="Uganda">Uganda</option>
           </select>
         </div>
 

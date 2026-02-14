@@ -162,15 +162,6 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
-      {/* Debug Info - Remove this after testing */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="fixed bottom-4 left-4 bg-black text-white text-xs p-2 rounded z-50 max-w-xs">
-          <div>Avatar: {avatar.emoji}</div>
-          <div>Color: {avatar.color.substring(0, 20)}...</div>
-          <div>Temp: {selectedTempAvatar.emoji}</div>
-          <div>Loading: {isLoading ? 'yes' : 'no'}</div>
-        </div>
-      )}
       
       {/* Header */}
       <div className="sticky top-0 z-30 bg-white border-b border-gray-200">

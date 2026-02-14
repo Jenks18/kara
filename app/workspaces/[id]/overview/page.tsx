@@ -31,6 +31,7 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
   const [showAvatarMenu, setShowAvatarMenu] = useState(false)
   const [inviteInput, setInviteInput] = useState('')
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [shareUrl, setShareUrl] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const galleryInputRef = useRef<HTMLInputElement>(null)
@@ -220,7 +221,12 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
     img.src = 'data:image/svg+xml;base64,' + btoa(svgData)
   }
 
-  const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/workspaces/${workspaceId}/join` : ''
+  // Compute share URL client-side to avoid hydration mismatch
+  useEffect(() => {
+    if (workspaceId) {
+      setShareUrl(`${window.location.origin}/workspaces/${workspaceId}/join`)
+    }
+  }, [workspaceId])
 
   if (loading) {
     return (
