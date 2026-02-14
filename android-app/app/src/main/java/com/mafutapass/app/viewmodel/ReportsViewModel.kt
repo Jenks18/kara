@@ -4,6 +4,7 @@ package com.mafutapass.app.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mafutapass.app.data.ApiClient
 import com.mafutapass.app.data.ExpenseItem
 import com.mafutapass.app.data.ExpenseReport
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,14 +40,38 @@ class ReportsViewModel : ViewModel() {
 
     private fun fetchExpenseData() {
         Log.d(TAG, "🔄 Fetching expense data...")
-        
-        // No async work, just set empty lists immediately
-        _expenseReports.value = emptyList()
-        _expenseItems.value = emptyList()
-        _isLoading.value = false
+        _isLoading.value = true
         _error.value = null
         
-        Log.d(TAG, "✅ Data fetch complete (empty lists)")
+        viewModelScope.launch {
+            try {
+                // Fetch expense reports from API
+                val reports = try {
+                    ApiClient.apiService.getExpenseReports()
+                } catch (e: Exception) {
+                    Log.e(TAG, "⚠️ Failed to fetch reports: ${e.message}")
+                    emptyList()
+                }
+                _expenseReports.value = reports
+                Log.d(TAG, "✅ Fetched ${reports.size} expense reports")
+                
+                // Fetch receipts/expense items from API
+                val items = try {
+                    ApiClient.apiService.getReceipts()
+                } catch (e: Exception) {
+                    Log.e(TAG, "⚠️ Failed to fetch receipts: ${e.message}")
+                    emptyList()
+                }
+                _expenseItems.value = items
+                Log.d(TAG, "✅ Fetched ${items.size} expense items")
+                
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Error fetching expense data: ${e.message}", e)
+                _error.value = "Failed to load data: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
     }
     
     /**
@@ -56,4 +81,3 @@ class ReportsViewModel : ViewModel() {
         fetchExpenseData()
     }
 }
-

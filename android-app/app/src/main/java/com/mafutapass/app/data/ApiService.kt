@@ -23,7 +23,7 @@ interface ApiService {
 }
 
 object ApiClient {
-    private const val BASE_URL = "https://kara-zeta.vercel.app/"
+    private const val BASE_URL = "https://www.mafutapass.com/"
     
     private var applicationContext: Context? = null
     

@@ -23,6 +23,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.mafutapass.app.ui.theme.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
+import java.util.concurrent.TimeUnit
 
 data class AvatarOption(
     val emoji: String,
@@ -64,8 +72,69 @@ val AVATAR_OPTIONS = listOf(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(onBack: () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val prefs = context.getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
+    val sessionToken = prefs.getString("session_token", null)
+    
     var showAvatarPicker by remember { mutableStateOf(false) }
     var selectedAvatar by remember { mutableStateOf(AVATAR_OPTIONS[0]) }
+    var isLoading by remember { mutableStateOf(true) }
+    
+    // Profile fields from API
+    var displayName by remember { mutableStateOf("") }
+    var phoneNumber by remember { mutableStateOf("") }
+    var dateOfBirth by remember { mutableStateOf("") }
+    var legalName by remember { mutableStateOf("") }
+    var address by remember { mutableStateOf("") }
+    
+    // Fetch profile data from backend
+    LaunchedEffect(sessionToken) {
+        if (sessionToken != null) {
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    fetchProfileData(sessionToken)
+                }
+                if (result != null) {
+                    // Clerk data
+                    val clerk = result.optJSONObject("clerk")
+                    val profile = result.optJSONObject("profile")
+                    
+                    displayName = profile?.optString("display_name")?.takeIf { it.isNotEmpty() }
+                        ?: clerk?.optString("fullName")?.takeIf { it.isNotEmpty() }
+                        ?: ""
+                    
+                    phoneNumber = profile?.optString("phone_number")?.takeIf { it.isNotEmpty() } ?: ""
+                    dateOfBirth = profile?.optString("date_of_birth")?.takeIf { it.isNotEmpty() } ?: ""
+                    
+                    val legalFirst = profile?.optString("legal_first_name") ?: ""
+                    val legalLast = profile?.optString("legal_last_name") ?: ""
+                    legalName = listOf(legalFirst, legalLast).filter { it.isNotEmpty() }.joinToString(" ")
+                    
+                    val addressParts = listOfNotNull(
+                        profile?.optString("address_line1")?.takeIf { it.isNotEmpty() },
+                        profile?.optString("city")?.takeIf { it.isNotEmpty() },
+                        profile?.optString("state")?.takeIf { it.isNotEmpty() },
+                        profile?.optString("zip_code")?.takeIf { it.isNotEmpty() },
+                        profile?.optString("country")?.takeIf { it.isNotEmpty() && it != "US" }
+                    )
+                    address = addressParts.joinToString(", ")
+                    
+                    // Set avatar from profile
+                    val avatarEmoji = profile?.optString("avatar_emoji")?.takeIf { it.isNotEmpty() }
+                    if (avatarEmoji != null) {
+                        AVATAR_OPTIONS.find { it.emoji == avatarEmoji }?.let {
+                            selectedAvatar = it
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("ProfileScreen", "Error fetching profile: ${e.message}")
+            }
+            isLoading = false
+        } else {
+            isLoading = false
+        }
+    }
     
     Column(
         modifier = Modifier
@@ -152,7 +221,7 @@ fun ProfileScreen(onBack: () -> Unit) {
             item {
                 ProfileField(
                     label = "Display name",
-                    value = "Ian Njenga",
+                    value = displayName.ifEmpty { "Not set" },
                     onClick = { }
                 )
             }
@@ -160,7 +229,7 @@ fun ProfileScreen(onBack: () -> Unit) {
             item {
                 ProfileField(
                     label = "Phone number",
-                    value = "Not set",
+                    value = phoneNumber.ifEmpty { "Not set" },
                     onClick = { }
                 )
             }
@@ -168,7 +237,7 @@ fun ProfileScreen(onBack: () -> Unit) {
             item {
                 ProfileField(
                     label = "Date of birth",
-                    value = "Not set",
+                    value = dateOfBirth.ifEmpty { "Not set" },
                     onClick = { }
                 )
             }
@@ -176,7 +245,7 @@ fun ProfileScreen(onBack: () -> Unit) {
             item {
                 ProfileField(
                     label = "Legal name",
-                    value = "Not set",
+                    value = legalName.ifEmpty { "Not set" },
                     onClick = { }
                 )
             }
@@ -184,9 +253,23 @@ fun ProfileScreen(onBack: () -> Unit) {
             item {
                 ProfileField(
                     label = "Address",
-                    value = "Not set",
+                    value = address.ifEmpty { "Not set" },
                     onClick = { }
                 )
+            }
+
+            // Loading indicator
+            if (isLoading) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = Emerald600)
+                    }
+                }
             }
         }
     }
@@ -239,6 +322,12 @@ fun ProfileScreen(onBack: () -> Unit) {
                                     .clickable {
                                         selectedAvatar = option
                                         showAvatarPicker = false
+                                        // Save avatar to backend
+                                        if (sessionToken != null) {
+                                            kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+                                                saveAvatarToBackend(sessionToken, option.emoji)
+                                            }
+                                        }
                                     },
                                 contentAlignment = Alignment.Center
                             ) {
@@ -296,5 +385,63 @@ fun ProfileField(
                 tint = Gray500
             )
         }
+    }
+}
+
+/**
+ * Fetch user profile from backend API using JWT token.
+ */
+private fun fetchProfileData(token: String): JSONObject? {
+    val client = OkHttpClient.Builder()
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(15, TimeUnit.SECONDS)
+        .build()
+
+    val request = Request.Builder()
+        .url("https://www.mafutapass.com/api/auth/mobile-profile")
+        .get()
+        .addHeader("Authorization", "Bearer $token")
+        .build()
+
+    val response = client.newCall(request).execute()
+    val body = response.body?.string() ?: return null
+
+    if (!response.isSuccessful) {
+        android.util.Log.e("ProfileScreen", "Profile fetch failed: ${response.code}")
+        return null
+    }
+
+    return JSONObject(body)
+}
+
+/**
+ * Save avatar emoji to backend.
+ */
+private fun saveAvatarToBackend(token: String, emoji: String) {
+    try {
+        val client = OkHttpClient.Builder()
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(15, TimeUnit.SECONDS)
+            .build()
+
+        val json = JSONObject().apply {
+            put("avatar_emoji", emoji)
+        }
+
+        val requestBody = json.toString().toRequestBody("application/json".toMediaType())
+        val request = Request.Builder()
+            .url("https://www.mafutapass.com/api/auth/mobile-profile")
+            .patch(requestBody)
+            .addHeader("Authorization", "Bearer $token")
+            .build()
+
+        val response = client.newCall(request).execute()
+        if (response.isSuccessful) {
+            android.util.Log.d("ProfileScreen", "✅ Avatar saved successfully")
+        } else {
+            android.util.Log.e("ProfileScreen", "❌ Avatar save failed: ${response.code}")
+        }
+    } catch (e: Exception) {
+        android.util.Log.e("ProfileScreen", "❌ Error saving avatar: ${e.message}")
     }
 }

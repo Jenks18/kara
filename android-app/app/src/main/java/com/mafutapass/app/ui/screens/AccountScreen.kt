@@ -18,9 +18,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.clerk.api.Clerk
 import com.mafutapass.app.ui.theme.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.json.JSONObject
+import java.util.concurrent.TimeUnit
 
 data class MenuItem(
     val icon: ImageVector,
@@ -41,16 +46,45 @@ fun AccountScreen(
     val context = androidx.compose.ui.platform.LocalContext.current
     val prefs = context.getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
     
-    // Get stored user data (from our native OAuth)
-    val userEmail = prefs.getString("user_email", null)
+    // Get stored user data from SharedPreferences
+    val userEmail = prefs.getString("user_email", null) ?: "User"
     val userId = prefs.getString("user_id", null)
+    val sessionToken = prefs.getString("session_token", null)
+    val storedFirstName = prefs.getString("first_name", null)
     
-    // Fallback to Clerk SDK user if available (for web OAuth)
-    val clerkUser by Clerk.userFlow.collectAsState(initial = null)
+    // Profile data from API
+    var displayName by remember { mutableStateOf(storedFirstName ?: userEmail.substringBefore("@")) }
+    var displayEmail by remember { mutableStateOf(userEmail) }
+    var avatarEmoji by remember { mutableStateOf("🐻") }
     
-    // Use stored data first, fallback to Clerk SDK
-    val displayEmail = userEmail ?: clerkUser?.emailAddresses?.firstOrNull()?.emailAddress ?: "User"
-    val displayName = userEmail?.substringBefore("@") ?: clerkUser?.firstName ?: "User"
+    // Fetch profile from backend on load
+    LaunchedEffect(userId, sessionToken) {
+        if (sessionToken != null && userId != null) {
+            try {
+                val profile = withContext(Dispatchers.IO) {
+                    fetchProfile(sessionToken)
+                }
+                if (profile != null) {
+                    val clerkName = profile.optJSONObject("clerk")?.let { clerk ->
+                        clerk.optString("fullName").takeIf { it.isNotEmpty() }
+                            ?: clerk.optString("firstName").takeIf { it.isNotEmpty() }
+                    }
+                    val profileName = profile.optJSONObject("profile")?.let { p ->
+                        p.optString("display_name").takeIf { it.isNotEmpty() }
+                            ?: p.optString("first_name").takeIf { it.isNotEmpty() }
+                    }
+                    displayName = profileName ?: clerkName ?: userEmail.substringBefore("@")
+                    displayEmail = profile.optJSONObject("clerk")?.optString("email")?.takeIf { it.isNotEmpty() } ?: userEmail
+                    
+                    profile.optJSONObject("profile")?.optString("avatar_emoji")?.takeIf { it.isNotEmpty() }?.let {
+                        avatarEmoji = it
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("AccountScreen", "Error fetching profile: ${e.message}")
+            }
+        }
+    }
     
     Column(
         modifier = Modifier
@@ -77,14 +111,16 @@ fun AccountScreen(
                     modifier = Modifier
                         .size(48.dp)
                         .clip(CircleShape)
-                        .background(Gray200),
+                        .background(
+                            brush = Brush.verticalGradient(
+                                listOf(Emerald400, Emerald600)
+                            )
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Filled.BusinessCenter,
-                        contentDescription = "Profile",
-                        tint = Gray500,
-                        modifier = Modifier.size(28.dp)
+                    Text(
+                        text = avatarEmoji,
+                        style = MaterialTheme.typography.headlineSmall
                     )
                 }
                 
@@ -245,7 +281,7 @@ fun MenuSection(
                     }
                     
                     if (index < items.size - 1) {
-                        Divider(
+                        HorizontalDivider(
                             color = Gray100,
                             modifier = Modifier.padding(start = 60.dp)
                         )
@@ -254,4 +290,30 @@ fun MenuSection(
             }
         }
     }
+}
+
+/**
+ * Fetch user profile from backend API using JWT token.
+ */
+private fun fetchProfile(token: String): JSONObject? {
+    val client = OkHttpClient.Builder()
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(15, TimeUnit.SECONDS)
+        .build()
+
+    val request = Request.Builder()
+        .url("https://www.mafutapass.com/api/auth/mobile-profile")
+        .get()
+        .addHeader("Authorization", "Bearer $token")
+        .build()
+
+    val response = client.newCall(request).execute()
+    val body = response.body?.string() ?: return null
+
+    if (!response.isSuccessful) {
+        android.util.Log.e("AccountScreen", "Profile fetch failed: ${response.code} - $body")
+        return null
+    }
+
+    return JSONObject(body)
 }

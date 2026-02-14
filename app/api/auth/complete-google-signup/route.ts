@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { clerkClient } from '@clerk/nextjs/server';
 import { createClient } from '@supabase/supabase-js';
+import { exchangeSignInTokenForJwt } from '@/lib/auth/clerk-exchange';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -66,12 +67,16 @@ export async function POST(request: NextRequest) {
       
       const signInToken = await clerk.signInTokens.createSignInToken({
         userId: user.id,
-        expiresInSeconds: 86400,
+        expiresInSeconds: 60,
       });
+
+      // Exchange for JWT
+      const session = await exchangeSignInTokenForJwt(signInToken.token);
+      const jwt = session?.jwt || signInToken.token;
       
       return NextResponse.json({
         success: true,
-        token: signInToken.token,
+        token: jwt,
         userId: user.id,
         email: email,
         isNewUser: false,
@@ -109,10 +114,16 @@ export async function POST(request: NextRequest) {
     // Create sign-in token
     const signInToken = await clerk.signInTokens.createSignInToken({
       userId: user.id,
-      expiresInSeconds: 86400, // 24 hours
+      expiresInSeconds: 60,
     });
 
     console.log('✅ Sign-in token created');
+
+    // Exchange for JWT
+    const session = await exchangeSignInTokenForJwt(signInToken.token);
+    const jwt = session?.jwt || signInToken.token;
+
+    console.log('✅ JWT obtained for new Google OAuth user');
 
     // Auto-create user profile in Supabase
     try {
@@ -141,7 +152,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      token: signInToken.token,
+      token: jwt,
       userId: user.id,
       email: email,
       isNewUser: true,

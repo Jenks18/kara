@@ -29,7 +29,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.material3.Text
-import com.clerk.api.Clerk
 import com.mafutapass.app.ui.components.BottomNavBar
 import com.mafutapass.app.ui.Screen
 import com.mafutapass.app.ui.screens.*
@@ -51,13 +50,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Initialize Clerk SDK
-        try {
-            Clerk.initialize(this, "pk_live_Y2xlcmsubWFmdXRhcGFzcy5jb20k")
-            Log.d("MainActivity", "✅ Clerk initialized successfully")
-        } catch (e: Exception) {
-            Log.e("MainActivity", "❌ Failed to initialize Clerk: ${e.message}")
-        }
+        // Auth is handled via backend proxy — no Clerk SDK initialization needed
+        Log.d("MainActivity", "✅ MainActivity created")
         
         setContent {
             MafutaPassTheme {
@@ -73,8 +67,7 @@ class MainActivity : ComponentActivity() {
     
     override fun onResume() {
         super.onResume()
-        Log.d("MainActivity", "onResume - checking auth session")
-        Log.d("MainActivity", "Current user: ${Clerk.user?.id}, has session: ${Clerk.session != null}")
+        Log.d("MainActivity", "onResume - auth managed via SharedPreferences")
     }
 }
 
@@ -141,6 +134,24 @@ fun MafutaPassApp() {
                                 onNavigateToSecurity = { navController.navigate("security") },
                                 onNavigateToAbout = { navController.navigate("about") },
                                 onSignOut = { authViewModel.signOut() }
+                            )
+                        }
+                        composable("profile") {
+                            ProfileScreen(onBack = { navController.popBackStack() })
+                        }
+                        composable("preferences") {
+                            PreferencesScreen(onBack = { navController.popBackStack() })
+                        }
+                        composable("security") {
+                            SecurityScreen(onBack = { navController.popBackStack() })
+                        }
+                        composable("about") {
+                            AboutScreen(onBack = { navController.popBackStack() })
+                        }
+                        composable("workspaces/new") {
+                            NewWorkspaceScreen(
+                                onBack = { navController.popBackStack() },
+                                onConfirm = { navController.popBackStack() }
                             )
                         }
                     }
