@@ -38,11 +38,21 @@ export async function POST(req: NextRequest) {
 
     console.log('✅ User created:', clerkUser.id);
     
+    // Create sign-in token for immediate authentication
+    // This is the proper Clerk approach for programmatic user creation
+    const signInToken = await client.signInTokens.createSignInToken({
+      userId: clerkUser.id,
+      expiresInSeconds: 3600, // 1 hour
+    });
+    
+    console.log('🎫 Sign-in token created');
+    
     return NextResponse.json(
       {
         success: true,
         userId: clerkUser.id,
         email: email,
+        ticket: signInToken.token,
         message: 'Account created successfully.'
       },
       { status: 200, headers: corsHeaders }

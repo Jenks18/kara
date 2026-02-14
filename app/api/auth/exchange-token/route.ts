@@ -11,21 +11,21 @@ export async function OPTIONS() {
 }
 
 /**
- * Sign in user and get JWT via Backend proxy (bypasses Cloudflare)
- * This performs the sign-in flow on behalf of Android from our trusted backend
+ * Exchange sign-in token (ticket) for session JWT
+ * Uses Clerk's ticket strategy via Frontend API
  */
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json();
+    const { ticket } = await request.json();
 
-    if (!email || !password) {
+    if (!ticket) {
       return NextResponse.json(
-        { success: false, error: 'Email and password are required' },
+        { success: false, error: 'Sign-in ticket is required' },
         { status: 400, headers: corsHeaders }
       );
     }
 
-    console.log('🔄 Backend sign-in for:', email);
+    console.log('🎫 Exchanging ticket for session...');
 
     const frontendApi = process.env.NEXT_PUBLIC_CLERK_FRONTEND_API;
     if (!frontendApi) {
@@ -36,55 +36,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Step 1: Initiate sign-in
-    const signInResponse = await fetch(`${frontendApi}/v1/client/sign_ins`, {
+    // Use ticket strategy to sign in
+    // This is the proper Clerk approach for programmatic authentication
+    const signInResponse = await fetch(`${frontendApi}/v1/client/sign_ins?_clerk_js_version=4.70.0`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ identifier: email }),
-    });
-
-    if (!signInResponse.ok) {
-      console.error('❌ Failed to initiate sign-in:', signInResponse.status);
-      return NextResponse.json(
-        { success: false, error: 'Sign-in failed' },
-        { status: 500, headers: corsHeaders }
-      );
-    }
-
-    const signInData = await signInResponse.json();
-    const signInId = signInData.response?.id;
-
-    if (!signInId) {
-      console.error('❌ No sign-in ID received');
-      return NextResponse.json(
-        { success: false, error: 'Sign-in failed' },
-        { status: 500, headers: corsHeaders }
-      );
-    }
-
-    // Step 2: Attempt password authentication
-    const attemptResponse = await fetch(`${frontendApi}/v1/client/sign_ins/${signInId}/attempt_first_factor`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        strategy: 'password',
-        password: password,
+      headers: { 
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ 
+        strategy: 'ticket',
+        ticket: ticket,
       }),
     });
 
-    if (!attemptResponse.ok) {
-      console.error('❌ Password authentication failed:', attemptResponse.status);
+    if (!signInResponse.ok) {
+      console.error('❌ Ticket authentication failed:', signInResponse.status);
+      const errorText = await signInResponse.text();
+      console.error('Error response:', errorText);
       return NextResponse.json(
-        { success: false, error: 'Invalid credentials' },
+        { success: false, error: 'Authentication failed' },
         { status: 401, headers: corsHeaders }
       );
     }
 
-    const attemptData = await attemptResponse.json();
+    const signInData = await signInResponse.json();
     
-    // Extract JWT and userId from Clerk Frontend API response
-    const jwt = attemptData.client?.sessions?.[0]?.last_active_token?.jwt;
-    const userId = attemptData.response?.user_id;
+    // Extract JWT and userId from response
+    const jwt = signInData.client?.sessions?.[0]?.last_active_token?.jwt;
+    const userId = signInData.response?.user_id;
 
     if (!jwt) {
       console.error('❌ No JWT token received');

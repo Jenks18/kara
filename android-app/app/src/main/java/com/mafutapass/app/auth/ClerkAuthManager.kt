@@ -587,13 +587,15 @@ object ClerkAuthManager {
                 
                 if (responseJson.getBoolean("success")) {
                     val userId = responseJson.getString("userId")
+                    val ticket = responseJson.getString("ticket")
                     
                     Log.d(TAG, "✅ Backend sign-up successful! userId=$userId")
                     
                     AuthResult(
                         success = true,
                         userId = userId,
-                        email = email
+                        email = email,
+                        token = ticket  // Store ticket as token for exchange
                     )
                 } else {
                     val error = responseJson.optString("error", "Unknown error")
@@ -628,12 +630,12 @@ object ClerkAuthManager {
     }
     
     /**
-     * Sign in user via backend proxy and get JWT
-     * Backend performs Clerk Frontend API sign-in on behalf of Android
+     * Exchange sign-in ticket for session JWT
+     * Uses Clerk's ticket strategy via backend
      */
-    suspend fun signInViaBackend(email: String, password: String): AuthResult = withContext(Dispatchers.IO) {
+    suspend fun exchangeTicketForSession(ticket: String): AuthResult = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "🔑 Signing in via backend proxy: $email")
+            Log.d(TAG, "🎫 Exchanging ticket for session JWT...")
             
             val url = URL("https://www.mafutapass.com/api/auth/exchange-token")
             val connection = url.openConnection() as HttpURLConnection
@@ -643,8 +645,7 @@ object ClerkAuthManager {
             connection.doOutput = true
             
             val requestBody = JSONObject().apply {
-                put("email", email)
-                put("password", password)
+                put("ticket", ticket)
             }
             
             connection.outputStream.use { os ->
