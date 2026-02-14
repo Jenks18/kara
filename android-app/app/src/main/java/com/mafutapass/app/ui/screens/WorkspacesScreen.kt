@@ -18,25 +18,37 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mafutapass.app.data.ApiClient
 import com.mafutapass.app.data.Workspace
 import com.mafutapass.app.ui.theme.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Composable
 fun WorkspacesScreen(
     onNavigateToNewWorkspace: () -> Unit = {},
     onNavigateToWorkspaceDetail: (String) -> Unit = {}
 ) {
-    // Mock data
-    val workspaces = remember {
-        listOf(
-            Workspace(
-                id = "1",
-                name = "Main",
-                currency = "KSH",
-                currencySymbol = "KSh",
-                avatar = null
-            )
-        )
+    var workspaces by remember { mutableStateOf<List<Workspace>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    // Fetch workspaces from API
+    LaunchedEffect(Unit) {
+        isLoading = true
+        error = null
+        try {
+            val response = withContext(Dispatchers.IO) {
+                ApiClient.apiService.getWorkspaces()
+            }
+            workspaces = response.workspaces
+        } catch (e: Exception) {
+            android.util.Log.e("WorkspacesScreen", "Failed to fetch workspaces: ${e.message}", e)
+            error = e.message
+            workspaces = emptyList()
+        } finally {
+            isLoading = false
+        }
     }
     
     Column(
@@ -75,10 +87,42 @@ fun WorkspacesScreen(
         }
         
         // Content
+        if (isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = Emerald600)
+            }
+        } else {
         LazyColumn(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            if (workspaces.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 48.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "No workspaces yet",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = Gray500
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Create a workspace to get started",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Gray400
+                            )
+                        }
+                    }
+                }
+            }
             items(workspaces) { workspace ->
                 WorkspaceCard(
                     workspace = workspace,
@@ -112,6 +156,7 @@ fun WorkspacesScreen(
                 }
             }
         }
+        } // end else (not loading)
     }
 }
 

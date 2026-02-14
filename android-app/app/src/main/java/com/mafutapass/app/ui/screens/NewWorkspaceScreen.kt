@@ -20,6 +20,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mafutapass.app.ui.theme.*
+import com.mafutapass.app.data.ApiClient
+import com.mafutapass.app.data.CreateWorkspaceRequest
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class Currency(
     val code: String,
@@ -48,6 +53,9 @@ fun NewWorkspaceScreen(onBack: () -> Unit, onConfirm: () -> Unit) {
     var workspaceName by remember { mutableStateOf("") }
     var selectedCurrency by remember { mutableStateOf(CURRENCIES[0]) }
     var showCurrencyPicker by remember { mutableStateOf(false) }
+    var isCreating by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
     
     val displayAvatar = if (workspaceName.isNotEmpty()) 
         workspaceName.first().uppercaseChar().toString() 
@@ -160,12 +168,43 @@ fun NewWorkspaceScreen(onBack: () -> Unit, onConfirm: () -> Unit) {
             Spacer(modifier = Modifier.weight(1f))
             
             // Confirm Button
+            if (errorMessage != null) {
+                Text(
+                    text = errorMessage!!,
+                    color = Red500,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
             Button(
-                onClick = onConfirm,
+                onClick = {
+                    if (workspaceName.isNotBlank() && !isCreating) {
+                        isCreating = true
+                        errorMessage = null
+                        scope.launch {
+                            try {
+                                withContext(Dispatchers.IO) {
+                                    ApiClient.apiService.createWorkspace(
+                                        CreateWorkspaceRequest(
+                                            name = workspaceName.trim(),
+                                            currency = selectedCurrency.code,
+                                            currencySymbol = selectedCurrency.symbol
+                                        )
+                                    )
+                                }
+                                onConfirm()
+                            } catch (e: Exception) {
+                                android.util.Log.e("NewWorkspace", "Failed to create workspace: ${e.message}", e)
+                                errorMessage = "Failed to create workspace"
+                                isCreating = false
+                            }
+                        }
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                enabled = workspaceName.isNotBlank(),
+                enabled = workspaceName.isNotBlank() && !isCreating,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Emerald600,
                     disabledContainerColor = Gray300
@@ -173,7 +212,7 @@ fun NewWorkspaceScreen(onBack: () -> Unit, onConfirm: () -> Unit) {
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Text(
-                    text = "Confirm",
+                    text = if (isCreating) "Creating..." else "Confirm",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )

@@ -8,8 +8,8 @@ class Repository {
     
     suspend fun getWorkspaces(): Result<List<Workspace>> = withContext(Dispatchers.IO) {
         try {
-            val workspaces = apiService.getWorkspaces()
-            Result.success(workspaces)
+            val response = apiService.getWorkspaces()
+            Result.success(response.workspaces)
         } catch (e: Exception) {
             Result.failure(e)
         }

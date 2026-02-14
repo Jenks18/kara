@@ -9,18 +9,25 @@ import okhttp3.logging.HttpLoggingInterceptor
 import java.util.concurrent.TimeUnit
 
 interface ApiService {
-    @GET("api/workspaces")
-    suspend fun getWorkspaces(): List<Workspace>
+    @GET("api/mobile/workspaces")
+    suspend fun getWorkspaces(): WorkspacesResponse
     
-    @GET("api/expense-reports")
+    @POST("api/mobile/workspaces")
+    suspend fun createWorkspace(@Body body: CreateWorkspaceRequest): CreateWorkspaceResponse
+    
+    @GET("api/mobile/expense-reports")
     suspend fun getExpenseReports(@Query("workspaceId") workspaceId: String? = null): List<ExpenseReport>
     
-    @GET("api/receipts")
+    @GET("api/mobile/receipts")
     suspend fun getReceipts(@Query("workspaceId") workspaceId: String? = null): List<ExpenseItem>
     
-    @GET("api/user-profile")
+    @GET("api/auth/mobile-profile")
     suspend fun getUserProfile(): User
 }
+
+data class WorkspacesResponse(val workspaces: List<Workspace>)
+data class CreateWorkspaceRequest(val name: String, val currency: String = "KES", val currencySymbol: String = "KSh")
+data class CreateWorkspaceResponse(val workspace: Workspace)
 
 object ApiClient {
     private const val BASE_URL = "https://www.mafutapass.com/"
