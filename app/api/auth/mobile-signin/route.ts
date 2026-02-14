@@ -1,5 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { clerkClient } from '@clerk/nextjs/server';
+
+/**
+ * DEPRECATED: Manual sign-in no longer needed
+ * 
+ * The app now uses automatic authentication:
+ * 1. Sign up creates account + sign-in token
+ * 2. Token is exchanged for JWT automatically
+ * 3. User is signed in seamlessly
+ * 
+ * This endpoint is kept only for backward compatibility
+ * or manual sign-in if automatic flow fails.
+ */
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,42 +23,15 @@ export async function OPTIONS() {
 }
 
 export async function POST(req: NextRequest) {
-  const startTime = Date.now();
-  const version = 'v2.0.0-detailed-logging';
-  console.log('🚀 [SIGNIN] Request received at', new Date().toISOString(), 'version:', version);
-  
-  try {
-    const body = await req.json();
-    console.log('📦 [SIGNIN] Request body:', JSON.stringify(body, null, 2));
-    
-    const { email, password, userId } = body;
-
-    console.log('📱 Mobile sign-in request:', { email, userId: userId ? 'provided' : 'not provided' });
-
-    if (!email || !password) {
-      return NextResponse.json(
-        { error: 'Missing email or password' },
-        { status: 400, headers: corsHeaders }
-      );
-    }
-
-    const client = await clerkClient();
-    
-    // Get user by userId (if provided) or email
-    // Using userId avoids race condition after sign-up
-    // With retry logic for eventual consistency
-    let user;
-    
-    if (userId) {
-      console.log('🆔 Looking up user by userId:', userId);
-      
-      // Retry logic with exponential backoff (max 3 attempts over ~7 seconds)
-      let lastError: any;
-      for (let attempt = 1; attempt <= 3; attempt++) {
-        const attemptStart = Date.now();
-        console.log(`🔄 [SIGNIN] Retry attempt ${attempt}/3 started at ${Date.now() - startTime}ms`);
-        
-        try {
+  return NextResponse.json(
+    { 
+      error: 'This endpoint is deprecated.',
+      message: 'Sign-up now includes automatic authentication. If you need to sign in manually, use the web app.',
+      redirectTo: 'https://www.mafutapass.com/sign-in'
+    },
+    { status: 410, headers: corsHeaders }
+  );
+}
           user = await client.users.getUser(userId);
           console.log(`✅ [SIGNIN] User found on attempt ${attempt} (took ${Date.now() - attemptStart}ms):`, user.id, 'email:', user.emailAddresses[0]?.emailAddress);
           break; // Success, exit loop

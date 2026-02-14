@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const CLERK_FRONTEND_API = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
-  ?.match(/pk_[^_]+_(.+)/)?.[1]
-  ? `https://${process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY.match(/pk_[^_]+_(.+)/)?.[1]}.clerk.accounts.dev`
-  : null;
+/**
+ * DEPRECATED: Email verification no longer needed
+ * 
+ * Backend SDK auto-verifies email addresses when creating accounts.
+ * Sign-up flow now provides immediate authentication via sign-in tokens.
+ */
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -16,37 +18,14 @@ export async function OPTIONS() {
 }
 
 export async function POST(req: NextRequest) {
-  try {
-    const { email, code } = await req.json();
-
-    console.log('📧 [VERIFY] Verification request for:', email);
-
-    if (!email || !code) {
-      return NextResponse.json(
-        { error: 'Email and code required' },
-        { status: 400, headers: corsHeaders }
-      );
-    }
-
-    if (!CLERK_FRONTEND_API) {
-      console.error('❌ [VERIFY] Clerk Frontend API URL not configured');
-      return NextResponse.json(
-        { error: 'Server configuration error' },
-        { status: 500, headers: corsHeaders }
-      );
-    }
-
-    // Step 1: Initiate sign-in with email to get signInId
-    console.log('📧 [VERIFY] Step 1: Initiating sign-in...');
-    const signInResponse = await fetch(`${CLERK_FRONTEND_API}/v1/client/sign_ins`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        identifier: email,
-      }),
-    });
+  return NextResponse.json(
+    { 
+      error: 'This endpoint is deprecated.',
+      message: 'Email verification is no longer required. Accounts are auto-verified on sign-up.'
+    },
+    { status: 410, headers: corsHeaders }
+  );
+}
 
     if (!signInResponse.ok) {
       const errorText = await signInResponse.text();
