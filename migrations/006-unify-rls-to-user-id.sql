@@ -184,14 +184,16 @@ CREATE POLICY "workspaces_delete"
   USING (user_id = auth.uid()::text);
 
 -- ========================================
--- 6. RAW_RECEIPTS: user_id based (if table exists)
+-- 6. RAW_RECEIPTS: user_email based (table uses user_email, not user_id)
 -- ========================================
+-- raw_receipts was designed with user_email as the identifier.
+-- Until we add a user_id column, RLS uses email from the JWT claims.
 
 DO $$ BEGIN
-  EXECUTE 'CREATE POLICY "raw_receipts_select" ON raw_receipts FOR SELECT TO authenticated USING (user_id = auth.uid()::text)';
-  EXECUTE 'CREATE POLICY "raw_receipts_insert" ON raw_receipts FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid()::text)';
-  EXECUTE 'CREATE POLICY "raw_receipts_update" ON raw_receipts FOR UPDATE TO authenticated USING (user_id = auth.uid()::text) WITH CHECK (user_id = auth.uid()::text)';
-  EXECUTE 'CREATE POLICY "raw_receipts_delete" ON raw_receipts FOR DELETE TO authenticated USING (user_id = auth.uid()::text)';
+  EXECUTE 'CREATE POLICY "raw_receipts_select" ON raw_receipts FOR SELECT TO authenticated USING (user_email = (auth.jwt()->>''email'')::text)';
+  EXECUTE 'CREATE POLICY "raw_receipts_insert" ON raw_receipts FOR INSERT TO authenticated WITH CHECK (user_email = (auth.jwt()->>''email'')::text)';
+  EXECUTE 'CREATE POLICY "raw_receipts_update" ON raw_receipts FOR UPDATE TO authenticated USING (user_email = (auth.jwt()->>''email'')::text) WITH CHECK (user_email = (auth.jwt()->>''email'')::text)';
+  EXECUTE 'CREATE POLICY "raw_receipts_delete" ON raw_receipts FOR DELETE TO authenticated USING (user_email = (auth.jwt()->>''email'')::text)';
 EXCEPTION WHEN undefined_table THEN NULL;
 END $$;
 
