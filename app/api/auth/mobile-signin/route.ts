@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { clerkClient } from '@clerk/nextjs/server';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,8 +12,43 @@ export async function OPTIONS() {
 }
 
 /**
- * Backend proxy path for mobile password authentication
- * Uses Clerk Frontend API (only way to verify passwords serverside)
+ * Helper: exchange a sign-in token for a Clerk JWT via Frontend API (single-step).
+ */
+async function exchangeSignInTokenForJwt(token: string): Promise<{ jwt: string; userId: string } | null> {
+  const frontendApi = process.env.NEXT_PUBLIC_CLERK_FRONTEND_API;
+  if (!frontendApi) {
+    console.error('❌ NEXT_PUBLIC_CLERK_FRONTEND_API not configured');
+    return null;
+  }
+
+  const response = await fetch(`${frontendApi}/v1/client/sign_ins?_clerk_js_version=4.70.0`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ strategy: 'ticket', ticket: token }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('❌ Token exchange failed:', response.status, errorText);
+    return null;
+  }
+
+  const data = await response.json();
+  const jwt = data.client?.sessions?.[0]?.last_active_token?.jwt;
+  const userId = data.response?.user_id;
+
+  if (!jwt) {
+    console.error('❌ No JWT in exchange response');
+    return null;
+  }
+
+  return { jwt, userId: userId || '' };
+}
+
+/**
+ * Mobile password sign-in endpoint.
+ * Uses Backend SDK to verify password + sign-in tokens for JWT creation.
+ * Eliminates fragile Frontend API two-step cookie management.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -25,108 +61,71 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const frontendApi = process.env.NEXT_PUBLIC_CLERK_FRONTEND_API;
-    if (!frontendApi) {
-      console.error('❌ NEXT_PUBLIC_CLERK_FRONTEND_API not configured');
-      return NextResponse.json(
-        { success: false, error: 'Server configuration error' },
-        { status: 500, headers: corsHeaders }
-      );
-    }
-
     console.log('🔑 Password sign-in for:', email);
 
-    // Step 1: Create sign-in attempt
-    const signInResponse = await fetch(`${frontendApi}/v1/client/sign_ins?_clerk_js_version=4.70.0`, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ 
-        identifier: email,
-      }),
+    const client = await clerkClient();
+
+    // Step 1: Find user by email (Backend SDK)
+    const users = await client.users.getUserList({
+      emailAddress: [email],
     });
 
-    if (!signInResponse.ok) {
-      console.error('❌ Failed to create sign-in:', signInResponse.status);
+    if (users.data.length === 0) {
+      console.log('❌ No user found for:', email);
       return NextResponse.json(
-        { success: false, error: 'Failed to initiate sign-in' },
-        { status: signInResponse.status, headers: corsHeaders }
+        { success: false, error: 'Invalid email or password' },
+        { status: 401, headers: corsHeaders }
       );
     }
 
-    const signInData = await signInResponse.json();
-    const signInId = signInData.response?.id;
+    const user = users.data[0];
+    console.log('✅ User found:', user.id);
 
-    if (!signInId) {
-      console.error('❌ No sign-in ID received');
-      return NextResponse.json(
-        { success: false, error: 'Failed to create sign-in' },
-        { status: 500, headers: corsHeaders }
-      );
-    }
-
-    // Step 2: Attempt password authentication
-    const attemptResponse = await fetch(
-      `${frontendApi}/v1/client/sign_ins/${signInId}/attempt_first_factor?_clerk_js_version=4.70.0`,
-      {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          strategy: 'password',
-          password: password,
-        }),
-      }
-    );
-
-    if (!attemptResponse.ok) {
-      const errorText = await attemptResponse.text();
-      console.error('❌ Password authentication failed:', attemptResponse.status, errorText);
-      
-      // Check if it's an invalid credentials error
-      if (attemptResponse.status === 401 || attemptResponse.status === 422) {
+    // Step 2: Verify password (Backend SDK)
+    try {
+      const { verified } = await client.users.verifyPassword({ userId: user.id, password });
+      if (!verified) {
+        console.log('❌ Password verification failed for:', email);
         return NextResponse.json(
           { success: false, error: 'Invalid email or password' },
           { status: 401, headers: corsHeaders }
         );
       }
-      
+    } catch (verifyError: any) {
+      console.error('❌ Password verification error:', verifyError.message);
+      return NextResponse.json(
+        { success: false, error: 'Invalid email or password' },
+        { status: 401, headers: corsHeaders }
+      );
+    }
+
+    console.log('✅ Password verified');
+
+    // Step 3: Create sign-in token (Backend SDK)
+    const signInToken = await client.signInTokens.createSignInToken({
+      userId: user.id,
+      expiresInSeconds: 60,
+    });
+
+    console.log('✅ Sign-in token created');
+
+    // Step 4: Exchange token for JWT (single-step Frontend API)
+    const session = await exchangeSignInTokenForJwt(signInToken.token);
+
+    if (!session) {
+      console.error('❌ Failed to exchange sign-in token for JWT');
       return NextResponse.json(
         { success: false, error: 'Authentication failed' },
-        { status: attemptResponse.status, headers: corsHeaders }
-      );
-    }
-
-    const attemptData = await attemptResponse.json();
-    
-    // Extract JWT and userId from response
-    const jwt = attemptData.client?.sessions?.[0]?.last_active_token?.jwt;
-    const userId = attemptData.response?.user_id;
-
-    if (!jwt) {
-      console.error('❌ No JWT token received');
-      return NextResponse.json(
-        { success: false, error: 'Authentication failed - no session created' },
         { status: 500, headers: corsHeaders }
       );
     }
 
-    if (!userId) {
-      console.error('❌ No userId in response');
-      return NextResponse.json(
-        { success: false, error: 'User ID not found' },
-        { status: 500, headers: corsHeaders }
-      );
-    }
-
-    console.log('✅ Sign-in successful! userId:', userId);
+    console.log('✅ Sign-in successful! userId:', user.id);
 
     return NextResponse.json({
       success: true,
-      token: jwt,
-      userId: userId,
+      token: session.jwt,
+      userId: user.id,
     }, { headers: corsHeaders });
 
   } catch (error: any) {

@@ -32,34 +32,30 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
             try {
                 Log.d("SignUpViewModel", "📱 Creating account: $email")
 
-                // Step 1: Create user via backend (Backend SDK, no CAPTCHA)
-                val signupResult = createUserViaBackend(email, password, username, firstName, lastName)
-                
-                if (!signupResult.success || signupResult.signInToken == null) {
-                    Log.e("SignUpViewModel", "❌ Sign up failed: ${signupResult.error}")
-                    _uiState.value = SignUpUiState.Error(signupResult.error ?: "Sign up failed")
+                // Step 1: Create user + get JWT in one call (backend does signup + exchange)
+                val result = createUserViaBackend(email, password, username, firstName, lastName)
+
+                if (!result.success) {
+                    Log.e("SignUpViewModel", "❌ Sign up failed: ${result.error}")
+                    _uiState.value = SignUpUiState.Error(result.error ?: "Sign up failed")
                     return@launch
                 }
 
-                val signInToken = signupResult.signInToken
-                val userId = signupResult.userId
-                Log.d("SignUpViewModel", "✅ Account created, exchanging token for session...")
+                val jwt = result.token
+                val userId = result.userId
 
-                // Step 2: Exchange sign-in token for JWT (via exchange endpoint)
-                val jwt = exchangeTokenForJwt(signInToken)
-                
-                if (jwt == null) {
-                    Log.e("SignUpViewModel", "❌ Failed to exchange token")
-                    _uiState.value = SignUpUiState.Error("Authentication failed")
+                if (jwt == null || userId == null) {
+                    Log.e("SignUpViewModel", "❌ No token or userId in response")
+                    _uiState.value = SignUpUiState.Error("Authentication failed after sign-up")
                     return@launch
                 }
-                
-                Log.d("SignUpViewModel", "✅ Session established, creating profile...")
 
-                // Step 3: Create Supabase profile
+                Log.d("SignUpViewModel", "✅ Account created + authenticated")
+
+                // Step 2: Create Supabase profile
                 createSupabaseProfile(jwt, email, username, firstName, lastName)
 
-                // Step 4: Store tokens
+                // Step 3: Store session
                 val prefs = getApplication<Application>()
                     .getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
                 prefs.edit().apply {
@@ -78,6 +74,13 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
             }
         }
     }
+
+    private data class SignupResult(
+        val success: Boolean,
+        val token: String? = null,
+        val userId: String? = null,
+        val error: String? = null
+    )
 
     private suspend fun createUserViaBackend(
         email: String,
@@ -115,50 +118,15 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
         }
 
         val jsonResponse = JSONObject(responseBody)
-        val signInToken = jsonResponse.optString("signInToken").takeIf { it.isNotEmpty() }
+        val token = jsonResponse.optString("token").takeIf { it.isNotEmpty() }
         val userId = jsonResponse.optString("userId").takeIf { it.isNotEmpty() }
 
         SignupResult(
             success = true,
-            signInToken = signInToken,
+            token = token,
             userId = userId
         )
     }
-
-    private suspend fun exchangeTokenForJwt(signInToken: String): String? = withContext(Dispatchers.IO) {
-        Log.d("SignUpViewModel", "🔄 Exchanging sign-in token for JWT...")
-        
-        val json = JSONObject().apply {
-            put("ticket", signInToken)
-        }
-
-        val requestBody = json.toString().toRequestBody("application/json".toMediaType())
-        val request = Request.Builder()
-            .url("https://www.mafutapass.com/api/auth/exchange-token")
-            .post(requestBody)
-            .build()
-
-        val response = httpClient.newCall(request).execute()
-        val responseBody = response.body?.string() ?: ""
-
-        Log.d("SignUpViewModel", "📥 Exchange response: ${responseBody.take(200)}")
-
-        if (!response.isSuccessful) {
-            Log.e("SignUpViewModel", "❌ Token exchange failed: ${response.code}")
-            return@withContext null
-        }
-
-        val jsonResponse = JSONObject(responseBody)
-        val token = jsonResponse.optString("token")
-        return@withContext if (token.isNotEmpty()) token else null
-    }
-
-    private data class SignupResult(
-        val success: Boolean,
-        val signInToken: String? = null,
-        val userId: String? = null,
-        val error: String? = null
-    )
 
     private suspend fun createSupabaseProfile(
         token: String,
@@ -200,7 +168,6 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
             }
         } catch (e: Exception) {
             Log.e("SignUpViewModel", "Exception creating Supabase profile: ${e.message}", e)
-            // Don't fail the whole flow — user can still use the app
         }
     }
 

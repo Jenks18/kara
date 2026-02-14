@@ -11,8 +11,8 @@ export async function OPTIONS() {
 }
 
 /**
- * Exchange sign-in token (ticket) for Clerk session JWT
- * Uses Frontend API with proper cookie handling for session state
+ * Exchange sign-in token (ticket) for Clerk session JWT.
+ * Uses a SINGLE Frontend API call — no multi-step cookie management needed.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -36,94 +36,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Step 1: Create sign-in attempt - capture cookies for session state
-    const createSignInResponse = await fetch(`${frontendApi}/v1/client/sign_ins?_clerk_js_version=4.70.0`, {
+    // Single-step ticket exchange: strategy + ticket in ONE call
+    // The ticket contains all auth context — no second step or cookies needed
+    const signInResponse = await fetch(`${frontendApi}/v1/client/sign_ins?_clerk_js_version=4.70.0`, {
       method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ 
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         strategy: 'ticket',
+        ticket: ticket,
       }),
     });
 
-    if (!createSignInResponse.ok) {
-      console.error('❌ Failed to create sign-in:', createSignInResponse.status);
-      const errorText = await createSignInResponse.text();
-      console.error('Error response:', errorText);
-      return NextResponse.json(
-        { success: false, error: 'Failed to initiate sign-in' },
-        { status: createSignInResponse.status, headers: corsHeaders }
-      );
-    }
-
-    // Extract cookies from the first request to maintain session state
-    const cookies = createSignInResponse.headers.get('set-cookie');
-    
-    const createData = await createSignInResponse.json();
-    const signInId = createData.response?.id;
-
-    if (!signInId) {
-      console.error('❌ No sign-in ID received');
-      return NextResponse.json(
-        { success: false, error: 'Failed to create sign-in' },
-        { status: 500, headers: corsHeaders }
-      );
-    }
-
-    console.log('✅ Sign-in created:', signInId);
-
-    // Step 2: Attempt first factor with ticket - include cookies for session continuity
-    const attemptHeaders: HeadersInit = { 
-      'Content-Type': 'application/json',
-    };
-    
-    // Pass cookies to maintain session state
-    if (cookies) {
-      attemptHeaders['Cookie'] = cookies.split(',').map(c => c.split(';')[0]).join('; ');
-    }
-
-    const attemptResponse = await fetch(
-      `${frontendApi}/v1/client/sign_ins/${signInId}/attempt_first_factor?_clerk_js_version=4.70.0`,
-      {
-        method: 'POST',
-        headers: attemptHeaders,
-        body: JSON.stringify({ 
-          strategy: 'ticket',
-          ticket: ticket,
-        }),
-      }
-    );
-
-    if (!attemptResponse.ok) {
-      console.error('❌ Ticket attempt failed:', attemptResponse.status);
-      const errorText = await attemptResponse.text();
-      console.error('Error response:', errorText);
+    if (!signInResponse.ok) {
+      const errorText = await signInResponse.text();
+      console.error('❌ Ticket exchange failed:', signInResponse.status, errorText);
       return NextResponse.json(
         { success: false, error: 'Ticket authentication failed' },
-        { status: attemptResponse.status, headers: corsHeaders }
+        { status: signInResponse.status, headers: corsHeaders }
       );
     }
 
-    const signInData = await attemptResponse.json();
-    
-    // Extract Clerk's official JWT and userId from response
+    const signInData = await signInResponse.json();
+
+    // Extract JWT and userId from the completed sign-in
     const jwt = signInData.client?.sessions?.[0]?.last_active_token?.jwt;
     const userId = signInData.response?.user_id;
 
     if (!jwt) {
-      console.error('❌ No JWT token received from Clerk');
-      console.log('Response structure:', JSON.stringify(signInData, null, 2));
+      console.error('❌ No JWT in response. Full response:', JSON.stringify(signInData, null, 2));
       return NextResponse.json(
         { success: false, error: 'Authentication failed - no session created' },
-        { status: 500, headers: corsHeaders }
-      );
-    }
-
-    if (!userId) {
-      console.error('❌ No userId in response');
-      return NextResponse.json(
-        { success: false, error: 'User ID not found' },
         { status: 500, headers: corsHeaders }
       );
     }
@@ -132,13 +74,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      token: jwt, // This is Clerk's official JWT - production-grade
-      userId: userId,
+      token: jwt,
+      userId: userId || '',
     }, { headers: corsHeaders });
 
   } catch (error: any) {
     console.error('❌ Token exchange error:', error.message);
-    console.error('Error details:', error);
     return NextResponse.json(
       { success: false, error: 'Token exchange failed' },
       { status: 500, headers: corsHeaders }

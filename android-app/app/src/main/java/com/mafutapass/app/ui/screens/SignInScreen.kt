@@ -26,14 +26,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.clerk.api.Clerk
-import com.clerk.api.sso.OAuthProvider
-import com.clerk.api.sso.ResultType
-import com.clerk.api.signin.SignIn
-import com.clerk.api.signup.SignUp
-import com.clerk.api.network.serialization.onSuccess
-import com.clerk.api.network.serialization.onFailure
-import com.clerk.api.network.serialization.errorMessage
 import com.mafutapass.app.ui.theme.*
 import com.mafutapass.app.viewmodel.NativeOAuthViewModel
 import com.mafutapass.app.viewmodel.SignInViewModel
@@ -303,11 +295,29 @@ fun SignInOrUpScreen() {
 }
 
 @Composable
-fun SignInView(viewModel: SignInViewModel = viewModel()) {
+fun SignInView() {
+    val context = LocalContext.current
+    val viewModel: SignInViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                @Suppress("UNCHECKED_CAST")
+                return SignInViewModel(context.applicationContext as android.app.Application) as T
+            }
+        }
+    )
+    val authViewModel: com.mafutapass.app.viewmodel.AuthViewModel = viewModel()
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     val state by viewModel.uiState.collectAsState()
+
+    // Handle successful sign-in — refresh auth state to navigate
+    LaunchedEffect(state) {
+        if (state is SignInViewModel.SignInUiState.Success) {
+            android.util.Log.d("SignInView", "✅ Sign-in successful - refreshing auth")
+            authViewModel.refreshAuthState()
+        }
+    }
 
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp)
