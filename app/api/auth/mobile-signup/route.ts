@@ -46,14 +46,15 @@ export async function POST(req: NextRequest) {
         userId: clerkUser.id,
       });
       
-      if (sessionToken && sessionToken.lastActiveToken?.jwt) {
+      const jwt = sessionToken?.lastActiveToken?.jwt;
+      if (jwt) {
         console.log('✅ Session created with Backend SDK! Returning JWT.');
         return NextResponse.json(
           {
             success: true,
             userId: clerkUser.id,
             email: email,
-            token: sessionToken.lastActiveToken.jwt,
+            token: jwt,
             message: 'Account created and signed in successfully!'
           },
           { status: 200, headers: corsHeaders }
