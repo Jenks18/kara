@@ -587,15 +587,14 @@ object ClerkAuthManager {
                 
                 if (responseJson.getBoolean("success")) {
                     val userId = responseJson.getString("userId")
-                    val ticket = responseJson.getString("ticket")
+                    val email = responseJson.getString("email")
                     
                     Log.d(TAG, "✅ Backend sign-up successful! userId=$userId")
                     
                     AuthResult(
                         success = true,
                         userId = userId,
-                        email = email,
-                        token = ticket  // Store ticket as token for exchange
+                        email = email
                     )
                 } else {
                     val error = responseJson.optString("error", "Unknown error")
@@ -631,22 +630,97 @@ object ClerkAuthManager {
     
     /**
      * Exchange sign-in ticket for session JWT
-     * Uses Clerk's ticket strategy via backend
+     * Calls Clerk's Frontend API DIRECTLY (not through our backend)
+     * This avoids Cloudflare blocking server-to-server calls
      */
     suspend fun exchangeTicketForSession(ticket: String): AuthResult = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "🎫 Exchanging ticket for session JWT...")
+            Log.d(TAG, "🎫 Exchanging ticket for session JWT (calling Clerk directly)...")
             
-            val url = URL("https://www.mafutapass.com/api/auth/exchange-token")
-            val connection = url.openConnection() as HttpURLConnection
+            // Step 1: Create sign-in attempt with ticket strategy
+            val url1 = URL("${ClerkConfig.FRONTEND_API}/v1/client/sign_ins?_clerk_js_version=4.70.0")
+            val connection1 = url1.openConnection() as HttpURLConnection
             
-            connection.requestMethod = "POST"
-            connection.setRequestProperty("Content-Type", "application/json")
-            connection.doOutput = true
+            connection1.requestMethod = "POST"
+            connection1.setRequestProperty("Content-Type", "application/json")
+            connection1.doOutput = true
             
-            val requestBody = JSONObject().apply {
+            val requestBody1 = JSONObject().apply {
+                put("strategy", "ticket")
+            }
+            
+            connection1.outputStream.use { os ->
+                os.write(requestBody1.toString().toByteArray())
+            }
+            
+            val responseCode1 = connection1.responseCode
+            Log.d(TAG, "📥 Step 1 response code: $responseCode1")
+            
+            if (responseCode1 != HttpURLConnection.HTTP_OK) {
+                val error = connection1.errorStream?.bufferedReader()?.use { it.readText() } ?: "Failed to create sign-in"
+                Log.e(TAG, "❌ Failed to create sign-in: $error")
+                return@withContext AuthResult(success = false, error = "Failed to initiate sign-in")
+            }
+            
+            // Extract cookies for session continuity
+            val cookies = connection1.headerFields["Set-Cookie"]?.joinToString("; ") { 
+                it.split(";")[0] 
+            } ?: ""
+            
+            val response1 = connection1.inputStream.bufferedReader().use { it.readText() }
+            val json1 = JSONObject(response1)
+            val signInId = json1.getJSONObject("response").getString("id")
+            
+            Log.d(TAG, "✅ Sign-in created: $signInId")
+            
+            // Step 2: Attempt first factor with ticket
+            val url2 = URL("${ClerkConfig.FRONTEND_API}/v1/client/sign_ins/$signInId/attempt_first_factor?_clerk_js_version=4.70.0")
+            val connection2 = url2.openConnection() as HttpURLConnection
+            
+            connection2.requestMethod = "POST"
+            connection2.setRequestProperty("Content-Type", "application/json")
+            if (cookies.isNotEmpty()) {
+                connection2.setRequestProperty("Cookie", cookies)  // Maintain session state
+            }
+            connection2.doOutput = true
+            
+            val requestBody2 = JSONObject().apply {
+                put("strategy", "ticket")
                 put("ticket", ticket)
             }
+            
+            connection2.outputStream.use { os ->
+                os.write(requestBody2.toString().toByteArray())
+            }
+            
+            val responseCode2 = connection2.responseCode
+            Log.d(TAG, "📥 Step 2 response code: $responseCode2")
+            
+            if (responseCode2 != HttpURLConnection.HTTP_OK) {
+                val error = connection2.errorStream?.bufferedReader()?.use { it.readText() } ?: "Ticket authentication failed"
+                Log.e(TAG, "❌ Ticket authentication failed: $error")
+                return@withContext AuthResult(success = false, error = "Invalid or expired sign-in ticket")
+            }
+            
+            val response2 = connection2.inputStream.bufferedReader().use { it.readText() }
+            val json2 = JSONObject(response2)
+            
+            // Extract Clerk's official JWT
+            val jwt = json2.getJSONObject("client")
+                .getJSONArray("sessions")
+                .getJSONObject(0)
+                .getJSONObject("last_active_token")
+                .getString("jwt")
+            
+            val userId = json2.getJSONObject("response").getString("user_id")
+            
+            Log.d(TAG, "✅ Clerk session established! userId=$userId")
+            
+            AuthResult(
+                success = true,
+                token = jwt,  // This is Clerk's official JWT
+                userId = userId
+            )
             
             connection.outputStream.use { os ->
                 os.write(requestBody.toString().toByteArray())

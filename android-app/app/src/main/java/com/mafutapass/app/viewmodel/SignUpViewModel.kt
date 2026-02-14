@@ -50,16 +50,15 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
                 
                 Log.d("SignUpViewModel", "✅ Account created successfully!")
                 
-                // Get ticket from sign-up response
-                val ticket = result.token
-                if (ticket != null) {
-                    Log.d("SignUpViewModel", "🎫 Exchanging ticket for session JWT...")
+                // Immediately sign in with password
+                if (result.userId != null) {
+                    Log.d("SignUpViewModel", "🔑 Signing in with password...")
                     
-                    // Exchange sign-in ticket for session JWT (Clerk's proper approach)
-                    val sessionResult = ClerkAuthManager.exchangeTicketForSession(ticket)
+                    // Sign in via backend with password (Clerk's standard password authentication)
+                    val sessionResult = ClerkAuthManager.signInViaBackend(email, password)
                     
                     if (!sessionResult.success || sessionResult.token == null) {
-                        Log.e("SignUpViewModel", "❌ Session creation failed: ${sessionResult.error}")
+                        Log.e("SignUpViewModel", "❌ Sign-in failed: ${sessionResult.error}")
                         _uiState.value = SignUpUiState.Error(sessionResult.error ?: "Authentication failed")
                         return@launch
                     }
