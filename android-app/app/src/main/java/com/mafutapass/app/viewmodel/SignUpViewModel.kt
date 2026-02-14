@@ -49,43 +49,38 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
                 }
                 
                 Log.d("SignUpViewModel", "✅ Account created successfully!")
+                Log.d("SignUpViewModel", "⏱️  Waiting 2 seconds for password propagation...")
                 
-                // Check if backend returned sign-in token (instant authentication)
-                val signInToken = result.token
+                // Wait for Clerk's password propagation (proven working delay)
+                delay(2000L)
                 
-                if (signInToken != null) {
-                    Log.d("SignUpViewModel", "🎫 Using sign-in token for instant authentication...")
-                    
-                    // Authenticate using sign-in token (ticket strategy)
-                    val sessionResult = ClerkAuthManager.signInWithToken(signInToken)
-                    
-                    if (!sessionResult.success || sessionResult.token == null) {
-                        Log.e("SignUpViewModel", "❌ Token authentication failed: ${sessionResult.error}")
-                        _uiState.value = SignUpUiState.Error(sessionResult.error ?: "Authentication failed")
-                        return@launch
-                    }
-                    
-                    val jwt = sessionResult.token
-                    Log.d("SignUpViewModel", "✅ JWT received, creating profile...")
+                Log.d("SignUpViewModel", "🔐 Authenticating with password...")
+                
+                // Authenticate with password via Frontend API (proven working approach)
+                val sessionResult = ClerkAuthManager.signInWithPassword(email, password)
+                
+                if (!sessionResult.success || sessionResult.token == null) {
+                    Log.e("SignUpViewModel", "❌ Password authentication failed: ${sessionResult.error}")
+                    _uiState.value = SignUpUiState.Error(sessionResult.error ?: "Authentication failed")
+                    return@launch
+                }
+                
+                val jwt = sessionResult.token
+                Log.d("SignUpViewModel", "✅ JWT received, creating profile...")
                     
                     // Create Supabase profile
-                    createSupabaseProfile(jwt, email, username, firstName, lastName)
-                    
-                    // Store token
-                    val prefs = getApplication<Application>().getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
-                    prefs.edit().apply {
-                        putString("session_token", jwt)
-                        putString("user_email", email)
-                        putBoolean("is_new_user", false)
-                    }.commit()
-                    
-                    Log.d("SignUpViewModel", "✅ Sign-up complete - automatically signed in!")
-                    _uiState.value = SignUpUiState.Success
-                } else {
-                    // Fallback: Account created but needs manual sign-in
-                    Log.e("SignUpViewModel", "⚠️ No userId received - sign up incomplete")
-                    _uiState.value = SignUpUiState.Error("Sign up incomplete")
-                }
+                createSupabaseProfile(jwt, email, username, firstName, lastName)
+                
+                // Store token
+                val prefs = getApplication<Application>().getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
+                prefs.edit().apply {
+                    putString("session_token", jwt)
+                    putString("user_email", email)
+                    putBoolean("is_new_user", false)
+                }.commit()
+                
+                Log.d("SignUpViewModel", "✅ Sign-up complete - automatically signed in!")
+                _uiState.value = SignUpUiState.Success
                 
             } catch (e: Exception) {
                 Log.e("SignUpViewModel", "❌ Sign up error: ${e.message}", e)

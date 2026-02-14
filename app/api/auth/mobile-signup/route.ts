@@ -38,34 +38,18 @@ export async function POST(req: NextRequest) {
 
     console.log('✅ User created:', clerkUser.id);
     console.log('📧 Email auto-verified by Backend SDK');
+    console.log('⏱️  Password will be available after ~2 second propagation delay');
     
-    // Create sign-in token for instant authentication (production-grade approach)
-    console.log('🎫 Creating sign-in token for instant authentication...');
-    try {
-      const signInToken = await client.signInTokens.createSignInToken({
+    // Return success - Android will wait 2s then use password auth
+    return NextResponse.json(
+      {
+        success: true,
         userId: clerkUser.id,
-        expiresInSeconds: 600, // 10 minutes
-      });
-      
-      console.log('✅ Sign-in token created:', signInToken.token);
-      
-      return NextResponse.json(
-        {
-          success: true,
-          userId: clerkUser.id,
-          email: email,
-          signInToken: signInToken.token,
-          message: 'Account created successfully!'
-        },
-        { status: 200, headers: corsHeaders }
-      );
-    } catch (tokenError: any) {
-      console.error('❌ Sign-in token creation failed:', tokenError.message);
-      return NextResponse.json(
-        { success: false, error: 'Failed to create authentication token' },
-        { status: 500, headers: corsHeaders }
-      );
-    }
+        email: email,
+        message: 'Account created! Preparing authentication...'
+      },
+      { status: 200, headers: corsHeaders }
+    );
 
   } catch (error: any) {
     console.error('❌ Sign-up error:', error.message);
