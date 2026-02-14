@@ -560,6 +560,7 @@ object ClerkAuthManager {
     suspend fun signInWithToken(signInToken: String): AuthResult = withContext(Dispatchers.IO) {
         try {
             Log.d(TAG, "🎫 Signing in with sign-in token via backend...")
+            Log.d(TAG, "🎫 Token value: ${signInToken.take(20)}...")
             
             val url = URL("https://www.mafutapass.com/api/auth/mobile-signin")
             val connection = url.openConnection() as HttpURLConnection
@@ -571,6 +572,8 @@ object ClerkAuthManager {
             val requestBody = JSONObject().apply {
                 put("signInToken", signInToken)
             }
+            
+            Log.d(TAG, "📤 Request body: $requestBody")
             
             connection.outputStream.use { os ->
                 os.write(requestBody.toString().toByteArray())
@@ -584,6 +587,7 @@ object ClerkAuthManager {
             }
             
             Log.d(TAG, "📥 Token sign-in response code: $responseCode")
+            Log.d(TAG, "📥 Response body: ${responseBody.take(500)}")
             
             if (responseCode == HttpURLConnection.HTTP_OK) {
                 val json = JSONObject(responseBody)

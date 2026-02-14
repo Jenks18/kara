@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
     // If sign-in token provided, use ticket strategy (instant auth after sign-up)
     if (signInToken) {
       console.log('🎫 Authenticating with sign-in token (ticket strategy)');
+      console.log('🎫 Token value:', signInToken);
       
       // Step 1: Create sign-in with ticket strategy
       const signInResponse = await fetch(`${frontendApi}/v1/client/sign_ins?_clerk_js_version=4.70.0`, {
@@ -72,7 +73,9 @@ export async function POST(req: NextRequest) {
 
       if (!attemptResponse.ok) {
         const errorText = await attemptResponse.text();
-        console.error('❌ Ticket authentication failed:', attemptResponse.status, errorText);
+        console.error('❌ Ticket authentication failed:', attemptResponse.status);
+        console.error('❌ Error details:', errorText);
+        console.error('❌ Token used:', signInToken);
         return NextResponse.json(
           { success: false, error: 'Invalid or expired sign-in token' },
           { status: 401, headers: corsHeaders }
