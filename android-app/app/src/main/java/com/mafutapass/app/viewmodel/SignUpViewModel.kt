@@ -50,11 +50,15 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
                 
                 Log.d("SignUpViewModel", "✅ Account created successfully!")
                 
-                // Immediately sign in with password
-                if (result.userId != null) {
-                    Log.d("SignUpViewModel", "🔑 Signing in with password...")
+                // Check if backend returned JWT directly (Backend SDK session creation)
+                var jwt: String? = result.token
+                
+                if (jwt != null) {
+                    Log.d("SignUpViewModel", "🎉 Backend created session directly - no password auth needed!")
+                } else if (result.userId != null) {
+                    Log.d("SignUpViewModel", "🔑 Backend SDK session failed, signing in with password...")
                     
-                    // Sign in via backend with password (Clerk's standard password authentication)
+                    // Fallback: Sign in via backend with password
                     val sessionResult = ClerkAuthManager.signInViaBackend(email, password)
                     
                     if (!sessionResult.success || sessionResult.token == null) {
@@ -63,7 +67,10 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
                         return@launch
                     }
                     
-                    val jwt = sessionResult.token!!
+                    jwt = sessionResult.token
+                }
+                
+                if (jwt != null) {
                     Log.d("SignUpViewModel", "✅ JWT received, creating profile...")
                     
                     // Create Supabase profile

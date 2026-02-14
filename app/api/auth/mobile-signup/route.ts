@@ -39,6 +39,31 @@ export async function POST(req: NextRequest) {
     console.log('✅ User created:', clerkUser.id);
     console.log('📧 Email auto-verified by Backend SDK');
     
+    // Try to create session directly with Backend SDK (like commit 3b8c80d)
+    console.log('🔑 Attempting to create session with Backend SDK...');
+    try {
+      const sessionToken = await client.sessions.createSession({
+        userId: clerkUser.id,
+      });
+      
+      if (sessionToken && sessionToken.lastActiveToken?.jwt) {
+        console.log('✅ Session created with Backend SDK! Returning JWT.');
+        return NextResponse.json(
+          {
+            success: true,
+            userId: clerkUser.id,
+            email: email,
+            token: sessionToken.lastActiveToken.jwt,
+            message: 'Account created and signed in successfully!'
+          },
+          { status: 200, headers: corsHeaders }
+        );
+      }
+    } catch (sessionError: any) {
+      console.error('⚠️ Backend SDK session creation failed:', sessionError.message);
+      console.log('📝 Falling back to password authentication flow');
+    }
+    
     return NextResponse.json(
       {
         success: true,
