@@ -58,10 +58,11 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // Extract cookies from step 1 to maintain session state
-      const setCookieHeader = signInResponse.headers.get('set-cookie');
-      const cookies = setCookieHeader?.split(',').map(c => c.split(';')[0]).join('; ') || '';
-      console.log('🍪 Cookies from step 1:', cookies ? 'Present' : 'Missing');
+      // Extract ALL cookies from step 1 to maintain session state
+      // Use getSetCookie() to get array of all Set-Cookie headers
+      const setCookieHeaders = signInResponse.headers.getSetCookie();
+      const cookies = setCookieHeaders.map(header => header.split(';')[0]).join('; ');
+      console.log(`🍪 Cookies from step 1: ${setCookieHeaders.length} cookies -`, cookies);
 
       // Step 2: Attempt first factor with ticket
       const attemptResponse = await fetch(
