@@ -47,16 +47,15 @@ export async function POST(req: NextRequest) {
     console.log('🔑 Creating session directly for immediate authentication...');
     const session = await client.sessions.createSession({
       userId: clerkUser.id,
-      // No need to specify actor - backend creates session on user's behalf
     });
     
     console.log('✅ Session created successfully:', session.id);
     
-    // Get the session token (JWT)
-    const sessionToken = session.lastActiveToken?.jwt;
+    // Get the session token (JWT) using the correct Backend SDK method
+    const sessionToken = await client.sessions.getToken(session.id, 'default-session');
     
     if (!sessionToken) {
-      console.error('❌ No JWT token in session');
+      console.error('❌ No JWT token obtained from session');
       return NextResponse.json(
         { error: 'Failed to create session token' },
         { status: 500, headers: corsHeaders }
@@ -70,7 +69,7 @@ export async function POST(req: NextRequest) {
         success: true,
         userId: clerkUser.id,
         email: email,
-        sessionToken: sessionToken,
+        sessionToken: sessionToken.jwt,
         message: 'Account created successfully'
       },
       { status: 200, headers: corsHeaders }
