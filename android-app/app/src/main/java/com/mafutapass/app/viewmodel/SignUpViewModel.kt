@@ -48,29 +48,10 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
                     return@launch
                 }
                 
-                // Get session token directly from backend (no exchange needed - bypasses Cloudflare)
-                val token = result.sessionToken
-                if (token == null) {
-                    Log.e("SignUpViewModel", "❌ No session token received")
-                    _uiState.value = SignUpUiState.Error("Account created. Please sign in manually.")
-                    return@launch
-                }
+                Log.d("SignUpViewModel", "✅ Account created successfully!")
                 
-                Log.d("SignUpViewModel", "✅ Account created with session! Creating profile...")
-                
-                // Create Supabase profile in background
-                createSupabaseProfile(token, email, username, firstName, lastName)
-                
-                // Store token
-                val prefs = getApplication<Application>().getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
-                prefs.edit().apply {
-                    putString("session_token", token)
-                    putString("user_email", email)
-                    putBoolean("is_new_user", true)
-                }.commit()
-                
-                Log.d("SignUpViewModel", "✅ Sign up complete!")
-                _uiState.value = SignUpUiState.Success
+                // Account created - show success and navigate to sign-in
+                _uiState.value = SignUpUiState.AccountCreated(email)
                 
             } catch (e: Exception) {
                 Log.e("SignUpViewModel", "❌ Sign up error: ${e.message}", e)
@@ -183,6 +164,7 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
         data object SignedOut : SignUpUiState
         data object Loading : SignUpUiState
         data object Success : SignUpUiState
+        data class AccountCreated(val email: String) : SignUpUiState
         data class NeedsVerification(
             val signUpId: String,
             val email: String,

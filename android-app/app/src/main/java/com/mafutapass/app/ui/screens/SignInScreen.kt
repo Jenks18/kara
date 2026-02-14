@@ -436,11 +436,19 @@ fun SignUpView() {
     var passwordVisible by remember { mutableStateOf(false) }
     val state by viewModel.uiState.collectAsState()
 
-    // Handle successful sign-up
+    // Handle successful sign-up or account creation
     LaunchedEffect(state) {
-        if (state is SignUpViewModel.SignUpUiState.Success) {
-            android.util.Log.d("SignUpView", "✅ Sign up successful - refreshing auth")
-            authViewModel.refreshAuthState()
+        when (state) {
+            is SignUpViewModel.SignUpUiState.Success -> {
+                android.util.Log.d("SignUpView", "✅ Sign up successful - refreshing auth")
+                authViewModel.refreshAuthState()
+            }
+            is SignUpViewModel.SignUpUiState.AccountCreated -> {
+                android.util.Log.d("SignUpView", "✅ Account created - switching to sign-in")
+                // Show a message and switch to sign-in tab
+                onTabChange(0) // Switch to sign-in tab
+            }
+            else -> {}
         }
     }
 
@@ -562,6 +570,14 @@ fun SignUpView() {
                     Text(
                         text = (state as SignUpViewModel.SignUpUiState.Error).message,
                         color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
+                if (state is SignUpViewModel.SignUpUiState.AccountCreated) {
+                    Text(
+                        text = "Account created! Please sign in below.",
+                        color = Emerald600,
                         style = MaterialTheme.typography.bodySmall
                     )
                 }

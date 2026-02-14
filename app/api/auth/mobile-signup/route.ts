@@ -41,68 +41,18 @@ export async function POST(req: NextRequest) {
     });
 
     console.log('✅ User created:', clerkUser.id);
-    console.log('📧 Email auto-verified by Backend SDK (no verification flow needed)');
+    console.log('📧 Email auto-verified by Backend SDK');
+    console.log('✅ Account creation complete - user can now sign in');
 
-    // Create sign-in token, then exchange it on backend (bypasses Cloudflare blocking Android)
-    console.log('🔑 Creating sign-in token...');
-    const signInToken = await client.signInTokens.createSignInToken({
-      userId: clerkUser.id,
-      expiresInSeconds: 300,
-    });
-    
-    console.log('✅ Sign-in token created, exchanging for JWT on backend...');
-    
-    // Exchange token on OUR backend (Cloudflare trusts us, not Android)
-    const frontendApi = process.env.NEXT_PUBLIC_CLERK_FRONTEND_API;
-    if (!frontendApi) {
-      console.error('❌ NEXT_PUBLIC_CLERK_FRONTEND_API not configured');
-      return NextResponse.json(
-        { error: 'Server configuration error' },
-        { status: 500, headers: corsHeaders }
-      );
-    }
-    
-    const exchangeResponse = await fetch(`${frontendApi}/v1/tickets/accept`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'User-Agent': 'MafutaPass-Backend/1.0',
-      },
-      body: JSON.stringify({
-        strategy: 'ticket',
-        ticket: signInToken.token,
-      }),
-    });
-    
-    if (!exchangeResponse.ok) {
-      const errorText = await exchangeResponse.text();
-      console.error('❌ Token exchange failed:', exchangeResponse.status, errorText);
-      return NextResponse.json(
-        { error: 'Failed to authenticate user' },
-        { status: 500, headers: corsHeaders }
-      );
-    }
-    
-    const exchangeData = await exchangeResponse.json();
-    const jwt = exchangeData?.client?.sessions?.[0]?.last_active_token?.jwt;
-    
-    if (!jwt) {
-      console.error('❌ No JWT in exchange response');
-      return NextResponse.json(
-        { error: 'Failed to get session token' },
-        { status: 500, headers: corsHeaders }
-      );
-    }
-    
-    console.log('✅ JWT obtained successfully!');
-
+    // Account successfully created. User needs to sign in with their credentials.
+    // Cannot auto-authenticate due to Cloudflare blocking programmatic Frontend API access.
     return NextResponse.json(
       {
         success: true,
         userId: clerkUser.id,
         email: email,
-        sessionToken: jwt,
-        message: 'Account created successfully'
+        requiresSignIn: true,
+        message: 'Account created successfully. Please sign in.'
       },
       { status: 200, headers: corsHeaders }
     );
