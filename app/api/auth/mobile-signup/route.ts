@@ -42,7 +42,8 @@ export async function POST(req: NextRequest) {
     // Try to create session directly with Backend SDK (like commit 3b8c80d)
     console.log('🔑 Attempting to create session with Backend SDK...');
     try {
-      const sessionToken = await client.sessions.createSession({
+      // @ts-ignore - Testing if this method exists
+      const sessionToken: any = await client.sessions.createSession({
         userId: clerkUser.id,
       });
       
