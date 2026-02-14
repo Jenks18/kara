@@ -39,42 +39,33 @@ export async function POST(req: NextRequest) {
     console.log('✅ User created:', clerkUser.id);
     console.log('📧 Email auto-verified by Backend SDK');
     
-    // Try to create session directly with Backend SDK (like commit 3b8c80d)
-    console.log('🔑 Attempting to create session with Backend SDK...');
+    // Create sign-in token for instant authentication (production-grade approach)
+    console.log('🎫 Creating sign-in token for instant authentication...');
     try {
-      // @ts-ignore - Testing if this method exists
-      const sessionToken: any = await client.sessions.createSession({
+      const signInToken = await client.signInTokens.createSignInToken({
         userId: clerkUser.id,
+        expiresInSeconds: 600, // 10 minutes
       });
       
-      const jwt = sessionToken?.lastActiveToken?.jwt;
-      if (jwt) {
-        console.log('✅ Session created with Backend SDK! Returning JWT.');
-        return NextResponse.json(
-          {
-            success: true,
-            userId: clerkUser.id,
-            email: email,
-            token: jwt,
-            message: 'Account created and signed in successfully!'
-          },
-          { status: 200, headers: corsHeaders }
-        );
-      }
-    } catch (sessionError: any) {
-      console.error('⚠️ Backend SDK session creation failed:', sessionError.message);
-      console.log('📝 Falling back to password authentication flow');
+      console.log('✅ Sign-in token created:', signInToken.token);
+      
+      return NextResponse.json(
+        {
+          success: true,
+          userId: clerkUser.id,
+          email: email,
+          signInToken: signInToken.token,
+          message: 'Account created successfully!'
+        },
+        { status: 200, headers: corsHeaders }
+      );
+    } catch (tokenError: any) {
+      console.error('❌ Sign-in token creation failed:', tokenError.message);
+      return NextResponse.json(
+        { success: false, error: 'Failed to create authentication token' },
+        { status: 500, headers: corsHeaders }
+      );
     }
-    
-    return NextResponse.json(
-      {
-        success: true,
-        userId: clerkUser.id,
-        email: email,
-        message: 'Account created successfully. Signing you in...'
-      },
-      { status: 200, headers: corsHeaders }
-    );
 
   } catch (error: any) {
     console.error('❌ Sign-up error:', error.message);

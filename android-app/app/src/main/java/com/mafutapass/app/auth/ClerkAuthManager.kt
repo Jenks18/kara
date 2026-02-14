@@ -508,13 +508,18 @@ object ClerkAuthManager {
                 if (responseJson.getBoolean("success")) {
                     val userId = responseJson.getString("userId")
                     val email = responseJson.getString("email")
+                    val signInToken = responseJson.optString("signInToken", null)
                     
                     Log.d(TAG, "✅ Backend sign-up successful! userId=$userId")
+                    if (signInToken != null) {
+                        Log.d(TAG, "🎫 Sign-in token received for instant authentication")
+                    }
                     
                     AuthResult(
                         success = true,
                         userId = userId,
-                        email = email
+                        email = email,
+                        token = signInToken
                     )
                 } else {
                     val error = responseJson.optString("error", "Unknown error")
@@ -548,8 +553,74 @@ object ClerkAuthManager {
         }
     }
     
-    // Removed: exchangeTicketForSession (no longer needed with direct password authentication)
-    // Removed: verifyEmailCode (email verification not used in restored password-based auth)
+    /**
+     * Sign in using a Clerk sign-in token (ticket strategy)
+     * This provides instant authentication without password delays
+     */
+    suspend fun signInWithToken(signInToken: String): AuthResult = withContext(Dispatchers.IO) {
+        try {
+            Log.d(TAG, "🎫 Signing in with sign-in token via backend...")
+            
+            val url = URL("https://www.mafutapass.com/api/auth/mobile-signin")
+            val connection = url.openConnection() as HttpURLConnection
+            
+            connection.requestMethod = "POST"
+            connection.setRequestProperty("Content-Type", "application/json")
+            connection.doOutput = true
+            
+            val requestBody = JSONObject().apply {
+                put("signInToken", signInToken)
+            }
+            
+            connection.outputStream.use { os ->
+                os.write(requestBody.toString().toByteArray())
+            }
+            
+            val responseCode = connection.responseCode
+            val responseBody = if (responseCode == HttpURLConnection.HTTP_OK) {
+                connection.inputStream.bufferedReader().use { it.readText() }
+            } else {
+                connection.errorStream?.bufferedReader()?.use { it.readText() } ?: ""
+            }
+            
+            Log.d(TAG, "📥 Token sign-in response code: $responseCode")
+            
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                val json = JSONObject(responseBody)
+                if (json.getBoolean("success")) {
+                    val jwt = json.getString("token")
+                    val userId = json.optString("userId", "")
+                    
+                    Log.d(TAG, "✅ Sign-in token authentication successful!")
+                    
+                    AuthResult(
+                        success = true,
+                        token = jwt,
+                        userId = userId
+                    )
+                } else {
+                    val error = json.optString("error", "Authentication failed")
+                    Log.e(TAG, "❌ Token authentication failed: $error")
+                    AuthResult(success = false, error = error)
+                }
+            } else {
+                Log.e(TAG, "❌ Token authentication failed: HTTP $responseCode")
+                AuthResult(
+                    success = false,
+                    error = "Invalid or expired sign-in token"
+                )
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Token sign-in exception: ${e.message}", e)
+            AuthResult(
+                success = false,
+                error = "Sign in failed: ${e.message}"
+            )
+        }
+    }
+    
+    // Removed: exchangeTicketForSession (no longer needed)
+    // Removed: verifyEmailCode (email verification not used)
     
     /**
      * Sign in or sign up a user who has authenticated via OAuth (Google).

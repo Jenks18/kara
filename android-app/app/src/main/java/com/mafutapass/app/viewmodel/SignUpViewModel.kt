@@ -50,27 +50,22 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
                 
                 Log.d("SignUpViewModel", "✅ Account created successfully!")
                 
-                // Check if backend returned JWT directly (Backend SDK session creation)
-                var jwt: String? = result.token
+                // Check if backend returned sign-in token (instant authentication)
+                val signInToken = result.token
                 
-                if (jwt != null) {
-                    Log.d("SignUpViewModel", "🎉 Backend created session directly - no password auth needed!")
-                } else if (result.userId != null) {
-                    Log.d("SignUpViewModel", "🔑 Backend SDK session failed, signing in with password...")
+                if (signInToken != null) {
+                    Log.d("SignUpViewModel", "🎫 Using sign-in token for instant authentication...")
                     
-                    // Fallback: Sign in via backend with password
-                    val sessionResult = ClerkAuthManager.signInViaBackend(email, password)
+                    // Authenticate using sign-in token (ticket strategy)
+                    val sessionResult = ClerkAuthManager.signInWithToken(signInToken)
                     
                     if (!sessionResult.success || sessionResult.token == null) {
-                        Log.e("SignUpViewModel", "❌ Sign-in failed: ${sessionResult.error}")
+                        Log.e("SignUpViewModel", "❌ Token authentication failed: ${sessionResult.error}")
                         _uiState.value = SignUpUiState.Error(sessionResult.error ?: "Authentication failed")
                         return@launch
                     }
                     
-                    jwt = sessionResult.token
-                }
-                
-                if (jwt != null) {
+                    val jwt = sessionResult.token
                     Log.d("SignUpViewModel", "✅ JWT received, creating profile...")
                     
                     // Create Supabase profile

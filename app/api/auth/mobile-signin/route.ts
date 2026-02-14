@@ -11,21 +11,12 @@ export async function OPTIONS() {
 }
 
 /**
- * Backend proxy for password-based sign-in via Clerk Frontend API
- * This bypasses CAPTCHA and Cloudflare since requests come from our backend
+ * Backend proxy for authentication via Clerk Frontend API
+ * Supports both password-based and sign-in token authentication
  */
 export async function POST(req: NextRequest) {
   try {
-    const { email, password } = await req.json();
-
-    if (!email || !password) {
-      return NextResponse.json(
-        { success: false, error: 'Email and password required' },
-        { status: 400, headers: corsHeaders }
-      );
-    }
-
-    console.log('🔑 Backend proxy sign-in for:', email);
+    const { email, password, signInToken } = await req.json();
 
     const frontendApi = process.env.NEXT_PUBLIC_CLERK_FRONTEND_API;
     if (!frontendApi) {
@@ -35,6 +26,88 @@ export async function POST(req: NextRequest) {
         { status: 500, headers: corsHeaders }
       );
     }
+
+    // If sign-in token provided, use ticket strategy (instant auth after sign-up)
+    if (signInToken) {
+      console.log('🎫 Authenticating with sign-in token (ticket strategy)');
+      
+      // Step 1: Create sign-in with ticket strategy
+      const signInResponse = await fetch(`${frontendApi}/v1/client/sign_ins?_clerk_js_version=4.70.0`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ strategy: 'ticket' }),
+      });
+
+      if (!signInResponse.ok) {
+        console.error('❌ Failed to create sign-in for ticket');
+        return NextResponse.json(
+          { success: false, error: 'Failed to initiate sign-in' },
+          { status: signInResponse.status, headers: corsHeaders }
+        );
+      }
+
+      const signInData = await signInResponse.json();
+      const signInId = signInData.response?.id;
+
+      if (!signInId) {
+        console.error('❌ No sign-in ID received');
+        return NextResponse.json(
+          { success: false, error: 'Failed to create sign-in' },
+          { status: 500, headers: corsHeaders }
+        );
+      }
+
+      // Step 2: Attempt first factor with ticket
+      const attemptResponse = await fetch(
+        `${frontendApi}/v1/client/sign_ins/${signInId}/attempt_first_factor?_clerk_js_version=4.70.0`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            strategy: 'ticket',
+            ticket: signInToken,
+          }),
+        }
+      );
+
+      if (!attemptResponse.ok) {
+        const errorText = await attemptResponse.text();
+        console.error('❌ Ticket authentication failed:', attemptResponse.status, errorText);
+        return NextResponse.json(
+          { success: false, error: 'Invalid or expired sign-in token' },
+          { status: 401, headers: corsHeaders }
+        );
+      }
+
+      const attemptData = await attemptResponse.json();
+      const jwt = attemptData.client?.sessions?.[0]?.last_active_token?.jwt;
+      const userId = attemptData.response?.user_id;
+
+      if (!jwt) {
+        console.error('❌ No JWT token received from ticket authentication');
+        return NextResponse.json(
+          { success: false, error: 'Authentication failed - no session created' },
+          { status: 500, headers: corsHeaders }
+        );
+      }
+
+      console.log('✅ Ticket authentication successful! userId:', userId);
+      return NextResponse.json({
+        success: true,
+        token: jwt,
+        userId: userId,
+      }, { headers: corsHeaders });
+    }
+
+    // Otherwise, use password authentication
+    if (!email || !password) {
+      return NextResponse.json(
+        { success: false, error: 'Email and password required' },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
+    console.log('🔑 Backend proxy sign-in for:', email);
 
     // Step 1: Create sign-in attempt
     const signInResponse = await fetch(`${frontendApi}/v1/client/sign_ins?_clerk_js_version=4.70.0`, {
