@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
 
     if (!userId) {
       console.error('❌ No userId in response');
-      console.log('Response structure:', JSON.stringify(attemptData, null, 2));
+      console.log('Response structure:', JSON.stringify(signInData, null, 2));
       return NextResponse.json(
         { success: false, error: 'User ID not found' },
         { status: 500, headers: corsHeaders }
