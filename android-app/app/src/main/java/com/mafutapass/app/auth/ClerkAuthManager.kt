@@ -587,14 +587,12 @@ object ClerkAuthManager {
                 
                 if (responseJson.getBoolean("success")) {
                     val userId = responseJson.getString("userId")
-                    val signInToken = responseJson.optString("token", null)
                     
-                    Log.d(TAG, "✅ Backend sign-up successful! userId=$userId, signInToken=${if(signInToken != null) "received" else "none"}")
+                    Log.d(TAG, "✅ Backend sign-up successful! userId=$userId")
                     
                     AuthResult(
                         success = true,
                         userId = userId,
-                        signInToken = signInToken,
                         email = email
                     )
                 } else {
@@ -630,15 +628,13 @@ object ClerkAuthManager {
     }
     
     /**
-     * Exchange sign-in token for session JWT (industry best practice)
-     * This is a single-use token from backend that gets exchanged for a proper session
+     * Create session JWT for user (Backend SDK)
+     * Bypasses Cloudflare blocking by using Backend SDK directly
      */
-    suspend fun exchangeSignInToken(signInToken: String): AuthResult = withContext(Dispatchers.IO) {
+    suspend fun createSessionForUser(userId: String): AuthResult = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "🔑 Exchanging sign-in token via backend proxy...")
+            Log.d(TAG, "🔑 Creating session for user via Backend SDK...")
             
-            // Call our backend proxy instead of Clerk Frontend API directly
-            // This avoids Cloudflare bot protection blocking the Android app
             val url = URL("https://www.mafutapass.com/api/auth/exchange-token")
             val connection = url.openConnection() as HttpURLConnection
             
@@ -647,7 +643,7 @@ object ClerkAuthManager {
             connection.doOutput = true
             
             val requestBody = JSONObject().apply {
-                put("signInToken", signInToken)
+                put("userId", userId)
             }
             
             connection.outputStream.use { os ->
@@ -661,15 +657,15 @@ object ClerkAuthManager {
                 connection.errorStream?.bufferedReader()?.use { it.readText() } ?: ""
             }
             
-            Log.d(TAG, "📥 Token exchange response code: $responseCode")
-            Log.d(TAG, "📥 Token exchange response: ${responseBody.take(500)}")
+            Log.d(TAG, "📥 Session creation response code: $responseCode")
+            Log.d(TAG, "📥 Session creation response: ${responseBody.take(500)}")
             
             if (responseCode != HttpURLConnection.HTTP_OK) {
                 val errorMessage = try {
                     val errorJson = JSONObject(responseBody)
-                    errorJson.optString("error", "Token exchange failed")
+                    errorJson.optString("error", "Session creation failed")
                 } catch (e: Exception) {
-                    "Token exchange failed"
+                    "Session creation failed"
                 }
                 
                 return@withContext AuthResult(
@@ -678,11 +674,10 @@ object ClerkAuthManager {
                 )
             }
             
-            // Parse backend response (simplified format)
             val json = JSONObject(responseBody)
             
             if (!json.optBoolean("success", false)) {
-                val errorMessage = json.optString("error", "Token exchange failed")
+                val errorMessage = json.optString("error", "Session creation failed")
                 return@withContext AuthResult(
                     success = false,
                     error = errorMessage
@@ -699,7 +694,7 @@ object ClerkAuthManager {
                 )
             }
             
-            Log.d(TAG, "✅ Sign-in token exchanged successfully!")
+            Log.d(TAG, "✅ Session created successfully!")
             
             AuthResult(
                 success = true,
@@ -707,10 +702,10 @@ object ClerkAuthManager {
             )
             
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Token exchange exception: ${e.message}", e)
+            Log.e(TAG, "❌ Session creation exception: ${e.message}", e)
             AuthResult(
                 success = false,
-                error = "Token exchange failed: ${e.message}"
+                error = "Session creation failed: ${e.message}"
             )
         }
     }

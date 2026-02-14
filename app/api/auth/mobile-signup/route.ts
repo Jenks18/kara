@@ -38,20 +38,11 @@ export async function POST(req: NextRequest) {
 
     console.log('✅ User created:', clerkUser.id);
     
-    // Create sign-in token for automatic authentication
-    const signInToken = await client.signInTokens.createSignInToken({
-      userId: clerkUser.id,
-      expiresInSeconds: 3600,
-    });
-    
-    console.log('✅ Sign-in token created');
-    
     return NextResponse.json(
       {
         success: true,
         userId: clerkUser.id,
         email: email,
-        token: signInToken.token,
         message: 'Account created successfully.'
       },
       { status: 200, headers: corsHeaders }
