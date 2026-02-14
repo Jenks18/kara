@@ -58,12 +58,20 @@ export async function POST(req: NextRequest) {
         );
       }
 
+      // Extract cookies from step 1 to maintain session state
+      const setCookieHeader = signInResponse.headers.get('set-cookie');
+      const cookies = setCookieHeader?.split(',').map(c => c.split(';')[0]).join('; ') || '';
+      console.log('🍪 Cookies from step 1:', cookies ? 'Present' : 'Missing');
+
       // Step 2: Attempt first factor with ticket
       const attemptResponse = await fetch(
         `${frontendApi}/v1/client/sign_ins/${signInId}/attempt_first_factor?_clerk_js_version=4.70.0`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            ...(cookies && { 'Cookie': cookies }), // Include cookies for session continuity
+          },
           body: JSON.stringify({ 
             strategy: 'ticket',
             ticket: signInToken,
