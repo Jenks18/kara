@@ -1,5 +1,6 @@
 package com.mafutapass.app.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -14,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -23,9 +25,18 @@ import com.mafutapass.app.ui.theme.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkspaceDetailScreen(
-    workspace: Workspace,
+    workspaceId: String,
+    workspaceName: String = "",
     onBack: () -> Unit
 ) {
+    val context = LocalContext.current
+    // Use passed name or default
+    val workspace = Workspace(
+        id = workspaceId,
+        name = workspaceName.ifEmpty { "Workspace" },
+        currency = "KES",
+        currencySymbol = "KSh"
+    )
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -96,7 +107,7 @@ fun WorkspaceDetailScreen(
                 WorkspaceDetailOption(
                     icon = Icons.Filled.Description,
                     label = "Overview",
-                    onClick = { }
+                    onClick = { Toast.makeText(context, "Coming soon", Toast.LENGTH_SHORT).show() }
                 )
             }
             
@@ -104,7 +115,7 @@ fun WorkspaceDetailScreen(
                 WorkspaceDetailOption(
                     icon = Icons.Filled.People,
                     label = "Members",
-                    onClick = { }
+                    onClick = { Toast.makeText(context, "Coming soon", Toast.LENGTH_SHORT).show() }
                 )
             }
             
@@ -112,7 +123,7 @@ fun WorkspaceDetailScreen(
                 WorkspaceDetailOption(
                     icon = Icons.Filled.Settings,
                     label = "Settings",
-                    onClick = { }
+                    onClick = { Toast.makeText(context, "Coming soon", Toast.LENGTH_SHORT).show() }
                 )
             }
         }

@@ -88,6 +88,14 @@ fun ProfileScreen(onBack: () -> Unit) {
     var legalName by remember { mutableStateOf("") }
     var address by remember { mutableStateOf("") }
     
+    // Edit dialog state
+    var editFieldLabel by remember { mutableStateOf("") }
+    var editFieldKey by remember { mutableStateOf("") }
+    var editFieldValue by remember { mutableStateOf("") }
+    var showEditDialog by remember { mutableStateOf(false) }
+    var isSaving by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+    
     // Fetch profile data from backend
     LaunchedEffect(sessionToken) {
         if (sessionToken != null) {
@@ -223,7 +231,12 @@ fun ProfileScreen(onBack: () -> Unit) {
                 ProfileField(
                     label = "Display name",
                     value = displayName.ifEmpty { "Not set" },
-                    onClick = { }
+                    onClick = {
+                        editFieldLabel = "Display name"
+                        editFieldKey = "display_name"
+                        editFieldValue = displayName
+                        showEditDialog = true
+                    }
                 )
             }
             
@@ -231,7 +244,12 @@ fun ProfileScreen(onBack: () -> Unit) {
                 ProfileField(
                     label = "Phone number",
                     value = phoneNumber.ifEmpty { "Not set" },
-                    onClick = { }
+                    onClick = {
+                        editFieldLabel = "Phone number"
+                        editFieldKey = "phone_number"
+                        editFieldValue = phoneNumber
+                        showEditDialog = true
+                    }
                 )
             }
             
@@ -239,7 +257,12 @@ fun ProfileScreen(onBack: () -> Unit) {
                 ProfileField(
                     label = "Date of birth",
                     value = dateOfBirth.ifEmpty { "Not set" },
-                    onClick = { }
+                    onClick = {
+                        editFieldLabel = "Date of birth"
+                        editFieldKey = "date_of_birth"
+                        editFieldValue = dateOfBirth
+                        showEditDialog = true
+                    }
                 )
             }
             
@@ -247,7 +270,12 @@ fun ProfileScreen(onBack: () -> Unit) {
                 ProfileField(
                     label = "Legal name",
                     value = legalName.ifEmpty { "Not set" },
-                    onClick = { }
+                    onClick = {
+                        editFieldLabel = "Legal name"
+                        editFieldKey = "legal_first_name"
+                        editFieldValue = legalName
+                        showEditDialog = true
+                    }
                 )
             }
             
@@ -255,7 +283,12 @@ fun ProfileScreen(onBack: () -> Unit) {
                 ProfileField(
                     label = "Address",
                     value = address.ifEmpty { "Not set" },
-                    onClick = { }
+                    onClick = {
+                        editFieldLabel = "Address"
+                        editFieldKey = "address_line1"
+                        editFieldValue = address
+                        showEditDialog = true
+                    }
                 )
             }
 
@@ -273,6 +306,79 @@ fun ProfileScreen(onBack: () -> Unit) {
                 }
             }
         }
+    }
+    
+    // Profile Edit Dialog
+    if (showEditDialog) {
+        AlertDialog(
+            onDismissRequest = { if (!isSaving) showEditDialog = false },
+            title = { Text("Edit $editFieldLabel") },
+            text = {
+                OutlinedTextField(
+                    value = editFieldValue,
+                    onValueChange = { editFieldValue = it },
+                    label = { Text(editFieldLabel) },
+                    singleLine = true,
+                    enabled = !isSaving,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (sessionToken != null && editFieldValue.isNotBlank()) {
+                            isSaving = true
+                            coroutineScope.launch {
+                                try {
+                                    withContext(Dispatchers.IO) {
+                                        val json = JSONObject().apply {
+                                            put(editFieldKey, editFieldValue)
+                                        }
+                                        val requestBody = json.toString()
+                                            .toRequestBody("application/json".toMediaType())
+                                        val request = Request.Builder()
+                                            .url("https://www.mafutapass.com/api/auth/mobile-profile")
+                                            .patch(requestBody)
+                                            .addHeader("Authorization", "Bearer $sessionToken")
+                                            .build()
+                                        OkHttpClient.Builder()
+                                            .connectTimeout(15, TimeUnit.SECONDS)
+                                            .readTimeout(15, TimeUnit.SECONDS)
+                                            .build()
+                                            .newCall(request).execute()
+                                    }
+                                    // Update local state
+                                    when (editFieldKey) {
+                                        "display_name" -> displayName = editFieldValue
+                                        "phone_number" -> phoneNumber = editFieldValue
+                                        "date_of_birth" -> dateOfBirth = editFieldValue
+                                        "legal_first_name" -> legalName = editFieldValue
+                                        "address_line1" -> address = editFieldValue
+                                    }
+                                } catch (e: Exception) {
+                                    android.util.Log.e("ProfileScreen", "Save failed: ${e.message}")
+                                }
+                                isSaving = false
+                                showEditDialog = false
+                            }
+                        }
+                    },
+                    enabled = !isSaving
+                ) {
+                    if (isSaving) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                    } else {
+                        Text("Save")
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showEditDialog = false },
+                    enabled = !isSaving
+                ) { Text("Cancel") }
+            }
+        )
     }
     
     // Avatar Picker Dialog

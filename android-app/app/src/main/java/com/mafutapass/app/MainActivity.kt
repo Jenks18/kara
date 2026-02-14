@@ -34,15 +34,6 @@ import com.mafutapass.app.ui.Screen
 import com.mafutapass.app.ui.screens.*
 import com.mafutapass.app.ui.theme.MafutaPassTheme
 import com.mafutapass.app.viewmodel.AuthViewModel
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import okhttp3.MediaType.Companion.toMediaType
-import org.json.JSONObject
-import java.util.concurrent.TimeUnit
 import com.mafutapass.app.viewmodel.AuthState
 
 class MainActivity : ComponentActivity() {
@@ -154,51 +145,15 @@ fun MafutaPassApp() {
                                 onConfirm = { navController.popBackStack() }
                             )
                         }
+                        composable("workspaces/{workspaceId}") { backStackEntry ->
+                            val workspaceId = backStackEntry.arguments?.getString("workspaceId") ?: return@composable
+                            WorkspaceDetailScreen(
+                                workspaceId = workspaceId,
+                                onBack = { navController.popBackStack() }
+                            )
+                        }
                     }
                 }
         }
-    }
-}
-
-suspend fun updateUsername(userId: String, username: String): Boolean = withContext(Dispatchers.IO) {
-    try {
-        Log.d("MainActivity", "📤 Updating username for user $userId to: $username")
-        
-        val client = OkHttpClient.Builder()
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
-            .build()
-        
-        val json = JSONObject().apply {
-            put("userId", userId)
-            put("username", username)
-        }
-        
-        val requestBody = json.toString()
-            .toRequestBody("application/json".toMediaType())
-        
-        val request = Request.Builder()
-            .url("https://www.mafutapass.com/api/update-username")
-            .post(requestBody)
-           .addHeader("Content-Type", "application/json")
-            .build()
-        
-        val response = client.newCall(request).execute()
-        val responseBody = response.body?.string() ?: ""
-        
-        Log.d("MainActivity", "📥 Username update response code: ${response.code}")
-        Log.d("MainActivity", "📥 Username update response: $responseBody")
-        
-        if (response.isSuccessful) {
-            Log.d("MainActivity", "✅ Username updated successfully")
-            true
-        } else {
-            Log.e("MainActivity", "❌ Failed to update username: ${response.code}")
-            false
-        }
-    } catch (e: Exception) {
-        Log.e("MainActivity", "❌ Exception updating username: ${e.message}", e)
-        false
     }
 }

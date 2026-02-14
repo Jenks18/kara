@@ -21,6 +21,9 @@ interface ApiService {
     @GET("api/mobile/receipts")
     suspend fun getReceipts(@Query("workspaceId") workspaceId: String? = null): List<ExpenseItem>
     
+    @POST("api/mobile/expense-reports")
+    suspend fun createExpenseReport(@Body body: Map<String, String>): ExpenseReport
+    
     @GET("api/auth/mobile-profile")
     suspend fun getUserProfile(): User
 }

@@ -1,51 +1,47 @@
 package com.mafutapass.app.data
 
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
+import com.google.gson.annotations.SerializedName
 
-@Serializable
 data class ExpenseItem(
-    val id: String,
-    @SerialName("image_url")
-    val imageUrl: String,
-    val amount: Double,
-    val category: String,
-    @SerialName("merchant_name")
+    val id: String = "",
+    @SerializedName("image_url")
+    val imageUrl: String = "",
+    val amount: Double = 0.0,
+    val category: String = "Uncategorized",
+    @SerializedName("merchant_name")
     val merchantName: String? = null,
-    @SerialName("transaction_date")
+    @SerializedName("transaction_date")
     val transactionDate: String? = null,
-    @SerialName("created_at")
-    val createdAt: String,
-    @SerialName("kra_verified")
+    @SerializedName("created_at")
+    val createdAt: String = "",
+    @SerializedName("kra_verified")
     val kraVerified: Boolean? = null,
-    @SerialName("workspace_name")
+    @SerializedName("workspace_name")
     val workspaceName: String = "",
     val description: String? = null
 )
 
-@Serializable
 data class ExpenseReport(
-    val id: String,
-    val title: String,
-    val status: String, // draft, submitted, approved, rejected
-    @SerialName("items_count")
+    val id: String = "",
+    val title: String = "",
+    val status: String = "draft", // draft, submitted, approved, rejected
+    @SerializedName("items_count")
     val itemsCount: Int = 0,
-    @SerialName("total_amount")
-    val totalAmount: Double,
-    @SerialName("workspace_name")
+    @SerializedName("total_amount")
+    val totalAmount: Double = 0.0,
+    @SerializedName("workspace_name")
     val workspaceName: String = "",
     val thumbnails: List<String> = emptyList(),
-    @SerialName("created_at")
-    val createdAt: String
+    @SerializedName("created_at")
+    val createdAt: String = ""
 )
 
-@Serializable
 data class Workspace(
-    val id: String,
-    val name: String,
-    val currency: String,
-    @SerialName("currency_symbol")
-    val currencySymbol: String,
+    val id: String = "",
+    val name: String = "",
+    val currency: String = "KES",
+    @SerializedName("currency_symbol")
+    val currencySymbol: String = "KSh",
     val avatar: String? = null
 ) {
     val initials: String
@@ -56,10 +52,9 @@ data class Workspace(
             .ifEmpty { name.take(1).uppercase() }
 }
 
-@Serializable
 data class User(
-    val id: String,
-    val name: String,
-    val email: String,
+    val id: String = "",
+    val name: String = "",
+    val email: String = "",
     val avatar: String? = null
 )

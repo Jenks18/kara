@@ -1,5 +1,6 @@
 package com.mafutapass.app.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -14,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mafutapass.app.ui.theme.*
@@ -21,6 +23,7 @@ import com.mafutapass.app.ui.theme.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SecurityScreen(onBack: () -> Unit) {
+    val context = LocalContext.current
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -82,25 +85,25 @@ fun SecurityScreen(onBack: () -> Unit) {
                     SecurityOption(
                         icon = Icons.Filled.Shield,
                         label = "Two-factor authentication",
-                        onClick = { }
+                        onClick = { Toast.makeText(context, "Coming soon", Toast.LENGTH_SHORT).show() }
                     )
                     
                     SecurityOption(
                         icon = Icons.Filled.SwapHoriz,
                         label = "Merge accounts",
-                        onClick = { }
+                        onClick = { Toast.makeText(context, "Coming soon", Toast.LENGTH_SHORT).show() }
                     )
                     
                     SecurityOption(
                         icon = Icons.Filled.Warning,
                         label = "Report suspicious activity",
-                        onClick = { }
+                        onClick = { Toast.makeText(context, "Coming soon", Toast.LENGTH_SHORT).show() }
                     )
                     
                     SecurityOption(
                         icon = Icons.Filled.ExitToApp,
                         label = "Close account",
-                        onClick = { },
+                        onClick = { Toast.makeText(context, "Coming soon", Toast.LENGTH_SHORT).show() },
                         isDestructive = true
                     )
                 }
@@ -125,7 +128,7 @@ fun SecurityScreen(onBack: () -> Unit) {
                     SecurityOption(
                         icon = Icons.Filled.PersonAdd,
                         label = "Add copilot",
-                        onClick = { }
+                        onClick = { Toast.makeText(context, "Coming soon", Toast.LENGTH_SHORT).show() }
                     )
                 }
             }

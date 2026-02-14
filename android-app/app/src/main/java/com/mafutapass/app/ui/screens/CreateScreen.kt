@@ -17,28 +17,39 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.mafutapass.app.ui.theme.*
 
 @Composable
 fun CreateScreen() {
+    var showCreateReportDialog by remember { mutableStateOf(false) }
+    var showComingSoonDialog by remember { mutableStateOf<String?>(null) }
+    var reportTitle by remember { mutableStateOf("") }
+    var isCreating by remember { mutableStateOf(false) }
+    var snackMessage by remember { mutableStateOf<String?>(null) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val scope = rememberCoroutineScope()
+
     val options = listOf(
         CreateOption(
             icon = Icons.Filled.Receipt,
             label = "Scan Receipt",
             description = "Capture fuel receipt with camera",
-            onClick = { /* TODO: Implement receipt scanner */ }
+            onClick = { showComingSoonDialog = "Receipt scanning" }
         ),
         CreateOption(
             icon = Icons.Filled.ChatBubble,
             label = "Start chat",
             description = "Message your manager or team",
-            onClick = { /* TODO */ }
+            onClick = { showComingSoonDialog = "Chat" }
         ),
         CreateOption(
             icon = Icons.Filled.Description,
             label = "Create report",
             description = "Create a new expense report",
-            onClick = { /* TODO */ }
+            onClick = { showCreateReportDialog = true }
         )
     )
     
@@ -58,9 +69,90 @@ fun CreateScreen() {
             CreateOptionCard(option)
             Spacer(modifier = Modifier.height(12.dp))
         }
+        
+        // Show success/error message
+        snackMessage?.let { msg ->
+            Spacer(modifier = Modifier.height(16.dp))
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = if (msg.startsWith("✅")) Emerald100 else Color(0xFFFEE2E2)
+            ) {
+                Text(
+                    text = msg,
+                    modifier = Modifier.padding(12.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (msg.startsWith("✅")) Emerald600 else Red500
+                )
+            }
+        }
     }
-    
-    // TODO: Add Receipt Scanner Dialog when camera is implemented
+
+    // Create Report Dialog
+    if (showCreateReportDialog) {
+        AlertDialog(
+            onDismissRequest = { if (!isCreating) showCreateReportDialog = false },
+            title = { Text("Create Expense Report") },
+            text = {
+                OutlinedTextField(
+                    value = reportTitle,
+                    onValueChange = { reportTitle = it },
+                    label = { Text("Report title") },
+                    placeholder = { Text("e.g. February Fuel Expenses") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isCreating
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (reportTitle.isNotBlank()) {
+                            isCreating = true
+                            scope.launch {
+                                try {
+                                    withContext(Dispatchers.IO) {
+                                        com.mafutapass.app.data.ApiClient.apiService.createExpenseReport(
+                                            mapOf("title" to reportTitle.trim())
+                                        )
+                                    }
+                                    snackMessage = "✅ Report \"${reportTitle.trim()}\" created"
+                                    reportTitle = ""
+                                    showCreateReportDialog = false
+                                } catch (e: Exception) {
+                                    snackMessage = "❌ Failed: ${e.message}"
+                                } finally {
+                                    isCreating = false
+                                }
+                            }
+                        }
+                    },
+                    enabled = reportTitle.isNotBlank() && !isCreating
+                ) {
+                    Text(if (isCreating) "Creating..." else "Create", color = Emerald600)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showCreateReportDialog = false },
+                    enabled = !isCreating
+                ) { Text("Cancel") }
+            }
+        )
+    }
+
+    // Coming Soon Dialog
+    showComingSoonDialog?.let { feature ->
+        AlertDialog(
+            onDismissRequest = { showComingSoonDialog = null },
+            title = { Text("Coming Soon") },
+            text = { Text("$feature will be available in a future update.") },
+            confirmButton = {
+                TextButton(onClick = { showComingSoonDialog = null }) {
+                    Text("OK", color = Emerald600)
+                }
+            }
+        )
+    }
 }
 
 

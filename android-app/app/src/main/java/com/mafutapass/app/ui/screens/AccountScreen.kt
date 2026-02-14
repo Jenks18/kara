@@ -176,7 +176,10 @@ fun AccountScreen(
                     ),
                     onItemClick = { item ->
                         when (item.title) {
+                            "Help" -> onNavigateToAbout()
+                            "What's new" -> onNavigateToAbout()
                             "About" -> onNavigateToAbout()
+                            "Troubleshoot" -> onNavigateToAbout()
                         }
                     }
                 )
