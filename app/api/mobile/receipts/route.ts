@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { corsHeaders, unauthorizedResponse, verifyAndExtractUser } from '@/lib/auth/mobile-auth';
+import { corsHeaders } from '@/lib/auth/mobile-auth';
 import { createMobileClient } from '@/lib/supabase/mobile-client';
-import { supabaseAdmin, isAdminConfigured } from '@/lib/supabase/admin';
 
 export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders });
@@ -29,68 +28,40 @@ function flattenItems(data: any[]) {
 /**
  * GET /api/mobile/receipts
  * List expense items (receipts) for the authenticated mobile user.
+ * RLS auto-filters by user_id — no manual filtering needed.
  */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '50');
 
-    const selectQuery = `
-      id,
-      image_url,
-      amount,
-      category,
-      merchant_name,
-      transaction_date,
-      created_at,
-      kra_verified,
-      description,
-      processing_status,
-      report_id,
-      expense_reports!inner (
-        user_id,
-        workspace_name
-      )
-    `;
-
-    // Try RLS-enabled client first
     const mobileClient = await createMobileClient(request);
-
-    if (mobileClient) {
-      const { supabase } = mobileClient;
-
-      // RLS auto-filters both expense_items (by user_id) and expense_reports (by user_id)
-      const { data, error } = await supabase
-        .from('expense_items')
-        .select(selectQuery)
-        .order('created_at', { ascending: false })
-        .limit(limit);
-
-      if (error) {
-        console.error('Error fetching receipts:', error);
-        return NextResponse.json({ error: 'Failed to fetch receipts' }, { status: 500, headers: corsHeaders });
-      }
-
-      return NextResponse.json(flattenItems(data || []), { headers: corsHeaders });
+    if (!mobileClient) {
+      return NextResponse.json(
+        { error: 'Authentication failed or server misconfigured' },
+        { status: 401, headers: corsHeaders }
+      );
     }
 
-    // Fallback: supabaseAdmin with manual filtering
-    const user = await verifyAndExtractUser(request);
-    if (!user) return unauthorizedResponse();
-    if (!isAdminConfigured) {
-      return NextResponse.json({ error: 'Database not configured' }, { status: 500, headers: corsHeaders });
-    }
+    const { supabase } = mobileClient;
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from('expense_items')
-      .select(selectQuery)
-      .eq('expense_reports.user_id', user.userId)
+      .select(`
+        id, image_url, amount, category, merchant_name,
+        transaction_date, created_at, kra_verified, description,
+        processing_status, report_id,
+        expense_reports!inner ( user_id, workspace_name )
+      `)
       .order('created_at', { ascending: false })
       .limit(limit);
 
     if (error) {
       console.error('Error fetching receipts:', error);
-      return NextResponse.json({ error: 'Failed to fetch receipts' }, { status: 500, headers: corsHeaders });
+      return NextResponse.json(
+        { error: 'Failed to fetch receipts', detail: error.message },
+        { status: 500, headers: corsHeaders }
+      );
     }
 
     return NextResponse.json(flattenItems(data || []), { headers: corsHeaders });

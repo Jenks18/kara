@@ -11,6 +11,7 @@ const isPublicRoute = createRouteMatcher([
   '/api/auth/create-profile(.*)', // Profile creation after email verification
   '/api/auth/mobile-signup(.*)', // Backend sign-up (bypasses CAPTCHA)
   '/api/auth/mobile-signin(.*)', // Backend sign-in (handles email verification)
+  '/api/auth/mobile-profile(.*)', // Mobile profile fetch/update
   '/api/auth/exchange-token(.*)', // Backend proxy for token exchange (bypasses Cloudflare)
   '/api/auth/verify-token(.*)',
   '/api/user-profile(.*)', // Profile API for mobile

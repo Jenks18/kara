@@ -5,7 +5,11 @@ import { verifyAndExtractUser } from '@/lib/auth/mobile-auth';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabaseJwtSecret = process.env.SUPABASE_JWT_SECRET || '';
+// Clean the secret: trim whitespace, strip literal \n that Vercel env can add
+const supabaseJwtSecret = (process.env.SUPABASE_JWT_SECRET || '')
+  .trim()
+  .replace(/\\n/g, '')
+  .replace(/\n/g, '');
 
 /**
  * Create a Supabase client for a mobile user with RLS enabled.
@@ -24,9 +28,8 @@ export async function createMobileClient(
 ): Promise<{ supabase: SupabaseClient; userId: string; email: string } | null> {
   if (!supabaseJwtSecret) {
     console.error(
-      'SUPABASE_JWT_SECRET not configured. ' +
-      'Get it from Supabase Dashboard → Settings → API → JWT Secret. ' +
-      'Falling back to supabaseAdmin (no RLS).'
+      'FATAL: SUPABASE_JWT_SECRET not configured. ' +
+      'Get it from Supabase Dashboard → Settings → API → JWT Secret.'
     );
     return null;
   }
@@ -35,21 +38,27 @@ export async function createMobileClient(
   if (!user) return null;
 
   // Mint a Supabase-compatible JWT with the claims that RLS policies expect.
+  // - iss: must be 'supabase' to match PostgREST config
   // - sub: Clerk user ID → accessed via auth.uid() in RLS
   // - email: user's email → accessed via auth.jwt()->>'email' in RLS
   // - aud/role: required by Supabase to treat this as an authenticated request
+  const now = Math.floor(Date.now() / 1000);
   const supabaseToken = jwt.sign(
     {
+      iss: 'supabase',
       sub: user.userId,
       email: user.email,
       aud: 'authenticated',
       role: 'authenticated',
-      // Include user_id as a custom claim for backward compatibility
       user_id: user.userId,
+      iat: now,
+      exp: now + 3600,
     },
     supabaseJwtSecret,
-    { expiresIn: '1h' }
+    { algorithm: 'HS256' }
   );
+
+  console.log(`Minted Supabase JWT for user ${user.userId} (secret length: ${supabaseJwtSecret.length})`);
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     global: {
