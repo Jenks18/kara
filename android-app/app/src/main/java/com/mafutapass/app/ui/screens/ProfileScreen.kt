@@ -83,6 +83,8 @@ fun ProfileScreen(onBack: () -> Unit) {
     
     // Profile fields from API
     var displayName by remember { mutableStateOf("") }
+    var userEmail by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf("") }
     var phoneNumber by remember { mutableStateOf("") }
     var dateOfBirth by remember { mutableStateOf("") }
     var legalName by remember { mutableStateOf("") }
@@ -108,28 +110,36 @@ fun ProfileScreen(onBack: () -> Unit) {
                     val clerk = result.optJSONObject("clerk")
                     val profile = result.optJSONObject("profile")
                     
-                    displayName = profile?.optString("display_name")?.takeIf { it.isNotEmpty() }
-                        ?: clerk?.optString("fullName")?.takeIf { it.isNotEmpty() }
+                    // Helper to safely get string, filtering JSON "null" literals
+                    fun org.json.JSONObject.safeString(key: String): String {
+                        val v = optString(key, "")
+                        return if (v == "null" || v.isBlank()) "" else v
+                    }
+                    
+                    displayName = profile?.safeString("display_name")?.ifEmpty { null }
+                        ?: clerk?.safeString("fullName")?.ifEmpty { null }
                         ?: ""
                     
-                    phoneNumber = profile?.optString("phone_number")?.takeIf { it.isNotEmpty() } ?: ""
-                    dateOfBirth = profile?.optString("date_of_birth")?.takeIf { it.isNotEmpty() } ?: ""
+                    userEmail = clerk?.safeString("email") ?: ""
+                    username = clerk?.safeString("username") ?: ""
+                    phoneNumber = profile?.safeString("phone_number") ?: ""
+                    dateOfBirth = profile?.safeString("date_of_birth") ?: ""
                     
-                    val legalFirst = profile?.optString("legal_first_name") ?: ""
-                    val legalLast = profile?.optString("legal_last_name") ?: ""
+                    val legalFirst = profile?.safeString("legal_first_name") ?: ""
+                    val legalLast = profile?.safeString("legal_last_name") ?: ""
                     legalName = listOf(legalFirst, legalLast).filter { it.isNotEmpty() }.joinToString(" ")
                     
                     val addressParts = listOfNotNull(
-                        profile?.optString("address_line1")?.takeIf { it.isNotEmpty() },
-                        profile?.optString("city")?.takeIf { it.isNotEmpty() },
-                        profile?.optString("state")?.takeIf { it.isNotEmpty() },
-                        profile?.optString("zip_code")?.takeIf { it.isNotEmpty() },
-                        profile?.optString("country")?.takeIf { it.isNotEmpty() && it != "US" }
+                        profile?.safeString("address_line1")?.ifEmpty { null },
+                        profile?.safeString("city")?.ifEmpty { null },
+                        profile?.safeString("state")?.ifEmpty { null },
+                        profile?.safeString("zip_code")?.ifEmpty { null },
+                        profile?.safeString("country")?.let { if (it.isEmpty() || it == "US") null else it }
                     )
                     address = addressParts.joinToString(", ")
                     
                     // Set avatar from profile
-                    val avatarEmoji = profile?.optString("avatar_emoji")?.takeIf { it.isNotEmpty() }
+                    val avatarEmoji = profile?.safeString("avatar_emoji")?.ifEmpty { null }
                     if (avatarEmoji != null) {
                         AVATAR_OPTIONS.find { it.emoji == avatarEmoji }?.let {
                             selectedAvatar = it
@@ -183,10 +193,37 @@ fun ProfileScreen(onBack: () -> Unit) {
         )
         
         // Content
+        if (isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(32.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = Emerald600)
+            }
+        } else {
         LazyColumn(
             contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            // --- PUBLIC SECTION ---
+            item {
+                Column(modifier = Modifier.padding(bottom = 4.dp)) {
+                    Text(
+                        text = "Public",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Gray900
+                    )
+                    Text(
+                        text = "These details are displayed on your public profile.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Gray500
+                    )
+                }
+            }
+
             // Avatar Section
             item {
                 Surface(
@@ -226,7 +263,7 @@ fun ProfileScreen(onBack: () -> Unit) {
                 }
             }
             
-            // Profile Fields
+            // Profile Fields — Public
             item {
                 ProfileField(
                     label = "Display name",
@@ -235,6 +272,57 @@ fun ProfileScreen(onBack: () -> Unit) {
                         editFieldLabel = "Display name"
                         editFieldKey = "display_name"
                         editFieldValue = displayName
+                        showEditDialog = true
+                    }
+                )
+            }
+
+            item {
+                ProfileField(
+                    label = "Contact methods",
+                    value = userEmail.ifEmpty { "Not set" },
+                    onClick = { } // Read-only — email comes from Clerk
+                )
+            }
+
+            // --- PRIVATE SECTION ---
+            item {
+                Column(modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)) {
+                    Text(
+                        text = "Private",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Gray900
+                    )
+                    Text(
+                        text = "Used for travel and payments. Never shown publicly.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Gray500
+                    )
+                }
+            }
+            
+            item {
+                ProfileField(
+                    label = "Legal name",
+                    value = legalName.ifEmpty { "Not set" },
+                    onClick = {
+                        editFieldLabel = "Legal name"
+                        editFieldKey = "legal_first_name"
+                        editFieldValue = legalName
+                        showEditDialog = true
+                    }
+                )
+            }
+
+            item {
+                ProfileField(
+                    label = "Date of birth",
+                    value = dateOfBirth.ifEmpty { "Not set" },
+                    onClick = {
+                        editFieldLabel = "Date of birth"
+                        editFieldKey = "date_of_birth"
+                        editFieldValue = dateOfBirth
                         showEditDialog = true
                     }
                 )
@@ -255,32 +343,6 @@ fun ProfileScreen(onBack: () -> Unit) {
             
             item {
                 ProfileField(
-                    label = "Date of birth",
-                    value = dateOfBirth.ifEmpty { "Not set" },
-                    onClick = {
-                        editFieldLabel = "Date of birth"
-                        editFieldKey = "date_of_birth"
-                        editFieldValue = dateOfBirth
-                        showEditDialog = true
-                    }
-                )
-            }
-            
-            item {
-                ProfileField(
-                    label = "Legal name",
-                    value = legalName.ifEmpty { "Not set" },
-                    onClick = {
-                        editFieldLabel = "Legal name"
-                        editFieldKey = "legal_first_name"
-                        editFieldValue = legalName
-                        showEditDialog = true
-                    }
-                )
-            }
-            
-            item {
-                ProfileField(
                     label = "Address",
                     value = address.ifEmpty { "Not set" },
                     onClick = {
@@ -291,21 +353,8 @@ fun ProfileScreen(onBack: () -> Unit) {
                     }
                 )
             }
-
-            // Loading indicator
-            if (isLoading) {
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = Emerald600)
-                    }
-                }
-            }
         }
+        } // end else (not loading)
     }
     
     // Profile Edit Dialog

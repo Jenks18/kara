@@ -65,18 +65,23 @@ fun AccountScreen(
                     fetchProfile(sessionToken)
                 }
                 if (profile != null) {
+                    // Helper to safely get string, filtering JSON "null" literals
+                    fun org.json.JSONObject.safeStr(key: String): String {
+                        val v = optString(key, "")
+                        return if (v == "null" || v.isBlank()) "" else v
+                    }
                     val clerkName = profile.optJSONObject("clerk")?.let { clerk ->
-                        clerk.optString("fullName").takeIf { it.isNotEmpty() }
-                            ?: clerk.optString("firstName").takeIf { it.isNotEmpty() }
+                        clerk.safeStr("fullName").ifEmpty { null }
+                            ?: clerk.safeStr("firstName").ifEmpty { null }
                     }
                     val profileName = profile.optJSONObject("profile")?.let { p ->
-                        p.optString("display_name").takeIf { it.isNotEmpty() }
-                            ?: p.optString("first_name").takeIf { it.isNotEmpty() }
+                        p.safeStr("display_name").ifEmpty { null }
+                            ?: p.safeStr("first_name").ifEmpty { null }
                     }
                     displayName = profileName ?: clerkName ?: userEmail.substringBefore("@")
-                    displayEmail = profile.optJSONObject("clerk")?.optString("email")?.takeIf { it.isNotEmpty() } ?: userEmail
+                    displayEmail = profile.optJSONObject("clerk")?.safeStr("email")?.ifEmpty { null } ?: userEmail
                     
-                    profile.optJSONObject("profile")?.optString("avatar_emoji")?.takeIf { it.isNotEmpty() }?.let {
+                    profile.optJSONObject("profile")?.safeStr("avatar_emoji")?.ifEmpty { null }?.let {
                         avatarEmoji = it
                     }
                 }

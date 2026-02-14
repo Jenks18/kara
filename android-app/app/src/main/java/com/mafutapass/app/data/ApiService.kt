@@ -12,6 +12,12 @@ interface ApiService {
     @GET("api/mobile/workspaces")
     suspend fun getWorkspaces(): WorkspacesResponse
     
+    @GET("api/mobile/workspaces/{id}")
+    suspend fun getWorkspace(@Path("id") id: String): Workspace
+    
+    @DELETE("api/mobile/workspaces/{id}")
+    suspend fun deleteWorkspace(@Path("id") id: String): Map<String, Any>
+    
     @POST("api/mobile/workspaces")
     suspend fun createWorkspace(@Body body: CreateWorkspaceRequest): CreateWorkspaceResponse
     

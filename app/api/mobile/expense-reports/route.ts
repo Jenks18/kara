@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserIdFromJwt, getUserEmail, corsHeaders, unauthorizedResponse } from '@/lib/auth/mobile-auth';
+import { getUserIdFromJwt, corsHeaders, unauthorizedResponse } from '@/lib/auth/mobile-auth';
 import { supabaseAdmin, isAdminConfigured } from '@/lib/supabase/admin';
 
 export async function OPTIONS() {
@@ -9,6 +9,7 @@ export async function OPTIONS() {
 /**
  * GET /api/mobile/expense-reports
  * List expense reports for the authenticated mobile user.
+ * Uses user_id directly (no Clerk API call needed).
  */
 export async function GET(request: NextRequest) {
   try {
@@ -22,27 +23,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const userEmail = await getUserEmail(userId);
-    if (!userEmail) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404, headers: corsHeaders }
-      );
-    }
-
     const { searchParams } = new URL(request.url);
-    const workspaceId = searchParams.get('workspaceId');
     const limit = parseInt(searchParams.get('limit') || '50');
 
-    // Fetch reports for this user
-    let query = supabaseAdmin
+    // Fetch reports using user_id directly (matches how webapp uses RLS)
+    const { data: reports, error: reportsError } = await supabaseAdmin
       .from('expense_reports')
       .select('*')
-      .eq('user_email', userEmail)
+      .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(limit);
-
-    const { data: reports, error: reportsError } = await query;
 
     if (reportsError) {
       console.error('Error fetching reports:', reportsError);
@@ -111,21 +101,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userEmail = await getUserEmail(userId);
-    if (!userEmail) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404, headers: corsHeaders }
-      );
-    }
-
     const body = await request.json();
 
     const { data: report, error } = await supabaseAdmin
       .from('expense_reports')
       .insert({
         user_id: userId,
-        user_email: userEmail,
         workspace_name: body.workspaceName || body.workspace_name || '',
         title: body.title || 'Untitled Report',
         status: 'draft',

@@ -35,6 +35,7 @@ fun ReportsScreen(viewModel: ReportsViewModel = viewModel()) {
 
     val expenses by viewModel.expenseItems.collectAsState()
     val reports by viewModel.expenseReports.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
     Column(
         modifier = Modifier
@@ -93,7 +94,14 @@ fun ReportsScreen(viewModel: ReportsViewModel = viewModel()) {
         }
 
         // Content
-        if (selectedTab == 0) {
+        if (isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = Emerald600)
+            }
+        } else if (selectedTab == 0) {
             ExpensesTab(expenses)
         } else {
             ReportsTab(reports)
@@ -142,6 +150,20 @@ fun ReportsTab(reports: List<ExpenseReport>) {
 @Composable
 fun ExpenseCard(expense: ExpenseItem) {
     val context = LocalContext.current
+    // Format the date nicely
+    val displayDate = try {
+        val raw = expense.transactionDate ?: expense.createdAt
+        if (raw.length >= 10) raw.substring(0, 10) else raw
+    } catch (_: Exception) { "" }
+
+    val statusColor = when (expense.processingStatus) {
+        "processed" -> Emerald600
+        "scanning" -> Color(0xFFD97706) // amber
+        "error" -> Color(0xFFDC2626) // red
+        else -> Gray500
+    }
+    val statusLabel = expense.processingStatus.replaceFirstChar { it.uppercase() }
+
     Surface(
         shape = RoundedCornerShape(12.dp),
         color = Color.White,
@@ -180,22 +202,36 @@ fun ExpenseCard(expense: ExpenseItem) {
                     style = MaterialTheme.typography.titleMedium,
                     color = Gray900
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Processing status badge
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = statusColor.copy(alpha = 0.12f)
+                    ) {
+                        Text(
+                            text = statusLabel,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = statusColor,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
                     Text(
                         text = expense.category,
                         style = MaterialTheme.typography.bodySmall,
                         color = Gray500
                     )
-                    Text(
-                        text = "•",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Gray500
-                    )
-                    Text(
-                        text = expense.createdAt,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Gray500
-                    )
+                    if (displayDate.isNotEmpty()) {
+                        Text("•", style = MaterialTheme.typography.bodySmall, color = Gray500)
+                        Text(
+                            text = displayDate,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Gray500
+                        )
+                    }
                 }
             }
 
@@ -214,6 +250,10 @@ fun ExpenseCard(expense: ExpenseItem) {
 @Composable
 fun ReportCard(report: ExpenseReport) {
     val context = LocalContext.current
+    val displayDate = try {
+        if (report.createdAt.length >= 10) report.createdAt.substring(0, 10) else report.createdAt
+    } catch (_: Exception) { "" }
+
     Surface(
         shape = RoundedCornerShape(12.dp),
         color = Color.White,
@@ -227,17 +267,33 @@ fun ReportCard(report: ExpenseReport) {
                 .padding(16.dp)
                 .fillMaxWidth()
         ) {
-            Text(
-                text = report.title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = Gray900
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = report.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Gray900,
+                    modifier = Modifier.weight(1f)
+                )
+                if (report.totalAmount > 0) {
+                    Text(
+                        text = "KES ${String.format("%.2f", report.totalAmount)}",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Emerald600
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
 
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Surface(
                     shape = RoundedCornerShape(12.dp),
@@ -253,7 +309,26 @@ fun ReportCard(report: ExpenseReport) {
                 }
 
                 Text(
-                    text = "${ report.itemsCount} items",
+                    text = "${report.itemsCount} items",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Gray500
+                )
+
+                if (displayDate.isNotEmpty()) {
+                    Text("•", style = MaterialTheme.typography.bodySmall, color = Gray500)
+                    Text(
+                        text = displayDate,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Gray500
+                    )
+                }
+            }
+
+            // Workspace name footer
+            if (report.workspaceName.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = report.workspaceName,
                     style = MaterialTheme.typography.bodySmall,
                     color = Gray500
                 )

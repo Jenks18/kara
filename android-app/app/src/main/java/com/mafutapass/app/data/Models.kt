@@ -18,6 +18,8 @@ data class ExpenseItem(
     val kraVerified: Boolean? = null,
     @SerializedName("workspace_name")
     val workspaceName: String = "",
+    @SerializedName("processing_status")
+    val processingStatus: String = "processed",
     val description: String? = null
 )
 

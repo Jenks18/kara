@@ -1,5 +1,6 @@
 package com.mafutapass.app.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -15,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -22,6 +24,7 @@ import com.mafutapass.app.data.ApiClient
 import com.mafutapass.app.data.Workspace
 import com.mafutapass.app.ui.theme.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
@@ -32,9 +35,10 @@ fun WorkspacesScreen(
     var workspaces by remember { mutableStateOf<List<Workspace>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
+    var refreshKey by remember { mutableStateOf(0) }
 
     // Fetch workspaces from API
-    LaunchedEffect(Unit) {
+    LaunchedEffect(refreshKey) {
         isLoading = true
         error = null
         try {
@@ -126,7 +130,8 @@ fun WorkspacesScreen(
             items(workspaces) { workspace ->
                 WorkspaceCard(
                     workspace = workspace,
-                    onClick = { onNavigateToWorkspaceDetail(workspace.id) }
+                    onClick = { onNavigateToWorkspaceDetail(workspace.id) },
+                    onDeleted = { refreshKey++ }
                 )
             }
             
@@ -161,8 +166,11 @@ fun WorkspacesScreen(
 }
 
 @Composable
-fun WorkspaceCard(workspace: Workspace, onClick: () -> Unit = {}) {
+fun WorkspaceCard(workspace: Workspace, onClick: () -> Unit = {}, onDeleted: () -> Unit = {}) {
     var showMenu by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+    var isDeleting by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
     
     Surface(
         shape = RoundedCornerShape(12.dp),
@@ -224,15 +232,63 @@ fun WorkspaceCard(workspace: Workspace, onClick: () -> Unit = {}) {
                     onDismissRequest = { showMenu = false }
                 ) {
                     DropdownMenuItem(
-                        text = { Text("Edit") },
-                        onClick = { showMenu = false }
+                        text = { Text("Go to") },
+                        onClick = {
+                            showMenu = false
+                            onClick()
+                        }
                     )
                     DropdownMenuItem(
                         text = { Text("Delete", color = Red500) },
-                        onClick = { showMenu = false }
+                        onClick = {
+                            showMenu = false
+                            showDeleteConfirm = true
+                        }
                     )
                 }
             }
         }
+    }
+
+    // Delete confirmation dialog
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { if (!isDeleting) showDeleteConfirm = false },
+            title = { Text("Delete workspace") },
+            text = { Text("Are you sure you want to delete \"${workspace.name}\"? This cannot be undone.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        isDeleting = true
+                        coroutineScope.launch {
+                            try {
+                                withContext(Dispatchers.IO) {
+                                    ApiClient.apiService.deleteWorkspace(workspace.id)
+                                }
+                                showDeleteConfirm = false
+                                onDeleted()
+                            } catch (e: Exception) {
+                                android.util.Log.e("WorkspaceCard", "Delete failed: ${e.message}")
+                            } finally {
+                                isDeleting = false
+                            }
+                        }
+                    },
+                    enabled = !isDeleting
+                ) {
+                    if (isDeleting) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                    } else {
+                        Text("Delete", color = Red500)
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showDeleteConfirm = false },
+                    enabled = !isDeleting
+                ) { Text("Cancel") }
+            }
+        )
     }
 }

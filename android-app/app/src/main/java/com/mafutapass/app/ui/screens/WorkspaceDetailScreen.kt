@@ -9,7 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -19,8 +19,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mafutapass.app.data.ApiClient
 import com.mafutapass.app.data.Workspace
 import com.mafutapass.app.ui.theme.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,13 +33,48 @@ fun WorkspaceDetailScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
-    // Use passed name or default
-    val workspace = Workspace(
-        id = workspaceId,
-        name = workspaceName.ifEmpty { "Workspace" },
-        currency = "KES",
-        currencySymbol = "KSh"
-    )
+    var workspace by remember { mutableStateOf<Workspace?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    // Fetch real workspace data from API
+    LaunchedEffect(workspaceId) {
+        isLoading = true
+        try {
+            val fetched = withContext(Dispatchers.IO) {
+                ApiClient.apiService.getWorkspace(workspaceId)
+            }
+            workspace = fetched
+        } catch (e: Exception) {
+            android.util.Log.e("WorkspaceDetail", "Failed to fetch: ${e.message}", e)
+            error = e.message
+            // Fallback to minimal data from nav args
+            workspace = Workspace(
+                id = workspaceId,
+                name = workspaceName.ifEmpty { "Workspace" },
+                currency = "KES",
+                currencySymbol = "KSh"
+            )
+        } finally {
+            isLoading = false
+        }
+    }
+
+    val ws = workspace
+    if (isLoading) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(color = Emerald600)
+        }
+        return
+    }
+
+    if (ws == null) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Workspace not found", color = Gray500)
+        }
+        return
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -65,7 +103,7 @@ fun WorkspaceDetailScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = workspace.initials,
+                            text = ws.initials,
                             fontSize = 24.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
@@ -73,12 +111,12 @@ fun WorkspaceDetailScreen(
                     }
                     Column {
                         Text(
-                            workspace.name,
+                            ws.name,
                             fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.titleMedium
                         )
                         Text(
-                            "${workspace.currency} - ${workspace.currencySymbol}",
+                            "${ws.currency} - ${ws.currencySymbol}",
                             style = MaterialTheme.typography.bodySmall,
                             color = Gray500
                         )
