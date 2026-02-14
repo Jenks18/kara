@@ -84,6 +84,7 @@
     <string msgid="8403354765404029791" name="m3c_bottom_sheet_drag_handle_description">"ដង​អូស"</string>
     <string msgid="6670819569745899763" name="m3c_bottom_sheet_expand_description">"ពង្រីក​សន្លឹកខាងក្រោម"</string>
     <string msgid="3010635850035863127" name="m3c_bottom_sheet_pane_title">"សន្លឹក​ខាងក្រោម"</string>
+    <string msgid="3990875819916144919" name="m3c_button_group_more_options">"ជម្រើស​ច្រើនទៀត"</string>
     <string msgid="8166741421776570875" name="m3c_date_input_headline">"កាលបរិច្ឆេទដែលបានបញ្ចូល"</string>
     <string msgid="229313757840775812" name="m3c_date_input_headline_description">"កាលបរិច្ឆេទដែលបានបញ្ចូល៖ %1$s"</string>
     <string msgid="6116910750161463197" name="m3c_date_input_invalid_for_pattern">"កាលបរិច្ឆេទមិនត្រូវគ្នានឹងលំនាំដែលរំពឹងទុកទេ៖ %1$s"</string>
@@ -121,6 +122,7 @@
     <string msgid="8687821690726149911" name="m3c_dropdown_menu_toggle">"បិទ/បើកម៉ឺនុយ​ធ្លាក់​ចុះ"</string>
     <string msgid="6072492480528318635" name="m3c_floating_toolbar_collapse">"បង្រួមរបារឧបករណ៍"</string>
     <string msgid="6880757017246780255" name="m3c_floating_toolbar_expand">"ពង្រីករបារឧបករណ៍"</string>
+    <string msgid="5546418917311349543" name="m3c_floating_toolbar_more_options">"ជម្រើស​ច្រើនទៀត"</string>
     <string msgid="6152806324422087846" name="m3c_search_bar_search">"ស្វែងរក"</string>
     <string msgid="6152755701819882931" name="m3c_snackbar_dismiss">"ច្រានចោល"</string>
     <string msgid="3868801555855510515" name="m3c_snackbar_pane_title">"ជូន​ដំណឹង"</string>

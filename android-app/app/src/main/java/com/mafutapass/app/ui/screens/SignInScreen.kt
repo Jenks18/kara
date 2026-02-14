@@ -443,11 +443,6 @@ fun SignUpView(onSwitchToSignIn: () -> Unit = {}) {
                 android.util.Log.d("SignUpView", "✅ Sign up successful - refreshing auth")
                 authViewModel.refreshAuthState()
             }
-            is SignUpViewModel.SignUpUiState.AccountCreated -> {
-                android.util.Log.d("SignUpView", "✅ Account created - switching to sign-in")
-                // Switch to sign-in tab
-                onSwitchToSignIn()
-            }
             else -> {}
         }
     }
@@ -570,14 +565,6 @@ fun SignUpView(onSwitchToSignIn: () -> Unit = {}) {
                     Text(
                         text = (state as SignUpViewModel.SignUpUiState.Error).message,
                         color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-
-                if (state is SignUpViewModel.SignUpUiState.AccountCreated) {
-                    Text(
-                        text = "Account created! Please sign in below.",
-                        color = Emerald600,
                         style = MaterialTheme.typography.bodySmall
                     )
                 }

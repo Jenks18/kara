@@ -84,6 +84,7 @@
     <string msgid="8403354765404029791" name="m3c_bottom_sheet_drag_handle_description">"Манипулатор за преместване с плъзгане"</string>
     <string msgid="6670819569745899763" name="m3c_bottom_sheet_expand_description">"Разгъване на долния лист"</string>
     <string msgid="3010635850035863127" name="m3c_bottom_sheet_pane_title">"Долен лист"</string>
+    <string msgid="3990875819916144919" name="m3c_button_group_more_options">"Още опции"</string>
     <string msgid="8166741421776570875" name="m3c_date_input_headline">"Въведена дата"</string>
     <string msgid="229313757840775812" name="m3c_date_input_headline_description">"Въведена дата: %1$s"</string>
     <string msgid="6116910750161463197" name="m3c_date_input_invalid_for_pattern">"Датата не е в очаквания формат: %1$s"</string>
@@ -121,6 +122,7 @@
     <string msgid="8687821690726149911" name="m3c_dropdown_menu_toggle">"Превключване на падащото меню"</string>
     <string msgid="6072492480528318635" name="m3c_floating_toolbar_collapse">"Свиване на лентата с инструменти"</string>
     <string msgid="6880757017246780255" name="m3c_floating_toolbar_expand">"Разгъване на лентата с инструменти"</string>
+    <string msgid="5546418917311349543" name="m3c_floating_toolbar_more_options">"Още опции"</string>
     <string msgid="6152806324422087846" name="m3c_search_bar_search">"Лента за търсене"</string>
     <string msgid="6152755701819882931" name="m3c_snackbar_dismiss">"Отхвърляне"</string>
     <string msgid="3868801555855510515" name="m3c_snackbar_pane_title">"Сигнал"</string>

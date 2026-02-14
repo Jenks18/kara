@@ -1291,6 +1291,7 @@ string m3c_bottom_sheet_dismiss_description
 string m3c_bottom_sheet_drag_handle_description
 string m3c_bottom_sheet_expand_description
 string m3c_bottom_sheet_pane_title
+string m3c_button_group_more_options
 string m3c_date_input_headline
 string m3c_date_input_headline_description
 string m3c_date_input_invalid_for_pattern
@@ -1328,6 +1329,7 @@ string m3c_dropdown_menu_expanded
 string m3c_dropdown_menu_toggle
 string m3c_floating_toolbar_collapse
 string m3c_floating_toolbar_expand
+string m3c_floating_toolbar_more_options
 string m3c_search_bar_search
 string m3c_snackbar_dismiss
 string m3c_snackbar_pane_title

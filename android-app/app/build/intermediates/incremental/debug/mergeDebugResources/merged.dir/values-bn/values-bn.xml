@@ -84,6 +84,7 @@
     <string msgid="8403354765404029791" name="m3c_bottom_sheet_drag_handle_description">"টেনে আনার হ্যান্ডেল"</string>
     <string msgid="6670819569745899763" name="m3c_bottom_sheet_expand_description">"স্ক্রিনের নিচে অ্যাটাচ করা শিট বড় করুন"</string>
     <string msgid="3010635850035863127" name="m3c_bottom_sheet_pane_title">"স্ক্রিনের নিচে অ্যাটাচ করা শিট"</string>
+    <string msgid="3990875819916144919" name="m3c_button_group_more_options">"আরও বিকল্প"</string>
     <string msgid="8166741421776570875" name="m3c_date_input_headline">"উল্লেখ করা তারিখ"</string>
     <string msgid="229313757840775812" name="m3c_date_input_headline_description">"উল্লেখ করা তারিখ: %1$s"</string>
     <string msgid="6116910750161463197" name="m3c_date_input_invalid_for_pattern">"প্রত্যাশিত প্যাটার্নের সাথে তারিখ মিলছে না: %1$s"</string>
@@ -121,6 +122,7 @@
     <string msgid="8687821690726149911" name="m3c_dropdown_menu_toggle">"ড্রপডাউন মেনু টগল করুন"</string>
     <string msgid="6072492480528318635" name="m3c_floating_toolbar_collapse">"টুলবার আড়াল করুন"</string>
     <string msgid="6880757017246780255" name="m3c_floating_toolbar_expand">"টুলবার বড় করুন"</string>
+    <string msgid="5546418917311349543" name="m3c_floating_toolbar_more_options">"আরও বিকল্প"</string>
     <string msgid="6152806324422087846" name="m3c_search_bar_search">"সার্চ করুন"</string>
     <string msgid="6152755701819882931" name="m3c_snackbar_dismiss">"বাতিল করুন"</string>
     <string msgid="3868801555855510515" name="m3c_snackbar_pane_title">"সতর্কতা"</string>

@@ -169,6 +169,7 @@
     <string msgid="8403354765404029791" name="m3c_bottom_sheet_drag_handle_description">"Λαβή μεταφοράς"</string>
     <string msgid="6670819569745899763" name="m3c_bottom_sheet_expand_description">"Ανάπτυξη φύλλου κάτω μέρους"</string>
     <string msgid="3010635850035863127" name="m3c_bottom_sheet_pane_title">"Φύλλο κάτω μέρους"</string>
+    <string msgid="3990875819916144919" name="m3c_button_group_more_options">"Περισσότερες επιλογές"</string>
     <string msgid="8166741421776570875" name="m3c_date_input_headline">"Εισαγωγή ημερομηνίας"</string>
     <string msgid="229313757840775812" name="m3c_date_input_headline_description">"Εισαγωγή ημερομηνίας: %1$s"</string>
     <string msgid="6116910750161463197" name="m3c_date_input_invalid_for_pattern">"Η ημερομηνία δεν αντιστοιχεί στο αναμενόμενο μοτίβο: %1$s"</string>
@@ -206,6 +207,7 @@
     <string msgid="8687821690726149911" name="m3c_dropdown_menu_toggle">"Εναλλαγή αναπτυσσόμενου μενού"</string>
     <string msgid="6072492480528318635" name="m3c_floating_toolbar_collapse">"Σύμπτυξη γραμμής εργαλείων"</string>
     <string msgid="6880757017246780255" name="m3c_floating_toolbar_expand">"Ανάπτυξη γραμμής εργαλείων"</string>
+    <string msgid="5546418917311349543" name="m3c_floating_toolbar_more_options">"Περισσότερες επιλογές"</string>
     <string msgid="6152806324422087846" name="m3c_search_bar_search">"Αναζήτηση"</string>
     <string msgid="6152755701819882931" name="m3c_snackbar_dismiss">"Παράβλεψη"</string>
     <string msgid="3868801555855510515" name="m3c_snackbar_pane_title">"Ειδοποίηση"</string>

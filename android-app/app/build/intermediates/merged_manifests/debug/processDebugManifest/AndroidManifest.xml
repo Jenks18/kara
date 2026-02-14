@@ -164,10 +164,10 @@
                 android:name="androidx.profileinstaller.ProfileInstallerInitializer"
                 android:value="androidx.startup" />
             <meta-data
-                android:name="com.russhwolf.settings.SettingsInitializer"
+                android:name="okhttp3.internal.platform.PlatformInitializer"
                 android:value="androidx.startup" />
             <meta-data
-                android:name="okhttp3.internal.platform.PlatformInitializer"
+                android:name="com.russhwolf.settings.SettingsInitializer"
                 android:value="androidx.startup" />
         </provider>
         <!--

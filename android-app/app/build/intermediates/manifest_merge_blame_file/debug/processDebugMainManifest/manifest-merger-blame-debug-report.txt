@@ -41,8 +41,8 @@
 25-->/Users/iannjenga/Documents/GitHub/Kara/android-app/app/src/main/AndroidManifest.xml:12:68-92
 26
 27    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-27-->[com.clerk:clerk-android-api:0.1.31] /Users/iannjenga/.gradle/caches/8.13/transforms/db491e259c3d42b9e7b982698dabdf48/transformed/jetified-clerk-android-api-0.1.31/AndroidManifest.xml:8:5-79
-27-->[com.clerk:clerk-android-api:0.1.31] /Users/iannjenga/.gradle/caches/8.13/transforms/db491e259c3d42b9e7b982698dabdf48/transformed/jetified-clerk-android-api-0.1.31/AndroidManifest.xml:8:22-76
+27-->[com.clerk:clerk-android-api:1.0.1] /Users/iannjenga/.gradle/caches/8.13/transforms/dac95e6940914c5845ab76d1fbb0cfae/transformed/jetified-clerk-android-api-1.0.1/AndroidManifest.xml:8:5-79
+27-->[com.clerk:clerk-android-api:1.0.1] /Users/iannjenga/.gradle/caches/8.13/transforms/dac95e6940914c5845ab76d1fbb0cfae/transformed/jetified-clerk-android-api-1.0.1/AndroidManifest.xml:8:22-76
 28    <uses-permission android:name="android.permission.READ_BASIC_PHONE_STATE" />
 28-->[com.google.android.libraries.ads.mobile.sdk:ads-mobile-sdk:0.21.0-beta01] /Users/iannjenga/.gradle/caches/8.13/transforms/8e5bc9682ee8fbbcaecd7d6cee534f68/transformed/jetified-ads-mobile-sdk-0.21.0-beta01/AndroidManifest.xml:11:5-81
 28-->[com.google.android.libraries.ads.mobile.sdk:ads-mobile-sdk:0.21.0-beta01] /Users/iannjenga/.gradle/caches/8.13/transforms/8e5bc9682ee8fbbcaecd7d6cee534f68/transformed/jetified-ads-mobile-sdk-0.21.0-beta01/AndroidManifest.xml:11:22-78
@@ -65,16 +65,16 @@
 36        <intent>
 36-->[com.google.android.libraries.ads.mobile.sdk:ads-mobile-sdk:0.21.0-beta01] /Users/iannjenga/.gradle/caches/8.13/transforms/8e5bc9682ee8fbbcaecd7d6cee534f68/transformed/jetified-ads-mobile-sdk-0.21.0-beta01/AndroidManifest.xml:24:9-30:18
 37            <action android:name="android.intent.action.VIEW" />
-37-->[com.clerk:clerk-android-api:0.1.31] /Users/iannjenga/.gradle/caches/8.13/transforms/db491e259c3d42b9e7b982698dabdf48/transformed/jetified-clerk-android-api-0.1.31/AndroidManifest.xml:22:17-69
-37-->[com.clerk:clerk-android-api:0.1.31] /Users/iannjenga/.gradle/caches/8.13/transforms/db491e259c3d42b9e7b982698dabdf48/transformed/jetified-clerk-android-api-0.1.31/AndroidManifest.xml:22:25-66
+37-->[com.clerk:clerk-android-api:1.0.1] /Users/iannjenga/.gradle/caches/8.13/transforms/dac95e6940914c5845ab76d1fbb0cfae/transformed/jetified-clerk-android-api-1.0.1/AndroidManifest.xml:22:17-69
+37-->[com.clerk:clerk-android-api:1.0.1] /Users/iannjenga/.gradle/caches/8.13/transforms/dac95e6940914c5845ab76d1fbb0cfae/transformed/jetified-clerk-android-api-1.0.1/AndroidManifest.xml:22:25-66
 38
 39            <category android:name="android.intent.category.BROWSABLE" />
-39-->[com.clerk:clerk-android-api:0.1.31] /Users/iannjenga/.gradle/caches/8.13/transforms/db491e259c3d42b9e7b982698dabdf48/transformed/jetified-clerk-android-api-0.1.31/AndroidManifest.xml:25:17-78
-39-->[com.clerk:clerk-android-api:0.1.31] /Users/iannjenga/.gradle/caches/8.13/transforms/db491e259c3d42b9e7b982698dabdf48/transformed/jetified-clerk-android-api-0.1.31/AndroidManifest.xml:25:27-75
+39-->[com.clerk:clerk-android-api:1.0.1] /Users/iannjenga/.gradle/caches/8.13/transforms/dac95e6940914c5845ab76d1fbb0cfae/transformed/jetified-clerk-android-api-1.0.1/AndroidManifest.xml:25:17-78
+39-->[com.clerk:clerk-android-api:1.0.1] /Users/iannjenga/.gradle/caches/8.13/transforms/dac95e6940914c5845ab76d1fbb0cfae/transformed/jetified-clerk-android-api-1.0.1/AndroidManifest.xml:25:27-75
 40
 41            <data android:scheme="https" />
-41-->[com.clerk:clerk-android-api:0.1.31] /Users/iannjenga/.gradle/caches/8.13/transforms/db491e259c3d42b9e7b982698dabdf48/transformed/jetified-clerk-android-api-0.1.31/AndroidManifest.xml:27:17-29:46
-41-->[com.clerk:clerk-android-api:0.1.31] /Users/iannjenga/.gradle/caches/8.13/transforms/db491e259c3d42b9e7b982698dabdf48/transformed/jetified-clerk-android-api-0.1.31/AndroidManifest.xml:29:21-43
+41-->[com.clerk:clerk-android-api:1.0.1] /Users/iannjenga/.gradle/caches/8.13/transforms/dac95e6940914c5845ab76d1fbb0cfae/transformed/jetified-clerk-android-api-1.0.1/AndroidManifest.xml:27:17-29:46
+41-->[com.clerk:clerk-android-api:1.0.1] /Users/iannjenga/.gradle/caches/8.13/transforms/dac95e6940914c5845ab76d1fbb0cfae/transformed/jetified-clerk-android-api-1.0.1/AndroidManifest.xml:29:21-43
 42        </intent>
 43        <!-- End of browser content -->
 44        <!-- For CustomTabsService -->
@@ -93,17 +93,17 @@
 51-->[com.google.android.libraries.ads.mobile.sdk:ads-mobile-sdk:0.21.0-beta01] /Users/iannjenga/.gradle/caches/8.13/transforms/8e5bc9682ee8fbbcaecd7d6cee534f68/transformed/jetified-ads-mobile-sdk-0.21.0-beta01/AndroidManifest.xml:39:21-64
 52
 53            <data android:mimeType="vnd.android.cursor.dir/event" />
-53-->[com.clerk:clerk-android-api:0.1.31] /Users/iannjenga/.gradle/caches/8.13/transforms/db491e259c3d42b9e7b982698dabdf48/transformed/jetified-clerk-android-api-0.1.31/AndroidManifest.xml:27:17-29:46
+53-->[com.clerk:clerk-android-api:1.0.1] /Users/iannjenga/.gradle/caches/8.13/transforms/dac95e6940914c5845ab76d1fbb0cfae/transformed/jetified-clerk-android-api-1.0.1/AndroidManifest.xml:27:17-29:46
 54        </intent>
 55        <intent>
 55-->[com.google.android.libraries.ads.mobile.sdk:ads-mobile-sdk:0.21.0-beta01] /Users/iannjenga/.gradle/caches/8.13/transforms/8e5bc9682ee8fbbcaecd7d6cee534f68/transformed/jetified-ads-mobile-sdk-0.21.0-beta01/AndroidManifest.xml:43:9-47:18
 56            <action android:name="android.intent.action.VIEW" />
-56-->[com.clerk:clerk-android-api:0.1.31] /Users/iannjenga/.gradle/caches/8.13/transforms/db491e259c3d42b9e7b982698dabdf48/transformed/jetified-clerk-android-api-0.1.31/AndroidManifest.xml:22:17-69
-56-->[com.clerk:clerk-android-api:0.1.31] /Users/iannjenga/.gradle/caches/8.13/transforms/db491e259c3d42b9e7b982698dabdf48/transformed/jetified-clerk-android-api-0.1.31/AndroidManifest.xml:22:25-66
+56-->[com.clerk:clerk-android-api:1.0.1] /Users/iannjenga/.gradle/caches/8.13/transforms/dac95e6940914c5845ab76d1fbb0cfae/transformed/jetified-clerk-android-api-1.0.1/AndroidManifest.xml:22:17-69
+56-->[com.clerk:clerk-android-api:1.0.1] /Users/iannjenga/.gradle/caches/8.13/transforms/dac95e6940914c5845ab76d1fbb0cfae/transformed/jetified-clerk-android-api-1.0.1/AndroidManifest.xml:22:25-66
 57
 58            <data android:scheme="sms" />
-58-->[com.clerk:clerk-android-api:0.1.31] /Users/iannjenga/.gradle/caches/8.13/transforms/db491e259c3d42b9e7b982698dabdf48/transformed/jetified-clerk-android-api-0.1.31/AndroidManifest.xml:27:17-29:46
-58-->[com.clerk:clerk-android-api:0.1.31] /Users/iannjenga/.gradle/caches/8.13/transforms/db491e259c3d42b9e7b982698dabdf48/transformed/jetified-clerk-android-api-0.1.31/AndroidManifest.xml:29:21-43
+58-->[com.clerk:clerk-android-api:1.0.1] /Users/iannjenga/.gradle/caches/8.13/transforms/dac95e6940914c5845ab76d1fbb0cfae/transformed/jetified-clerk-android-api-1.0.1/AndroidManifest.xml:27:17-29:46
+58-->[com.clerk:clerk-android-api:1.0.1] /Users/iannjenga/.gradle/caches/8.13/transforms/dac95e6940914c5845ab76d1fbb0cfae/transformed/jetified-clerk-android-api-1.0.1/AndroidManifest.xml:29:21-43
 59        </intent>
 60        <intent>
 60-->[com.google.android.libraries.ads.mobile.sdk:ads-mobile-sdk:0.21.0-beta01] /Users/iannjenga/.gradle/caches/8.13/transforms/8e5bc9682ee8fbbcaecd7d6cee534f68/transformed/jetified-ads-mobile-sdk-0.21.0-beta01/AndroidManifest.xml:48:9-52:18
@@ -112,7 +112,7 @@
 61-->[com.google.android.libraries.ads.mobile.sdk:ads-mobile-sdk:0.21.0-beta01] /Users/iannjenga/.gradle/caches/8.13/transforms/8e5bc9682ee8fbbcaecd7d6cee534f68/transformed/jetified-ads-mobile-sdk-0.21.0-beta01/AndroidManifest.xml:49:21-62
 62
 63            <data android:path="tel:" />
-63-->[com.clerk:clerk-android-api:0.1.31] /Users/iannjenga/.gradle/caches/8.13/transforms/db491e259c3d42b9e7b982698dabdf48/transformed/jetified-clerk-android-api-0.1.31/AndroidManifest.xml:27:17-29:46
+63-->[com.clerk:clerk-android-api:1.0.1] /Users/iannjenga/.gradle/caches/8.13/transforms/dac95e6940914c5845ab76d1fbb0cfae/transformed/jetified-clerk-android-api-1.0.1/AndroidManifest.xml:27:17-29:46
 64        </intent>
 65        <!-- End of MRAID capabilities -->
 66    </queries>
@@ -201,60 +201,60 @@
 111            <!-- No deep link needed for native OAuth -->
 112        </activity>
 113        <activity
-113-->[com.clerk:clerk-android-api:0.1.31] /Users/iannjenga/.gradle/caches/8.13/transforms/db491e259c3d42b9e7b982698dabdf48/transformed/jetified-clerk-android-api-0.1.31/AndroidManifest.xml:11:9-16:75
+113-->[com.clerk:clerk-android-api:1.0.1] /Users/iannjenga/.gradle/caches/8.13/transforms/dac95e6940914c5845ab76d1fbb0cfae/transformed/jetified-clerk-android-api-1.0.1/AndroidManifest.xml:11:9-16:75
 114            android:name="com.clerk.api.sso.SSOManagerActivity"
-114-->[com.clerk:clerk-android-api:0.1.31] /Users/iannjenga/.gradle/caches/8.13/transforms/db491e259c3d42b9e7b982698dabdf48/transformed/jetified-clerk-android-api-0.1.31/AndroidManifest.xml:12:13-64
+114-->[com.clerk:clerk-android-api:1.0.1] /Users/iannjenga/.gradle/caches/8.13/transforms/dac95e6940914c5845ab76d1fbb0cfae/transformed/jetified-clerk-android-api-1.0.1/AndroidManifest.xml:12:13-64
 115            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|keyboard|keyboardHidden"
-115-->[com.clerk:clerk-android-api:0.1.31] /Users/iannjenga/.gradle/caches/8.13/transforms/db491e259c3d42b9e7b982698dabdf48/transformed/jetified-clerk-android-api-0.1.31/AndroidManifest.xml:13:13-115
+115-->[com.clerk:clerk-android-api:1.0.1] /Users/iannjenga/.gradle/caches/8.13/transforms/dac95e6940914c5845ab76d1fbb0cfae/transformed/jetified-clerk-android-api-1.0.1/AndroidManifest.xml:13:13-115
 116            android:exported="false"
-116-->[com.clerk:clerk-android-api:0.1.31] /Users/iannjenga/.gradle/caches/8.13/transforms/db491e259c3d42b9e7b982698dabdf48/transformed/jetified-clerk-android-api-0.1.31/AndroidManifest.xml:14:13-37
+116-->[com.clerk:clerk-android-api:1.0.1] /Users/iannjenga/.gradle/caches/8.13/transforms/dac95e6940914c5845ab76d1fbb0cfae/transformed/jetified-clerk-android-api-1.0.1/AndroidManifest.xml:14:13-37
 117            android:launchMode="singleTask"
-117-->[com.clerk:clerk-android-api:0.1.31] /Users/iannjenga/.gradle/caches/8.13/transforms/db491e259c3d42b9e7b982698dabdf48/transformed/jetified-clerk-android-api-0.1.31/AndroidManifest.xml:15:13-44
+117-->[com.clerk:clerk-android-api:1.0.1] /Users/iannjenga/.gradle/caches/8.13/transforms/dac95e6940914c5845ab76d1fbb0cfae/transformed/jetified-clerk-android-api-1.0.1/AndroidManifest.xml:15:13-44
 118            android:theme="@style/Theme.AppCompat.DayNight.NoActionBar" />
-118-->[com.clerk:clerk-android-api:0.1.31] /Users/iannjenga/.gradle/caches/8.13/transforms/db491e259c3d42b9e7b982698dabdf48/transformed/jetified-clerk-android-api-0.1.31/AndroidManifest.xml:16:13-72
+118-->[com.clerk:clerk-android-api:1.0.1] /Users/iannjenga/.gradle/caches/8.13/transforms/dac95e6940914c5845ab76d1fbb0cfae/transformed/jetified-clerk-android-api-1.0.1/AndroidManifest.xml:16:13-72
 119        <activity
-119-->[com.clerk:clerk-android-api:0.1.31] /Users/iannjenga/.gradle/caches/8.13/transforms/db491e259c3d42b9e7b982698dabdf48/transformed/jetified-clerk-android-api-0.1.31/AndroidManifest.xml:17:9-31:20
+119-->[com.clerk:clerk-android-api:1.0.1] /Users/iannjenga/.gradle/caches/8.13/transforms/dac95e6940914c5845ab76d1fbb0cfae/transformed/jetified-clerk-android-api-1.0.1/AndroidManifest.xml:17:9-31:20
 120            android:name="com.clerk.api.sso.SSOReceiverActivity"
-120-->[com.clerk:clerk-android-api:0.1.31] /Users/iannjenga/.gradle/caches/8.13/transforms/db491e259c3d42b9e7b982698dabdf48/transformed/jetified-clerk-android-api-0.1.31/AndroidManifest.xml:18:13-65
+120-->[com.clerk:clerk-android-api:1.0.1] /Users/iannjenga/.gradle/caches/8.13/transforms/dac95e6940914c5845ab76d1fbb0cfae/transformed/jetified-clerk-android-api-1.0.1/AndroidManifest.xml:18:13-65
 121            android:exported="true"
-121-->[com.clerk:clerk-android-api:0.1.31] /Users/iannjenga/.gradle/caches/8.13/transforms/db491e259c3d42b9e7b982698dabdf48/transformed/jetified-clerk-android-api-0.1.31/AndroidManifest.xml:19:13-36
+121-->[com.clerk:clerk-android-api:1.0.1] /Users/iannjenga/.gradle/caches/8.13/transforms/dac95e6940914c5845ab76d1fbb0cfae/transformed/jetified-clerk-android-api-1.0.1/AndroidManifest.xml:19:13-36
 122            android:theme="@style/Theme.AppCompat.DayNight.NoActionBar" >
-122-->[com.clerk:clerk-android-api:0.1.31] /Users/iannjenga/.gradle/caches/8.13/transforms/db491e259c3d42b9e7b982698dabdf48/transformed/jetified-clerk-android-api-0.1.31/AndroidManifest.xml:20:13-72
+122-->[com.clerk:clerk-android-api:1.0.1] /Users/iannjenga/.gradle/caches/8.13/transforms/dac95e6940914c5845ab76d1fbb0cfae/transformed/jetified-clerk-android-api-1.0.1/AndroidManifest.xml:20:13-72
 123            <intent-filter>
-123-->[com.clerk:clerk-android-api:0.1.31] /Users/iannjenga/.gradle/caches/8.13/transforms/db491e259c3d42b9e7b982698dabdf48/transformed/jetified-clerk-android-api-0.1.31/AndroidManifest.xml:21:13-30:29
+123-->[com.clerk:clerk-android-api:1.0.1] /Users/iannjenga/.gradle/caches/8.13/transforms/dac95e6940914c5845ab76d1fbb0cfae/transformed/jetified-clerk-android-api-1.0.1/AndroidManifest.xml:21:13-30:29
 124                <action android:name="android.intent.action.VIEW" />
-124-->[com.clerk:clerk-android-api:0.1.31] /Users/iannjenga/.gradle/caches/8.13/transforms/db491e259c3d42b9e7b982698dabdf48/transformed/jetified-clerk-android-api-0.1.31/AndroidManifest.xml:22:17-69
-124-->[com.clerk:clerk-android-api:0.1.31] /Users/iannjenga/.gradle/caches/8.13/transforms/db491e259c3d42b9e7b982698dabdf48/transformed/jetified-clerk-android-api-0.1.31/AndroidManifest.xml:22:25-66
+124-->[com.clerk:clerk-android-api:1.0.1] /Users/iannjenga/.gradle/caches/8.13/transforms/dac95e6940914c5845ab76d1fbb0cfae/transformed/jetified-clerk-android-api-1.0.1/AndroidManifest.xml:22:17-69
+124-->[com.clerk:clerk-android-api:1.0.1] /Users/iannjenga/.gradle/caches/8.13/transforms/dac95e6940914c5845ab76d1fbb0cfae/transformed/jetified-clerk-android-api-1.0.1/AndroidManifest.xml:22:25-66
 125
 126                <category android:name="android.intent.category.DEFAULT" />
-126-->[com.clerk:clerk-android-api:0.1.31] /Users/iannjenga/.gradle/caches/8.13/transforms/db491e259c3d42b9e7b982698dabdf48/transformed/jetified-clerk-android-api-0.1.31/AndroidManifest.xml:24:17-76
-126-->[com.clerk:clerk-android-api:0.1.31] /Users/iannjenga/.gradle/caches/8.13/transforms/db491e259c3d42b9e7b982698dabdf48/transformed/jetified-clerk-android-api-0.1.31/AndroidManifest.xml:24:27-73
+126-->[com.clerk:clerk-android-api:1.0.1] /Users/iannjenga/.gradle/caches/8.13/transforms/dac95e6940914c5845ab76d1fbb0cfae/transformed/jetified-clerk-android-api-1.0.1/AndroidManifest.xml:24:17-76
+126-->[com.clerk:clerk-android-api:1.0.1] /Users/iannjenga/.gradle/caches/8.13/transforms/dac95e6940914c5845ab76d1fbb0cfae/transformed/jetified-clerk-android-api-1.0.1/AndroidManifest.xml:24:27-73
 127                <category android:name="android.intent.category.BROWSABLE" />
-127-->[com.clerk:clerk-android-api:0.1.31] /Users/iannjenga/.gradle/caches/8.13/transforms/db491e259c3d42b9e7b982698dabdf48/transformed/jetified-clerk-android-api-0.1.31/AndroidManifest.xml:25:17-78
-127-->[com.clerk:clerk-android-api:0.1.31] /Users/iannjenga/.gradle/caches/8.13/transforms/db491e259c3d42b9e7b982698dabdf48/transformed/jetified-clerk-android-api-0.1.31/AndroidManifest.xml:25:27-75
+127-->[com.clerk:clerk-android-api:1.0.1] /Users/iannjenga/.gradle/caches/8.13/transforms/dac95e6940914c5845ab76d1fbb0cfae/transformed/jetified-clerk-android-api-1.0.1/AndroidManifest.xml:25:17-78
+127-->[com.clerk:clerk-android-api:1.0.1] /Users/iannjenga/.gradle/caches/8.13/transforms/dac95e6940914c5845ab76d1fbb0cfae/transformed/jetified-clerk-android-api-1.0.1/AndroidManifest.xml:25:27-75
 128
 129                <data
-129-->[com.clerk:clerk-android-api:0.1.31] /Users/iannjenga/.gradle/caches/8.13/transforms/db491e259c3d42b9e7b982698dabdf48/transformed/jetified-clerk-android-api-0.1.31/AndroidManifest.xml:27:17-29:46
+129-->[com.clerk:clerk-android-api:1.0.1] /Users/iannjenga/.gradle/caches/8.13/transforms/dac95e6940914c5845ab76d1fbb0cfae/transformed/jetified-clerk-android-api-1.0.1/AndroidManifest.xml:27:17-29:46
 130                    android:host="com.mafutapass.app.oauth"
-130-->[com.clerk:clerk-android-api:0.1.31] /Users/iannjenga/.gradle/caches/8.13/transforms/db491e259c3d42b9e7b982698dabdf48/transformed/jetified-clerk-android-api-0.1.31/AndroidManifest.xml:28:21-58
+130-->[com.clerk:clerk-android-api:1.0.1] /Users/iannjenga/.gradle/caches/8.13/transforms/dac95e6940914c5845ab76d1fbb0cfae/transformed/jetified-clerk-android-api-1.0.1/AndroidManifest.xml:28:21-58
 131                    android:scheme="clerk" />
-131-->[com.clerk:clerk-android-api:0.1.31] /Users/iannjenga/.gradle/caches/8.13/transforms/db491e259c3d42b9e7b982698dabdf48/transformed/jetified-clerk-android-api-0.1.31/AndroidManifest.xml:29:21-43
+131-->[com.clerk:clerk-android-api:1.0.1] /Users/iannjenga/.gradle/caches/8.13/transforms/dac95e6940914c5845ab76d1fbb0cfae/transformed/jetified-clerk-android-api-1.0.1/AndroidManifest.xml:29:21-43
 132            </intent-filter>
 133        </activity>
 134        <activity
-134-->[androidx.compose.ui:ui-tooling-android:1.10.1] /Users/iannjenga/.gradle/caches/8.13/transforms/0e0d3958174ce91df5bd555cb21e41be/transformed/jetified-ui-tooling/AndroidManifest.xml:23:9-25:39
+134-->[androidx.compose.ui:ui-tooling-android:1.10.3] /Users/iannjenga/.gradle/caches/8.13/transforms/551ecd3b0438f0dd236487e3cc5be362/transformed/jetified-ui-tooling/AndroidManifest.xml:23:9-25:39
 135            android:name="androidx.compose.ui.tooling.PreviewActivity"
-135-->[androidx.compose.ui:ui-tooling-android:1.10.1] /Users/iannjenga/.gradle/caches/8.13/transforms/0e0d3958174ce91df5bd555cb21e41be/transformed/jetified-ui-tooling/AndroidManifest.xml:24:13-71
+135-->[androidx.compose.ui:ui-tooling-android:1.10.3] /Users/iannjenga/.gradle/caches/8.13/transforms/551ecd3b0438f0dd236487e3cc5be362/transformed/jetified-ui-tooling/AndroidManifest.xml:24:13-71
 136            android:exported="true" />
-136-->[androidx.compose.ui:ui-tooling-android:1.10.1] /Users/iannjenga/.gradle/caches/8.13/transforms/0e0d3958174ce91df5bd555cb21e41be/transformed/jetified-ui-tooling/AndroidManifest.xml:25:13-36
+136-->[androidx.compose.ui:ui-tooling-android:1.10.3] /Users/iannjenga/.gradle/caches/8.13/transforms/551ecd3b0438f0dd236487e3cc5be362/transformed/jetified-ui-tooling/AndroidManifest.xml:25:13-36
 137        <activity
-137-->[androidx.compose.ui:ui-test-manifest:1.10.1] /Users/iannjenga/.gradle/caches/8.13/transforms/a1983a56921f09c689fd53689e53bc87/transformed/jetified-ui-test-manifest-1.10.1/AndroidManifest.xml:23:9-26:79
+137-->[androidx.compose.ui:ui-test-manifest:1.10.3] /Users/iannjenga/.gradle/caches/8.13/transforms/48986843d2dd66fc509f039cdfc67025/transformed/jetified-ui-test-manifest-1.10.3/AndroidManifest.xml:23:9-26:79
 138            android:name="androidx.activity.ComponentActivity"
-138-->[androidx.compose.ui:ui-test-manifest:1.10.1] /Users/iannjenga/.gradle/caches/8.13/transforms/a1983a56921f09c689fd53689e53bc87/transformed/jetified-ui-test-manifest-1.10.1/AndroidManifest.xml:24:13-63
+138-->[androidx.compose.ui:ui-test-manifest:1.10.3] /Users/iannjenga/.gradle/caches/8.13/transforms/48986843d2dd66fc509f039cdfc67025/transformed/jetified-ui-test-manifest-1.10.3/AndroidManifest.xml:24:13-63
 139            android:exported="true"
-139-->[androidx.compose.ui:ui-test-manifest:1.10.1] /Users/iannjenga/.gradle/caches/8.13/transforms/a1983a56921f09c689fd53689e53bc87/transformed/jetified-ui-test-manifest-1.10.1/AndroidManifest.xml:25:13-36
+139-->[androidx.compose.ui:ui-test-manifest:1.10.3] /Users/iannjenga/.gradle/caches/8.13/transforms/48986843d2dd66fc509f039cdfc67025/transformed/jetified-ui-test-manifest-1.10.3/AndroidManifest.xml:25:13-36
 140            android:theme="@android:style/Theme.Material.Light.NoActionBar" />
-140-->[androidx.compose.ui:ui-test-manifest:1.10.1] /Users/iannjenga/.gradle/caches/8.13/transforms/a1983a56921f09c689fd53689e53bc87/transformed/jetified-ui-test-manifest-1.10.1/AndroidManifest.xml:26:13-76
+140-->[androidx.compose.ui:ui-test-manifest:1.10.3] /Users/iannjenga/.gradle/caches/8.13/transforms/48986843d2dd66fc509f039cdfc67025/transformed/jetified-ui-test-manifest-1.10.3/AndroidManifest.xml:26:13-76
 141        <activity
 141-->[com.google.android.libraries.ads.mobile.sdk:ads-mobile-sdk:0.21.0-beta01] /Users/iannjenga/.gradle/caches/8.13/transforms/8e5bc9682ee8fbbcaecd7d6cee534f68/transformed/jetified-ads-mobile-sdk-0.21.0-beta01/AndroidManifest.xml:57:9-62:43
 142            android:name="com.google.android.libraries.ads.mobile.sdk.common.AdActivity"
@@ -305,17 +305,17 @@
 165                android:value="androidx.startup" />
 165-->[androidx.profileinstaller:profileinstaller:1.4.1] /Users/iannjenga/.gradle/caches/8.13/transforms/381e65a76ad07efd660a23004898c539/transformed/jetified-profileinstaller-1.4.1/AndroidManifest.xml:31:17-49
 166            <meta-data
-166-->[com.russhwolf:multiplatform-settings-no-arg-android-debug:1.1.1] /Users/iannjenga/.gradle/caches/8.13/transforms/0cffd82649aebeb09e87558d3448073c/transformed/jetified-multiplatform-settings-no-arg-debug/AndroidManifest.xml:29:13-31:52
-167                android:name="com.russhwolf.settings.SettingsInitializer"
-167-->[com.russhwolf:multiplatform-settings-no-arg-android-debug:1.1.1] /Users/iannjenga/.gradle/caches/8.13/transforms/0cffd82649aebeb09e87558d3448073c/transformed/jetified-multiplatform-settings-no-arg-debug/AndroidManifest.xml:30:17-74
+166-->[com.squareup.okhttp3:okhttp-android:5.3.2] /Users/iannjenga/.gradle/caches/8.13/transforms/e1d9fc287097a6908104826d1cec3d18/transformed/jetified-okhttp-release/AndroidManifest.xml:16:13-18:52
+167                android:name="okhttp3.internal.platform.PlatformInitializer"
+167-->[com.squareup.okhttp3:okhttp-android:5.3.2] /Users/iannjenga/.gradle/caches/8.13/transforms/e1d9fc287097a6908104826d1cec3d18/transformed/jetified-okhttp-release/AndroidManifest.xml:17:17-77
 168                android:value="androidx.startup" />
-168-->[com.russhwolf:multiplatform-settings-no-arg-android-debug:1.1.1] /Users/iannjenga/.gradle/caches/8.13/transforms/0cffd82649aebeb09e87558d3448073c/transformed/jetified-multiplatform-settings-no-arg-debug/AndroidManifest.xml:31:17-49
+168-->[com.squareup.okhttp3:okhttp-android:5.3.2] /Users/iannjenga/.gradle/caches/8.13/transforms/e1d9fc287097a6908104826d1cec3d18/transformed/jetified-okhttp-release/AndroidManifest.xml:18:17-49
 169            <meta-data
-169-->[com.squareup.okhttp3:okhttp-android:5.3.2] /Users/iannjenga/.gradle/caches/8.13/transforms/e1d9fc287097a6908104826d1cec3d18/transformed/jetified-okhttp-release/AndroidManifest.xml:16:13-18:52
-170                android:name="okhttp3.internal.platform.PlatformInitializer"
-170-->[com.squareup.okhttp3:okhttp-android:5.3.2] /Users/iannjenga/.gradle/caches/8.13/transforms/e1d9fc287097a6908104826d1cec3d18/transformed/jetified-okhttp-release/AndroidManifest.xml:17:17-77
+169-->[com.russhwolf:multiplatform-settings-no-arg-android-debug:1.1.1] /Users/iannjenga/.gradle/caches/8.13/transforms/0cffd82649aebeb09e87558d3448073c/transformed/jetified-multiplatform-settings-no-arg-debug/AndroidManifest.xml:29:13-31:52
+170                android:name="com.russhwolf.settings.SettingsInitializer"
+170-->[com.russhwolf:multiplatform-settings-no-arg-android-debug:1.1.1] /Users/iannjenga/.gradle/caches/8.13/transforms/0cffd82649aebeb09e87558d3448073c/transformed/jetified-multiplatform-settings-no-arg-debug/AndroidManifest.xml:30:17-74
 171                android:value="androidx.startup" />
-171-->[com.squareup.okhttp3:okhttp-android:5.3.2] /Users/iannjenga/.gradle/caches/8.13/transforms/e1d9fc287097a6908104826d1cec3d18/transformed/jetified-okhttp-release/AndroidManifest.xml:18:17-49
+171-->[com.russhwolf:multiplatform-settings-no-arg-android-debug:1.1.1] /Users/iannjenga/.gradle/caches/8.13/transforms/0cffd82649aebeb09e87558d3448073c/transformed/jetified-multiplatform-settings-no-arg-debug/AndroidManifest.xml:31:17-49
 172        </provider>
 173        <!--
 174        Service for holding metadata. Cannot be instantiated.

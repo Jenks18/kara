@@ -84,6 +84,7 @@
     <string msgid="8403354765404029791" name="m3c_bottom_sheet_drag_handle_description">"Surish dastagi"</string>
     <string msgid="6670819569745899763" name="m3c_bottom_sheet_expand_description">"Quyi ekranni yoyish"</string>
     <string msgid="3010635850035863127" name="m3c_bottom_sheet_pane_title">"Quyi ekran"</string>
+    <string msgid="3990875819916144919" name="m3c_button_group_more_options">"Yana"</string>
     <string msgid="8166741421776570875" name="m3c_date_input_headline">"Kiritilgan sana"</string>
     <string msgid="229313757840775812" name="m3c_date_input_headline_description">"Kiritilgan sana: %1$s"</string>
     <string msgid="6116910750161463197" name="m3c_date_input_invalid_for_pattern">"Sana mavjud namunaga mos kelmaydi: %1$s"</string>
@@ -121,6 +122,7 @@
     <string msgid="8687821690726149911" name="m3c_dropdown_menu_toggle">"Pastga ochiluvchi menyuni koʻrsatish/yashirish"</string>
     <string msgid="6072492480528318635" name="m3c_floating_toolbar_collapse">"Asboblar panelini yopish"</string>
     <string msgid="6880757017246780255" name="m3c_floating_toolbar_expand">"Asboblar panelini yoyish"</string>
+    <string msgid="5546418917311349543" name="m3c_floating_toolbar_more_options">"Yana"</string>
     <string msgid="6152806324422087846" name="m3c_search_bar_search">"Qidiruv"</string>
     <string msgid="6152755701819882931" name="m3c_snackbar_dismiss">"Yopish"</string>
     <string msgid="3868801555855510515" name="m3c_snackbar_pane_title">"Signal"</string>
