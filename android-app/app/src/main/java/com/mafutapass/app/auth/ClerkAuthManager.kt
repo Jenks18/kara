@@ -28,7 +28,8 @@ data class AuthResult(
     val emailAddressId: String? = null,
     val userId: String? = null,
     val email: String? = null,
-    val signInToken: String? = null
+    val signInToken: String? = null,
+    val sessionToken: String? = null
 )
 
 object ClerkAuthManager {
@@ -586,14 +587,14 @@ object ClerkAuthManager {
                 
                 if (responseJson.getBoolean("success")) {
                     val userId = responseJson.getString("userId")
-                    val signInToken = responseJson.optString("signInToken", null)
+                    val sessionToken = responseJson.optString("sessionToken", null)
                     
-                    Log.d(TAG, "✅ Backend sign-up successful! userId=$userId, signInToken=${if(signInToken != null) "received" else "none"}")
+                    Log.d(TAG, "✅ Backend sign-up successful! userId=$userId, sessionToken=${if(sessionToken != null) "received" else "none"}")
                     
                     AuthResult(
                         success = true,
                         userId = userId,
-                        signInToken = signInToken,
+                        sessionToken = sessionToken,
                         email = email
                     )
                 } else {

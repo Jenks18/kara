@@ -48,33 +48,15 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
                     return@launch
                 }
                 
-                // Get sign-in token from sign-up result
-                val signInToken = result.signInToken
-                if (signInToken == null) {
-                    Log.e("SignUpViewModel", "❌ No sign-in token received")
-                    _uiState.value = SignUpUiState.Error("Account created. Please sign in manually.")
-                    return@launch
-                }
-                
-                Log.d("SignUpViewModel", "✅ Account created! Exchanging sign-in token...")
-                
-                // Exchange sign-in token for session JWT (industry best practice)
-                val tokenExchangeResult = ClerkAuthManager.exchangeSignInToken(signInToken)
-                
-                if (!tokenExchangeResult.success) {
-                    Log.e("SignUpViewModel", "❌ Token exchange failed: ${tokenExchangeResult.error}")
-                    _uiState.value = SignUpUiState.Error("Account created. Please sign in manually.")
-                    return@launch
-                }
-                
-                val token = tokenExchangeResult.token
+                // Get session token directly from backend (no exchange needed - bypasses Cloudflare)
+                val token = result.sessionToken
                 if (token == null) {
-                    Log.e("SignUpViewModel", "❌ No JWT token after exchange")
+                    Log.e("SignUpViewModel", "❌ No session token received")
                     _uiState.value = SignUpUiState.Error("Account created. Please sign in manually.")
                     return@launch
                 }
                 
-                Log.d("SignUpViewModel", "✅ JWT token obtained! Creating profile...")
+                Log.d("SignUpViewModel", "✅ Account created with session! Creating profile...")
                 
                 // Create Supabase profile in background
                 createSupabaseProfile(token, email, username, firstName, lastName)

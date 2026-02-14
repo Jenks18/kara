@@ -43,22 +43,34 @@ export async function POST(req: NextRequest) {
     console.log('✅ User created:', clerkUser.id);
     console.log('📧 Email auto-verified by Backend SDK (no verification flow needed)');
 
-    // Create a sign-in token for immediate authentication (industry best practice)
-    // This is a single-use token that the client can exchange for a session
-    console.log('🔑 Creating sign-in token for immediate authentication...');
-    const signInToken = await client.signInTokens.createSignInToken({
+    // Create a session directly using Backend SDK (bypasses Cloudflare-protected Frontend API)
+    console.log('🔑 Creating session directly for immediate authentication...');
+    const session = await client.sessions.createSession({
       userId: clerkUser.id,
-      expiresInSeconds: 300, // 5 minutes - single use
+      // No need to specify actor - backend creates session on user's behalf
     });
     
-    console.log('✅ Sign-in token created successfully');
+    console.log('✅ Session created successfully:', session.id);
+    
+    // Get the session token (JWT)
+    const sessionToken = session.lastActiveToken?.jwt;
+    
+    if (!sessionToken) {
+      console.error('❌ No JWT token in session');
+      return NextResponse.json(
+        { error: 'Failed to create session token' },
+        { status: 500, headers: corsHeaders }
+      );
+    }
+    
+    console.log('✅ Session JWT obtained - user can authenticate immediately');
 
     return NextResponse.json(
       {
         success: true,
         userId: clerkUser.id,
         email: email,
-        signInToken: signInToken.token,
+        sessionToken: sessionToken,
         message: 'Account created successfully'
       },
       { status: 200, headers: corsHeaders }

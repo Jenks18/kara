@@ -1,0 +1,26 @@
+⏰ REMINDER FOR FEBRUARY 14, 2026:
+
+🔒 MAKE KARA REPOSITORY PRIVATE
+================================
+
+STEPS:
+1. Go to: https://github.com/Jenks18/kara/settings
+2. Scroll to "Danger Zone" section
+3. Click "Change visibility"
+4. Select "Make private"
+5. Confirm the change
+
+✅ VERCEL WILL STILL WORK
+- GitHub integration will continue
+- Auto-deploys will still trigger
+- No config changes needed
+
+✅ CURRENT STATUS:
+- All sensitive .md files already deleted from local
+- Files were never in git history (*.md in .gitignore)
+- Ready to make private
+
+⏳ WAITING FOR:
+- Vercel deployment limit to reset (resets ~3 hours from now: Feb 13, 2026 ~2:00 PM)
+- Backend exchange-token endpoint to deploy
+- Then test sign-up flow in Android app
