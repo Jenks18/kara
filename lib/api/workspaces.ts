@@ -1,4 +1,4 @@
-import { supabaseAdmin, isAdminConfigured } from '../supabase/admin'
+import { createServerClient } from '../supabase/server-client'
 
 export interface Workspace {
   id: string
@@ -24,17 +24,14 @@ export interface CreateWorkspaceInput {
 }
 
 /**
- * Create a new workspace
+ * Create a new workspace (RLS-enforced via Clerk JWT)
  */
 export async function createWorkspace(
   data: CreateWorkspaceInput
 ): Promise<{ success: boolean; workspace?: Workspace; error?: string }> {
-  if (!isAdminConfigured) {
-    return { success: false, error: 'Supabase not configured' }
-  }
-
   try {
-    const { data: workspace, error } = await supabaseAdmin
+    const supabase = await createServerClient()
+    const { data: workspace, error } = await supabase
       .from('workspaces')
       .insert({
         user_id: data.userId,
@@ -59,20 +56,16 @@ export async function createWorkspace(
 }
 
 /**
- * Get all workspaces for a user
+ * Get all workspaces for the authenticated user (RLS-enforced)
  */
 export async function getWorkspaces(
   userId: string
 ): Promise<Workspace[]> {
-  if (!isAdminConfigured) {
-    return []
-  }
-
   try {
-    const { data, error } = await supabaseAdmin
+    const supabase = await createServerClient()
+    const { data, error } = await supabase
       .from('workspaces')
       .select('*')
-      .eq('user_id', userId)
       .eq('is_active', true)
       .order('created_at', { ascending: false })
 
@@ -89,22 +82,18 @@ export async function getWorkspaces(
 }
 
 /**
- * Get a single workspace by ID
+ * Get a single workspace by ID (RLS-enforced — only returns if user owns it)
  */
 export async function getWorkspace(
   workspaceId: string,
   userId: string
 ): Promise<Workspace | null> {
-  if (!isAdminConfigured) {
-    return null
-  }
-
   try {
-    const { data, error } = await supabaseAdmin
+    const supabase = await createServerClient()
+    const { data, error } = await supabase
       .from('workspaces')
       .select('*')
       .eq('id', workspaceId)
-      .eq('user_id', userId)
       .single()
 
     if (error) {
@@ -120,32 +109,22 @@ export async function getWorkspace(
 }
 
 /**
- * Update a workspace
+ * Update a workspace (RLS-enforced)
  */
 export async function updateWorkspace(
   workspaceId: string,
   userId: string,
   updates: Partial<Pick<Workspace, 'name' | 'avatar' | 'currency' | 'currency_symbol' | 'description' | 'address' | 'plan_type'>>
 ): Promise<{ success: boolean; workspace?: Workspace; error?: string }> {
-  if (!isAdminConfigured) {
-    return { success: false, error: 'Supabase not configured' }
-  }
-
   try {
-    // First verify the workspace belongs to the user
-    const existing = await getWorkspace(workspaceId, userId)
-    if (!existing) {
-      return { success: false, error: 'Workspace not found or access denied' }
-    }
-
-    const { data, error } = await supabaseAdmin
+    const supabase = await createServerClient()
+    const { data, error } = await supabase
       .from('workspaces')
       .update({
         ...updates,
         updated_at: new Date().toISOString(),
       })
       .eq('id', workspaceId)
-      .eq('user_id', userId)
       .select()
       .single()
 
@@ -162,22 +141,18 @@ export async function updateWorkspace(
 }
 
 /**
- * Delete a workspace (soft delete by setting is_active to false)
+ * Delete a workspace — soft delete (RLS-enforced)
  */
 export async function deleteWorkspace(
   workspaceId: string,
   userId: string
 ): Promise<{ success: boolean; error?: string }> {
-  if (!isAdminConfigured) {
-    return { success: false, error: 'Supabase not configured' }
-  }
-
   try {
-    const { error } = await supabaseAdmin
+    const supabase = await createServerClient()
+    const { error } = await supabase
       .from('workspaces')
       .update({ is_active: false })
       .eq('id', workspaceId)
-      .eq('user_id', userId)
 
     if (error) {
       console.error('Error deleting workspace:', error)

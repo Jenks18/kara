@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { verifyAndExtractUser } from '@/lib/auth/mobile-auth';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -8,18 +9,20 @@ const supabase = createClient(
 
 /**
  * Mobile-specific endpoint to exchange Clerk sign-in token for Supabase JWT
- * This allows mobile apps to access Supabase data while Clerk tracks users
+ * Requires a valid Clerk JWT in the Authorization header.
  */
 export async function POST(request: NextRequest) {
   try {
-    const { token, userId, email } = await request.json();
-    
-    if (!token || !userId || !email) {
+    // Verify the Clerk JWT signature before doing anything
+    const verifiedUser = await verifyAndExtractUser(request);
+    if (!verifiedUser) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
+        { error: 'Invalid or missing authorization token' },
+        { status: 401 }
       );
     }
+
+    const { userId, email } = verifiedUser;
 
     // Generate a Supabase JWT for this user
     // The JWT will have the user's Clerk ID so RLS policies work correctly

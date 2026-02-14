@@ -11,12 +11,11 @@ const isPublicRoute = createRouteMatcher([
   '/api/auth/create-profile(.*)', // Profile creation after email verification
   '/api/auth/mobile-signup(.*)', // Backend sign-up (bypasses CAPTCHA)
   '/api/auth/mobile-signin(.*)', // Backend sign-in (handles email verification)
-  '/api/auth/mobile-profile(.*)', // Mobile profile fetch/update
+  '/api/auth/mobile-profile(.*)', // Mobile profile fetch/update (auth'd via Bearer token)
   '/api/auth/exchange-token(.*)', // Backend proxy for token exchange (bypasses Cloudflare)
-  '/api/auth/verify-token(.*)',
-  '/api/user-profile(.*)', // Profile API for mobile
-  '/api/update-username(.*)', // Username update for mobile
-  '/api/mobile/(.*)', // Mobile-specific API routes
+  '/api/user-profile(.*)', // Profile API (init + OPTIONS)
+  '/api/update-username(.*)', // Username update (auth'd via Clerk session)
+  '/api/mobile/(.*)', // Mobile-specific API routes (auth'd via Bearer token)
 ])
 
 export default clerkMiddleware(

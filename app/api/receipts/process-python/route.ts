@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import path from 'path';
@@ -7,6 +8,11 @@ const execAsync = promisify(exec);
 
 export async function POST(req: NextRequest) {
   try {
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { imageData } = await req.json();
 
     if (!imageData) {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { clerkClient } from '@clerk/nextjs/server';
+import { auth, clerkClient } from '@clerk/nextjs/server';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,31 +13,36 @@ export async function OPTIONS() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, username } = await request.json();
-
-    if (!userId || !username) {
+    // Authenticate: only the signed-in user can update their own username
+    const { userId: authUserId } = await auth();
+    if (!authUserId) {
       return NextResponse.json(
-        { error: 'Missing userId or username' },
+        { error: 'Unauthorized' },
+        { status: 401, headers: corsHeaders }
+      );
+    }
+
+    const { username } = await request.json();
+
+    if (!username) {
+      return NextResponse.json(
+        { error: 'Missing username' },
         { status: 400, headers: corsHeaders }
       );
     }
 
-    console.log(`📝 Updating username for user ${userId} to: ${username}`);
-
-    // Update username in Clerk
+    // Only allow updating YOUR OWN username
     const client = await clerkClient();
-    await client.users.updateUser(userId, {
+    await client.users.updateUser(authUserId, {
       username: username,
     });
-
-    console.log('✅ Username updated successfully');
 
     return NextResponse.json(
       { success: true, username },
       { headers: corsHeaders }
     );
   } catch (error: any) {
-    console.error('❌ Error updating username:', error);
+    console.error('Error updating username:', error);
     return NextResponse.json(
       { error: 'Failed to update username', details: error.message },
       { status: 500, headers: corsHeaders }
