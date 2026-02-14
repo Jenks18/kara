@@ -18,13 +18,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import com.mafutapass.app.ui.theme.*
 import com.mafutapass.app.util.DateUtils
 import kotlinx.coroutines.Dispatchers
@@ -37,11 +34,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
-data class AvatarOption(
-    val emoji: String,
-    val gradient: List<Color>,
-    val label: String
-)
+data class AvatarOption(val emoji: String, val gradient: List<Color>, val label: String)
 
 val AVATAR_OPTIONS = listOf(
     AvatarOption("\uD83D\uDC3B", listOf(Color(0xFFB45309), Color(0xFF92400E)), "Bear"),
@@ -78,6 +71,7 @@ val AVATAR_OPTIONS = listOf(
 @Composable
 fun ProfileScreen(
     onBack: () -> Unit,
+    refreshTrigger: Int = 0,
     onNavigateToEditDisplayName: () -> Unit = {},
     onNavigateToEditLegalName: () -> Unit = {},
     onNavigateToEditPhoneNumber: () -> Unit = {},
@@ -90,172 +84,104 @@ fun ProfileScreen(
 
     var showAvatarPicker by remember { mutableStateOf(false) }
     var selectedAvatar by remember { mutableStateOf(AVATAR_OPTIONS[0]) }
-    var isLoading by remember { mutableStateOf(true) }
-
-    // Profile fields
-    var displayName by remember { mutableStateOf("") }
-    var userEmail by remember { mutableStateOf("") }
-    var phoneNumber by remember { mutableStateOf("") }
-    var dateOfBirth by remember { mutableStateOf("") }
-    var legalName by remember { mutableStateOf("") }
-    var address by remember { mutableStateOf("") }
-
     val coroutineScope = rememberCoroutineScope()
 
-    // Lifecycle-aware refresh key: increments every time this screen resumes
-    // (i.e. when navigating back from edit screens)
-    var refreshKey by remember { mutableIntStateOf(0) }
-    val lifecycleOwner = LocalLifecycleOwner.current
+    // Instant display from cached SharedPreferences — no loading spinner
+    var displayName by remember { mutableStateOf(prefs.getString("cached_display_name", null) ?: "") }
+    var userEmail by remember { mutableStateOf(prefs.getString("user_email", null) ?: "") }
+    var phoneNumber by remember { mutableStateOf(prefs.getString("cached_phone", null) ?: "") }
+    var dateOfBirth by remember { mutableStateOf(prefs.getString("cached_dob", null) ?: "") }
+    var legalName by remember { mutableStateOf(prefs.getString("cached_legal_name", null) ?: "") }
+    var address by remember { mutableStateOf(prefs.getString("cached_address", null) ?: "") }
 
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                refreshKey++
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
+    // Restore cached avatar
+    LaunchedEffect(Unit) {
+        val cachedEmoji = prefs.getString("avatar_emoji", null)
+        if (cachedEmoji != null) {
+            AVATAR_OPTIONS.find { it.emoji == cachedEmoji }?.let { selectedAvatar = it }
         }
     }
 
-    // Fetch profile data — runs on first ON_RESUME and every subsequent resume
-    LaunchedEffect(refreshKey) {
-        if (sessionToken != null && refreshKey > 0) {
+    // Fetch from API in background — keyed on refreshTrigger
+    LaunchedEffect(refreshTrigger) {
+        if (sessionToken != null) {
             try {
-                val result = withContext(Dispatchers.IO) {
-                    fetchProfileData(sessionToken)
-                }
+                val result = withContext(Dispatchers.IO) { fetchProfileData(sessionToken) }
                 if (result != null) {
                     val clerk = result.optJSONObject("clerk")
                     val profile = result.optJSONObject("profile")
+                    fun JSONObject.s(k: String): String { val v = optString(k, ""); return if (v == "null" || v.isBlank()) "" else v }
 
-                    fun JSONObject.safeString(key: String): String {
-                        val v = optString(key, "")
-                        return if (v == "null" || v.isBlank()) "" else v
-                    }
-
-                    displayName = profile?.safeString("display_name")?.ifEmpty { null }
-                        ?: clerk?.safeString("fullName")?.ifEmpty { null }
-                        ?: ""
-
-                    userEmail = clerk?.safeString("email") ?: ""
-                    phoneNumber = profile?.safeString("phone_number") ?: ""
-                    dateOfBirth = profile?.safeString("date_of_birth") ?: ""
-
-                    val legalFirst = profile?.safeString("legal_first_name") ?: ""
-                    val legalLast = profile?.safeString("legal_last_name") ?: ""
-                    legalName = listOf(legalFirst, legalLast).filter { it.isNotEmpty() }.joinToString(" ")
-
-                    val addressLine1 = profile?.safeString("address_line1") ?: ""
-                    val city = profile?.safeString("city") ?: ""
-                    val state = profile?.safeString("state") ?: ""
-                    val zipCode = profile?.safeString("zip_code") ?: ""
+                    displayName = profile?.s("display_name")?.ifEmpty { null } ?: clerk?.s("fullName")?.ifEmpty { null } ?: ""
+                    userEmail = clerk?.s("email") ?: ""
+                    phoneNumber = profile?.s("phone_number") ?: ""
+                    dateOfBirth = profile?.s("date_of_birth") ?: ""
+                    val lf = profile?.s("legal_first_name") ?: ""; val ll = profile?.s("legal_last_name") ?: ""
+                    legalName = listOf(lf, ll).filter { it.isNotEmpty() }.joinToString(" ")
                     address = listOfNotNull(
-                        addressLine1.ifEmpty { null },
-                        city.ifEmpty { null },
-                        state.ifEmpty { null },
-                        zipCode.ifEmpty { null }
+                        profile?.s("address_line1")?.ifEmpty { null },
+                        profile?.s("city")?.ifEmpty { null },
+                        profile?.s("state")?.ifEmpty { null },
+                        profile?.s("zip_code")?.ifEmpty { null }
                     ).joinToString(", ")
+                    val emoji = profile?.s("avatar_emoji")?.ifEmpty { null }
+                    if (emoji != null) AVATAR_OPTIONS.find { it.emoji == emoji }?.let { selectedAvatar = it }
 
-                    val avatarEmoji = profile?.safeString("avatar_emoji")?.ifEmpty { null }
-                    if (avatarEmoji != null) {
-                        AVATAR_OPTIONS.find { it.emoji == avatarEmoji }?.let {
-                            selectedAvatar = it
-                        }
-                    }
-
-                    // Cache for bottom nav and account screen
+                    // Cache everything for instant display next time
                     prefs.edit()
                         .putString("cached_display_name", displayName)
-                        .putString("avatar_emoji", avatarEmoji ?: selectedAvatar.emoji)
+                        .putString("avatar_emoji", emoji ?: selectedAvatar.emoji)
+                        .putString("cached_phone", phoneNumber)
+                        .putString("cached_dob", dateOfBirth)
+                        .putString("cached_legal_name", legalName)
+                        .putString("cached_address", address)
                         .apply()
                 }
             } catch (e: Exception) {
-                android.util.Log.e("ProfileScreen", "Error fetching profile: ${e.message}")
+                android.util.Log.e("ProfileScreen", "Fetch error: ${e.message}")
             }
-            isLoading = false
-        } else if (sessionToken == null) {
-            isLoading = false
         }
     }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(Emerald50, Green50, Emerald100)
-                )
-            )
+        modifier = Modifier.fillMaxSize()
+            .background(brush = Brush.verticalGradient(listOf(Emerald50, Green50, Emerald100)))
     ) {
-        // Header — flush, no extra padding
         TopAppBar(
             title = {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Icon(Icons.Filled.Person, null, tint = Emerald600)
                     Text("Profile", fontWeight = FontWeight.Bold)
                 }
             },
-            navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.Filled.ArrowBack, "Back")
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+            navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, "Back") } },
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White),
+            windowInsets = WindowInsets(0, 0, 0, 0)
         )
 
-        if (isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Emerald600)
-            }
-        } else {
         LazyColumn(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // --- PUBLIC SECTION ---
             item {
                 Column(modifier = Modifier.padding(bottom = 2.dp)) {
                     Text("Public", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = Gray900)
-                    Text("These details are displayed on your public profile. Anyone can see them.", style = MaterialTheme.typography.bodySmall, color = Gray500)
+                    Text("These details are displayed on your public profile.", style = MaterialTheme.typography.bodySmall, color = Gray500)
                 }
             }
 
-            // Avatar — large centered circle like webapp, tap to change, NO label text
+            // Avatar — large centered, no label text
             item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    contentAlignment = Alignment.Center
-                ) {
+                Box(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
                     Box(contentAlignment = Alignment.BottomEnd) {
-                        // Large avatar circle
                         Box(
-                            modifier = Modifier
-                                .size(120.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    brush = Brush.verticalGradient(selectedAvatar.gradient)
-                                )
+                            modifier = Modifier.size(120.dp).clip(CircleShape)
+                                .background(brush = Brush.verticalGradient(selectedAvatar.gradient))
                                 .clickable { showAvatarPicker = true },
                             contentAlignment = Alignment.Center
-                        ) {
-                            Text(selectedAvatar.emoji, fontSize = 56.sp)
-                        }
-                        // Camera edit button overlay
-                        Surface(
-                            shape = CircleShape,
-                            color = Emerald600,
-                            shadowElevation = 4.dp,
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clickable { showAvatarPicker = true }
-                        ) {
+                        ) { Text(selectedAvatar.emoji, fontSize = 56.sp) }
+                        Surface(shape = CircleShape, color = Emerald600, shadowElevation = 4.dp,
+                            modifier = Modifier.size(36.dp).clickable { showAvatarPicker = true }) {
                             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                                 Icon(Icons.Filled.Edit, "Change avatar", tint = Color.White, modifier = Modifier.size(18.dp))
                             }
@@ -264,109 +190,49 @@ fun ProfileScreen(
                 }
             }
 
-            // Display name — clean tile, no chevron
-            item {
-                ProfileField(label = "Display name", value = displayName.ifEmpty { "Not set" }) {
-                    onNavigateToEditDisplayName()
-                }
-            }
+            item { ProfileField("Display name", displayName.ifEmpty { "Not set" }) { onNavigateToEditDisplayName() } }
+            item { ProfileField("Contact methods", userEmail.ifEmpty { "Not set" }) { } }
 
-            // Contact methods (read-only)
-            item {
-                ProfileField(label = "Contact methods", value = userEmail.ifEmpty { "Not set" }) { }
-            }
-
-            // --- PRIVATE SECTION ---
             item {
                 Column(modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)) {
                     Text("Private", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = Gray900)
-                    Text("These details are used for travel and payments. They're never shown on your public profile.", style = MaterialTheme.typography.bodySmall, color = Gray500)
+                    Text("These details are used for travel and payments.", style = MaterialTheme.typography.bodySmall, color = Gray500)
                 }
             }
 
-            item {
-                ProfileField(label = "Legal name", value = legalName.ifEmpty { "Not set" }) {
-                    onNavigateToEditLegalName()
-                }
-            }
-
-            item {
-                ProfileField(label = "Date of birth", value = if (dateOfBirth.isNotEmpty()) DateUtils.formatFull(dateOfBirth) else "Not set") {
-                    onNavigateToEditDateOfBirth()
-                }
-            }
-
-            item {
-                ProfileField(label = "Phone number", value = phoneNumber.ifEmpty { "Not set" }) {
-                    onNavigateToEditPhoneNumber()
-                }
-            }
-
-            item {
-                ProfileField(label = "Address", value = address.ifEmpty { "Not set" }) {
-                    onNavigateToEditAddress()
-                }
-            }
-
+            item { ProfileField("Legal name", legalName.ifEmpty { "Not set" }) { onNavigateToEditLegalName() } }
+            item { ProfileField("Date of birth", if (dateOfBirth.isNotEmpty()) DateUtils.formatFull(dateOfBirth) else "Not set") { onNavigateToEditDateOfBirth() } }
+            item { ProfileField("Phone number", phoneNumber.ifEmpty { "Not set" }) { onNavigateToEditPhoneNumber() } }
+            item { ProfileField("Address", address.ifEmpty { "Not set" }) { onNavigateToEditAddress() } }
             item { Spacer(Modifier.height(8.dp)) }
-        }
         }
     }
 
-    // Avatar Picker Dialog — grid only, no labels
+    // Avatar picker dialog
     if (showAvatarPicker) {
         Dialog(onDismissRequest = { showAvatarPicker = false }) {
-            Surface(
-                shape = RoundedCornerShape(24.dp),
-                color = Color.White,
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            Surface(shape = RoundedCornerShape(24.dp), color = Color.White, modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(20.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Text("Edit profile picture", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                        IconButton(onClick = { showAvatarPicker = false }) {
-                            Icon(Icons.Filled.Close, "Close")
-                        }
+                        IconButton(onClick = { showAvatarPicker = false }) { Icon(Icons.Filled.Close, "Close") }
                     }
                     Text("Choose a custom avatar", style = MaterialTheme.typography.bodySmall, color = Gray500)
                     Spacer(Modifier.height(16.dp))
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(5),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                        modifier = Modifier.height(340.dp)
-                    ) {
+                    LazyVerticalGrid(columns = GridCells.Fixed(5), horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.height(340.dp)) {
                         items(AVATAR_OPTIONS) { option ->
                             Box(
-                                modifier = Modifier
-                                    .aspectRatio(1f)
-                                    .clip(CircleShape)
+                                modifier = Modifier.aspectRatio(1f).clip(CircleShape)
                                     .background(brush = Brush.verticalGradient(option.gradient))
-                                    .then(
-                                        if (selectedAvatar.emoji == option.emoji)
-                                            Modifier.padding(3.dp)
-                                        else Modifier
-                                    )
+                                    .then(if (selectedAvatar.emoji == option.emoji) Modifier.padding(3.dp) else Modifier)
                                     .clickable {
-                                        selectedAvatar = option
-                                        showAvatarPicker = false
-                                        // Save to backend
-                                        if (sessionToken != null) {
-                                            coroutineScope.launch(Dispatchers.IO) {
-                                                saveAvatarToBackend(sessionToken, option.emoji)
-                                            }
-                                        }
-                                        // Cache locally for instant feedback
+                                        selectedAvatar = option; showAvatarPicker = false
+                                        if (sessionToken != null) { coroutineScope.launch(Dispatchers.IO) { saveAvatarToBackend(sessionToken, option.emoji) } }
                                         prefs.edit().putString("avatar_emoji", option.emoji).apply()
                                     },
                                 contentAlignment = Alignment.Center
-                            ) {
-                                Text(option.emoji, fontSize = 28.sp)
-                            }
+                            ) { Text(option.emoji, fontSize = 28.sp) }
                         }
                     }
                 }
@@ -376,49 +242,22 @@ fun ProfileScreen(
 }
 
 @Composable
-fun ProfileField(
-    label: String,
-    value: String,
-    onClick: () -> Unit
-) {
-    Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = Color.White,
-        shadowElevation = 1.dp,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-    ) {
-        Column(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth()
-        ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodySmall,
-                color = Gray500
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = value,
-                style = MaterialTheme.typography.titleMedium,
-                color = if (value == "Not set") Gray500 else Gray900
-            )
+fun ProfileField(label: String, value: String, onClick: () -> Unit) {
+    Surface(shape = RoundedCornerShape(12.dp), color = Color.White, shadowElevation = 1.dp,
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+        Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
+            Text(label, style = MaterialTheme.typography.bodySmall, color = Emerald600)
+            Spacer(Modifier.height(4.dp))
+            Text(value, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium,
+                color = if (value == "Not set") Gray400 else Gray800)
         }
     }
 }
 
 internal fun fetchProfileData(token: String): JSONObject? {
-    val client = OkHttpClient.Builder()
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
-        .build()
-    val request = Request.Builder()
-        .url("https://www.mafutapass.com/api/auth/mobile-profile")
-        .get()
-        .addHeader("Authorization", "Bearer $token")
-        .build()
+    val client = OkHttpClient.Builder().connectTimeout(10, TimeUnit.SECONDS).readTimeout(10, TimeUnit.SECONDS).build()
+    val request = Request.Builder().url("https://www.mafutapass.com/api/auth/mobile-profile")
+        .get().addHeader("Authorization", "Bearer $token").build()
     val response = client.newCall(request).execute()
     val body = response.body?.string() ?: return null
     if (!response.isSuccessful) return null
@@ -427,19 +266,11 @@ internal fun fetchProfileData(token: String): JSONObject? {
 
 internal fun saveAvatarToBackend(token: String, emoji: String) {
     try {
-        val client = OkHttpClient.Builder()
-            .connectTimeout(15, TimeUnit.SECONDS)
-            .readTimeout(15, TimeUnit.SECONDS)
-            .build()
+        val client = OkHttpClient.Builder().connectTimeout(10, TimeUnit.SECONDS).readTimeout(10, TimeUnit.SECONDS).build()
         val json = JSONObject().apply { put("avatar_emoji", emoji) }
-        val requestBody = json.toString().toRequestBody("application/json".toMediaType())
-        val request = Request.Builder()
-            .url("https://www.mafutapass.com/api/auth/mobile-profile")
-            .patch(requestBody)
-            .addHeader("Authorization", "Bearer $token")
-            .build()
+        val rb = json.toString().toRequestBody("application/json".toMediaType())
+        val request = Request.Builder().url("https://www.mafutapass.com/api/auth/mobile-profile")
+            .patch(rb).addHeader("Authorization", "Bearer $token").build()
         client.newCall(request).execute()
-    } catch (e: Exception) {
-        android.util.Log.e("ProfileScreen", "Error saving avatar: ${e.message}")
-    }
+    } catch (e: Exception) { android.util.Log.e("ProfileScreen", "Avatar save error: ${e.message}") }
 }

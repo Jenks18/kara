@@ -27,189 +27,41 @@ import com.mafutapass.app.ui.theme.*
 @Composable
 fun AboutScreen(onBack: () -> Unit) {
     val context = LocalContext.current
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(Emerald50, Green50, Emerald100)
-                )
-            )
-    ) {
-        // Header
+    Column(modifier = Modifier.fillMaxSize().background(brush = Brush.verticalGradient(listOf(Emerald50, Green50, Emerald100)))) {
         TopAppBar(
-            title = {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Info,
-                        contentDescription = null,
-                        tint = Emerald600
-                    )
-                    Text("About", fontWeight = FontWeight.Bold)
-                }
-            },
-            navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        imageVector = Icons.Filled.ArrowBack,
-                        contentDescription = "Back"
-                    )
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = Color.White
-            )
-        )
-        
-        // Content
-        LazyColumn(
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
+            title = { Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) { Icon(Icons.Filled.Info, null, tint = Emerald600); Text("About", fontWeight = FontWeight.Bold) } },
+            navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, "Back") } },
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White),
+            windowInsets = WindowInsets(0, 0, 0, 0))
+        LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            item { Text("v1.0.0", style = MaterialTheme.typography.bodySmall, color = Gray500, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) }
             item {
-                Text(
-                    text = "v1.0.0",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Gray500,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center
-                )
-            }
-            
-            item {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color.White,
-                    shadowElevation = 1.dp,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(
-                            text = "About MafutaPass",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Gray900
-                        )
-                        Text(
-                            text = "MafutaPass is a fuel expense tracking app built for Kenyan businesses and drivers. Track your fuel expenses, receipts, and mileage all in one place.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Gray600,
-                            lineHeight = MaterialTheme.typography.bodyMedium.lineHeight
-                        )
+                Surface(shape = RoundedCornerShape(12.dp), color = Color.White, shadowElevation = 1.dp, modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("About MafutaPass", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, color = Gray900)
+                        Text("MafutaPass is a fuel expense tracking app built for Kenyan businesses and drivers. Track your fuel expenses, receipts, and mileage all in one place.", style = MaterialTheme.typography.bodyMedium, color = Gray600, lineHeight = MaterialTheme.typography.bodyMedium.lineHeight)
                     }
                 }
             }
-            
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    AboutOption(
-                        icon = Icons.Filled.Link,
-                        label = "App download links",
-                        onClick = {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.mafutapass.com"))
-                            context.startActivity(intent)
-                        },
-                        showExternal = false
-                    )
-                    
-                    AboutOption(
-                        icon = Icons.Filled.Keyboard,
-                        label = "Keyboard shortcuts",
-                        onClick = {
-                            Toast.makeText(context, "No keyboard shortcuts on mobile", Toast.LENGTH_SHORT).show()
-                        },
-                        showExternal = false
-                    )
-                    
-                    AboutOption(
-                        icon = Icons.Filled.Work,
-                        label = "View open jobs",
-                        onClick = {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.mafutapass.com"))
-                            context.startActivity(intent)
-                        },
-                        showExternal = true
-                    )
-                    
-                    AboutOption(
-                        icon = Icons.Filled.BugReport,
-                        label = "Report a bug",
-                        onClick = {
-                            val intent = Intent(Intent.ACTION_SENDTO).apply {
-                                data = Uri.parse("mailto:support@mafutapass.com")
-                                putExtra(Intent.EXTRA_SUBJECT, "Bug Report - MafutaPass Android")
-                            }
-                            context.startActivity(intent)
-                        },
-                        showExternal = false
-                    )
+                    AboutRow(Icons.Filled.Link, "App download links") { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.mafutapass.com"))) }
+                    AboutRow(Icons.Filled.Keyboard, "Keyboard shortcuts") { Toast.makeText(context, "No keyboard shortcuts on mobile", Toast.LENGTH_SHORT).show() }
+                    AboutRow(Icons.Filled.Work, "View open jobs") { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.mafutapass.com"))) }
+                    AboutRow(Icons.Filled.BugReport, "Report a bug") { context.startActivity(Intent(Intent.ACTION_SENDTO).apply { data = Uri.parse("mailto:support@mafutapass.com"); putExtra(Intent.EXTRA_SUBJECT, "Bug Report - MafutaPass Android") }) }
                 }
             }
-            
-            item {
-                Text(
-                    text = "Read the Terms of Service and Privacy.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Gray500,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center
-                )
-            }
+            item { Text("Read the Terms of Service and Privacy.", style = MaterialTheme.typography.bodySmall, color = Gray500, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) }
         }
     }
 }
 
 @Composable
-fun AboutOption(
-    icon: ImageVector,
-    label: String,
-    onClick: () -> Unit,
-    showExternal: Boolean = false
-) {
-    Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = Color.White,
-        shadowElevation = 1.dp,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.weight(1f)
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = label,
-                    tint = Emerald600
-                )
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Gray900,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-            
-            Icon(
-                imageVector = if (showExternal) Icons.Filled.OpenInNew else Icons.Filled.ChevronRight,
-                contentDescription = if (showExternal) "External" else "Navigate",
-                tint = Gray500
-            )
+fun AboutRow(icon: ImageVector, label: String, onClick: () -> Unit) {
+    Surface(shape = RoundedCornerShape(12.dp), color = Color.White, shadowElevation = 1.dp, modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+        Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            Icon(icon, label, tint = Emerald600, modifier = Modifier.size(22.dp))
+            Text(label, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, color = Gray800)
         }
     }
 }

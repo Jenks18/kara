@@ -2,16 +2,11 @@
 
 import { useUser, useClerk } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
 import { useAvatar } from '@/contexts/AvatarContext'
-import { getUserProfile } from '@/lib/api/user-profiles'
 import BottomNav from '@/components/navigation/BottomNav'
-import Card from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
 import { 
   User, 
-  Crown, 
-  Wallet, 
   Settings, 
   Shield, 
   HelpCircle, 
@@ -20,7 +15,6 @@ import {
   Info,
   LogOut,
   ChevronRight,
-  Heart
 } from 'lucide-react'
 
 // Force dynamic rendering to avoid Clerk prerender issues
@@ -31,31 +25,10 @@ export default function AccountPage() {
   const { signOut } = useClerk()
   const { avatar } = useAvatar()
   const router = useRouter()
-  const [displayName, setDisplayName] = useState('')
-  const [displayEmail, setDisplayEmail] = useState('')
 
-  // Load profile data from database
-  useEffect(() => {
-    async function loadProfile() {
-      if (!user?.id) return
-      
-      try {
-        const profile = await getUserProfile(user.id)
-        if (profile) {
-          setDisplayName(profile.display_name || user?.fullName || '')
-        } else {
-          setDisplayName(user?.fullName || '')
-        }
-        setDisplayEmail(user?.emailAddresses[0]?.emailAddress || '')
-      } catch (error) {
-        console.error('Error loading profile:', error)
-        setDisplayName(user?.fullName || '')
-        setDisplayEmail(user?.emailAddresses[0]?.emailAddress || '')
-      }
-    }
-    
-    loadProfile()
-  }, [user?.id, user?.fullName, user?.emailAddresses])
+  // Use Clerk data directly — no extra Supabase fetch needed for account page
+  const displayName = user?.fullName || ''
+  const displayEmail = user?.emailAddresses?.[0]?.emailAddress || ''
 
   const handleSignOut = async () => {
     await signOut({ redirectUrl: '/sign-in' })

@@ -1,5 +1,6 @@
 package com.mafutapass.app.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mafutapass.app.ui.theme.*
@@ -27,162 +29,70 @@ import java.util.concurrent.TimeUnit
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditLegalNameScreen(onBack: () -> Unit) {
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
     val prefs = context.getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
     val sessionToken = prefs.getString("session_token", null)
-
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(true) }
     var isSaving by remember { mutableStateOf(false) }
-    val coroutineScope = rememberCoroutineScope()
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(sessionToken) {
         if (sessionToken != null) {
             try {
-                val result = withContext(Dispatchers.IO) { fetchProfileData(sessionToken) }
-                if (result != null) {
-                    val profile = result.optJSONObject("profile")
-                    fun JSONObject.safeString(key: String): String {
-                        val v = optString(key, "")
-                        return if (v == "null" || v.isBlank()) "" else v
-                    }
-                    if (profile != null) {
-                        firstName = profile.safeString("legal_first_name")
-                        lastName = profile.safeString("legal_last_name")
-                    }
+                val r = withContext(Dispatchers.IO) { fetchProfileData(sessionToken) }
+                r?.optJSONObject("profile")?.let { p ->
+                    fun JSONObject.s(k: String): String { val v = optString(k, ""); return if (v == "null" || v.isBlank()) "" else v }
+                    firstName = p.s("legal_first_name"); lastName = p.s("legal_last_name")
                 }
-            } catch (e: Exception) {
-                android.util.Log.e("EditLegalName", "Load failed: ${e.message}")
-            }
+            } catch (_: Exception) {}
             isLoading = false
-        } else {
-            isLoading = false
-        }
+        } else isLoading = false
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(brush = Brush.verticalGradient(listOf(Emerald50, Green50, Emerald100)))
-    ) {
-        TopAppBar(
-            title = { Text("Legal name", fontWeight = FontWeight.Bold) },
-            navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.Filled.ArrowBack, "Back")
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
-        )
+    Column(modifier = Modifier.fillMaxSize().background(brush = Brush.verticalGradient(listOf(Emerald50, Green50, Emerald100)))) {
+        TopAppBar(title = { Text("Legal name", fontWeight = FontWeight.Bold) },
+            navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, "Back") } },
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White),
+            windowInsets = WindowInsets(0, 0, 0, 0))
 
-        if (isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Emerald600)
-            }
-        } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
+        if (isLoading) { Box(Modifier.fillMaxSize(), Alignment.Center) { CircularProgressIndicator(color = Emerald600) } }
+        else {
+            Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.SpaceBetween) {
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     Column {
-                        Text(
-                            "First name",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Gray700,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-                        OutlinedTextField(
-                            value = firstName,
-                            onValueChange = { firstName = it },
-                            placeholder = { Text("First name") },
-                            singleLine = true,
-                            enabled = !isSaving,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Emerald600,
-                                unfocusedBorderColor = Gray300,
-                                focusedContainerColor = Color.White,
-                                unfocusedContainerColor = Color.White
-                            )
-                        )
+                        Text("First name", style = MaterialTheme.typography.bodySmall, color = Emerald600, modifier = Modifier.padding(bottom = 8.dp))
+                        OutlinedTextField(value = firstName, onValueChange = { firstName = it }, placeholder = { Text("First name") },
+                            singleLine = true, enabled = !isSaving, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Emerald600, unfocusedBorderColor = Gray300, focusedContainerColor = Color.White, unfocusedContainerColor = Color.White))
                     }
-
                     Column {
-                        Text(
-                            "Last name",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Gray700,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-                        OutlinedTextField(
-                            value = lastName,
-                            onValueChange = { lastName = it },
-                            placeholder = { Text("Last name") },
-                            singleLine = true,
-                            enabled = !isSaving,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Emerald600,
-                                unfocusedBorderColor = Gray300,
-                                focusedContainerColor = Color.White,
-                                unfocusedContainerColor = Color.White
-                            )
-                        )
+                        Text("Last name", style = MaterialTheme.typography.bodySmall, color = Emerald600, modifier = Modifier.padding(bottom = 8.dp))
+                        OutlinedTextField(value = lastName, onValueChange = { lastName = it }, placeholder = { Text("Last name") },
+                            singleLine = true, enabled = !isSaving, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Emerald600, unfocusedBorderColor = Gray300, focusedContainerColor = Color.White, unfocusedContainerColor = Color.White))
                     }
                 }
-
-                Button(
-                    onClick = {
-                        if (sessionToken == null) return@Button
-                        isSaving = true
-                        coroutineScope.launch {
-                            try {
-                                withContext(Dispatchers.IO) {
-                                    val json = JSONObject().apply {
-                                        put("legal_first_name", firstName.trim())
-                                        put("legal_last_name", lastName.trim())
-                                    }
-                                    val body = json.toString().toRequestBody("application/json".toMediaType())
-                                    val request = Request.Builder()
-                                        .url("https://www.mafutapass.com/api/auth/mobile-profile")
-                                        .patch(body)
-                                        .addHeader("Authorization", "Bearer $sessionToken")
-                                        .build()
-                                    OkHttpClient.Builder()
-                                        .connectTimeout(15, TimeUnit.SECONDS)
-                                        .readTimeout(15, TimeUnit.SECONDS)
-                                        .build()
-                                        .newCall(request).execute()
-                                }
-                                onBack()
-                            } catch (e: Exception) {
-                                android.util.Log.e("EditLegalName", "Save failed: ${e.message}")
+                Button(onClick = {
+                    if (sessionToken == null) return@Button; isSaving = true
+                    scope.launch {
+                        try {
+                            val ok = withContext(Dispatchers.IO) {
+                                val json = JSONObject().apply { put("legal_first_name", firstName.trim()); put("legal_last_name", lastName.trim()) }
+                                val body = json.toString().toRequestBody("application/json".toMediaType())
+                                val req = Request.Builder().url("https://www.mafutapass.com/api/auth/mobile-profile").patch(body).addHeader("Authorization", "Bearer $sessionToken").build()
+                                OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS).readTimeout(15, TimeUnit.SECONDS).build().newCall(req).execute().isSuccessful
                             }
-                            isSaving = false
-                        }
-                    },
-                    enabled = !isSaving,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 16.dp)
-                        .height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Emerald600,
-                        disabledContainerColor = Gray300
-                    )
-                ) {
-                    if (isSaving) {
-                        CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
-                    } else {
-                        Text("Save", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium)
+                            if (ok) { prefs.edit().putString("cached_legal_name", "${firstName.trim()} ${lastName.trim()}".trim()).apply(); onBack() }
+                            else Toast.makeText(context, "Save failed. Please try again.", Toast.LENGTH_SHORT).show()
+                        } catch (e: Exception) { Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show() }
+                        isSaving = false
                     }
+                }, enabled = !isSaving, modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp).height(56.dp),
+                    shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = Emerald600, disabledContainerColor = Gray300)) {
+                    if (isSaving) CircularProgressIndicator(Modifier.size(20.dp), Color.White, strokeWidth = 2.dp)
+                    else Text("Save", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium)
                 }
             }
         }
