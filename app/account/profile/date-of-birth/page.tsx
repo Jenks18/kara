@@ -8,12 +8,30 @@ import { getUserProfile, updateUserProfile } from '@/lib/api/user-profiles'
 
 export const dynamic = 'force-dynamic'
 
+// Format ISO date (yyyy-MM-dd) to Kenyan display (dd/MM/yyyy)
+function formatDateKenyan(isoDate: string): string {
+  if (!isoDate) return ''
+  const parts = isoDate.split('-')
+  if (parts.length !== 3) return isoDate
+  return `${parts[2]}/${parts[1]}/${parts[0]}`
+}
+
+// Parse Kenyan format (dd/MM/yyyy) to ISO (yyyy-MM-dd)
+function parseDateKenyan(kenyan: string): string {
+  const parts = kenyan.split('/')
+  if (parts.length !== 3) return kenyan
+  return `${parts[2]}-${parts[1]}-${parts[0]}`
+}
+
 export default function DateOfBirthPage() {
   const router = useRouter()
   const { user } = useUser()
-  const [dateOfBirth, setDateOfBirth] = useState('')
+  const [day, setDay] = useState('')
+  const [month, setMonth] = useState('')
+  const [year, setYear] = useState('')
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     async function loadProfile() {
@@ -21,8 +39,13 @@ export default function DateOfBirthPage() {
       
       try {
         const profile = await getUserProfile(user.id)
-        if (profile) {
-          setDateOfBirth(profile.date_of_birth || '')
+        if (profile?.date_of_birth) {
+          const parts = profile.date_of_birth.split('-')
+          if (parts.length === 3) {
+            setYear(parts[0])
+            setMonth(parts[1])
+            setDay(parts[2])
+          }
         }
       } catch (error) {
         console.error('Error loading date of birth:', error)
@@ -36,20 +59,49 @@ export default function DateOfBirthPage() {
 
   const handleSave = async () => {
     if (!user?.id) return
+    setError('')
+    
+    // Validate
+    if (day || month || year) {
+      const d = parseInt(day), m = parseInt(month), y = parseInt(year)
+      if (!d || !m || !y || d < 1 || d > 31 || m < 1 || m > 12 || y < 1900 || y > new Date().getFullYear()) {
+        setError('Please enter a valid date')
+        return
+      }
+    }
+    
+    const isoDate = (day && month && year) 
+      ? `${year.padStart(4, '0')}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+      : ''
     
     setSaving(true)
     try {
       await updateUserProfile(user.id, {
-        date_of_birth: dateOfBirth,
+        date_of_birth: isoDate,
         user_email: user.emailAddresses[0]?.emailAddress || '',
       })
       router.back()
     } catch (error) {
-      alert('Failed to save. Please try again.')
+      setError('Failed to save. Please try again.')
     } finally {
       setSaving(false)
     }
   }
+
+  const months = [
+    { value: '01', label: 'January' },
+    { value: '02', label: 'February' },
+    { value: '03', label: 'March' },
+    { value: '04', label: 'April' },
+    { value: '05', label: 'May' },
+    { value: '06', label: 'June' },
+    { value: '07', label: 'July' },
+    { value: '08', label: 'August' },
+    { value: '09', label: 'September' },
+    { value: '10', label: 'October' },
+    { value: '11', label: 'November' },
+    { value: '12', label: 'December' },
+  ]
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
@@ -67,14 +119,63 @@ export default function DateOfBirthPage() {
           Your date of birth is never shown on your public profile.
         </p>
 
-        <div>
-          <label className="block text-sm text-gray-700 mb-2">Date of birth</label>
-          <input
-            type="date"
-            value={dateOfBirth}
-            onChange={(e) => setDateOfBirth(e.target.value)}
-            className="w-full px-4 py-4 bg-white border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 touch-manipulation"
-          />
+        <div className="space-y-4">
+          <div className="flex gap-3">
+            {/* Day */}
+            <div className="flex-1">
+              <label className="block text-sm text-gray-700 mb-2">Day</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={day}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^\d]/g, '')
+                  if (val.length <= 2) { setDay(val); setError('') }
+                }}
+                placeholder="DD"
+                className="w-full px-4 py-4 bg-white border border-gray-300 rounded-xl text-gray-900 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 touch-manipulation"
+              />
+            </div>
+            
+            {/* Month */}
+            <div className="flex-[2]">
+              <label className="block text-sm text-gray-700 mb-2">Month</label>
+              <select
+                value={month}
+                onChange={(e) => { setMonth(e.target.value); setError('') }}
+                className="w-full px-4 py-4 bg-white border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 touch-manipulation appearance-none"
+              >
+                <option value="">Month</option>
+                {months.map(m => (
+                  <option key={m.value} value={m.value}>{m.label}</option>
+                ))}
+              </select>
+            </div>
+            
+            {/* Year */}
+            <div className="flex-1">
+              <label className="block text-sm text-gray-700 mb-2">Year</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={year}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^\d]/g, '')
+                  if (val.length <= 4) { setYear(val); setError('') }
+                }}
+                placeholder="YYYY"
+                className="w-full px-4 py-4 bg-white border border-gray-300 rounded-xl text-gray-900 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 touch-manipulation"
+              />
+            </div>
+          </div>
+          
+          {error && (
+            <p className="text-sm text-red-600">{error}</p>
+          )}
+          
+          <p className="text-xs text-gray-500">
+            Format: Day / Month / Year (e.g. 14 / February / 1990)
+          </p>
         </div>
       </div>
 

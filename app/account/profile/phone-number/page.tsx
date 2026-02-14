@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic'
 export default function PhoneNumberPage() {
   const router = useRouter()
   const { user } = useUser()
-  const [phoneNumber, setPhoneNumber] = useState('')
+  const [localNumber, setLocalNumber] = useState('')  // digits after +254
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -22,8 +22,18 @@ export default function PhoneNumberPage() {
       
       try {
         const profile = await getUserProfile(user.id)
-        if (profile) {
-          setPhoneNumber(profile.phone_number || '')
+        if (profile?.phone_number) {
+          // Strip +254 prefix if present, otherwise show full number
+          const num = profile.phone_number.replace(/[\s\-]/g, '')
+          if (num.startsWith('+254')) {
+            setLocalNumber(num.substring(4))
+          } else if (num.startsWith('254')) {
+            setLocalNumber(num.substring(3))
+          } else if (num.startsWith('0')) {
+            setLocalNumber(num.substring(1))
+          } else {
+            setLocalNumber(num)
+          }
         }
       } catch (error) {
         console.error('Error loading phone number:', error)
@@ -40,29 +50,22 @@ export default function PhoneNumberPage() {
     
     setError('')
     
-    // Basic phone validation
-    if (phoneNumber && phoneNumber.trim()) {
-      // Remove spaces and special chars for validation
-      const cleaned = phoneNumber.replace(/[\s\-\(\)]/g, '')
+    if (localNumber && localNumber.trim()) {
+      const cleaned = localNumber.replace(/[\s\-]/g, '')
       
-      // Check if it starts with + and has digits
-      if (!cleaned.startsWith('+')) {
-        setError('Phone number must start with country code (e.g., +254)')
-        return
-      }
-      
-      // Check for valid length (10-15 digits after +)
-      const digits = cleaned.substring(1)
-      if (!/^\d{10,15}$/.test(digits)) {
-        setError('Please enter a valid phone number (10-15 digits)')
+      // Must start with 7 or 1 and be exactly 9 digits
+      if (!/^[17]\d{8}$/.test(cleaned)) {
+        setError('Enter a valid 9-digit Kenyan number starting with 7 or 1 (e.g. 712345678)')
         return
       }
     }
     
+    const fullNumber = localNumber.trim() ? `+254${localNumber.replace(/[\s\-]/g, '')}` : ''
+    
     setSaving(true)
     try {
       const result = await updateUserProfile(user.id, {
-        phone_number: phoneNumber.trim(),
+        phone_number: fullNumber,
         user_email: user.emailAddresses[0]?.emailAddress || '',
       })
       
@@ -97,23 +100,34 @@ export default function PhoneNumberPage() {
 
         <div>
           <label className="block text-sm text-gray-700 mb-2">Phone number</label>
-          <input
-            type="tel"
-            value={phoneNumber}
-            onChange={(e) => {
-              setPhoneNumber(e.target.value)
-              setError('') // Clear error when typing
-            }}
-            placeholder="+254 20 1234567"
-            className={`w-full px-4 py-4 bg-white border rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 touch-manipulation ${
-              error ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-emerald-500 focus:border-emerald-500'
-            }`}
-          />
+          <div className={`flex items-center bg-white border rounded-xl overflow-hidden ${
+            error ? 'border-red-500 ring-2 ring-red-500' : 'border-gray-300 focus-within:ring-2 focus-within:ring-emerald-500 focus-within:border-emerald-500'
+          }`}>
+            <div className="px-4 py-4 bg-gray-50 border-r border-gray-300 flex items-center gap-2 select-none flex-shrink-0">
+              <span className="text-lg">🇰🇪</span>
+              <span className="text-gray-700 font-medium">+254</span>
+            </div>
+            <input
+              type="tel"
+              inputMode="numeric"
+              value={localNumber}
+              onChange={(e) => {
+                // Only allow digits
+                const val = e.target.value.replace(/[^\d]/g, '')
+                if (val.length <= 9) {
+                  setLocalNumber(val)
+                  setError('')
+                }
+              }}
+              placeholder="712345678"
+              className="flex-1 px-4 py-4 text-gray-900 placeholder-gray-400 focus:outline-none touch-manipulation"
+            />
+          </div>
           {error && (
             <p className="mt-2 text-sm text-red-600">{error}</p>
           )}
           <p className="mt-2 text-xs text-gray-500">
-            Enter with country code (e.g., +254 for Kenya)
+            Enter your 9-digit Kenyan mobile number
           </p>
         </div>
       </div>

@@ -21,12 +21,12 @@ object DateUtils {
         SimpleDateFormat("yyyy-MM-dd", Locale.US),
     )
 
-    private val displayFull = SimpleDateFormat("MMM d, yyyy", Locale.US)
-    private val displayShort = SimpleDateFormat("MMM d", Locale.US)
+    private val displayFull = SimpleDateFormat("dd/MM/yyyy", Locale.UK)
+    private val displayShort = SimpleDateFormat("d MMM", Locale.UK)
     private val displayDate = SimpleDateFormat("yyyy-MM-dd", Locale.US)
 
     /**
-     * "2025-02-14T10:30:00Z" → "Feb 14, 2025"
+     * "2025-02-14T10:30:00Z" → "14/02/2025"
      */
     fun formatFull(iso: String?): String {
         if (iso.isNullOrBlank()) return ""
@@ -34,7 +34,7 @@ object DateUtils {
     }
 
     /**
-     * "2025-02-14T10:30:00Z" → "Feb 14"
+     * "2025-02-14T10:30:00Z" → "14 Feb"
      */
     fun formatShort(iso: String?): String {
         if (iso.isNullOrBlank()) return ""

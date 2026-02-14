@@ -1,6 +1,7 @@
 package com.mafutapass.app.ui.screens
 
 import android.app.DatePickerDialog
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -376,7 +377,14 @@ fun ProfileScreen(onBack: () -> Unit) {
                     value = phoneNumber.ifEmpty { "Not set" },
                     onClick = {
                         editMode = "phone"
-                        editPhone = phoneNumber
+                        // Strip +254 prefix for editing
+                        val num = phoneNumber.replace(Regex("[\\s\\-]"), "")
+                        editPhone = when {
+                            num.startsWith("+254") -> num.substring(4)
+                            num.startsWith("254") -> num.substring(3)
+                            num.startsWith("0") -> num.substring(1)
+                            else -> num
+                        }
                         showEditDialog = true
                     }
                 )
@@ -482,28 +490,55 @@ fun ProfileScreen(onBack: () -> Unit) {
                     onDismissRequest = { if (!isSaving) showEditDialog = false },
                     title = { Text("Phone number") },
                     text = {
-                        Column {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(
-                                "Include country code (e.g. +254)",
+                                "Enter your 9-digit Kenyan mobile number",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Gray500,
-                                modifier = Modifier.padding(bottom = 8.dp)
+                                color = Gray500
                             )
-                            OutlinedTextField(
-                                value = editPhone,
-                                onValueChange = { editPhone = it },
-                                label = { Text("Phone number") },
-                                singleLine = true,
-                                enabled = !isSaving,
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(0.dp),
                                 modifier = Modifier.fillMaxWidth()
-                            )
+                            ) {
+                                // Fixed +254 prefix
+                                Surface(
+                                    shape = RoundedCornerShape(topStart = 8.dp, bottomStart = 8.dp),
+                                    color = Color(0xFFF9FAFB),
+                                    border = BorderStroke(1.dp, Gray300),
+                                    modifier = Modifier.height(56.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 12.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Text("🇰🇪", fontSize = 18.sp)
+                                        Text("+254", fontWeight = FontWeight.Medium, color = Gray700)
+                                    }
+                                }
+                                // Phone input
+                                OutlinedTextField(
+                                    value = editPhone,
+                                    onValueChange = { v ->
+                                        val digits = v.filter { it.isDigit() }
+                                        if (digits.length <= 9) editPhone = digits
+                                    },
+                                    placeholder = { Text("712345678") },
+                                    singleLine = true,
+                                    enabled = !isSaving,
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(topEnd = 8.dp, bottomEnd = 8.dp)
+                                )
+                            }
                         }
                     },
                     confirmButton = {
                         TextButton(
                             onClick = {
-                                saveFields(mapOf("phone_number" to editPhone.trim())) {
-                                    phoneNumber = editPhone.trim()
+                                val fullNumber = if (editPhone.isNotBlank()) "+254${editPhone.trim()}" else ""
+                                saveFields(mapOf("phone_number" to fullNumber)) {
+                                    phoneNumber = fullNumber
                                 }
                             },
                             enabled = !isSaving

@@ -9,6 +9,14 @@ import { getUserProfile } from '@/lib/api/user-profiles'
 
 export const dynamic = 'force-dynamic'
 
+// Format ISO date to Kenyan display (DD/MM/YYYY)
+function formatDateKenyan(isoDate: string): string {
+  if (!isoDate) return ''
+  const parts = isoDate.split('-')
+  if (parts.length !== 3) return isoDate
+  return `${parts[2]}/${parts[1]}/${parts[0]}`
+}
+
 const AVATAR_OPTIONS = [
   { emoji: '🐻', color: 'from-amber-700 to-amber-800', label: 'Bear' },
   { emoji: '🦁', color: 'from-orange-600 to-orange-700', label: 'Lion' },
@@ -263,7 +271,7 @@ export default function ProfilePage() {
           >
             <div className="text-left space-y-1">
               <div className="text-xs text-gray-500">Date of birth</div>
-              <div className="text-gray-900">{dateOfBirth || 'Not set'}</div>
+              <div className="text-gray-900">{dateOfBirth ? formatDateKenyan(dateOfBirth) : 'Not set'}</div>
             </div>
             <ChevronRight size={20} className="text-gray-400 absolute right-6 top-1/2 -translate-y-1/2" />
           </button>
