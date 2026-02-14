@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     console.log(`📝 Completing signup with username: ${username}`);
 
     // Verify the pending signup token
-    const jwt = await import('jsonwebtoken');
+    const jwtLib = await import('jsonwebtoken');
     const secretKey = process.env.CLERK_SECRET_KEY;
     
     if (!secretKey) {
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
 
     let pendingSignup: any;
     try {
-      pendingSignup = jwt.verify(pendingSignupToken, secretKey, { algorithms: ['HS256'] });
+      pendingSignup = jwtLib.verify(pendingSignupToken, secretKey, { algorithms: ['HS256'] });
     } catch (error: any) {
       console.error('❌ Invalid or expired token:', error.message);
       return NextResponse.json(
@@ -72,11 +72,11 @@ export async function POST(request: NextRequest) {
 
       // Exchange for JWT
       const session = await exchangeSignInTokenForJwt(signInToken.token);
-      const jwt = session?.jwt || signInToken.token;
+      const sessionJwt = session?.jwt || signInToken.token;
       
       return NextResponse.json({
         success: true,
-        token: jwt,
+        token: sessionJwt,
         userId: user.id,
         email: email,
         isNewUser: false,
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
 
     // Exchange for JWT
     const session = await exchangeSignInTokenForJwt(signInToken.token);
-    const jwt = session?.jwt || signInToken.token;
+    const sessionJwt = session?.jwt || signInToken.token;
 
     console.log('✅ JWT obtained for new Google OAuth user');
 
@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      token: jwt,
+      token: sessionJwt,
       userId: user.id,
       email: email,
       isNewUser: true,
