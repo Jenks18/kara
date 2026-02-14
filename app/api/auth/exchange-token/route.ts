@@ -36,30 +36,66 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Use ticket strategy to sign in
-    // This is the proper Clerk approach for programmatic authentication
-    const signInResponse = await fetch(`${frontendApi}/v1/client/sign_ins?_clerk_js_version=4.70.0`, {
+    // Step 1: Create sign-in attempt with ticket strategy
+    const createSignInResponse = await fetch(`${frontendApi}/v1/client/sign_ins?_clerk_js_version=4.70.0`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ 
         strategy: 'ticket',
-        ticket: ticket,
       }),
     });
 
-    if (!signInResponse.ok) {
-      console.error('❌ Ticket authentication failed:', signInResponse.status);
-      const errorText = await signInResponse.text();
+    if (!createSignInResponse.ok) {
+      console.error('❌ Failed to create sign-in:', createSignInResponse.status);
+      const errorText = await createSignInResponse.text();
       console.error('Error response:', errorText);
       return NextResponse.json(
-        { success: false, error: 'Authentication failed' },
-        { status: 401, headers: corsHeaders }
+        { success: false, error: 'Failed to initiate sign-in' },
+        { status: createSignInResponse.status, headers: corsHeaders }
       );
     }
 
-    const signInData = await signInResponse.json();
+    const createData = await createSignInResponse.json();
+    const signInId = createData.response?.id;
+
+    if (!signInId) {
+      console.error('❌ No sign-in ID received');
+      return NextResponse.json(
+        { success: false, error: 'Failed to create sign-in' },
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
+    console.log('✅ Sign-in created:', signInId);
+
+    // Step 2: Attempt first factor with ticket
+    const attemptResponse = await fetch(
+      `${frontendApi}/v1/client/sign_ins/${signInId}/attempt_first_factor?_clerk_js_version=4.70.0`,
+      {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          strategy: 'ticket',
+          ticket: ticket,
+        }),
+      }
+    );
+
+    if (!attemptResponse.ok) {
+      console.error('❌ Ticket attempt failed:', attemptResponse.status);
+      const errorText = await attemptResponse.text();
+      console.error('Error response:', errorText);
+      return NextResponse.json(
+        { success: false, error: 'Ticket authentication failed' },
+        { status: attemptResponse.status, headers: corsHeaders }
+      );
+    }
+
+    const signInData = await attemptResponse.json();
     
     // Extract JWT and userId from response
     const jwt = signInData.client?.sessions?.[0]?.last_active_token?.jwt;
