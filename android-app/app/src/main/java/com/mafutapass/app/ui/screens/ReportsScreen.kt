@@ -4,13 +4,17 @@ package com.mafutapass.app.ui.screens
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,14 +22,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.mafutapass.app.data.ExpenseItem
 import com.mafutapass.app.data.ExpenseReport
 import com.mafutapass.app.ui.theme.*
+import com.mafutapass.app.util.DateUtils
 import com.mafutapass.app.viewmodel.ReportsViewModel
 
 @Composable
@@ -52,13 +61,27 @@ fun ReportsScreen(viewModel: ReportsViewModel = viewModel()) {
             shadowElevation = 1.dp
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = "Reports",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Gray900,
-                    modifier = Modifier.padding(16.dp)
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Reports",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Gray900
+                    )
+                    IconButton(onClick = { viewModel.refresh() }) {
+                        Icon(
+                            imageVector = Icons.Filled.Refresh,
+                            contentDescription = "Refresh",
+                            tint = Emerald600
+                        )
+                    }
+                }
 
                 // Segmented Control
                 TabRow(
@@ -150,11 +173,7 @@ fun ReportsTab(reports: List<ExpenseReport>) {
 @Composable
 fun ExpenseCard(expense: ExpenseItem) {
     val context = LocalContext.current
-    // Format the date nicely
-    val displayDate = try {
-        val raw = expense.transactionDate ?: expense.createdAt
-        if (raw.length >= 10) raw.substring(0, 10) else raw
-    } catch (_: Exception) { "" }
+    val displayDate = DateUtils.formatShort(expense.transactionDate ?: expense.createdAt)
 
     val statusColor = when (expense.processingStatus) {
         "processed" -> Emerald600
@@ -174,24 +193,39 @@ fun ExpenseCard(expense: ExpenseItem) {
     ) {
         Row(
             modifier = Modifier
-                .padding(16.dp)
+                .padding(12.dp)
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Icon placeholder
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(Emerald100),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = expense.category.take(1),
-                    color = Emerald600,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp
+            // Receipt image or fallback icon
+            if (expense.imageUrl.isNotBlank() && expense.imageUrl.startsWith("http")) {
+                AsyncImage(
+                    model = ImageRequest.Builder(context)
+                        .data(expense.imageUrl)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = "Receipt",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Emerald50)
                 )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Emerald100),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Receipt,
+                        contentDescription = "Receipt",
+                        tint = Emerald600,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.width(12.dp))
@@ -200,8 +234,11 @@ fun ExpenseCard(expense: ExpenseItem) {
                 Text(
                     text = expense.merchantName ?: "Receipt",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Gray900
+                    color = Gray900,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
+                Spacer(modifier = Modifier.height(4.dp))
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -233,6 +270,26 @@ fun ExpenseCard(expense: ExpenseItem) {
                         )
                     }
                 }
+                // KRA verified badge
+                if (expense.kraVerified == true) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.CheckCircle,
+                            contentDescription = "KRA Verified",
+                            tint = Emerald600,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Text(
+                            text = "KRA Verified",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Emerald600
+                        )
+                    }
+                }
             }
 
             Column(horizontalAlignment = Alignment.End) {
@@ -250,9 +307,7 @@ fun ExpenseCard(expense: ExpenseItem) {
 @Composable
 fun ReportCard(report: ExpenseReport) {
     val context = LocalContext.current
-    val displayDate = try {
-        if (report.createdAt.length >= 10) report.createdAt.substring(0, 10) else report.createdAt
-    } catch (_: Exception) { "" }
+    val displayDate = DateUtils.formatShort(report.createdAt)
 
     Surface(
         shape = RoundedCornerShape(12.dp),
@@ -291,19 +346,54 @@ fun ReportCard(report: ExpenseReport) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            // Receipt thumbnails row
+            if (report.thumbnails.isNotEmpty()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    report.thumbnails.forEach { url ->
+                        if (url.startsWith("http")) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(context)
+                                    .data(url)
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = "Receipt thumbnail",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(Emerald50)
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // Status badge
+                val statusColor = when (report.status) {
+                    "approved" -> Emerald600
+                    "submitted" -> Color(0xFF2563EB) // blue
+                    "rejected" -> Color(0xFFDC2626) // red
+                    else -> Color(0xFF6B7280) // gray for draft
+                }
                 Surface(
                     shape = RoundedCornerShape(12.dp),
-                    color = Emerald100
+                    color = statusColor.copy(alpha = 0.12f)
                 ) {
                     Text(
                         text = report.status.replaceFirstChar { it.uppercase() },
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.Medium,
-                        color = Emerald600,
+                        color = statusColor,
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                     )
                 }

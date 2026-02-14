@@ -33,7 +33,7 @@ data class Currency(
 )
 
 val CURRENCIES = listOf(
-    Currency("KSH", "KSh", "Kenyan Shilling"),
+    Currency("KES", "KSh", "Kenyan Shilling"),
     Currency("USD", "$", "US Dollar"),
     Currency("EUR", "€", "Euro"),
     Currency("GBP", "£", "British Pound"),

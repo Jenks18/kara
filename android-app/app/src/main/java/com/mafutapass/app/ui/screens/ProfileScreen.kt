@@ -1,5 +1,6 @@
 package com.mafutapass.app.ui.screens
 
+import android.app.DatePickerDialog
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -23,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.mafutapass.app.ui.theme.*
+import com.mafutapass.app.util.DateUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -31,6 +33,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
+import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
 data class AvatarOption(
@@ -89,6 +92,7 @@ fun ProfileScreen(onBack: () -> Unit) {
     var dateOfBirth by remember { mutableStateOf("") }
     var legalName by remember { mutableStateOf("") }
     var address by remember { mutableStateOf("") }
+    var showDatePicker by remember { mutableStateOf(false) }
     
     // Edit dialog state
     var editFieldLabel by remember { mutableStateOf("") }
@@ -318,13 +322,8 @@ fun ProfileScreen(onBack: () -> Unit) {
             item {
                 ProfileField(
                     label = "Date of birth",
-                    value = dateOfBirth.ifEmpty { "Not set" },
-                    onClick = {
-                        editFieldLabel = "Date of birth"
-                        editFieldKey = "date_of_birth"
-                        editFieldValue = dateOfBirth
-                        showEditDialog = true
-                    }
+                    value = if (dateOfBirth.isNotEmpty()) DateUtils.formatFull(dateOfBirth) else "Not set",
+                    onClick = { showDatePicker = true }
                 )
             }
             
@@ -380,9 +379,22 @@ fun ProfileScreen(onBack: () -> Unit) {
                             coroutineScope.launch {
                                 try {
                                     withContext(Dispatchers.IO) {
-                                        val json = JSONObject().apply {
-                                            put(editFieldKey, editFieldValue)
+                                        val json = JSONObject()
+                                        
+                                        // Special handling for legal name: split into first/last
+                                        if (editFieldKey == "legal_first_name") {
+                                            val parts = editFieldValue.trim().split(" ", limit = 2)
+                                            json.put("legal_first_name", parts[0])
+                                            json.put("legal_last_name", if (parts.size > 1) parts[1] else "")
+                                        } 
+                                        // Special handling for address: put in address_line1
+                                        else if (editFieldKey == "address_line1") {
+                                            json.put("address_line1", editFieldValue)
                                         }
+                                        else {
+                                            json.put(editFieldKey, editFieldValue)
+                                        }
+                                        
                                         val requestBody = json.toString()
                                             .toRequestBody("application/json".toMediaType())
                                         val request = Request.Builder()
@@ -480,7 +492,7 @@ fun ProfileScreen(onBack: () -> Unit) {
                                         showAvatarPicker = false
                                         // Save avatar to backend
                                         if (sessionToken != null) {
-                                            kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+                                            coroutineScope.launch(Dispatchers.IO) {
                                                 saveAvatarToBackend(sessionToken, option.emoji)
                                             }
                                         }
@@ -497,6 +509,56 @@ fun ProfileScreen(onBack: () -> Unit) {
                 }
             }
         }
+    }
+    
+    // Date picker dialog for date of birth
+    if (showDatePicker) {
+        val calendar = Calendar.getInstance()
+        // Try to parse existing date
+        try {
+            if (dateOfBirth.isNotEmpty()) {
+                val parts = DateUtils.formatYMD(dateOfBirth).split("-")
+                if (parts.size == 3) {
+                    calendar.set(parts[0].toInt(), parts[1].toInt() - 1, parts[2].toInt())
+                }
+            }
+        } catch (_: Exception) {}
+        
+        DatePickerDialog(
+            context,
+            { _, year, month, day ->
+                val newDate = String.format("%04d-%02d-%02d", year, month + 1, day)
+                dateOfBirth = newDate
+                // Save to backend
+                if (sessionToken != null) {
+                    coroutineScope.launch {
+                        withContext(Dispatchers.IO) {
+                            val json = JSONObject().apply { put("date_of_birth", newDate) }
+                            val requestBody = json.toString().toRequestBody("application/json".toMediaType())
+                            val request = Request.Builder()
+                                .url("https://www.mafutapass.com/api/auth/mobile-profile")
+                                .patch(requestBody)
+                                .addHeader("Authorization", "Bearer $sessionToken")
+                                .build()
+                            OkHttpClient.Builder()
+                                .connectTimeout(15, TimeUnit.SECONDS)
+                                .readTimeout(15, TimeUnit.SECONDS)
+                                .build()
+                                .newCall(request).execute()
+                        }
+                    }
+                }
+                showDatePicker = false
+            },
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.MONTH),
+            calendar.get(Calendar.DAY_OF_MONTH)
+        ).apply {
+            setOnCancelListener { showDatePicker = false }
+            show()
+        }
+        // Reset so it can be re-triggered
+        showDatePicker = false
     }
 }
 

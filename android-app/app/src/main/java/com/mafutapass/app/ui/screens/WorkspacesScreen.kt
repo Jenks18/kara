@@ -20,9 +20,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.mafutapass.app.data.ApiClient
 import com.mafutapass.app.data.Workspace
 import com.mafutapass.app.ui.theme.*
+import com.mafutapass.app.util.DateUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -186,20 +189,36 @@ fun WorkspaceCard(workspace: Workspace, onClick: () -> Unit = {}, onDeleted: () 
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Avatar
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Emerald600),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = workspace.initials,
-                    color = Color.White,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold
+            // Avatar — show image if URL, otherwise initials
+            val hasImageAvatar = workspace.avatar?.startsWith("http") == true
+            if (hasImageAvatar) {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(workspace.avatar)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = workspace.name,
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Emerald100)
                 )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Emerald600),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = workspace.initials,
+                        color = Color.White,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
             
             Spacer(modifier = Modifier.width(12.dp))

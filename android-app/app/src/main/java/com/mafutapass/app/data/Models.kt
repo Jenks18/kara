@@ -44,7 +44,15 @@ data class Workspace(
     val currency: String = "KES",
     @SerializedName("currency_symbol")
     val currencySymbol: String = "KSh",
-    val avatar: String? = null
+    val avatar: String? = null,
+    val description: String? = null,
+    @SerializedName("plan_type")
+    val planType: String? = null,
+    val address: String? = null,
+    @SerializedName("is_active")
+    val isActive: Boolean = true,
+    @SerializedName("created_at")
+    val createdAt: String? = null
 ) {
     val initials: String
         get() = name.split(" ")
