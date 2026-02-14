@@ -6,6 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.mafutapass.app.auth.ClerkAuthManager
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -57,7 +58,7 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
                 Log.d("SignUpViewModel", "🔐 Authenticating with password...")
                 
                 // Authenticate with password via Frontend API (proven working approach)
-                val sessionResult = ClerkAuthManager.signInWithPassword(email, password)
+                val sessionResult = ClerkAuthManager.signInViaBackend(email, password)
                 
                 if (!sessionResult.success || sessionResult.token == null) {
                     Log.e("SignUpViewModel", "❌ Password authentication failed: ${sessionResult.error}")
