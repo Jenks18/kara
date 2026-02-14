@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { clerkClient } from '@clerk/nextjs/server';
+import jwt from 'jsonwebtoken';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,7 +14,7 @@ export async function OPTIONS() {
 
 /**
  * Exchange sign-in token (ticket) for session JWT
- * Uses Clerk's ticket strategy via Frontend API
+ * Verifies ticket with Clerk, then creates custom JWT
  */
 export async function POST(request: NextRequest) {
   try {
@@ -25,112 +27,81 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('🎫 Exchanging ticket for session...');
+    console.log('🎫 Verifying sign-in ticket...');
 
-    const frontendApi = process.env.NEXT_PUBLIC_CLERK_FRONTEND_API;
-    if (!frontendApi) {
-      console.error('❌ NEXT_PUBLIC_CLERK_FRONTEND_API not configured');
+    const client = await clerkClient();
+    
+    // Revoke (verify and consume) the sign-in token - this validates it
+    let signInToken;
+    try {
+      signInToken = await client.signInTokens.revokeSignInToken(ticket);
+    } catch (error: any) {
+      console.error('❌ Failed to revoke ticket:', error.message);
+      return NextResponse.json(
+        { success: false, error: 'Invalid or expired sign-in ticket' },
+        { status: 401, headers: corsHeaders }
+      );
+    }
+    
+    if (!signInToken || signInToken.status !== 'revoked') {
+      console.error('❌ Invalid ticket status');
+      return NextResponse.json(
+        { success: false, error: 'Invalid sign-in ticket' },
+        { status: 401, headers: corsHeaders }
+      );
+    }
+
+    const userId = signInToken.userId;
+    console.log('✅ Ticket verified for user:', userId);
+
+    // Get the user
+    const user = await client.users.getUser(userId);
+    if (!user) {
+      console.error('❌ User not found:', userId);
+      return NextResponse.json(
+        { success: false, error: 'User not found' },
+        { status: 404, headers: corsHeaders }
+      );
+    }
+
+    // Get user's email
+    const email = user.emailAddresses.find(e => e.id === user.primaryEmailAddressId)?.emailAddress;
+
+    // Create a custom JWT with user information
+    // This will be used for authenticating subsequent API calls
+    const jwtSecret = process.env.CLERK_SECRET_KEY;  // Re-use Clerk secret for signing
+    if (!jwtSecret) {
+      console.error('❌ JWT secret not configured');
       return NextResponse.json(
         { success: false, error: 'Server configuration error' },
         { status: 500, headers: corsHeaders }
       );
     }
 
-    // Step 1: Create sign-in attempt with ticket strategy
-    const createSignInResponse = await fetch(`${frontendApi}/v1/client/sign_ins?_clerk_js_version=4.70.0`, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ 
-        strategy: 'ticket',
-      }),
-    });
-
-    if (!createSignInResponse.ok) {
-      console.error('❌ Failed to create sign-in:', createSignInResponse.status);
-      const errorText = await createSignInResponse.text();
-      console.error('Error response:', errorText);
-      return NextResponse.json(
-        { success: false, error: 'Failed to initiate sign-in' },
-        { status: createSignInResponse.status, headers: corsHeaders }
-      );
-    }
-
-    const createData = await createSignInResponse.json();
-    const signInId = createData.response?.id;
-
-    if (!signInId) {
-      console.error('❌ No sign-in ID received');
-      return NextResponse.json(
-        { success: false, error: 'Failed to create sign-in' },
-        { status: 500, headers: corsHeaders }
-      );
-    }
-
-    console.log('✅ Sign-in created:', signInId);
-
-    // Step 2: Attempt first factor with ticket
-    const attemptResponse = await fetch(
-      `${frontendApi}/v1/client/sign_ins/${signInId}/attempt_first_factor?_clerk_js_version=4.70.0`,
+    const token = jwt.sign(
       {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          strategy: 'ticket',
-          ticket: ticket,
-        }),
-      }
+        sub: userId,
+        email: email,
+        type: 'session',
+        iss: 'mafutapass',
+      },
+      jwtSecret,
+      { expiresIn: '24h' }
     );
 
-    if (!attemptResponse.ok) {
-      console.error('❌ Ticket attempt failed:', attemptResponse.status);
-      const errorText = await attemptResponse.text();
-      console.error('Error response:', errorText);
-      return NextResponse.json(
-        { success: false, error: 'Ticket authentication failed' },
-        { status: attemptResponse.status, headers: corsHeaders }
-      );
-    }
-
-    const signInData = await attemptResponse.json();
-    
-    // Extract JWT and userId from response
-    const jwt = signInData.client?.sessions?.[0]?.last_active_token?.jwt;
-    const userId = signInData.response?.user_id;
-
-    if (!jwt) {
-      console.error('❌ No JWT token received');
-      console.log('Response structure:', JSON.stringify(signInData, null, 2));
-      return NextResponse.json(
-        { success: false, error: 'Authentication failed' },
-        { status: 500, headers: corsHeaders }
-      );
-    }
-
-    if (!userId) {
-      console.error('❌ No userId in response');
-      console.log('Response structure:', JSON.stringify(signInData, null, 2));
-      return NextResponse.json(
-        { success: false, error: 'User ID not found' },
-        { status: 500, headers: corsHeaders }
-      );
-    }
-
-    console.log('✅ Sign-in successful! userId:', userId);
+    console.log('✅ Session token created successfully');
 
     return NextResponse.json({
       success: true,
-      token: jwt,
+      token: token,
       userId: userId,
     }, { headers: corsHeaders });
 
   } catch (error: any) {
-    console.error('❌ Backend sign-in error:', error.message);
+    console.error('❌ Token exchange error:', error.message);
+    console.error('Error details:', error);
     return NextResponse.json(
-      { success: false, error: 'Sign-in failed' },
+      { success: false, error: 'Token exchange failed' },
       { status: 500, headers: corsHeaders }
     );
   }
