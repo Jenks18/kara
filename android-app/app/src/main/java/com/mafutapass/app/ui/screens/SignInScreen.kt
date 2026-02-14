@@ -268,7 +268,7 @@ fun SignInOrUpScreen() {
                     }
 
                     if (isSignUp) {
-                        SignUpView()
+                        SignUpView(onSwitchToSignIn = { isSignUp = false })
                     } else {
                         SignInView()
                     }
@@ -416,7 +416,7 @@ fun SignInView(viewModel: SignInViewModel = viewModel()) {
 }
 
 @Composable
-fun SignUpView() {
+fun SignUpView(onSwitchToSignIn: () -> Unit = {}) {
     val context = LocalContext.current
     val viewModel: SignUpViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
@@ -445,8 +445,8 @@ fun SignUpView() {
             }
             is SignUpViewModel.SignUpUiState.AccountCreated -> {
                 android.util.Log.d("SignUpView", "✅ Account created - switching to sign-in")
-                // Show a message and switch to sign-in tab
-                onTabChange(0) // Switch to sign-in tab
+                // Switch to sign-in tab
+                onSwitchToSignIn()
             }
             else -> {}
         }
