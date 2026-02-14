@@ -59,17 +59,36 @@ export async function POST(req: NextRequest) {
 
   } catch (error: any) {
     console.error('❌ Mobile sign-up error:', error);
+    console.error('❌ Error details:', JSON.stringify({
+      message: error.message,
+      code: error.code,
+      status: error.status,
+      errors: error.errors,
+      clerkTraceId: error.clerkTraceId
+    }, null, 2));
 
     // Handle duplicate email/username
     if (error.errors?.[0]?.code === 'form_identifier_exists') {
       return NextResponse.json(
-        { error: 'Email or username already exists' },
+        { 
+          success: false,
+          error: 'Email or username already exists. Please use a different email.' 
+        },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
+    // Handle other validation errors
+    if (error.status === 422 || error.code === 'api_response_error') {
+      const errorMessage = error.errors?.[0]?.message || error.errors?.[0]?.longMessage || 'Invalid registration details';
+      return NextResponse.json(
+        { success: false, error: errorMessage },
         { status: 400, headers: corsHeaders }
       );
     }
 
     return NextResponse.json(
-      { error: error.message || 'Sign-up failed' },
+      { success: false, error: error.message || 'Sign-up failed' },
       { status: 500, headers: corsHeaders }
     );
   }
