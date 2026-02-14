@@ -92,49 +92,7 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun verifyEmail(signUpId: String, code: String, email: String, username: String, firstName: String, lastName: String) {
-        viewModelScope.launch {
-            _uiState.value = SignUpUiState.Loading
-            
-            try {
-                Log.d("SignUpViewModel", "Verifying email code via backend")
-                
-                // Verify with backend (uses Clerk Frontend API internally)
-                val result = ClerkAuthManager.verifyEmailCode(email, code)
-                
-                if (!result.success) {
-                    Log.e("SignUpViewModel", "❌ Verification failed: ${result.error}")
-                    _uiState.value = SignUpUiState.Error(result.error ?: "Invalid code")
-                    return@launch
-                }
-                
-                val token = result.token
-                if (token == null) {
-                    Log.e("SignUpViewModel", "❌ No token after verification")
-                    _uiState.value = SignUpUiState.Error("Verification incomplete")
-                    return@launch
-                }
-                
-                // Create Supabase profile in background
-                createSupabaseProfile(token, email, username, firstName, lastName)
-                
-                // Store token
-                val prefs = getApplication<Application>().getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
-                prefs.edit().apply {
-                    putString("session_token", token)
-                    putString("user_email", email)
-                    putBoolean("is_new_user", false)
-                }.commit()
-                
-                Log.d("SignUpViewModel", "✅ Email verified and signed in!")
-                _uiState.value = SignUpUiState.Success
-                
-            } catch (e: Exception) {
-                Log.e("SignUpViewModel", "❌ Verification error: ${e.message}", e)
-                _uiState.value = SignUpUiState.Error("Verification failed: ${e.message}")
-            }
-        }
-    }
+    // Removed: verifyEmail function (email verification not used in restored password-based auth)
     
     private suspend fun createSupabaseProfile(
         token: String,
