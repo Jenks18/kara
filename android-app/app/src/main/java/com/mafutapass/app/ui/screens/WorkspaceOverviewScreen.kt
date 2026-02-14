@@ -90,7 +90,6 @@ fun WorkspaceOverviewScreen(
                 )
             )
     ) {
-        // Header
         TopAppBar(
             title = {
                 Row(
@@ -113,13 +112,11 @@ fun WorkspaceOverviewScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Invite + More buttons row
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Invite button
                     Button(
                         onClick = { showInviteDialog = true },
                         modifier = Modifier.weight(1f),
@@ -130,8 +127,6 @@ fun WorkspaceOverviewScreen(
                         Spacer(Modifier.width(8.dp))
                         Text("Invite", fontWeight = FontWeight.SemiBold)
                     }
-
-                    // More dropdown
                     Box {
                         OutlinedButton(
                             onClick = { showMoreMenu = !showMoreMenu },
@@ -144,7 +139,6 @@ fun WorkspaceOverviewScreen(
                                 tint = Gray700
                             )
                         }
-
                         DropdownMenu(
                             expanded = showMoreMenu,
                             onDismissRequest = { showMoreMenu = false }
@@ -169,8 +163,6 @@ fun WorkspaceOverviewScreen(
                     }
                 }
             }
-
-            // Workspace Avatar
             item {
                 Box(
                     modifier = Modifier.fillMaxWidth(),
@@ -212,24 +204,15 @@ fun WorkspaceOverviewScreen(
                     }
                 }
             }
-
-            // Workspace name field
             item {
-                OverviewField(
-                    label = "Workspace name",
-                    value = ws.name
-                )
+                OverviewField(label = "Workspace name", value = ws.name)
             }
-
-            // Description field
             item {
                 OverviewField(
                     label = "Description",
                     value = ws.description ?: "One place for all your receipts and expenses."
                 )
             }
-
-            // Default currency field
             item {
                 OverviewField(
                     label = "Default currency",
@@ -237,58 +220,42 @@ fun WorkspaceOverviewScreen(
                     subtitle = "All expenses on this workspace will be converted to this currency."
                 )
             }
-
-            // Company address field
             item {
                 OverviewField(
                     label = "Company address",
                     value = ws.address ?: "Add company address"
                 )
             }
-
             item { Spacer(Modifier.height(16.dp)) }
         }
     }
 
-    // ── Invite Dialog ──
+    // Invite Dialog
     if (showInviteDialog) {
         Dialog(onDismissRequest = { showInviteDialog = false }) {
-            Surface(
-                shape = RoundedCornerShape(24.dp),
-                color = Color.White,
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            Surface(shape = RoundedCornerShape(24.dp), color = Color.White, modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(24.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            "Invite new members",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        IconButton(onClick = { showInviteDialog = false }) {
-                            Icon(Icons.Filled.Close, "Close")
-                        }
+                        Text("Invite new members", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        IconButton(onClick = { showInviteDialog = false }) { Icon(Icons.Filled.Close, "Close") }
                     }
                     Text(ws.name, style = MaterialTheme.typography.bodySmall, color = Gray500)
                     Spacer(Modifier.height(16.dp))
                     OutlinedTextField(
-                        value = inviteInput,
-                        onValueChange = { inviteInput = it },
+                        value = inviteInput, onValueChange = { inviteInput = it },
                         placeholder = { Text("Name, email, or phone number") },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
+                        modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)
                     )
                     Spacer(Modifier.height(16.dp))
                     Button(
                         onClick = {
                             if (inviteInput.isNotBlank()) {
                                 Toast.makeText(context, "Invite sent to: $inviteInput", Toast.LENGTH_SHORT).show()
-                                inviteInput = ""
-                                showInviteDialog = false
+                                inviteInput = ""; showInviteDialog = false
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -302,53 +269,28 @@ fun WorkspaceOverviewScreen(
         }
     }
 
-    // ── Share Dialog ──
+    // Share Dialog
     if (showShareDialog) {
         Dialog(onDismissRequest = { showShareDialog = false }) {
-            Surface(
-                shape = RoundedCornerShape(24.dp),
-                color = Color.White,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
+            Surface(shape = RoundedCornerShape(24.dp), color = Color.White, modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            "Share workspace",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        IconButton(onClick = { showShareDialog = false }) {
-                            Icon(Icons.Filled.Close, "Close")
-                        }
+                        Text("Share workspace", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        IconButton(onClick = { showShareDialog = false }) { Icon(Icons.Filled.Close, "Close") }
                     }
                     Spacer(Modifier.height(16.dp))
-
-                    // Share URL display
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = Emerald50
-                    ) {
+                    Surface(shape = RoundedCornerShape(12.dp), color = Emerald50) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text("Share link", style = MaterialTheme.typography.bodySmall, color = Gray500)
                             Spacer(Modifier.height(4.dp))
-                            Text(
-                                shareUrl,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Gray900
-                            )
+                            Text(shareUrl, style = MaterialTheme.typography.bodySmall, color = Gray900)
                         }
                     }
-
                     Spacer(Modifier.height(16.dp))
-
-                    // Copy Link button
                     Button(
                         onClick = {
                             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -368,65 +310,35 @@ fun WorkspaceOverviewScreen(
         }
     }
 
-    // ── Delete Confirmation Dialog ──
+    // Delete Confirmation Dialog
     if (showDeleteDialog) {
         Dialog(onDismissRequest = { showDeleteDialog = false }) {
-            Surface(
-                shape = RoundedCornerShape(24.dp),
-                color = Color.White,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
+            Surface(shape = RoundedCornerShape(24.dp), color = Color.White, modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Box(
-                        modifier = Modifier
-                            .size(64.dp)
-                            .background(Color(0xFFFEE2E2), CircleShape),
+                        modifier = Modifier.size(64.dp).background(Color(0xFFFEE2E2), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            Icons.Filled.Delete,
-                            null,
-                            tint = Color(0xFFDC2626),
-                            modifier = Modifier.size(32.dp)
-                        )
+                        Icon(Icons.Filled.Delete, null, tint = Color(0xFFDC2626), modifier = Modifier.size(32.dp))
                     }
                     Spacer(Modifier.height(16.dp))
-                    Text(
-                        "Delete workspace?",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Text("Delete workspace?", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(8.dp))
                     Text(
                         "Are you sure you want to delete \"${ws.name}\"? This action cannot be undone and all data will be permanently lost.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Gray500,
-                        textAlign = TextAlign.Center
+                        style = MaterialTheme.typography.bodyMedium, color = Gray500, textAlign = TextAlign.Center
                     )
                     Spacer(Modifier.height(24.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = { showDeleteDialog = false },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        OutlinedButton(onClick = { showDeleteDialog = false }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp)) {
                             Text("Cancel")
                         }
                         Button(
                             onClick = {
                                 coroutineScope.launch {
                                     try {
-                                        withContext(Dispatchers.IO) {
-                                            ApiClient.apiService.deleteWorkspace(workspaceId)
-                                        }
-                                        showDeleteDialog = false
-                                        onBack()
+                                        withContext(Dispatchers.IO) { ApiClient.apiService.deleteWorkspace(workspaceId) }
+                                        showDeleteDialog = false; onBack()
                                     } catch (e: Exception) {
                                         Toast.makeText(context, "Failed to delete workspace", Toast.LENGTH_SHORT).show()
                                     }
@@ -435,9 +347,7 @@ fun WorkspaceOverviewScreen(
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
                             shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Text("Delete")
-                        }
+                        ) { Text("Delete") }
                     }
                 }
             }
@@ -446,47 +356,18 @@ fun WorkspaceOverviewScreen(
 }
 
 @Composable
-private fun OverviewField(
-    label: String,
-    value: String,
-    subtitle: String? = null
-) {
-    Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = Color.White,
-        shadowElevation = 1.dp,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+private fun OverviewField(label: String, value: String, subtitle: String? = null) {
+    Surface(shape = RoundedCornerShape(12.dp), color = Color.White, shadowElevation = 1.dp, modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp).fillMaxWidth()
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    label,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Gray500
-                )
+            Text(label, style = MaterialTheme.typography.bodySmall, color = Gray500)
+            Spacer(Modifier.height(4.dp))
+            Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = Gray900)
+            if (subtitle != null) {
                 Spacer(Modifier.height(4.dp))
-                Text(
-                    value,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Gray900
-                )
-                if (subtitle != null) {
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Gray500
-                    )
-                }
+                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = Gray500)
             }
-            Icon(Icons.Filled.ChevronRight, null, tint = Gray500)
         }
     }
 }

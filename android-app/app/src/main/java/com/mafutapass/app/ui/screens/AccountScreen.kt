@@ -3,7 +3,9 @@ package com.mafutapass.app.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -16,23 +18,19 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.mafutapass.app.ui.theme.*
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
-
-data class MenuItem(
-    val icon: ImageVector,
-    val title: String,
-    val showExternal: Boolean,
-    val showChevron: Boolean = !showExternal
-)
 
 @Composable
 fun AccountScreen(
@@ -42,55 +40,76 @@ fun AccountScreen(
     onNavigateToAbout: () -> Unit = {},
     onSignOut: () -> Unit = {}
 ) {
-    val scope = rememberCoroutineScope()
     val context = androidx.compose.ui.platform.LocalContext.current
     val prefs = context.getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
-    
-    // Get stored user data from SharedPreferences
-    val userEmail = prefs.getString("user_email", null) ?: "User"
-    val userId = prefs.getString("user_id", null)
     val sessionToken = prefs.getString("session_token", null)
-    val storedFirstName = prefs.getString("first_name", null)
-    
-    // Profile data from API
-    var displayName by remember { mutableStateOf(storedFirstName ?: userEmail.substringBefore("@")) }
+    val userEmail = prefs.getString("user_email", null) ?: "User"
+
+    // Start with cached data immediately to avoid flash
+    var displayName by remember { mutableStateOf(prefs.getString("cached_display_name", null) ?: userEmail.substringBefore("@")) }
     var displayEmail by remember { mutableStateOf(userEmail) }
-    var avatarEmoji by remember { mutableStateOf("🐻") }
-    
-    // Fetch profile from backend on load
-    LaunchedEffect(userId, sessionToken) {
-        if (sessionToken != null && userId != null) {
+    var avatarEmoji by remember { mutableStateOf(prefs.getString("avatar_emoji", null) ?: "\uD83D\uDC3B") }
+
+    // Lifecycle-aware refresh: re-fetch when screen resumes (returning from Profile, etc.)
+    var refreshKey by remember { mutableIntStateOf(0) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                refreshKey++
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    // Single API fetch — triggers on first resume and every subsequent resume
+    LaunchedEffect(refreshKey) {
+        if (sessionToken != null && refreshKey > 0) {
+            // First, update from cached SharedPreferences (instant)
+            val cachedName = prefs.getString("cached_display_name", null)
+            val cachedEmoji = prefs.getString("avatar_emoji", null)
+            if (cachedName != null) displayName = cachedName
+            if (cachedEmoji != null) avatarEmoji = cachedEmoji
+
             try {
                 val profile = withContext(Dispatchers.IO) {
-                    fetchProfile(sessionToken)
+                    fetchAccountProfile(sessionToken)
                 }
                 if (profile != null) {
-                    // Helper to safely get string, filtering JSON "null" literals
-                    fun org.json.JSONObject.safeStr(key: String): String {
+                    fun JSONObject.safeStr(key: String): String {
                         val v = optString(key, "")
                         return if (v == "null" || v.isBlank()) "" else v
                     }
-                    val clerkName = profile.optJSONObject("clerk")?.let { clerk ->
-                        clerk.safeStr("fullName").ifEmpty { null }
-                            ?: clerk.safeStr("firstName").ifEmpty { null }
-                    }
                     val profileName = profile.optJSONObject("profile")?.let { p ->
                         p.safeStr("display_name").ifEmpty { null }
-                            ?: p.safeStr("first_name").ifEmpty { null }
                     }
-                    displayName = profileName ?: clerkName ?: userEmail.substringBefore("@")
+                    val clerkName = profile.optJSONObject("clerk")?.let { c ->
+                        c.safeStr("fullName").ifEmpty { null }
+                            ?: c.safeStr("firstName").ifEmpty { null }
+                    }
+                    val name = profileName ?: clerkName ?: userEmail.substringBefore("@")
+                    displayName = name
                     displayEmail = profile.optJSONObject("clerk")?.safeStr("email")?.ifEmpty { null } ?: userEmail
-                    
-                    profile.optJSONObject("profile")?.safeStr("avatar_emoji")?.ifEmpty { null }?.let {
-                        avatarEmoji = it
-                    }
+
+                    val emoji = profile.optJSONObject("profile")?.safeStr("avatar_emoji")?.ifEmpty { null }
+                    if (emoji != null) avatarEmoji = emoji
+
+                    // Cache so BottomNav and next visit are instant
+                    prefs.edit()
+                        .putString("cached_display_name", name)
+                        .putString("avatar_emoji", emoji ?: avatarEmoji)
+                        .apply()
                 }
             } catch (e: Exception) {
-                android.util.Log.e("AccountScreen", "Error fetching profile: ${e.message}")
+                android.util.Log.e("AccountScreen", "Error: ${e.message}")
             }
         }
     }
-    
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -100,125 +119,111 @@ fun AccountScreen(
                 )
             )
     ) {
-        // Profile Header
+        // Profile Header — clean, no extra padding
         Surface(
             color = Color.White,
             modifier = Modifier.fillMaxWidth()
         ) {
             Row(
                 modifier = Modifier
-                    .padding(16.dp)
+                    .padding(horizontal = 16.dp, vertical = 14.dp)
                     .fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Avatar
                 Box(
                     modifier = Modifier
                         .size(48.dp)
                         .clip(CircleShape)
                         .background(
-                            brush = Brush.verticalGradient(
-                                listOf(Emerald400, Emerald600)
-                            )
+                            brush = Brush.verticalGradient(listOf(Emerald400, Emerald600))
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = avatarEmoji,
-                        style = MaterialTheme.typography.headlineSmall
-                    )
+                    Text(avatarEmoji, fontSize = 24.sp)
                 }
-                
                 Spacer(modifier = Modifier.width(12.dp))
-                
                 Column {
                     Text(
-                        text = displayName,
+                        displayName,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = Gray900
                     )
                     Text(
-                        text = displayEmail,
+                        displayEmail,
                         style = MaterialTheme.typography.bodyMedium,
                         color = Gray500
                     )
                 }
             }
         }
-        
-        // Content
-        LazyColumn(
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+
+        // ACCOUNT section — tile grid
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 12.dp, vertical = 8.dp)
         ) {
-            item {
-                MenuSection(
-                    title = "ACCOUNT",
-                    items = listOf(
-                        MenuItem(Icons.Filled.Person, "Profile", false),
-                        MenuItem(Icons.Filled.Settings, "Preferences", false),
-                        MenuItem(Icons.Filled.Shield, "Security", false)
-                    ),
-                    onItemClick = { item ->
-                        when (item.title) {
-                            "Profile" -> onNavigateToProfile()
-                            "Preferences" -> onNavigateToPreferences()
-                            "Security" -> onNavigateToSecurity()
-                        }
-                    }
+            Text(
+                "ACCOUNT",
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.SemiBold,
+                color = Gray500,
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+            )
+
+            // 2-column tile grid for account items
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                val accountItems = listOf(
+                    Triple(Icons.Filled.Person, "Profile", "profile"),
+                    Triple(Icons.Filled.Settings, "Preferences", "preferences"),
+                    Triple(Icons.Filled.Shield, "Security", "security"),
+                    Triple(Icons.Filled.Info, "About", "about"),
+                    Triple(Icons.Filled.Help, "Help", "help"),
+                    Triple(Icons.Filled.Star, "What's new", "whats_new")
                 )
-            }
-            
-            item {
-                MenuSection(
-                    title = "GENERAL",
-                    items = listOf(
-                        MenuItem(Icons.Filled.Help, "Help", true),
-                        MenuItem(Icons.Filled.Star, "What's new", true),
-                        MenuItem(Icons.Filled.Info, "About", false),
-                        MenuItem(Icons.Filled.Build, "Troubleshoot", false)
-                    ),
-                    onItemClick = { item ->
-                        when (item.title) {
-                            "Help" -> onNavigateToAbout()
-                            "What's new" -> onNavigateToAbout()
-                            "About" -> onNavigateToAbout()
-                            "Troubleshoot" -> onNavigateToAbout()
+
+                items(accountItems) { (icon, label, action) ->
+                    AccountTile(
+                        icon = icon,
+                        label = label,
+                        onClick = {
+                            when (action) {
+                                "profile" -> onNavigateToProfile()
+                                "preferences" -> onNavigateToPreferences()
+                                "security" -> onNavigateToSecurity()
+                                "about" -> onNavigateToAbout()
+                                "help" -> onNavigateToAbout()
+                                "whats_new" -> onNavigateToAbout()
+                            }
                         }
-                    }
-                )
+                    )
+                }
             }
-            
-            item {
-                // Sign Out Button
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color.White,
-                    shadowElevation = 1.dp,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { 
-                            onSignOut()
-                        }
+
+            // Sign Out at bottom
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = Color.White,
+                shadowElevation = 1.dp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+                    .clickable { onSignOut() }
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
                 ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Logout,
-                            contentDescription = "Sign Out",
-                            tint = Red500,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text(
-                            text = "Sign Out",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = Red500
-                        )
-                    }
+                    Icon(Icons.Filled.Logout, "Sign Out", tint = Red500, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(12.dp))
+                    Text("Sign Out", style = MaterialTheme.typography.titleMedium, color = Red500)
                 }
             }
         }
@@ -226,102 +231,56 @@ fun AccountScreen(
 }
 
 @Composable
-fun MenuSection(
-    title: String,
-    items: List<MenuItem>,
-    onItemClick: (MenuItem) -> Unit = {}
+private fun AccountTile(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit
 ) {
-    Column {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.SemiBold,
-            color = Gray500,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp)
-        )
-        
-        Surface(
-            shape = RoundedCornerShape(12.dp),
-            color = Color.White,
-            shadowElevation = 1.dp,
-            modifier = Modifier.fillMaxWidth()
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = Color.White,
+        shadowElevation = 1.dp,
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(1.4f)
+            .clickable(onClick = onClick)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.Start
         ) {
-            Column {
-                items.forEachIndexed { index, item ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onItemClick(item) }
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = item.icon,
-                            contentDescription = item.title,
-                            tint = Gray600,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        
-                        Spacer(modifier = Modifier.width(16.dp))
-                        
-                        Text(
-                            text = item.title,
-                            style = MaterialTheme.typography.titleMedium,
-                            color = Gray900,
-                            modifier = Modifier.weight(1f)
-                        )
-                        
-                        if (item.showExternal) {
-                            Icon(
-                                imageVector = Icons.Filled.OpenInNew,
-                                contentDescription = "External",
-                                tint = Gray500,
-                                modifier = Modifier.size(14.dp)
-                            )
-                        } else if (item.showChevron) {
-                            Icon(
-                                imageVector = Icons.Filled.ChevronRight,
-                                contentDescription = "Navigate",
-                                tint = Gray500,
-                                modifier = Modifier.size(14.dp)
-                            )
-                        }
-                    }
-                    
-                    if (index < items.size - 1) {
-                        HorizontalDivider(
-                            color = Gray100,
-                            modifier = Modifier.padding(start = 60.dp)
-                        )
-                    }
-                }
-            }
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = Emerald600,
+                modifier = Modifier.size(28.dp)
+            )
+            Spacer(Modifier.height(12.dp))
+            Text(
+                label,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Medium,
+                color = Gray900
+            )
         }
     }
 }
 
-/**
- * Fetch user profile from backend API using JWT token.
- */
-private fun fetchProfile(token: String): JSONObject? {
+private fun fetchAccountProfile(token: String): JSONObject? {
     val client = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
-
     val request = Request.Builder()
         .url("https://www.mafutapass.com/api/auth/mobile-profile")
         .get()
         .addHeader("Authorization", "Bearer $token")
         .build()
-
     val response = client.newCall(request).execute()
     val body = response.body?.string() ?: return null
-
-    if (!response.isSuccessful) {
-        android.util.Log.e("AccountScreen", "Profile fetch failed: ${response.code} - $body")
-        return null
-    }
-
+    if (!response.isSuccessful) return null
     return JSONObject(body)
 }
