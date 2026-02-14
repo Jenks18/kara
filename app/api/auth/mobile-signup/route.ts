@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { clerkClient } from '@clerk/nextjs/server';
+import { exchangeSignInTokenForJwt } from '@/lib/auth/clerk-exchange';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -9,40 +10,6 @@ const corsHeaders = {
 
 export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders });
-}
-
-/**
- * Helper: exchange a sign-in token for a Clerk JWT via Frontend API (single-step).
- */
-async function exchangeSignInTokenForJwt(token: string): Promise<{ jwt: string; userId: string } | null> {
-  const frontendApi = process.env.NEXT_PUBLIC_CLERK_FRONTEND_API;
-  if (!frontendApi) {
-    console.error('❌ NEXT_PUBLIC_CLERK_FRONTEND_API not configured');
-    return null;
-  }
-
-  const response = await fetch(`${frontendApi}/v1/client/sign_ins?_clerk_js_version=4.70.0`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ strategy: 'ticket', ticket: token }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('❌ Token exchange failed:', response.status, errorText);
-    return null;
-  }
-
-  const data = await response.json();
-  const jwt = data.client?.sessions?.[0]?.last_active_token?.jwt;
-  const userId = data.response?.user_id;
-
-  if (!jwt) {
-    console.error('❌ No JWT in exchange response');
-    return null;
-  }
-
-  return { jwt, userId: userId || '' };
 }
 
 export async function POST(req: NextRequest) {
