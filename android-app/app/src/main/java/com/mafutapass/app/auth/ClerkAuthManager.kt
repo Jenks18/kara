@@ -628,12 +628,12 @@ object ClerkAuthManager {
     }
     
     /**
-     * Create session JWT for user (Backend SDK)
-     * Bypasses Cloudflare blocking by using Backend SDK directly
+     * Sign in user via backend proxy and get JWT
+     * Backend performs Clerk Frontend API sign-in on behalf of Android
      */
-    suspend fun createSessionForUser(userId: String): AuthResult = withContext(Dispatchers.IO) {
+    suspend fun signInViaBackend(email: String, password: String): AuthResult = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "🔑 Creating session for user via Backend SDK...")
+            Log.d(TAG, "🔑 Signing in via backend proxy: $email")
             
             val url = URL("https://www.mafutapass.com/api/auth/exchange-token")
             val connection = url.openConnection() as HttpURLConnection
@@ -643,7 +643,8 @@ object ClerkAuthManager {
             connection.doOutput = true
             
             val requestBody = JSONObject().apply {
-                put("userId", userId)
+                put("email", email)
+                put("password", password)
             }
             
             connection.outputStream.use { os ->
