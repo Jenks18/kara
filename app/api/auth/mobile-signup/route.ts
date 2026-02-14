@@ -42,17 +42,25 @@ export async function POST(req: NextRequest) {
 
     console.log('✅ User created:', clerkUser.id);
     console.log('📧 Email auto-verified by Backend SDK');
-    console.log('✅ Account creation complete - user can now sign in');
-
-    // Account successfully created. User needs to sign in with their credentials.
-    // Cannot auto-authenticate due to Cloudflare blocking programmatic Frontend API access.
+    
+    // Automatically create a sign-in token for immediate authentication
+    console.log('🔐 Creating sign-in token for automatic authentication...');
+    const signInToken = await client.signInTokens.createSignInToken({
+      userId: clerkUser.id,
+      expiresInSeconds: 3600, // 1 hour
+    });
+    
+    console.log('✅ Sign-in token created:', signInToken.id);
+    console.log('🎟️ Token:', signInToken.token);
+    
+    // Return the sign-in token - Android will exchange it for a session
     return NextResponse.json(
       {
         success: true,
         userId: clerkUser.id,
         email: email,
-        requiresSignIn: true,
-        message: 'Account created successfully. Please sign in.'
+        token: signInToken.token, // Sign-in token for automatic authentication
+        message: 'Account created successfully and authenticated.'
       },
       { status: 200, headers: corsHeaders }
     );
