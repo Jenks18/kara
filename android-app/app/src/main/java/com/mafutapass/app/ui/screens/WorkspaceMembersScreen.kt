@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.mafutapass.app.auth.TokenManager
 import com.mafutapass.app.data.ApiClient
 import com.mafutapass.app.data.Workspace
 import com.mafutapass.app.ui.theme.*
@@ -53,8 +54,6 @@ fun WorkspaceMembersScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
-    val prefs = context.getSharedPreferences("clerk_session", Context.MODE_PRIVATE)
-    val sessionToken = prefs.getString("session_token", null)
 
     var workspace by remember { mutableStateOf<Workspace?>(null) }
     var members by remember { mutableStateOf<List<WorkspaceMember>>(emptyList()) }
@@ -76,10 +75,11 @@ fun WorkspaceMembersScreen(
             }
             workspace = fetched
 
-            // Fetch members
-            if (sessionToken != null) {
+            // Fetch members with auto-refreshed token
+            val token = TokenManager.getValidToken(context)
+            if (token != null) {
                 val membersList = withContext(Dispatchers.IO) {
-                    fetchWorkspaceMembers(sessionToken, workspaceId)
+                    fetchWorkspaceMembers(token, workspaceId)
                 }
                 members = membersList
             }

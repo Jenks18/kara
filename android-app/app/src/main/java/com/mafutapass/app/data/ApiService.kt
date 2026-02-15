@@ -1,6 +1,8 @@
 package com.mafutapass.app.data
 
 import android.content.Context
+import com.mafutapass.app.auth.TokenManager
+import kotlinx.coroutines.runBlocking
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.*
@@ -52,9 +54,11 @@ object ApiClient {
     }
     
     private val authInterceptor: (okhttp3.Interceptor.Chain) -> okhttp3.Response = { chain ->
+        // Use TokenManager to get a valid (auto-refreshed) token for every request.
+        // runBlocking is safe here — OkHttp interceptors run on OkHttp's IO dispatcher,
+        // never on the main thread.
         val token = applicationContext?.let { context ->
-            context.getSharedPreferences("clerk_session", Context.MODE_PRIVATE)
-                .getString("session_token", null)
+            runBlocking { TokenManager.getValidToken(context) }
         }
         
         val request = chain.request().newBuilder()

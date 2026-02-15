@@ -4,6 +4,7 @@ import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.mafutapass.app.auth.TokenManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -21,14 +22,22 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
 
     fun checkAuthState() {
         viewModelScope.launch {
-            val token = prefs.getString("session_token", null)
             val userId = prefs.getString("user_id", null)
-            
-            _authState.value = if (token != null && userId != null) {
-                Log.d("AuthViewModel", "User is signed in (userId: $userId)")
+            if (userId == null) {
+                Log.d("AuthViewModel", "User is signed out (no userId)")
+                _authState.value = AuthState.SignedOut
+                return@launch
+            }
+
+            // Use TokenManager to verify the token is valid (auto-refreshes if needed)
+            val validToken = TokenManager.getValidToken(getApplication())
+            _authState.value = if (validToken != null) {
+                Log.d("AuthViewModel", "User is signed in (userId: $userId, token valid)")
                 AuthState.SignedIn
             } else {
-                Log.d("AuthViewModel", "User is signed out")
+                Log.d("AuthViewModel", "User token expired and refresh failed — signing out")
+                // Clear stale session so the user sees the sign-in screen
+                prefs.edit().clear().apply()
                 AuthState.SignedOut
             }
         }
