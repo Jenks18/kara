@@ -72,8 +72,13 @@ export async function getSupabaseClient() {
       try {
         const clerk = (window as any).Clerk
         if (clerk && clerk.session) {
-          // Get FRESH Supabase-compatible JWT from Clerk
-          const token = await clerk.session.getToken({ template: 'supabase' })
+          // Get FRESH Supabase-compatible JWT from Clerk with timeout
+          const tokenPromise = clerk.session.getToken({ template: 'supabase' })
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Token timeout')), 5000)
+          )
+          
+          const token = await Promise.race([tokenPromise, timeoutPromise])
           if (token) {
             // Safely merge all existing headers + auth token
             const existingHeaders = headersToRecord(options.headers)
@@ -88,6 +93,7 @@ export async function getSupabaseClient() {
         }
       } catch (error) {
         console.error('Error getting Clerk token:', error)
+        // Continue without token instead of hanging
       }
       
       // Fallback without token

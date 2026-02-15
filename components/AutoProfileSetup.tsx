@@ -20,7 +20,14 @@ export function AutoProfileSetup() {
 
     const syncProfile = async () => {
       try {
-        const supabase = await getSupabaseClient()
+        // Add timeout to prevent hanging auth process 
+        const supabasePromise = getSupabaseClient()
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Supabase client timeout')), 3000)
+        )
+        
+        const supabase = await Promise.race([supabasePromise, timeoutPromise])
+        
         const { error } = await supabase
           .from('user_profiles')
           .upsert(
@@ -40,6 +47,7 @@ export function AutoProfileSetup() {
         }
       } catch (error) {
         console.error('Error syncing profile:', error)
+        // Don't block the UI - continue silently
       }
     }
 

@@ -11,11 +11,25 @@ export function UserProfileInit() {
       if (!isLoaded || !user) return
 
       try {
-        await fetch('/api/user-profile/init', {
+        // Add timeout to prevent hanging auth process
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 5000)
+        
+        const response = await fetch('/api/user-profile/init', {
           method: 'POST',
+          signal: controller.signal
         })
+        
+        clearTimeout(timeoutId)
+        
+        if (!response.ok) {
+          console.error('Profile init failed:', response.status)
+        }
       } catch (error) {
-        console.error('Error initializing user profile:', error)
+        if (error.name !== 'AbortError') {
+          console.error('Error initializing user profile:', error)  
+        }
+        // Don't block UI - continue silently
       }
     }
 
