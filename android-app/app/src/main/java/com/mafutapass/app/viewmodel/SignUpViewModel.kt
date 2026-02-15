@@ -14,7 +14,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
-import com.mafutapass.app.auth.ClerkAuthManager
 import com.mafutapass.app.auth.TokenRepository
 import java.util.concurrent.TimeUnit
 
@@ -54,28 +53,12 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
                     return@launch
                 }
 
-                var jwt = result.token
+                val jwt = result.token
                 val userId = result.userId
 
-                if (userId == null) {
-                    Log.e("SignUpViewModel", "❌ No userId in response")
-                    _uiState.value = SignUpUiState.Error("Sign-up failed: no user ID returned")
-                    return@launch
-                }
-
-                // If no JWT but we have a signInToken, try to exchange it client-side
-                if (jwt == null && result.signInToken != null) {
-                    Log.d("SignUpViewModel", "🔄 JWT missing, attempting signInToken exchange")
-                    val exchangeResult = ClerkAuthManager.signInWithToken(result.signInToken)
-                    if (exchangeResult.success && exchangeResult.token != null) {
-                        jwt = exchangeResult.token
-                        Log.d("SignUpViewModel", "✅ Got JWT via signInToken exchange")
-                    }
-                }
-
-                if (jwt == null) {
-                    Log.e("SignUpViewModel", "❌ No JWT obtained after sign-up")
-                    _uiState.value = SignUpUiState.Error("Account created but authentication failed. Please sign in.")
+                if (userId == null || jwt == null) {
+                    Log.e("SignUpViewModel", "❌ Missing userId or token in response")
+                    _uiState.value = SignUpUiState.Error(result.error ?: "Sign-up failed")
                     return@launch
                 }
 
@@ -110,7 +93,6 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
     private data class SignupResult(
         val success: Boolean,
         val token: String? = null,
-        val signInToken: String? = null,
         val userId: String? = null,
         val error: String? = null
     )
@@ -152,13 +134,11 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
 
         val jsonResponse = JSONObject(responseBody)
         val token = jsonResponse.optString("token").takeIf { it.isNotEmpty() && it != "null" }
-        val signInToken = jsonResponse.optString("signInToken").takeIf { it.isNotEmpty() && it != "null" }
         val userId = jsonResponse.optString("userId").takeIf { it.isNotEmpty() }
 
         SignupResult(
             success = true,
             token = token,
-            signInToken = signInToken,
             userId = userId
         )
     }

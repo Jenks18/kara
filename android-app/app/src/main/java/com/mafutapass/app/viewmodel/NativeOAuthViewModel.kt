@@ -220,10 +220,9 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
                 return
             }
 
-            // Backend returns "token" field (Clerk sign-in token)
+            // Backend always returns a valid JWT in the "token" field
             val token = jsonResponse.optString("token", null) 
                 ?: jsonResponse.optString("sessionToken", null)
-                ?: jsonResponse.optString("signInToken", null)
             
             if (token == null) {
                 Log.e(TAG, "❌ No token in response")

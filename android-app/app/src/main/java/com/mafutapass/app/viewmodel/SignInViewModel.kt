@@ -29,16 +29,16 @@ class SignInViewModel(application: Application) : AndroidViewModel(application) 
     fun signIn(email: String, password: String) {
         viewModelScope.launch {
             _uiState.value = SignInUiState.Loading
-            Log.d("SignInViewModel", "🔐 Signing in")
+            Log.d("SignInViewModel", "🔐 Signing in via backend")
 
             try {
                 val result = signInViaBackend(email, password)
 
                 if (result.token != null && result.userId != null) {
-                    // Store in TokenRepository (primary) - this triggers auth state change
+                    // Backend always returns a valid session JWT — store it
                     TokenRepository.getInstance(getApplication()).storeToken(result.token, result.userId, email)
 
-                    // Also store in legacy prefs for backward compat
+                    // Legacy prefs for backward compat
                     val prefs = getApplication<Application>()
                         .getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
                     prefs.edit().apply {
@@ -93,7 +93,7 @@ class SignInViewModel(application: Application) : AndroidViewModel(application) 
         }
 
         val jsonResponse = JSONObject(responseBody)
-        val token = jsonResponse.optString("token").takeIf { it.isNotEmpty() }
+        val token = jsonResponse.optString("token").takeIf { it.isNotEmpty() && it != "null" }
         val userId = jsonResponse.optString("userId").takeIf { it.isNotEmpty() }
 
         SignInResult(token = token, userId = userId)

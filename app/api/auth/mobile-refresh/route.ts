@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { clerkClient } from '@clerk/nextjs/server';
-import { exchangeSignInTokenForJwt } from '@/lib/auth/clerk-exchange';
+import { mintMobileSessionJwt } from '@/lib/auth/mobile-jwt';
 import { corsHeaders } from '@/lib/auth/mobile-auth';
 
 export async function OPTIONS() {
@@ -9,11 +9,11 @@ export async function OPTIONS() {
 
 /**
  * POST /api/auth/mobile-refresh
- * Refresh an expired Clerk session JWT.
+ * Refresh an expired mobile session JWT.
  *
  * Accepts the old (potentially expired) JWT in the Authorization header.
- * Decodes it to extract the user ID, verifies the user still exists,
- * creates a new sign-in token, and exchanges it for a fresh JWT.
+ * Decodes it to extract the user ID, verifies the user still exists
+ * in Clerk, and mints a fresh JWT.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -29,11 +29,13 @@ export async function POST(request: NextRequest) {
 
     // Decode the JWT payload (without verification — it may be expired)
     let userId: string | null = null;
+    let email: string | null = null;
     try {
       const parts = token.split('.');
       if (parts.length !== 3) throw new Error('Invalid JWT format');
       const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf-8'));
       userId = payload.sub || null;
+      email = payload.email || null;
     } catch {
       return NextResponse.json(
         { error: 'Invalid token format' },
@@ -60,26 +62,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create a new sign-in token and exchange for fresh JWT
-    const signInToken = await clerk.signInTokens.createSignInToken({
-      userId: user.id,
-      expiresInSeconds: 60,
-    });
-
-    const session = await exchangeSignInTokenForJwt(signInToken.token);
-
-    if (!session) {
-      return NextResponse.json(
-        { error: 'Failed to create new session — please sign in again' },
-        { status: 500, headers: corsHeaders }
-      );
-    }
+    // Mint a fresh session JWT
+    const userEmail = user.emailAddresses?.[0]?.emailAddress || email || '';
+    const freshJwt = mintMobileSessionJwt(user.id, userEmail);
 
     console.log('✅ Token refreshed for user:', userId);
 
     return NextResponse.json({
       success: true,
-      token: session.jwt,
+      token: freshJwt,
       userId: user.id,
     }, { headers: corsHeaders });
 

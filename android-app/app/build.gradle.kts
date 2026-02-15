@@ -35,7 +35,9 @@ android {
         }
         debug {
             isMinifyEnabled = false
-            applicationIdSuffix = ".debug"
+            // Removed applicationIdSuffix ".debug" — it changes package to com.mafutapass.app.debug
+            // which breaks Google Sign-In unless a separate Android OAuth client is registered
+            // for the .debug package name in Google Cloud Console.
             isDebuggable = true
         }
     }

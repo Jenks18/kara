@@ -98,7 +98,11 @@ class TokenRepository private constructor(context: Context) {
         
         _tokenState.value = when {
             token != null && userId != null && !isTokenExpired(token) -> {
-                scheduleRefreshIfNeeded()
+                try {
+                    scheduleRefreshIfNeeded()
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to schedule refresh: ${e.message}")
+                }
                 TokenState.Valid(token, userId)
             }
             else -> TokenState.Invalid
@@ -206,7 +210,12 @@ class TokenRepository private constructor(context: Context) {
      * Now uses AccountManager as primary storage
      */
     suspend fun storeToken(token: String, userId: String, userEmail: String) {
-        val expiry = extractTokenExpiry(token) * 1000 // Convert to milliseconds
+        val expiry = try {
+            extractTokenExpiry(token) * 1000 // Convert to milliseconds
+        } catch (e: Exception) {
+            Log.w(TAG, "⚠️ Failed to parse token expiry, using 1-hour default: ${e.message}")
+            System.currentTimeMillis() + (3600 * 1000) // 1 hour default
+        }
         
         // Store in AccountManager (primary)
         val success = accountHelper.signIn(

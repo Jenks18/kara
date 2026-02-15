@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { clerkClient } from '@clerk/nextjs/server';
 import { createClient } from '@supabase/supabase-js';
-import { exchangeSignInTokenForJwt } from '@/lib/auth/clerk-exchange';
+import { mintMobileSessionJwt } from '@/lib/auth/mobile-jwt';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -64,15 +64,9 @@ export async function POST(request: NextRequest) {
     if (existingUsers.data.length > 0) {
       console.log('⚠️  User already exists - returning existing user');
       const user = existingUsers.data[0];
-      
-      const signInToken = await clerk.signInTokens.createSignInToken({
-        userId: user.id,
-        expiresInSeconds: 60,
-      });
 
-      // Exchange for JWT
-      const session = await exchangeSignInTokenForJwt(signInToken.token);
-      const sessionJwt = session?.jwt || signInToken.token;
+      // Mint session JWT directly
+      const sessionJwt = mintMobileSessionJwt(user.id, email);
       
       return NextResponse.json({
         success: true,
@@ -111,19 +105,9 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ User created in Clerk:', user.id);
 
-    // Create sign-in token
-    const signInToken = await clerk.signInTokens.createSignInToken({
-      userId: user.id,
-      expiresInSeconds: 60,
-    });
-
-    console.log('✅ Sign-in token created');
-
-    // Exchange for JWT
-    const session = await exchangeSignInTokenForJwt(signInToken.token);
-    const sessionJwt = session?.jwt || signInToken.token;
-
-    console.log('✅ JWT obtained for new Google OAuth user');
+    // Mint session JWT directly (backend is the sole authority)
+    const sessionJwt = mintMobileSessionJwt(user.id, email);
+    console.log('✅ JWT minted for new Google OAuth user');
 
     // Auto-create user profile in Supabase
     try {

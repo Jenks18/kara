@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { clerkClient } from '@clerk/nextjs/server';
-import { exchangeSignInTokenForJwt } from '@/lib/auth/clerk-exchange';
+import { mintMobileSessionJwt } from '@/lib/auth/mobile-jwt';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -39,42 +39,17 @@ export async function POST(req: NextRequest) {
 
     console.log('✅ User created:', clerkUser.id);
 
-    // Step 2: Create sign-in token (Backend SDK)
-    const signInToken = await client.signInTokens.createSignInToken({
-      userId: clerkUser.id,
-      expiresInSeconds: 600,
-    });
+    // Step 2: Mint session JWT (backend is the sole authority)
+    const sessionJwt = mintMobileSessionJwt(clerkUser.id, email);
 
-    console.log('✅ Sign-in token created');
-
-    // Step 3: Exchange token for JWT server-side (single-step, no cookies needed)
-    const session = await exchangeSignInTokenForJwt(signInToken.token);
-
-    if (!session) {
-      // User was created but token exchange failed — still return success with token
-      // so Android can retry the exchange via /api/auth/exchange-token
-      console.warn('⚠️ Token exchange failed, returning sign-in token for client-side retry');
-      return NextResponse.json(
-        {
-          success: true,
-          userId: clerkUser.id,
-          email: email,
-          signInToken: signInToken.token,
-          token: null,
-          message: 'Account created. Use exchange-token endpoint for JWT.',
-        },
-        { status: 200, headers: corsHeaders }
-      );
-    }
-
-    console.log('✅ Sign-up complete with JWT! userId:', session.userId);
+    console.log('✅ Sign-up complete! userId:', clerkUser.id);
 
     return NextResponse.json(
       {
         success: true,
         userId: clerkUser.id,
         email: email,
-        token: session.jwt,
+        token: sessionJwt,
         message: 'Account created and authenticated!',
       },
       { status: 200, headers: corsHeaders }

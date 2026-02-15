@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { clerkClient } from '@clerk/nextjs/server';
 import { OAuth2Client } from 'google-auth-library';
-import { exchangeSignInTokenForJwt } from '@/lib/auth/clerk-exchange';
+import { mintMobileSessionJwt } from '@/lib/auth/mobile-jwt';
 
 /**
  * NATIVE Google OAuth for Android
@@ -155,40 +155,10 @@ export async function POST(request: NextRequest) {
       });
     }
     
-    // Existing user - create sign-in token and exchange for JWT
+    // Existing user — mint session JWT directly (backend is the sole authority)
     console.log('✅ Existing user found:', user.id);
-    
-    // Create sign-in token for OAuth (no password check needed)
-    const signInToken = await clerk.signInTokens.createSignInToken({
-      userId: user.id,
-      expiresInSeconds: 60,
-    });
-    
-    console.log('✅ Sign-in token created for existing user');
-
-    // Exchange sign-in token for JWT (same as manual sign-in flow)
-    const session = await exchangeSignInTokenForJwt(signInToken.token);
-    
-    if (!session) {
-      console.error('❌ Failed to exchange sign-in token for JWT');
-      // Fallback: return raw token for client-side retry
-      return NextResponse.json({
-        success: true,
-        token: signInToken.token,
-        userId: user.id,
-        email: email,
-        isNewUser: false,
-        user: {
-          id: user.id,
-          email: user.emailAddresses[0]?.emailAddress,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          imageUrl: user.imageUrl,
-        },
-      }, { headers: corsHeaders });
-    }
-
-    console.log('✅ JWT obtained for Google OAuth user:', user.id);
+    const sessionJwt = mintMobileSessionJwt(user.id, email);
+    console.log('✅ JWT minted for Google OAuth user:', user.id);
     
     // Auto-create/update user profile in Supabase
     try {
@@ -221,7 +191,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      token: session.jwt,
+      token: sessionJwt,
       userId: user.id,
       email: email,
       isNewUser: false, // Existing user

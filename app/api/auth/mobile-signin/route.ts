@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { clerkClient } from '@clerk/nextjs/server';
-import { exchangeSignInTokenForJwt } from '@/lib/auth/clerk-exchange';
+import { mintMobileSessionJwt } from '@/lib/auth/mobile-jwt';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -67,30 +67,15 @@ export async function POST(req: NextRequest) {
 
     console.log('✅ Password verified');
 
-    // Step 3: Create sign-in token (Backend SDK)
-    const signInToken = await client.signInTokens.createSignInToken({
-      userId: user.id,
-      expiresInSeconds: 60,
-    });
-
-    console.log('✅ Sign-in token created');
-
-    // Step 4: Exchange token for JWT (single-step Frontend API)
-    const session = await exchangeSignInTokenForJwt(signInToken.token);
-
-    if (!session) {
-      console.error('❌ Failed to exchange sign-in token for JWT');
-      return NextResponse.json(
-        { success: false, error: 'Authentication failed' },
-        { status: 500, headers: corsHeaders }
-      );
-    }
+    // Step 3: Mint session JWT (backend is the sole authority)
+    const userEmail = user.emailAddresses?.[0]?.emailAddress || email;
+    const sessionJwt = mintMobileSessionJwt(user.id, userEmail);
 
     console.log('✅ Sign-in successful! userId:', user.id);
 
     return NextResponse.json({
       success: true,
-      token: session.jwt,
+      token: sessionJwt,
       userId: user.id,
     }, { headers: corsHeaders });
 
