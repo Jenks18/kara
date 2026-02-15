@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
-import androidx.compose.material.icons.filled.BusinessCenter
 import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -46,7 +45,6 @@ fun BottomNavBar(navController: NavController) {
     val items = listOf(
         BottomNavItem(Screen.Reports.route, "Reports", Icons.Filled.Assessment),
         BottomNavItem(Screen.Create.route, "Create", Icons.Filled.AddCircle),
-        BottomNavItem(Screen.Workspaces.route, "Workspaces", Icons.Filled.BusinessCenter),
         BottomNavItem(Screen.Account.route, "Account", isAvatar = true)
     )
 

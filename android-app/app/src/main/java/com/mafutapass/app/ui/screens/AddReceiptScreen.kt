@@ -1,7 +1,6 @@
 package com.mafutapass.app.ui.screens
 
 import android.Manifest
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.widget.Toast
@@ -30,7 +29,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -38,16 +37,23 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.mafutapass.app.data.ReceiptUploadResponse
 import com.mafutapass.app.ui.theme.*
 import com.mafutapass.app.viewmodel.ScanReceiptViewModel
 import com.mafutapass.app.viewmodel.ScanReceiptViewModel.ScanState
-import java.io.ByteArrayOutputStream
 import java.io.File
 
+/**
+ * AddReceiptScreen — the "Create" / middle tab in the bottom navigation.
+ *
+ * This is a tab-level composable (no "back" destination). It drives the full
+ * receipt-capture flow: choose method → review images → upload → results.
+ * Pressing the system back button or the toolbar back arrow in sub-states
+ * returns to the ChooseMethod landing, never pops the navigation stack.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ScanReceiptScreen(
-    onBack: () -> Unit,
+fun AddReceiptScreen(
     onNavigateToReport: (String) -> Unit = {},
     viewModel: ScanReceiptViewModel = hiltViewModel()
 ) {
@@ -64,7 +70,7 @@ fun ScanReceiptScreen(
         uris.forEach { uri -> viewModel.addImageFromUri(uri) }
     }
 
-    // Camera state
+    // Camera permission + state
     var showCamera by remember { mutableStateOf(false) }
     var hasCameraPermission by remember { mutableStateOf(false) }
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -75,9 +81,9 @@ fun ScanReceiptScreen(
         else Toast.makeText(context, "Camera permission required to scan receipts", Toast.LENGTH_SHORT).show()
     }
 
-    // Full-screen camera overlay
+    // Full-screen camera overlay — when active, it takes over the entire screen
     if (showCamera && hasCameraPermission) {
-        CameraCapture(
+        CameraOverlay(
             onImageCaptured = { bytes ->
                 viewModel.addImageBytes(bytes)
                 showCamera = false
@@ -92,17 +98,22 @@ fun ScanReceiptScreen(
             .fillMaxSize()
             .background(AppTheme.colors.backgroundGradient)
     ) {
+        // Title changes contextually; back arrow only visible in sub-states
+        val isLanding = uiState is ScanState.ChooseMethod
+        val title = when (uiState) {
+            is ScanState.ChooseMethod -> "Add Receipt"
+            is ScanState.ReviewImages -> "Review Receipts"
+            is ScanState.Uploading    -> "Processing"
+            is ScanState.Results      -> "Results"
+        }
+
         TopAppBar(
-            title = { Text("Scan Receipt", fontWeight = FontWeight.Bold) },
+            title = { Text(title, fontWeight = FontWeight.Bold) },
             navigationIcon = {
-                IconButton(onClick = {
-                    if (uiState is ScanState.ReviewImages) {
-                        viewModel.reset()
-                    } else {
-                        onBack()
+                if (!isLanding) {
+                    IconButton(onClick = { viewModel.reset() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                }) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -110,46 +121,35 @@ fun ScanReceiptScreen(
         )
 
         when (val state = uiState) {
-            is ScanState.ChooseMethod -> ChooseMethodContent(
-                onTakePhoto = {
-                    permissionLauncher.launch(Manifest.permission.CAMERA)
-                },
-                onChooseFromGallery = {
-                    galleryLauncher.launch("image/*")
-                }
+            is ScanState.ChooseMethod -> ChooseMethodSection(
+                onTakePhoto = { permissionLauncher.launch(Manifest.permission.CAMERA) },
+                onChooseFromGallery = { galleryLauncher.launch("image/*") }
             )
-            is ScanState.ReviewImages -> ReviewImagesContent(
+            is ScanState.ReviewImages -> ReviewImagesSection(
                 images = selectedImages,
                 onRemoveImage = { viewModel.removeImage(it) },
-                onAddMore = {
-                    galleryLauncher.launch("image/*")
-                },
-                onTakeAnother = {
-                    permissionLauncher.launch(Manifest.permission.CAMERA)
-                },
+                onAddMore = { galleryLauncher.launch("image/*") },
+                onTakeAnother = { permissionLauncher.launch(Manifest.permission.CAMERA) },
                 onSubmit = { viewModel.uploadAll() }
             )
-            is ScanState.Uploading -> UploadingContent(
+            is ScanState.Uploading -> UploadingSection(
                 currentIndex = currentUploadIndex,
                 totalCount = selectedImages.size
             )
-            is ScanState.Results -> ResultsContent(
+            is ScanState.Results -> ResultsSection(
                 state = state,
                 results = uploadResults,
-                onViewReport = { reportId ->
-                    onNavigateToReport(reportId)
-                },
-                onDone = {
-                    viewModel.reset()
-                    onBack()
-                }
+                onViewReport = { onNavigateToReport(it) },
+                onScanAnother = { viewModel.reset() }
             )
         }
     }
 }
 
+// ── Sub-composables ──────────────────────────────────────────────────────────
+
 @Composable
-private fun ChooseMethodContent(
+private fun ChooseMethodSection(
     onTakePhoto: () -> Unit,
     onChooseFromGallery: () -> Unit
 ) {
@@ -183,12 +183,9 @@ private fun ChooseMethodContent(
         )
         Spacer(Modifier.height(32.dp))
 
-        // Take Photo button
         Button(
             onClick = onTakePhoto,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
+            modifier = Modifier.fillMaxWidth().height(56.dp),
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
         ) {
@@ -199,12 +196,9 @@ private fun ChooseMethodContent(
 
         Spacer(Modifier.height(12.dp))
 
-        // Choose from Gallery button
         OutlinedButton(
             onClick = onChooseFromGallery,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
+            modifier = Modifier.fillMaxWidth().height(56.dp),
             shape = RoundedCornerShape(16.dp),
             border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary)
         ) {
@@ -216,7 +210,7 @@ private fun ChooseMethodContent(
 }
 
 @Composable
-private fun ReviewImagesContent(
+private fun ReviewImagesSection(
     images: List<ByteArray>,
     onRemoveImage: (Int) -> Unit,
     onAddMore: () -> Unit,
@@ -224,9 +218,7 @@ private fun ReviewImagesContent(
     onSubmit: () -> Unit
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
+        modifier = Modifier.fillMaxSize().padding(16.dp)
     ) {
         Text(
             "${images.size} receipt${if (images.size > 1) "s" else ""} selected",
@@ -242,7 +234,6 @@ private fun ReviewImagesContent(
 
         Spacer(Modifier.height(16.dp))
 
-        // Image preview grid
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.weight(1f)
@@ -257,12 +248,9 @@ private fun ReviewImagesContent(
                             bitmap = bitmap.asImageBitmap(),
                             contentDescription = "Receipt ${index + 1}",
                             contentScale = ContentScale.Fit,
-                            modifier = Modifier
-                                .fillMaxHeight()
-                                .clip(RoundedCornerShape(16.dp))
+                            modifier = Modifier.fillMaxHeight().clip(RoundedCornerShape(16.dp))
                         )
                     }
-                    // Remove button
                     IconButton(
                         onClick = { onRemoveImage(index) },
                         modifier = Modifier
@@ -273,14 +261,10 @@ private fun ReviewImagesContent(
                     ) {
                         Icon(Icons.Filled.Close, "Remove", tint = MaterialTheme.colorScheme.onError, modifier = Modifier.size(18.dp))
                     }
-                    // Index badge
                     Surface(
                         shape = CircleShape,
                         color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .padding(8.dp)
-                            .size(28.dp)
+                        modifier = Modifier.align(Alignment.TopStart).padding(8.dp).size(28.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                             Text("${index + 1}", color = MaterialTheme.colorScheme.onPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
@@ -292,7 +276,6 @@ private fun ReviewImagesContent(
 
         Spacer(Modifier.height(16.dp))
 
-        // Add more buttons
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(
                 onClick = onTakeAnother,
@@ -316,12 +299,9 @@ private fun ReviewImagesContent(
 
         Spacer(Modifier.height(12.dp))
 
-        // Submit button
         Button(
             onClick = onSubmit,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
+            modifier = Modifier.fillMaxWidth().height(56.dp),
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
         ) {
@@ -337,11 +317,9 @@ private fun ReviewImagesContent(
 }
 
 @Composable
-private fun UploadingContent(currentIndex: Int, totalCount: Int) {
+private fun UploadingSection(currentIndex: Int, totalCount: Int) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(32.dp),
+        modifier = Modifier.fillMaxSize().padding(32.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -372,31 +350,25 @@ private fun UploadingContent(currentIndex: Int, totalCount: Int) {
         Spacer(Modifier.height(24.dp))
         LinearProgressIndicator(
             progress = { if (totalCount > 0) (currentIndex + 1).toFloat() / totalCount else 0f },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(6.dp)
-                .clip(RoundedCornerShape(3.dp)),
+            modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
             color = MaterialTheme.colorScheme.primary
         )
     }
 }
 
 @Composable
-private fun ResultsContent(
+private fun ResultsSection(
     state: ScanState.Results,
-    results: List<com.mafutapass.app.data.ReceiptUploadResponse>,
+    results: List<ReceiptUploadResponse>,
     onViewReport: (String) -> Unit,
-    onDone: () -> Unit
+    onScanAnother: () -> Unit
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
+        modifier = Modifier.fillMaxSize().padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(Modifier.height(32.dp))
 
-        // Success/Partial icon
         val allSuccess = state.successCount == state.totalCount
         Icon(
             if (allSuccess) Icons.Filled.CheckCircle else Icons.Filled.Warning,
@@ -416,67 +388,10 @@ private fun ResultsContent(
         // Result cards
         Column(
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState())
+            modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())
         ) {
             results.forEachIndexed { index, result ->
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.surface,
-                    shadowElevation = 1.dp,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            if (result.success) Icons.Filled.CheckCircle else Icons.Filled.Error,
-                            null,
-                            tint = if (result.success) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                result.merchant ?: "Receipt ${index + 1}",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            if (result.success && result.amount > 0) {
-                                Text(
-                                    "KES ${String.format("%.2f", result.amount)}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                            if (!result.success) {
-                                Text(
-                                    result.error ?: "Processing failed",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.error
-                                )
-                            }
-                        }
-                        if (result.kraVerified) {
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-                            ) {
-                                Text(
-                                    "KRA ✓",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                )
-                            }
-                        }
-                    }
-                }
+                ReceiptResultCard(index = index, result = result)
             }
         }
 
@@ -486,9 +401,7 @@ private fun ResultsContent(
         if (state.reportId != null) {
             Button(
                 onClick = { onViewReport(state.reportId) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
+                modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
@@ -499,21 +412,83 @@ private fun ResultsContent(
             Spacer(Modifier.height(8.dp))
         }
 
-        // Done button
+        // Scan another
         OutlinedButton(
-            onClick = onDone,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp),
+            onClick = onScanAnother,
+            modifier = Modifier.fillMaxWidth().height(48.dp),
             shape = RoundedCornerShape(16.dp)
         ) {
-            Text("Done", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
+            Icon(Icons.Filled.AddAPhoto, null, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("Scan Another Receipt", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
         }
     }
 }
 
 @Composable
-private fun CameraCapture(
+private fun ReceiptResultCard(index: Int, result: ReceiptUploadResponse) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 1.dp,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                if (result.success) Icons.Filled.CheckCircle else Icons.Filled.Error,
+                null,
+                tint = if (result.success) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    result.merchant ?: "Receipt ${index + 1}",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                if (result.success && result.amount > 0) {
+                    Text(
+                        "KES ${String.format("%.2f", result.amount)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                if (!result.success) {
+                    Text(
+                        result.error ?: "Processing failed",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+            if (result.kraVerified) {
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                ) {
+                    Text(
+                        "KRA ✓",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ── Camera overlay ───────────────────────────────────────────────────────────
+
+@Composable
+private fun CameraOverlay(
     onImageCaptured: (ByteArray) -> Unit,
     onClose: () -> Unit
 ) {
@@ -540,7 +515,7 @@ private fun CameraCapture(
                                 imageCapture
                             )
                         } catch (e: Exception) {
-                            Log.e("CameraCapture", "Camera bind failed", e)
+                            android.util.Log.e("CameraOverlay", "Camera bind failed", e)
                         }
                     }, ContextCompat.getMainExecutor(ctx))
                 }
@@ -548,26 +523,21 @@ private fun CameraCapture(
             modifier = Modifier.fillMaxSize()
         )
 
-        // Close button
+        // Close
         IconButton(
             onClick = onClose,
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .padding(16.dp)
                 .size(48.dp)
-                .background(
-                    MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                    CircleShape
-                )
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f), CircleShape)
         ) {
             Icon(Icons.Filled.Close, "Close camera", tint = MaterialTheme.colorScheme.onSurface)
         }
 
-        // Capture button
+        // Capture
         Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 48.dp)
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 48.dp)
         ) {
             IconButton(
                 onClick = {
@@ -583,7 +553,7 @@ private fun CameraCapture(
                                 onImageCaptured(bytes)
                             }
                             override fun onError(e: ImageCaptureException) {
-                                Log.e("CameraCapture", "Capture failed: ${e.message}")
+                                android.util.Log.e("CameraOverlay", "Capture failed: ${e.message}")
                                 Toast.makeText(context, "Capture failed", Toast.LENGTH_SHORT).show()
                             }
                         }
@@ -595,33 +565,23 @@ private fun CameraCapture(
                     .border(4.dp, MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f), CircleShape)
             ) {
                 Icon(
-                    Icons.Filled.CameraAlt,
-                    "Capture",
+                    Icons.Filled.CameraAlt, "Capture",
                     tint = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.size(36.dp)
                 )
             }
         }
 
-        // Gallery button
+        // Gallery shortcut
         IconButton(
-            onClick = onClose, // Will be handled by caller re-opening gallery
+            onClick = onClose,
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .padding(start = 32.dp, bottom = 56.dp)
                 .size(48.dp)
-                .background(
-                    MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                    CircleShape
-                )
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f), CircleShape)
         ) {
             Icon(Icons.Filled.Image, "Gallery", tint = MaterialTheme.colorScheme.onSurface)
         }
-    }
-}
-
-private object Log {
-    fun e(tag: String, msg: String, e: Exception? = null) {
-        android.util.Log.e(tag, msg, e)
     }
 }

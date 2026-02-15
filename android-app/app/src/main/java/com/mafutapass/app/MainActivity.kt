@@ -87,14 +87,8 @@ fun MafutaPassApp(themeViewModel: ThemeViewModel) {
                         )
                     }
                     composable(Screen.Create.route) {
-                        CreateScreen(
-                            onNavigateToScanReceipt = { navController.navigate("scan-receipt") }
-                        )
-                    }
-                    composable(Screen.Workspaces.route) {
-                        WorkspacesScreen(
-                            onNavigateToNewWorkspace = { navController.navigate("workspaces/new") },
-                            onNavigateToWorkspaceDetail = { id -> navController.navigate("workspaces/$id") }
+                        AddReceiptScreen(
+                            onNavigateToReport = { reportId -> navController.navigate("reports/$reportId") }
                         )
                     }
                     composable(Screen.Account.route) {
@@ -151,29 +145,6 @@ fun MafutaPassApp(themeViewModel: ThemeViewModel) {
                     }
                     composable("about") {
                         AboutScreen(onBack = { navController.popBackStack() })
-                    }
-                    composable("workspaces/new") {
-                        NewWorkspaceScreen(onBack = { navController.popBackStack() }, onConfirm = { navController.popBackStack() })
-                    }
-                    composable("workspaces/{workspaceId}") { entry ->
-                        val wid = entry.arguments?.getString("workspaceId") ?: return@composable
-                        WorkspaceDetailScreen(workspaceId = wid, onBack = { navController.popBackStack() },
-                            onNavigateToOverview = { navController.navigate("workspaces/$wid/overview") },
-                            onNavigateToMembers = { navController.navigate("workspaces/$wid/members") })
-                    }
-                    composable("workspaces/{workspaceId}/overview") { entry ->
-                        val wid = entry.arguments?.getString("workspaceId") ?: return@composable
-                        WorkspaceOverviewScreen(workspaceId = wid, onBack = { navController.popBackStack() })
-                    }
-                    composable("workspaces/{workspaceId}/members") { entry ->
-                        val wid = entry.arguments?.getString("workspaceId") ?: return@composable
-                        WorkspaceMembersScreen(workspaceId = wid, onBack = { navController.popBackStack() })
-                    }
-                    composable("scan-receipt") {
-                        ScanReceiptScreen(
-                            onBack = { navController.popBackStack() },
-                            onNavigateToReport = { reportId -> navController.navigate("reports/$reportId") }
-                        )
                     }
                     composable("expenses/{expenseId}") { entry ->
                         val eid = entry.arguments?.getString("expenseId") ?: return@composable

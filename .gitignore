@@ -39,6 +39,9 @@ android-app/.gradle/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# parked v2/v3 features — local only, not committed to GitHub
+parked-v2/
 *.md
 !README.md
 !ARCHITECTURE.md

@@ -164,15 +164,41 @@ Backend mints a Supabase JWT so RLS auto-filters data by user.
 4. When inserting `expense_reports`, always include `user_email` — it's NOT NULL in the schema.
 5. Response JSON should use camelCase for mobile endpoints (Android Gson maps directly without @SerializedName).
 
-### Android Screens & Navigation
+### Android Screens & Navigation (v1)
+
+The v1 Android app uses **3 bottom-navigation tabs**:
+
+| Tab | Route | Screen | ViewModel |
+|-----|-------|--------|-----------|
+| Reports | `reports` | ReportsScreen | ReportsViewModel |
+| Create | `create` | AddReceiptScreen | ScanReceiptViewModel |
+| Account | `account` | AccountScreen | ProfileViewModel |
+
+**Detail/sub-screens** (navigated to from tabs, not in bottom nav):
 
 | Route | Screen | ViewModel |
 |-------|--------|-----------|
-| `scan-receipt` | ScanReceiptScreen | ScanReceiptViewModel |
 | `expenses/{id}` | ExpenseDetailScreen | ExpenseDetailViewModel |
 | `reports/{id}` | ReportDetailScreen | ReportDetailViewModel |
+| `profile` | ProfileScreen | ProfileViewModel |
+| `profile/edit-*` | Edit screens | ProfileViewModel |
+| `preferences` | PreferencesScreen | ThemeViewModel |
+| `security` | SecurityScreen | — |
+| `about` | AboutScreen | — |
 
-ScanReceiptScreen state machine: `ChooseMethod → ReviewImages → Uploading → Results`
+AddReceiptScreen state machine: `ChooseMethod → ReviewImages → Uploading → Results`
+
+**Parked for v2/v3** (see `/parked-v2/README.md`):
+- Multi-user workspaces (WorkspacesScreen, detail, members, overview)
+- Create screen with chat + report options
+- Standalone ScanReceiptScreen (dual-purpose with `isTab` flag)
+
+### TopAppBar WindowInsets Rule
+
+All screens using Material3 `TopAppBar` inside the `Scaffold` → `NavHost` must set
+`windowInsets = WindowInsets(0, 0, 0, 0)` on the TopAppBar. This prevents double-counting
+the status bar: `Scaffold` already applies system insets via `paddingValues`, and `TopAppBar`
+adds them again by default. Without this, the top of every screen has ~48dp of dead space.
 
 ---
 
