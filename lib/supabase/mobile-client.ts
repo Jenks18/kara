@@ -59,8 +59,7 @@ export async function createMobileClient(
     { algorithm: 'HS256' }
   );
 
-  console.log(`Minted Supabase JWT for user ${user.userId} (secret length: ${supabaseJwtSecret.length})`);
-
+  // Mint token silently — no log per request
   const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     global: {
       headers: {

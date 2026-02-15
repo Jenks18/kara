@@ -40,3 +40,6 @@ android-app/.gradle/
 *.tsbuildinfo
 next-env.d.ts
 *.md
+!README.md
+!ARCHITECTURE.md
+!.github/**/*.md

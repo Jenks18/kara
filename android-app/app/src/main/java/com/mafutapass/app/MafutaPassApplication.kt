@@ -15,9 +15,10 @@ class MafutaPassApplication : Application() {
         super.onCreate()
 
         try {
-            // Hilt handles DI initialization automatically
-            // No manual initialization needed for ApiClient anymore
-            
+            // Initialize legacy ApiClient with app context for auth interceptor
+            @Suppress("DEPRECATION")
+            com.mafutapass.app.data.ApiClient.initialize(this)
+
             Log.d("MafutaPassApplication", "✅ Application initialized with Hilt DI")
         } catch (e: Exception) {
             Log.e("MafutaPassApplication", "❌ Error during initialization", e)

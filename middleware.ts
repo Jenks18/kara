@@ -12,7 +12,7 @@ const isPublicRoute = createRouteMatcher([
   '/api/auth/mobile-signup(.*)', // Backend sign-up (bypasses CAPTCHA)
   '/api/auth/mobile-signin(.*)', // Backend sign-in (handles email verification)
   '/api/auth/mobile-profile(.*)', // Mobile profile fetch/update (auth'd via Bearer token)
-  '/api/auth/exchange-token(.*)', // Backend proxy for token exchange (bypasses Cloudflare)
+  '/api/auth/mobile-refresh(.*)', // Mobile token refresh
   '/api/user-profile(.*)', // Profile API (init + OPTIONS)
   '/api/update-username(.*)', // Username update (auth'd via Clerk session)
   '/api/mobile/(.*)', // Mobile-specific API routes (auth'd via Bearer token)
