@@ -42,6 +42,9 @@ export interface ProcessingOptions {
   // Template override
   templateId?: string; // Force specific template
   storeId?: string; // Force specific store
+  
+  // Mobile QR: eTIMS URL detected by on-device ML Kit barcode scanner
+  mobileQrUrl?: string;
 }
 
 export interface ProcessingResult {
@@ -136,27 +139,44 @@ export class ReceiptProcessor {
       
       // ==========================================
       // STAGE 2: DATA EXTRACTION (Parallel)
-      // Google Vision is PRIMARY OCR source for ALL receipts
+      // Google Vision is PRIMARY OCR source for ALL receipts.
+      // QR strategy: mobile ML Kit is the authority when available.
+      // Backend image-based QR decode is a FALLBACK for web/gallery uploads
+      // where we don't have a live camera feed.
       // ==========================================
       
-      const [qrResult, ocrResult] = await Promise.allSettled([
-        this.extractQRData(imageBuffer),
-        this.extractOCRData(imageBuffer), // Google Vision OCR
-      ]);
+      // If mobile app already detected QR via ML Kit, skip the expensive
+      // server-side QR decode — the device had the live camera feed at full
+      // resolution which is far more reliable than a compressed JPEG.
+      const hasMobileQr = !!options.mobileQrUrl;
       
-      const qrData = qrResult.status === 'fulfilled' ? qrResult.value : null;
-      const ocrData = ocrResult.status === 'fulfilled' ? ocrResult.value : null; // Vision data
+      const extractionTasks: [Promise<any>, Promise<any>] = [
+        hasMobileQr
+          ? Promise.resolve(null)              // skip server QR — mobile is authoritative
+          : this.extractQRData(imageBuffer),   // fallback for web / gallery uploads
+        this.extractOCRData(imageBuffer),       // Google Vision OCR — always runs
+      ];
       
-      result.qrData = qrData;
+      const [qrResult, ocrResult] = await Promise.allSettled(extractionTasks);
+      
+      const serverQrData = qrResult.status === 'fulfilled' ? qrResult.value : null;
+      const ocrData = ocrResult.status === 'fulfilled' ? ocrResult.value : null;
+      
+      // Mobile ML Kit QR > server image QR > null
+      const effectiveQrData = hasMobileQr
+        ? { url: options.mobileQrUrl!, rawValue: options.mobileQrUrl!, source: 'mobile_mlkit' }
+        : (serverQrData && serverQrData.url) ? serverQrData : null;
+      
+      result.qrData = effectiveQrData;
       result.ocrData = ocrData;
       
       // Start with Google Vision data as base
       let kraData = ocrData;
       
       // Extract KRA data if QR has URL (enhances/verifies Vision data)
-      if (qrData?.url) {
+      if (effectiveQrData?.url) {
         try {
-          const kraScrapedData = await scrapeKRAInvoice(qrData.url);
+          const kraScrapedData = await scrapeKRAInvoice(effectiveQrData.url);
           if (kraScrapedData) {
             // Merge: KRA data takes priority over Vision where available
             kraData = {
@@ -187,7 +207,7 @@ export class ReceiptProcessor {
       // ==========================================
       
       const storeMatch = await storeRecognizer.recognize({
-        qrData,
+        qrData: effectiveQrData,
         ocrText: ocrData?.rawText,
         kraData,
         latitude: options.latitude,
@@ -212,7 +232,7 @@ export class ReceiptProcessor {
           workspaceId: options.workspaceId,
           imageUrl,
           imageHash,
-          rawQrData: qrData,
+          rawQrData: effectiveQrData,
           rawOcrText: ocrData?.rawText,
           rawKraData: kraData,
           fileSizeBytes: imageBuffer.length,
@@ -242,7 +262,7 @@ export class ReceiptProcessor {
         
         // Parse data using template
         const parsedData = this.applyTemplate(template, {
-          qrData,
+          qrData: effectiveQrData,
           kraData,
           ocrData,
         });
@@ -250,7 +270,7 @@ export class ReceiptProcessor {
         result.parsedData = parsedData;
       } else {
         result.warnings.push('No template matched, using generic extraction');
-        result.parsedData = this.genericParse(qrData, kraData, ocrData);
+        result.parsedData = this.genericParse(effectiveQrData, kraData, ocrData);
       }
       
       // ==========================================
@@ -265,11 +285,11 @@ export class ReceiptProcessor {
         // Fire and forget - don't wait for AI response
         aiReceiptEnhancer.enhance({
           rawOcrText: ocrData?.rawText,
-          qrData,
+          qrData: effectiveQrData,
           kraData,
           parsedData: result.parsedData,
           template,
-          imageBuffer: !qrData ? imageBuffer : undefined,
+          imageBuffer: !effectiveQrData ? imageBuffer : undefined,
         }).then(async (enhanced) => {
           // AI completed successfully - update BOTH tables in background
           

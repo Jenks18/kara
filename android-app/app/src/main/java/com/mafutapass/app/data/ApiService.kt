@@ -46,6 +46,12 @@ interface ApiService {
     @GET("api/mobile/receipts/{id}")
     suspend fun getReceipt(@Path("id") id: String): ExpenseItem
     
+    @PATCH("api/mobile/receipts/{id}")
+    suspend fun updateReceipt(
+        @Path("id") id: String,
+        @Body body: UpdateReceiptRequest
+    ): UpdateReceiptResponse
+    
     @GET("api/mobile/expense-reports/{id}")
     suspend fun getExpenseReport(@Path("id") id: String): ExpenseReportDetail
     
@@ -55,7 +61,8 @@ interface ApiService {
         @Part image: okhttp3.MultipartBody.Part,
         @Part("reportId") reportId: okhttp3.RequestBody? = null,
         @Part("latitude") latitude: okhttp3.RequestBody? = null,
-        @Part("longitude") longitude: okhttp3.RequestBody? = null
+        @Part("longitude") longitude: okhttp3.RequestBody? = null,
+        @Part("qrUrl") qrUrl: okhttp3.RequestBody? = null
     ): ReceiptUploadResponse
     
     // ============= Workspace Members =============

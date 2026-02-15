@@ -124,6 +124,12 @@ dependencies {
     // ML Kit Text Recognition
     implementation("com.google.mlkit:text-recognition:16.0.1")
 
+    // ML Kit Barcode Scanning (eTIMS QR codes)
+    implementation("com.google.mlkit:barcode-scanning:17.3.0")
+
+    // ML Kit Document Scanner (receipt boundary detection)
+    implementation("com.google.android.gms:play-services-mlkit-document-scanner:16.0.0")
+
     // Hilt Dependency Injection
     implementation("com.google.dagger:hilt-android:2.56.2")
     ksp("com.google.dagger:hilt-android-compiler:2.56.2")

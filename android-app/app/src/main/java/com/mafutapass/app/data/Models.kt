@@ -197,3 +197,26 @@ data class ExpenseReportDetail(
     @SerializedName("created_at") val createdAt: String = "",
     val items: List<ExpenseItem> = emptyList()
 )
+
+/**
+ * PATCH /api/mobile/receipts/:id request body.
+ * Backend expects snake_case field names.
+ * Only non-null fields are sent (Gson skips nulls by default when configured,
+ * but we use `@SerializedName` so the backend sees the right keys).
+ */
+data class UpdateReceiptRequest(
+    @SerializedName("merchant_name") val merchantName: String? = null,
+    val amount: Double? = null,
+    val category: String? = null,
+    @SerializedName("transaction_date") val transactionDate: String? = null,
+    val description: String? = null
+)
+
+/**
+ * PATCH /api/mobile/receipts/:id response.
+ */
+data class UpdateReceiptResponse(
+    val success: Boolean = false,
+    val id: String? = null,
+    val error: String? = null
+)

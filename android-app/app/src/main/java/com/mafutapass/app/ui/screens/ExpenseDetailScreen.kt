@@ -1,9 +1,11 @@
 package com.mafutapass.app.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -17,11 +19,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.mafutapass.app.data.ApiService
 import com.mafutapass.app.data.ExpenseItem
+import com.mafutapass.app.data.UpdateReceiptRequest
 import com.mafutapass.app.ui.theme.*
 import com.mafutapass.app.util.DateUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -47,6 +51,12 @@ class ExpenseDetailViewModel @Inject constructor(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    private val _isSaving = MutableStateFlow(false)
+    val isSaving: StateFlow<Boolean> = _isSaving.asStateFlow()
+
+    private val _saveSuccess = MutableStateFlow(false)
+    val saveSuccess: StateFlow<Boolean> = _saveSuccess.asStateFlow()
+
     fun loadExpense(id: String) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -60,6 +70,46 @@ class ExpenseDetailViewModel @Inject constructor(
             }
         }
     }
+
+    fun updateExpense(
+        id: String,
+        merchantName: String?,
+        amount: Double?,
+        category: String?,
+        transactionDate: String?,
+        description: String?
+    ) {
+        viewModelScope.launch {
+            _isSaving.value = true
+            _error.value = null
+            _saveSuccess.value = false
+            try {
+                val request = UpdateReceiptRequest(
+                    merchantName = merchantName,
+                    amount = amount,
+                    category = category,
+                    transactionDate = transactionDate,
+                    description = description
+                )
+                val response = apiService.updateReceipt(id, request)
+                if (response.success) {
+                    _saveSuccess.value = true
+                    // Reload fresh data
+                    _expense.value = apiService.getReceipt(id)
+                } else {
+                    _error.value = response.error ?: "Failed to save"
+                }
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Failed to save receipt"
+            } finally {
+                _isSaving.value = false
+            }
+        }
+    }
+
+    fun clearSaveSuccess() {
+        _saveSuccess.value = false
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -72,52 +122,94 @@ fun ExpenseDetailScreen(
     val expense by viewModel.expense.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
+    val isSaving by viewModel.isSaving.collectAsState()
+    val saveSuccess by viewModel.saveSuccess.collectAsState()
+
+    var isEditing by remember { mutableStateOf(false) }
 
     LaunchedEffect(expenseId) {
         viewModel.loadExpense(expenseId)
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(AppTheme.colors.backgroundGradient)
-    ) {
-        TopAppBar(
-            title = {
-                Text(
-                    expense?.merchantName?.ifEmpty { null } ?: "Receipt Detail",
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
-            windowInsets = WindowInsets(0, 0, 0, 0)
-        )
+    // Show snackbar on save success
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(saveSuccess) {
+        if (saveSuccess) {
+            isEditing = false
+            snackbarHostState.showSnackbar("Receipt updated")
+            viewModel.clearSaveSuccess()
+        }
+    }
 
-        when {
-            isLoading -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = Color.Transparent,
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        expense?.merchantName?.ifEmpty { null } ?: "Receipt Detail",
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = {
+                        if (isEditing) isEditing = false else onBack()
+                    }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                    }
+                },
+                actions = {
+                    if (expense != null && !isEditing) {
+                        IconButton(onClick = { isEditing = true }) {
+                            Icon(Icons.Filled.Edit, "Edit receipt")
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
+                windowInsets = WindowInsets(0, 0, 0, 0)
+            )
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .background(AppTheme.colors.backgroundGradient)
+        ) {
+            when {
+                isLoading -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                    }
                 }
-            }
-            error != null -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(error ?: "Unknown error", color = MaterialTheme.colorScheme.error)
+                error != null && expense == null -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(error ?: "Unknown error", color = MaterialTheme.colorScheme.error)
+                    }
                 }
-            }
-            expense != null -> {
-                ExpenseDetailContent(expense!!)
+                expense != null -> {
+                    if (isEditing) {
+                        EditExpenseContent(
+                            expense = expense!!,
+                            isSaving = isSaving,
+                            error = error,
+                            onSave = { merchant, amt, cat, date, desc ->
+                                viewModel.updateExpense(expenseId, merchant, amt, cat, date, desc)
+                            },
+                            onCancel = { isEditing = false }
+                        )
+                    } else {
+                        ExpenseDetailContent(expense = expense!!, onEditClick = { isEditing = true })
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-private fun ExpenseDetailContent(expense: ExpenseItem) {
+private fun ExpenseDetailContent(expense: ExpenseItem, onEditClick: () -> Unit) {
     val context = LocalContext.current
     val displayDate = DateUtils.formatShort(expense.transactionDate ?: expense.createdAt)
 
@@ -129,11 +221,13 @@ private fun ExpenseDetailContent(expense: ExpenseItem) {
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Needs Review banner — shown when AI couldn't fully process the receipt
-        if (expense.processingStatus == "error") {
+        if (expense.processingStatus == "error" || expense.processingStatus == "needs_review") {
             Surface(
                 shape = RoundedCornerShape(16.dp),
                 color = Color(0xFFE6A817).copy(alpha = 0.12f),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onEditClick() }
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -145,7 +239,7 @@ private fun ExpenseDetailContent(expense: ExpenseItem) {
                         modifier = Modifier.size(24.dp)
                     )
                     Spacer(Modifier.width(12.dp))
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
                             "Needs Review",
                             style = MaterialTheme.typography.titleSmall,
@@ -153,11 +247,12 @@ private fun ExpenseDetailContent(expense: ExpenseItem) {
                             color = Color(0xFFE6A817)
                         )
                         Text(
-                            "Some details could not be extracted. Please verify the information below.",
+                            "Tap to edit and correct the details below.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
+                    Icon(Icons.Filled.Edit, null, tint = Color(0xFFE6A817), modifier = Modifier.size(20.dp))
                 }
             }
         }
@@ -227,13 +322,13 @@ private fun ExpenseDetailContent(expense: ExpenseItem) {
                 val statusColor = when (expense.processingStatus) {
                     "processed" -> MaterialTheme.colorScheme.primary
                     "scanning" -> AppTheme.colors.statusPending
-                    "error" -> Color(0xFFE6A817) // amber warning
+                    "error", "needs_review" -> Color(0xFFE6A817)
                     else -> MaterialTheme.colorScheme.onSurfaceVariant
                 }
                 val statusLabel = when (expense.processingStatus) {
                     "processed" -> if (expense.kraVerified == true) "KRA Verified" else "Verified"
                     "scanning" -> "Processing"
-                    "error" -> "Needs Review"
+                    "error", "needs_review" -> "Needs Review"
                     else -> expense.processingStatus.replaceFirstChar { it.uppercase() }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -278,6 +373,203 @@ private fun ExpenseDetailContent(expense: ExpenseItem) {
                     @Suppress("DEPRECATION")
                     DetailRow(Icons.Filled.Notes, "Notes", expense.description!!)
                 }
+            }
+        }
+
+        // Edit button at the bottom
+        OutlinedButton(
+            onClick = onEditClick,
+            modifier = Modifier.fillMaxWidth().height(48.dp),
+            shape = RoundedCornerShape(16.dp),
+            border = ButtonDefaults.outlinedButtonBorder(true)
+        ) {
+            Icon(Icons.Filled.Edit, null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("Edit Details", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EditExpenseContent(
+    expense: ExpenseItem,
+    isSaving: Boolean,
+    error: String?,
+    onSave: (merchant: String, amount: Double, category: String, date: String, description: String) -> Unit,
+    onCancel: () -> Unit
+) {
+    var merchant by remember { mutableStateOf(expense.merchantName ?: "") }
+    var amountText by remember { mutableStateOf(if (expense.amount > 0) expense.amount.toString() else "") }
+    var category by remember { mutableStateOf(expense.category) }
+    var dateText by remember { mutableStateOf(DateUtils.formatYMD(expense.transactionDate ?: expense.createdAt)) }
+    var description by remember { mutableStateOf(expense.description ?: "") }
+    var showCategoryMenu by remember { mutableStateOf(false) }
+
+    val categories = listOf("Fuel", "Food", "Transport", "Accommodation", "Office Supplies", "Communication", "Maintenance", "Other")
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Receipt image (smaller in edit mode)
+        if (expense.imageUrl.isNotBlank() && expense.imageUrl.startsWith("http")) {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                shadowElevation = 1.dp,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(expense.imageUrl)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = "Receipt image",
+                    contentScale = ContentScale.FillWidth,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 200.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                )
+            }
+        }
+
+        if (error != null) {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.errorContainer,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    error,
+                    modifier = Modifier.padding(12.dp),
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
+
+        // Editable fields card
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surface,
+            shadowElevation = 1.dp,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                OutlinedTextField(
+                    value = merchant,
+                    onValueChange = { merchant = it },
+                    label = { Text("Merchant") },
+                    leadingIcon = { Icon(Icons.Filled.Store, null) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true
+                )
+
+                OutlinedTextField(
+                    value = amountText,
+                    onValueChange = { amountText = it },
+                    label = { Text("Amount (KES)") },
+                    leadingIcon = { Icon(Icons.Filled.AttachMoney, null) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true
+                )
+
+                // Category dropdown
+                ExposedDropdownMenuBox(
+                    expanded = showCategoryMenu,
+                    onExpandedChange = { showCategoryMenu = it }
+                ) {
+                    OutlinedTextField(
+                        value = category,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Category") },
+                        leadingIcon = { Icon(Icons.Filled.Category, null) },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showCategoryMenu) },
+                        modifier = Modifier.fillMaxWidth().menuAnchor(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    ExposedDropdownMenu(
+                        expanded = showCategoryMenu,
+                        onDismissRequest = { showCategoryMenu = false }
+                    ) {
+                        categories.forEach { cat ->
+                            DropdownMenuItem(
+                                text = { Text(cat) },
+                                onClick = {
+                                    category = cat
+                                    showCategoryMenu = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                OutlinedTextField(
+                    value = dateText,
+                    onValueChange = { dateText = it },
+                    label = { Text("Date (yyyy-MM-dd)") },
+                    leadingIcon = { Icon(Icons.Filled.CalendarToday, null) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true
+                )
+
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text("Notes") },
+                    leadingIcon = { Icon(Icons.Filled.Notes, null) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    minLines = 2,
+                    maxLines = 4
+                )
+            }
+        }
+
+        // Action buttons
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            OutlinedButton(
+                onClick = onCancel,
+                modifier = Modifier.weight(1f).height(52.dp),
+                shape = RoundedCornerShape(16.dp),
+                enabled = !isSaving
+            ) {
+                Text("Cancel", fontWeight = FontWeight.Medium)
+            }
+            Button(
+                onClick = {
+                    val parsedAmount = amountText.toDoubleOrNull() ?: expense.amount
+                    onSave(merchant, parsedAmount, category, dateText, description)
+                },
+                modifier = Modifier.weight(1f).height(52.dp),
+                shape = RoundedCornerShape(16.dp),
+                enabled = !isSaving,
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            ) {
+                if (isSaving) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(Modifier.width(8.dp))
+                }
+                Text(if (isSaving) "Saving..." else "Save Changes", fontWeight = FontWeight.SemiBold)
             }
         }
     }

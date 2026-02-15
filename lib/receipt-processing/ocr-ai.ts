@@ -9,7 +9,13 @@ export interface GeminiReceiptData {
   litres: number | null;
   fuelType: 'PETROL' | 'DIESEL' | 'SUPER' | 'GAS' | null;
   pricePerLitre: number | null;
+  category: string | null;
   confidence: number;
+  fieldConfidence?: {
+    merchantName: number;
+    totalAmount: number;
+    invoiceDate: number;
+  };
 }
 
 export interface GeminiFuelResult {
@@ -105,7 +111,8 @@ IMPORTANT:
 }
 
 /**
- * Extract basic receipt data using Gemini Vision (fallback when QR/KRA fails)
+ * Extract receipt data using Gemini Vision (fallback when QR/KRA fails).
+ * Enhanced for Kenyan receipts: handles fuel, supermarket, restaurant, M-Pesa, etc.
  */
 export async function extractReceiptWithGemini(
   imageBuffer: Buffer
@@ -115,28 +122,47 @@ export async function extractReceiptWithGemini(
 
   const imageBase64 = imageBuffer.toString('base64');
 
-  const prompt = `Extract receipt data from this image.
+  const prompt = `You are an expert Kenyan receipt data extractor. Analyze this receipt image carefully.
 
-Return ONLY this JSON (no markdown, no explanation):
+Return ONLY this JSON (no markdown, no explanation, no code fences):
 {
-  "merchantName": "<business name>",
-  "totalAmount": <number in KES>,
+  "merchantName": "<business name exactly as printed>",
+  "totalAmount": <final total in KES as a number>,
   "invoiceDate": "YYYY-MM-DD",
-  "invoiceNumber": "<invoice/receipt number>",
+  "invoiceNumber": "<receipt/invoice/TRX number>",
   "litres": <fuel volume number or null>,
   "fuelType": "PETROL" | "DIESEL" | "SUPER" | "GAS" | null,
   "pricePerLitre": <number or null>,
-  "confidence": <0-100>
+  "category": "<one of: Fuel, Food, Transport, Accommodation, Office Supplies, Communication, Maintenance, Other>",
+  "confidence": <0-100 overall>,
+  "fieldConfidence": {
+    "merchantName": <0-100>,
+    "totalAmount": <0-100>,
+    "invoiceDate": <0-100>
+  }
 }
 
-IMPORTANT:
-- Look for: Total, Amount, KES, KSH, Ksh
-- Date formats: DD/MM/YYYY, YYYY-MM-DD, DD-MM-YYYY
-- Merchant: Usually at top of receipt
-- If fuel receipt: look for LITRES, L, Ltrs near volume
-- Fuel types: PMS=Petrol, AGO=Diesel, DPK=Kerosene
-- Return null for fields you cannot find
-- Set confidence 0-100 based on clarity`;
+KENYAN RECEIPT PATTERNS:
+1. FUEL: Shell, TotalEnergies, Rubis, Vivo, National Oil, Gulf, Hass — look for LITRES, PMS, AGO, DPK, DAK
+2. SUPERMARKET: Naivas, Carrefour, Quickmart, Chandarana, Tuskys — look for item lines
+3. M-PESA: Safaricom receipts — look for Transaction ID, MPESA
+4. RESTAURANTS: Java House, Artcaffe, KFC — look for Table, Covers, VAT
+5. TRANSPORT: Uber, Bolt, SGR — look for Trip, Ride
+6. Look for KRA PIN format: A/P + 9 digits + letter (e.g., P051234567A)
+7. Date formats: DD/MM/YYYY (most common in Kenya), DD-MMM-YY, YYYY-MM-DD
+8. Currency: KES, KSH, Ksh, /= often follows amounts
+
+CATEGORY RULES:
+- Has litres/fuel type → "Fuel"
+- Branded food/restaurant/café → "Food"
+- Uber/Bolt/SGR/taxi → "Transport"
+- Hotel/lodge/airbnb → "Accommodation"
+- Safaricom/Airtel/Telkom → "Communication"
+- Stationery/printer/paper → "Office Supplies"
+- Car service/repair/parts → "Maintenance"
+- Everything else → "Other"
+
+FIELD CONFIDENCE: Rate each field 0-100 independently. If text is blurry or partially cut off, lower confidence.`;
 
   try {
     const result = await model.generateContent([
@@ -151,13 +177,18 @@ IMPORTANT:
 
     const responseText = result.response.text();
 
-    // Parse JSON from response (handle markdown code blocks)
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       throw new Error('Gemini did not return valid JSON');
     }
 
     const extracted: GeminiReceiptData = JSON.parse(jsonMatch[0]);
+
+    // Ensure category is one of the valid options
+    const validCategories = ['Fuel', 'Food', 'Transport', 'Accommodation', 'Office Supplies', 'Communication', 'Maintenance', 'Other'];
+    if (!extracted.category || !validCategories.includes(extracted.category)) {
+      extracted.category = extracted.litres ? 'Fuel' : 'Other';
+    }
 
     return extracted;
   } catch (error: any) {

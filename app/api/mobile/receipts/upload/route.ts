@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
     const reportId = formData.get('reportId') as string;
     const latitude = formData.get('latitude') as string;
     const longitude = formData.get('longitude') as string;
+    const qrUrl = formData.get('qrUrl') as string;
 
     if (!imageFile) {
       return NextResponse.json(
@@ -77,6 +78,7 @@ export async function POST(request: NextRequest) {
       supabaseClient: supabase,
       latitude: latitude ? parseFloat(latitude) : undefined,
       longitude: longitude ? parseFloat(longitude) : undefined,
+      mobileQrUrl: qrUrl || undefined,
     });
 
     const uploadSucceeded = !!result.rawReceiptId && !!result.imageUrl;
@@ -92,7 +94,7 @@ export async function POST(request: NextRequest) {
               user_id: userId,
               user_email: userEmail,
               workspace_name: 'Default Workspace',
-              title: `Receipt - ${new Date().toLocaleDateString()}`,
+              title: `Receipt - ${new Date().toLocaleDateString('en-GB')}`,
               status: 'draft',
               total_amount: 0,
             })
@@ -137,19 +139,34 @@ export async function POST(request: NextRequest) {
             result.fieldConfidence?.date?.needsReview;
           const initialStatus = hasExtractedData ? (needsReview ? 'needs_review' : 'processed') : 'error';
 
+          // Use AI-detected category, fall back to 'Fuel' for KRA-verified receipts
+          const category = result.parsedData?.category || (result.kraData?.invoiceNumber ? 'Fuel' : 'Other');
+
+          // Compute overall confidence score (0-100)
+          const confidenceScore = result.fieldConfidence
+            ? Math.round(
+                ((result.fieldConfidence.merchantName?.confidence || 0) +
+                 (result.fieldConfidence.amount?.confidence || 0) +
+                 (result.fieldConfidence.date?.confidence || 0)) / 3
+              )
+            : (result.kraData?.invoiceNumber ? 95 : 50);
+
           const { error: itemError } = await supabase
             .from('expense_items')
             .insert({
               report_id: finalReportId,
               raw_receipt_id: result.rawReceiptId,
               image_url: result.imageUrl,
-              category: 'Fuel',
+              category,
               amount,
               processing_status: initialStatus,
               merchant_name: merchantName,
               transaction_date: transactionDate,
               kra_invoice_number: result.kraData?.invoiceNumber || null,
               kra_verified: !!result.kraData?.invoiceNumber,
+              description: confidenceScore < 70 
+                ? `AI confidence: ${confidenceScore}% — please verify` 
+                : null,
             });
 
           if (!itemError && amount > 0) {
@@ -176,8 +193,14 @@ export async function POST(request: NextRequest) {
       merchant: result.kraData?.merchantName || result.parsedData?.merchantName || null,
       amount: result.kraData?.totalAmount || result.parsedData?.totalAmount || 0,
       date: result.kraData?.invoiceDate || result.parsedData?.transactionDate || null,
+      category: result.parsedData?.category || 'Other',
       kraVerified: !!result.kraData?.invoiceNumber,
       processingTimeMs: result.processingTimeMs,
+      confidence: result.fieldConfidence ? {
+        merchantName: result.fieldConfidence.merchantName?.confidence || 0,
+        amount: result.fieldConfidence.amount?.confidence || 0,
+        date: result.fieldConfidence.date?.confidence || 0,
+      } : null,
     }, { status: uploadSucceeded ? 200 : 500, headers: corsHeaders });
 
   } catch (error: any) {

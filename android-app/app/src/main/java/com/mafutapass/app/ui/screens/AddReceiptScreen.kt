@@ -1,17 +1,23 @@
 package com.mafutapass.app.ui.screens
 
 import android.Manifest
+import android.app.Activity
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -26,6 +32,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -37,19 +44,30 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.barcode.common.Barcode
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions
+import com.google.mlkit.vision.documentscanner.GmsDocumentScanning
+import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult
 import com.mafutapass.app.data.ReceiptUploadResponse
 import com.mafutapass.app.ui.theme.*
 import com.mafutapass.app.viewmodel.ScanReceiptViewModel
 import com.mafutapass.app.viewmodel.ScanReceiptViewModel.ScanState
 import java.io.File
+import java.util.concurrent.Executors
+
+private const val TAG = "AddReceiptScreen"
 
 /**
  * AddReceiptScreen — the "Create" / middle tab in the bottom navigation.
  *
- * This is a tab-level composable (no "back" destination). It drives the full
- * receipt-capture flow: choose method → review images → upload → results.
- * Pressing the system back button or the toolbar back arrow in sub-states
- * returns to the ChooseMethod landing, never pops the navigation stack.
+ * Three capture methods:
+ *  1. ML Kit Document Scanner — detects receipt edges, crops, perspective-corrects
+ *  2. Quick Camera — multi-capture mode (keep camera open, add pages for long receipts)
+ *  3. Gallery — pick from existing images
+ *
+ * QR codes (eTIMS) are detected automatically during Quick Camera via ML Kit Barcode.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,6 +76,7 @@ fun AddReceiptScreen(
     viewModel: ScanReceiptViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
+    val activity = context as? Activity
     val uiState by viewModel.uiState.collectAsState()
     val selectedImages by viewModel.selectedImages.collectAsState()
     val uploadResults by viewModel.uploadResults.collectAsState()
@@ -68,6 +87,35 @@ fun AddReceiptScreen(
         contract = ActivityResultContracts.GetMultipleContents()
     ) { uris: List<Uri> ->
         uris.forEach { uri -> viewModel.addImageFromUri(uri) }
+    }
+
+    // === ML Kit Document Scanner ===
+    val scannerOptions = remember {
+        GmsDocumentScannerOptions.Builder()
+            .setGalleryImportAllowed(true)
+            .setPageLimit(5)
+            .setResultFormats(GmsDocumentScannerOptions.RESULT_FORMAT_JPEG)
+            .setScannerMode(GmsDocumentScannerOptions.SCANNER_MODE_FULL)
+            .build()
+    }
+    val scanner = remember { GmsDocumentScanning.getClient(scannerOptions) }
+
+    val scannerLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val scanResult = GmsDocumentScanningResult.fromActivityResultIntent(result.data)
+            scanResult?.pages?.forEach { page ->
+                try {
+                    val inputStream = context.contentResolver.openInputStream(page.imageUri)
+                    inputStream?.use { stream ->
+                        viewModel.addImageBytes(stream.readBytes())
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to read scanned page: ${e.message}")
+                }
+            }
+        }
     }
 
     // Camera permission + state
@@ -81,14 +129,13 @@ fun AddReceiptScreen(
         else Toast.makeText(context, "Camera permission required to scan receipts", Toast.LENGTH_SHORT).show()
     }
 
-    // Full-screen camera overlay — when active, it takes over the entire screen
+    // Full-screen camera overlay — multi-capture mode
     if (showCamera && hasCameraPermission) {
-        CameraOverlay(
-            onImageCaptured = { bytes ->
-                viewModel.addImageBytes(bytes)
-                showCamera = false
-            },
-            onClose = { showCamera = false }
+        MultiCaptureCamera(
+            onImageCaptured = { bytes -> viewModel.addImageBytes(bytes) },
+            onQrCodeDetected = { url -> viewModel.setDetectedQrUrl(url) },
+            captureCount = selectedImages.size,
+            onDone = { showCamera = false }
         )
         return
     }
@@ -98,7 +145,6 @@ fun AddReceiptScreen(
             .fillMaxSize()
             .background(AppTheme.colors.backgroundGradient)
     ) {
-        // Title changes contextually; back arrow only visible in sub-states
         val isLanding = uiState is ScanState.ChooseMethod
         val title = when (uiState) {
             is ScanState.ChooseMethod -> "Add Receipt"
@@ -122,7 +168,20 @@ fun AddReceiptScreen(
 
         when (val state = uiState) {
             is ScanState.ChooseMethod -> ChooseMethodSection(
-                onTakePhoto = { permissionLauncher.launch(Manifest.permission.CAMERA) },
+                onSmartScan = {
+                    if (activity != null) {
+                        scanner.getStartScanIntent(activity)
+                            .addOnSuccessListener { intentSender ->
+                                scannerLauncher.launch(IntentSenderRequest.Builder(intentSender).build())
+                            }
+                            .addOnFailureListener { e ->
+                                Log.e(TAG, "Document scanner failed to start: ${e.message}")
+                                // Fall back to regular camera
+                                permissionLauncher.launch(Manifest.permission.CAMERA)
+                            }
+                    }
+                },
+                onQuickCamera = { permissionLauncher.launch(Manifest.permission.CAMERA) },
                 onChooseFromGallery = { galleryLauncher.launch("image/*") }
             )
             is ScanState.ReviewImages -> ReviewImagesSection(
@@ -150,7 +209,8 @@ fun AddReceiptScreen(
 
 @Composable
 private fun ChooseMethodSection(
-    onTakePhoto: () -> Unit,
+    onSmartScan: () -> Unit,
+    onQuickCamera: () -> Unit,
     onChooseFromGallery: () -> Unit
 ) {
     Column(
@@ -176,35 +236,65 @@ private fun ChooseMethodSection(
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            "Take a photo or choose from your gallery",
+            "Smart Scan auto-detects receipt edges",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
         Spacer(Modifier.height(32.dp))
 
+        // Primary: Smart Scan (ML Kit Document Scanner)
         Button(
-            onClick = onTakePhoto,
+            onClick = onSmartScan,
             modifier = Modifier.fillMaxWidth().height(56.dp),
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
         ) {
-            Icon(Icons.Filled.CameraAlt, null, modifier = Modifier.size(22.dp))
+            Icon(Icons.Filled.DocumentScanner, null, modifier = Modifier.size(22.dp))
             Spacer(Modifier.width(12.dp))
-            Text("Take Photo", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text("Smart Scan", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
         }
+        Spacer(Modifier.height(4.dp))
+        Text(
+            "Auto-detects edges & crops receipt",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(16.dp))
 
+        // Secondary: Quick Camera (multi-capture + QR detection)
         OutlinedButton(
-            onClick = onChooseFromGallery,
+            onClick = onQuickCamera,
             modifier = Modifier.fillMaxWidth().height(56.dp),
             shape = RoundedCornerShape(16.dp),
             border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary)
         ) {
-            Icon(Icons.Filled.Image, null, modifier = Modifier.size(22.dp), tint = MaterialTheme.colorScheme.primary)
+            Icon(Icons.Filled.CameraAlt, null, modifier = Modifier.size(22.dp), tint = MaterialTheme.colorScheme.primary)
             Spacer(Modifier.width(12.dp))
-            Text("Choose from Gallery", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+            Text("Quick Camera", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+        }
+        Spacer(Modifier.height(4.dp))
+        Text(
+            "Multi-page capture with QR detection",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        // Gallery
+        OutlinedButton(
+            onClick = onChooseFromGallery,
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            shape = RoundedCornerShape(16.dp),
+            border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.outline)
+        ) {
+            Icon(Icons.Filled.Image, null, modifier = Modifier.size(22.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.width(12.dp))
+            Text("Choose from Gallery", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -385,7 +475,6 @@ private fun ResultsSection(
         )
         Spacer(Modifier.height(24.dp))
 
-        // Result cards
         Column(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())
@@ -397,7 +486,6 @@ private fun ResultsSection(
 
         Spacer(Modifier.height(16.dp))
 
-        // View Report button
         if (state.reportId != null) {
             Button(
                 onClick = { onViewReport(state.reportId) },
@@ -412,7 +500,6 @@ private fun ResultsSection(
             Spacer(Modifier.height(8.dp))
         }
 
-        // Scan another
         OutlinedButton(
             onClick = onScanAnother,
             modifier = Modifier.fillMaxWidth().height(48.dp),
@@ -485,16 +572,34 @@ private fun ReceiptResultCard(index: Int, result: ReceiptUploadResponse) {
     }
 }
 
-// ── Camera overlay ───────────────────────────────────────────────────────────
+// ── Multi-Capture Camera with QR Detection ────────────────────────────────────
 
+/**
+ * Full-screen camera that stays open between captures.
+ * While the camera is live, ML Kit barcode scanning runs on each frame
+ * to detect eTIMS QR codes. When one is found, it's highlighted briefly.
+ */
 @Composable
-private fun CameraOverlay(
+private fun MultiCaptureCamera(
     onImageCaptured: (ByteArray) -> Unit,
-    onClose: () -> Unit
+    onQrCodeDetected: (String) -> Unit,
+    captureCount: Int,
+    onDone: () -> Unit
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val imageCapture = remember { ImageCapture.Builder().build() }
+    var localCaptureCount by remember { mutableIntStateOf(captureCount) }
+    var detectedQr by remember { mutableStateOf<String?>(null) }
+    var isCapturing by remember { mutableStateOf(false) }
+
+    // QR banner auto-dismiss
+    LaunchedEffect(detectedQr) {
+        if (detectedQr != null) {
+            kotlinx.coroutines.delay(3000)
+            detectedQr = null
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         AndroidView(
@@ -506,16 +611,37 @@ private fun CameraOverlay(
                         val preview = Preview.Builder().build().also {
                             it.setSurfaceProvider(previewView.surfaceProvider)
                         }
+
+                        // Barcode analysis for eTIMS QR codes
+                        val barcodeScanner = BarcodeScanning.getClient()
+                        val analysisExecutor = Executors.newSingleThreadExecutor()
+                        val imageAnalysis = ImageAnalysis.Builder()
+                            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                            .build()
+                            .also { analysis ->
+                                analysis.setAnalyzer(analysisExecutor) { imageProxy ->
+                                    processQrFrame(imageProxy, barcodeScanner) { qrUrl ->
+                                        if (qrUrl.contains("etims", ignoreCase = true) ||
+                                            qrUrl.contains("kra.go.ke", ignoreCase = true) ||
+                                            qrUrl.contains("itax", ignoreCase = true)) {
+                                            detectedQr = qrUrl
+                                            onQrCodeDetected(qrUrl)
+                                        }
+                                    }
+                                }
+                            }
+
                         try {
                             cameraProvider.unbindAll()
                             cameraProvider.bindToLifecycle(
                                 lifecycleOwner,
                                 CameraSelector.DEFAULT_BACK_CAMERA,
                                 preview,
-                                imageCapture
+                                imageCapture,
+                                imageAnalysis
                             )
                         } catch (e: Exception) {
-                            android.util.Log.e("CameraOverlay", "Camera bind failed", e)
+                            Log.e(TAG, "Camera bind failed", e)
                         }
                     }, ContextCompat.getMainExecutor(ctx))
                 }
@@ -523,9 +649,65 @@ private fun CameraOverlay(
             modifier = Modifier.fillMaxSize()
         )
 
-        // Close
+        // Receipt guide overlay — shows a frame where the receipt should be
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(32.dp)
+        ) {
+            // Semi-transparent border to guide receipt placement
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.75f)
+                    .align(Alignment.Center)
+                    .border(2.dp, Color.White.copy(alpha = 0.6f), RoundedCornerShape(12.dp))
+            )
+        }
+
+        // QR detection banner
+        AnimatedVisibility(
+            visible = detectedQr != null,
+            enter = slideInVertically { -it } + fadeIn(),
+            exit = slideOutVertically { -it } + fadeOut(),
+            modifier = Modifier.align(Alignment.TopCenter).padding(top = 80.dp)
+        ) {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.primary,
+                shadowElevation = 4.dp,
+                modifier = Modifier.padding(horizontal = 24.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Filled.QrCodeScanner, null,
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            "eTIMS QR Detected!",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                        Text(
+                            "KRA link captured for verification",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
+                        )
+                    }
+                }
+            }
+        }
+
+        // Close button
         IconButton(
-            onClick = onClose,
+            onClick = onDone,
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .padding(16.dp)
@@ -535,12 +717,49 @@ private fun CameraOverlay(
             Icon(Icons.Filled.Close, "Close camera", tint = MaterialTheme.colorScheme.onSurface)
         }
 
-        // Capture
-        Box(
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 48.dp)
+        // Capture count badge
+        if (localCaptureCount > 0) {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp)
+            ) {
+                Text(
+                    "$localCaptureCount captured",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                )
+            }
+        }
+
+        // Bottom controls: Gallery | Capture | Done
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 48.dp)
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            // Gallery shortcut
+            IconButton(
+                onClick = onDone,
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f), CircleShape)
+            ) {
+                Icon(Icons.Filled.Image, "Gallery", tint = MaterialTheme.colorScheme.onSurface)
+            }
+
+            // Capture button
             IconButton(
                 onClick = {
+                    if (isCapturing) return@IconButton
+                    isCapturing = true
                     val outputFile = File(context.cacheDir, "receipt_${System.currentTimeMillis()}.jpg")
                     val outputOptions = ImageCapture.OutputFileOptions.Builder(outputFile).build()
                     imageCapture.takePicture(
@@ -551,17 +770,24 @@ private fun CameraOverlay(
                                 val bytes = outputFile.readBytes()
                                 outputFile.delete()
                                 onImageCaptured(bytes)
+                                localCaptureCount++
+                                isCapturing = false
                             }
                             override fun onError(e: ImageCaptureException) {
-                                android.util.Log.e("CameraOverlay", "Capture failed: ${e.message}")
+                                Log.e(TAG, "Capture failed: ${e.message}")
                                 Toast.makeText(context, "Capture failed", Toast.LENGTH_SHORT).show()
+                                isCapturing = false
                             }
                         }
                     )
                 },
                 modifier = Modifier
                     .size(80.dp)
-                    .background(MaterialTheme.colorScheme.primary, CircleShape)
+                    .background(
+                        if (isCapturing) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                        else MaterialTheme.colorScheme.primary,
+                        CircleShape
+                    )
                     .border(4.dp, MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f), CircleShape)
             ) {
                 Icon(
@@ -570,18 +796,81 @@ private fun CameraOverlay(
                     modifier = Modifier.size(36.dp)
                 )
             }
+
+            // Done button (appears after first capture)
+            if (localCaptureCount > 0) {
+                IconButton(
+                    onClick = onDone,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .background(MaterialTheme.colorScheme.primary, CircleShape)
+                ) {
+                    Icon(Icons.Filled.Check, "Done", tint = MaterialTheme.colorScheme.onPrimary)
+                }
+            } else {
+                Spacer(Modifier.size(48.dp))
+            }
         }
 
-        // Gallery shortcut
-        IconButton(
-            onClick = onClose,
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(start = 32.dp, bottom = 56.dp)
-                .size(48.dp)
-                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f), CircleShape)
-        ) {
-            Icon(Icons.Filled.Image, "Gallery", tint = MaterialTheme.colorScheme.onSurface)
+        // Hint text
+        if (localCaptureCount == 0) {
+            Text(
+                "Position receipt within the frame",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = Color.White,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 140.dp)
+            )
+        } else {
+            Text(
+                "Tap capture for more pages, or tap ✓ when done",
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Medium,
+                color = Color.White,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 140.dp)
+            )
         }
     }
+}
+
+/**
+ * ML Kit barcode analysis on a camera frame.
+ * Only reports URL-type barcodes (QR codes with links).
+ */
+@androidx.annotation.OptIn(androidx.camera.core.ExperimentalGetImage::class)
+private fun processQrFrame(
+    imageProxy: ImageProxy,
+    barcodeScanner: com.google.mlkit.vision.barcode.BarcodeScanner,
+    onUrlDetected: (String) -> Unit
+) {
+    val mediaImage = imageProxy.image
+    if (mediaImage == null) {
+        imageProxy.close()
+        return
+    }
+
+    val inputImage = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+    barcodeScanner.process(inputImage)
+        .addOnSuccessListener { barcodes ->
+            for (barcode in barcodes) {
+                when (barcode.valueType) {
+                    Barcode.TYPE_URL -> {
+                        barcode.url?.url?.let { onUrlDetected(it) }
+                    }
+                    Barcode.TYPE_TEXT -> {
+                        val text = barcode.rawValue ?: ""
+                        if (text.startsWith("http")) {
+                            onUrlDetected(text)
+                        }
+                    }
+                }
+            }
+        }
+        .addOnCompleteListener {
+            imageProxy.close()
+        }
 }

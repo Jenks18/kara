@@ -39,6 +39,10 @@ class ScanReceiptViewModel @Inject constructor(
     private val _currentUploadIndex = MutableStateFlow(0)
     val currentUploadIndex: StateFlow<Int> = _currentUploadIndex.asStateFlow()
     
+    /** eTIMS QR URL detected by the camera during scanning */
+    private val _detectedQrUrl = MutableStateFlow<String?>(null)
+    val detectedQrUrl: StateFlow<String?> = _detectedQrUrl.asStateFlow()
+    
     fun addImageFromUri(uri: Uri) {
         try {
             val inputStream = context.contentResolver.openInputStream(uri) ?: return
@@ -63,6 +67,13 @@ class ScanReceiptViewModel @Inject constructor(
         }
     }
     
+    fun setDetectedQrUrl(url: String) {
+        if (_detectedQrUrl.value == null) {
+            Log.i(TAG, "eTIMS QR detected: $url")
+            _detectedQrUrl.value = url
+        }
+    }
+    
     fun goToReview() {
         if (_selectedImages.value.isNotEmpty()) {
             _uiState.value = ScanState.ReviewImages
@@ -80,6 +91,7 @@ class ScanReceiptViewModel @Inject constructor(
         viewModelScope.launch {
             var sharedReportId: String? = null
             val results = mutableListOf<ReceiptUploadResponse>()
+            val qrUrl = _detectedQrUrl.value
             
             for ((index, imageBytes) in images.withIndex()) {
                 _currentUploadIndex.value = index
@@ -89,9 +101,15 @@ class ScanReceiptViewModel @Inject constructor(
                     
                     val reportIdPart = sharedReportId?.toRequestBody("text/plain".toMediaType())
                     
+                    // Send QR URL on first upload (the backend will process it)
+                    val qrUrlPart = if (index == 0 && qrUrl != null) {
+                        qrUrl.toRequestBody("text/plain".toMediaType())
+                    } else null
+                    
                     val response = apiService.uploadReceipt(
                         image = imagePart,
-                        reportId = reportIdPart
+                        reportId = reportIdPart,
+                        qrUrl = qrUrlPart
                     )
                     
                     if (sharedReportId == null && response.reportId != null) {
@@ -118,6 +136,7 @@ class ScanReceiptViewModel @Inject constructor(
         _selectedImages.value = emptyList()
         _uploadResults.value = emptyList()
         _currentUploadIndex.value = 0
+        _detectedQrUrl.value = null
         _uiState.value = ScanState.ChooseMethod
     }
     
