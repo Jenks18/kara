@@ -132,22 +132,22 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
 
   if (showLocationPrompt) {
     return (
-      <div className="fixed inset-0 bg-dark-300 z-50">
+      <div className="fixed inset-0 bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 z-50">
         <div className="h-full flex flex-col items-center justify-center p-6">
-          <div className="max-w-[430px] w-full bg-dark-200 rounded-3xl p-8 text-center border border-gray-700">
+          <div className="max-w-[430px] w-full bg-white rounded-3xl p-8 text-center border border-gray-200 shadow-lg">
             {/* Icon */}
             <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-500/10 to-emerald-400/10 mx-auto mb-6 flex items-center justify-center ring-2 ring-emerald-500/20">
               <div className="relative">
                 <Globe size={40} className="text-emerald-500" strokeWidth={2} />
-                <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-dark-200 rounded-full flex items-center justify-center border-2 border-emerald-500">
+                <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-white rounded-full flex items-center justify-center border-2 border-emerald-500">
                   <MapPin size={16} className="text-emerald-500" />
                 </div>
               </div>
             </div>
 
             {/* Heading */}
-            <h2 className="text-2xl font-bold text-white mb-3">Allow location access</h2>
-            <p className="text-gray-400 mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">Allow location access</h2>
+            <p className="text-gray-500 mb-8">
               We use your location to automatically tag expenses and provide better insights
             </p>
 
@@ -167,7 +167,7 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
                   }))
                   onConfirm(expenses)
                 }}
-                className="w-full bg-transparent hover:bg-dark-200/50 active:scale-[0.98] text-gray-300 hover:text-white font-medium py-4 rounded-full transition-all duration-200 border border-gray-600 hover:border-gray-500"
+                className="w-full bg-transparent hover:bg-gray-100 active:scale-[0.98] text-gray-600 hover:text-gray-900 font-medium py-4 rounded-full transition-all duration-200 border border-gray-300 hover:border-gray-400"
               >
                 Not now
               </button>

@@ -10,20 +10,20 @@ export default function WalletPage() {
   const router = useRouter()
 
   return (
-    <div className="min-h-screen bg-[#121f16]">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100">
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-[#121f16] border-b border-gray-800">
+      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-lg border-b border-gray-200">
         <div className="px-4 py-4 max-w-md mx-auto flex items-center gap-4">
           <button
             onClick={() => router.back()}
             className="p-2 -ml-2 active:scale-95 transition-transform"
           >
-            <ChevronLeft size={24} className="text-gray-400" />
+            <ChevronLeft size={24} className="text-gray-600" />
           </button>
           <WalletIcon size={24} className="text-primary" />
-          <h1 className="text-xl font-bold text-white flex-1">Wallet</h1>
+          <h1 className="text-xl font-bold text-gray-900 flex-1">Wallet</h1>
           <button className="p-2 active:scale-95 transition-transform">
-            <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </button>
@@ -64,17 +64,17 @@ export default function WalletPage() {
         {/* Bank accounts Section */}
         <div className="space-y-4">
           <div>
-            <h2 className="text-white text-lg font-semibold mb-1">Bank accounts</h2>
-            <p className="text-gray-400 text-sm">
+            <h2 className="text-gray-900 text-lg font-semibold mb-1">Bank accounts</h2>
+            <p className="text-gray-500 text-sm">
               Add a bank account to make or receive payments.
             </p>
           </div>
 
           {/* Add bank account */}
-          <button className="w-full bg-dark-200 rounded-xl border border-gray-800 p-4 active:bg-dark-100 transition-colors">
+          <button className="w-full bg-white rounded-xl border border-gray-200 p-4 active:bg-gray-50 transition-colors shadow-sm">
             <div className="flex items-center gap-3">
               <Plus size={24} className="text-gray-400" />
-              <span className="text-white font-medium">Add bank account</span>
+              <span className="text-gray-900 font-medium">Add bank account</span>
             </div>
           </button>
         </div>
@@ -82,19 +82,19 @@ export default function WalletPage() {
         {/* MafutaPass Wallet Section */}
         <div className="space-y-4 pt-4">
           <div>
-            <h2 className="text-white text-lg font-semibold mb-1">MafutaPass Wallet (Beta)</h2>
-            <p className="text-gray-400 text-sm">
+            <h2 className="text-gray-900 text-lg font-semibold mb-1">MafutaPass Wallet (Beta)</h2>
+            <p className="text-gray-500 text-sm">
               Send and receive money with friends. Kenyan bank accounts only.
             </p>
           </div>
 
           {/* Enable wallet */}
-          <button className="w-full bg-dark-200 rounded-xl border border-gray-800 p-4 active:bg-dark-100 transition-colors">
+          <button className="w-full bg-white rounded-xl border border-gray-200 p-4 active:bg-gray-50 transition-colors shadow-sm">
             <div className="flex items-center gap-3">
               <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
-              <span className="text-white font-medium">Enable wallet</span>
+              <span className="text-gray-900 font-medium">Enable wallet</span>
             </div>
           </button>
         </div>

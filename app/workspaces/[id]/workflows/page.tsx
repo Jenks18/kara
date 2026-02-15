@@ -128,7 +128,7 @@ export default function WorkflowsPage({ params }: { params: Promise<{ id: string
             </button>
           </div>
 
-          <button className="w-full py-3 rounded-xl bg-dark-200 border border-gray-800 text-gray-400 font-medium active:scale-[0.98] transition-transform flex items-center justify-center gap-2">
+          <button className="w-full py-3 rounded-xl bg-white border border-gray-200 text-gray-600 font-medium active:scale-[0.98] transition-transform flex items-center justify-center gap-2 shadow-sm hover:bg-gray-50">
             <Plus size={20} />
             Add approval workflow
           </button>

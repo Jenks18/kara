@@ -5,14 +5,7 @@ export default function SignUpPage() {
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 p-4">
       <div className="w-full max-w-md">
         <SignUp 
-          fallbackRedirectUrl="/reports"
           appearance={{
-            variables: {
-              colorText: '#111827',
-              colorTextSecondary: '#4b5563',
-              colorInputText: '#111827',
-              colorInputBackground: '#ffffff',
-            },
             elements: {
               rootBox: 'w-full',
               card: 'bg-white shadow-none border-0',
@@ -24,8 +17,6 @@ export default function SignUpPage() {
               footerActionLink: 'text-emerald-600 hover:text-emerald-700'
             }
           }}
-          signInUrl="/sign-in"
-          routing="hash"
         />
       </div>
     </div>

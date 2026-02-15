@@ -69,12 +69,12 @@ export default function ReceiptProcessingStatus({
         
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-gray-100 mb-1">{config.title}</h3>
-          <p className="text-sm text-gray-400 mb-3">{config.message}</p>
+          <h3 className="font-semibold text-gray-900 mb-1">{config.title}</h3>
+          <p className="text-sm text-gray-500 mb-3">{config.message}</p>
           
           {/* Progress Bar */}
           {config.showProgress && (
-            <div className="w-full bg-dark-200 rounded-full h-2 mb-3">
+            <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
               <div
                 className="bg-primary-500 h-2 rounded-full transition-all duration-500"
                 style={{ width: `${progress}%` }}
@@ -129,7 +129,7 @@ function ProcessingStep({
     <div className="flex items-center gap-3">
       <div className={`
         w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0
-        ${status === 'complete' ? 'bg-success-500' : status === 'active' ? 'bg-primary-500' : 'bg-gray-700'}
+        ${status === 'complete' ? 'bg-success-500' : status === 'active' ? 'bg-primary-500' : 'bg-gray-300'}
       `}>
         {status === 'complete' ? (
           <Check size={12} className="text-white" />
@@ -139,7 +139,7 @@ function ProcessingStep({
           <Icon size={12} className="text-gray-500" />
         )}
       </div>
-      <span className={`text-sm ${status === 'pending' ? 'text-gray-500' : 'text-gray-300'}`}>
+      <span className={`text-sm ${status === 'pending' ? 'text-gray-400' : 'text-gray-700'}`}>
         {label}
       </span>
     </div>

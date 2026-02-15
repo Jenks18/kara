@@ -1,27 +1,19 @@
 import { SignIn } from '@clerk/nextjs'
 
-export default async function SignInPage({
+export default function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ mobile?: string }>
+  searchParams: { mobile?: string }
 }) {
   // If coming from mobile app, redirect to mobile-redirect endpoint after sign in
-  const params = await searchParams
-  const isMobile = params.mobile === 'android'
+  const isMobile = searchParams.mobile === 'android'
   const redirectUrl = isMobile ? '/api/auth/android-callback' : '/reports'
   
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 p-4">
       <div className="w-full max-w-md">
         <SignIn 
-          fallbackRedirectUrl={redirectUrl}
           appearance={{
-            variables: {
-              colorText: '#111827',
-              colorTextSecondary: '#4b5563',
-              colorInputText: '#111827',
-              colorInputBackground: '#ffffff',
-            },
             elements: {
               rootBox: 'w-full',
               card: 'bg-white shadow-none border-0',
@@ -34,6 +26,7 @@ export default async function SignInPage({
             }
           }}
           signUpUrl="/sign-up"
+          redirectUrl={redirectUrl}
           routing="hash"
         />
       </div>

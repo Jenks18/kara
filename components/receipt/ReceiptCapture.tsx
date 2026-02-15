@@ -693,13 +693,13 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
             ) : (
               // Camera not active
               <div className="flex items-center justify-between opacity-50 pointer-events-none">
-                <div className="w-14 h-14 rounded-xl bg-dark-100/50 flex items-center justify-center">
+                <div className="w-14 h-14 rounded-xl bg-gray-200 flex items-center justify-center">
                   <ImageIcon size={24} className="text-gray-400" />
                 </div>
-                <div className="w-20 h-20 rounded-full bg-gray-800 flex items-center justify-center">
-                  <div className="w-16 h-16 rounded-full border-4 border-gray-700" />
+                <div className="w-20 h-20 rounded-full bg-gray-300 flex items-center justify-center">
+                  <div className="w-16 h-16 rounded-full border-4 border-gray-400" />
                 </div>
-                <div className="w-14 h-14 rounded-xl bg-dark-100/50 flex items-center justify-center">
+                <div className="w-14 h-14 rounded-xl bg-gray-200 flex items-center justify-center">
                   <Receipt size={24} className="text-gray-400" />
                 </div>
               </div>

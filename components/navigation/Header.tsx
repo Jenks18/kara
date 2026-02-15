@@ -11,7 +11,7 @@ export default function Header({ title, onBack, actions }: HeaderProps) {
   return (
     <header className="
       sticky top-0 z-30
-      bg-dark-200/95 backdrop-blur-lg border-b border-gray-800
+      bg-white/95 backdrop-blur-lg border-b border-gray-200
       px-4 py-4
       safe-area-top
     ">
@@ -20,13 +20,13 @@ export default function Header({ title, onBack, actions }: HeaderProps) {
           {onBack && (
             <button
               onClick={onBack}
-              className="p-2 hover:bg-dark-100 rounded-full transition-colors"
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
               aria-label="Go back"
             >
-              <ArrowLeft size={24} className="text-gray-300" />
+              <ArrowLeft size={24} className="text-gray-600" />
             </button>
           )}
-          <h1 className="text-xl font-bold text-gray-100">{title}</h1>
+          <h1 className="text-xl font-bold text-gray-900">{title}</h1>
         </div>
         {actions && <div className="flex items-center gap-2">{actions}</div>}
       </div>

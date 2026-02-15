@@ -19,9 +19,9 @@ export default function Button({
   
   const variants = {
     primary: 'bg-primary-500 active:bg-primary-600 text-white shadow-lg shadow-primary-500/20',
-    secondary: 'bg-dark-100 active:bg-dark-300 text-gray-100 border border-gray-700',
+    secondary: 'bg-white active:bg-gray-100 text-gray-700 border border-gray-200',
     danger: 'bg-danger-500 active:bg-danger-600 text-white',
-    ghost: 'bg-transparent active:bg-dark-100 text-gray-300',
+    ghost: 'bg-transparent active:bg-gray-100 text-gray-600',
   }
   
   const sizes = {

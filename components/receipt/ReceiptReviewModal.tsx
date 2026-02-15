@@ -46,16 +46,16 @@ export default function ReceiptReviewModal({
   const needsFuelType = receiptData.missingFields.includes('fuelType')
   
   return (
-    <div className="fixed inset-0 bg-black/80 z-50 flex items-end sm:items-center justify-center">
-      <div className="bg-dark-100 rounded-t-3xl sm:rounded-3xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center">
+      <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-dark-100 border-b border-gray-800 px-6 py-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-100">Review Receipt</h2>
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+          <h2 className="text-xl font-bold text-gray-900">Review Receipt</h2>
           <button
             onClick={onCancel}
-            className="p-2 hover:bg-dark-200 rounded-full transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
           >
-            <X size={24} className="text-gray-400" />
+            <X size={24} className="text-gray-500" />
           </button>
         </div>
         
@@ -68,7 +68,7 @@ export default function ReceiptReviewModal({
               <p className="text-sm text-warning-500 font-medium mb-1">
                 Missing Information
               </p>
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-gray-500">
                 We captured your receipt but couldn't read some details. Please fill them in below.
               </p>
             </div>
@@ -76,19 +76,19 @@ export default function ReceiptReviewModal({
           
           {/* Receipt Preview */}
           <Card className="mb-6">
-            <h3 className="text-sm font-semibold text-gray-300 mb-3">Receipt Details</h3>
+            <h3 className="text-sm font-semibold text-gray-600 mb-3">Receipt Details</h3>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-400">Merchant:</span>
-                <span className="text-gray-100 font-medium">{receiptData.merchant}</span>
+                <span className="text-gray-500">Merchant:</span>
+                <span className="text-gray-900 font-medium">{receiptData.merchant}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Date:</span>
-                <span className="text-gray-100">{receiptData.date}</span>
+                <span className="text-gray-500">Date:</span>
+                <span className="text-gray-900">{receiptData.date}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Total:</span>
-                <span className="text-gray-100 font-mono font-semibold">
+                <span className="text-gray-500">Total:</span>
+                <span className="text-gray-900 font-mono font-semibold">
                   KES {receiptData.totalAmount.toFixed(2)}
                 </span>
               </div>
@@ -100,7 +100,7 @@ export default function ReceiptReviewModal({
             {/* Litres Input */}
             {needsLitres && (
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Litres <span className="text-danger-500">*</span>
                 </label>
                 <input
@@ -111,15 +111,15 @@ export default function ReceiptReviewModal({
                   onChange={(e) => setFormData({ ...formData, litres: parseFloat(e.target.value) })}
                   className="
                     w-full px-4 py-3 
-                    bg-dark-200 border border-gray-800
+                    bg-gray-50 border border-gray-200
                     rounded-xl
-                    text-gray-100 placeholder-gray-500
+                    text-gray-900 placeholder-gray-400
                     focus:outline-none focus:ring-2 focus:ring-primary-500
                   "
                   placeholder="e.g., 25.5"
                 />
                 {formData.litres && (
-                  <p className="text-xs text-gray-400 mt-1">
+                  <p className="text-xs text-gray-500 mt-1">
                     Price per litre: KES {(receiptData.totalAmount / formData.litres).toFixed(2)}
                   </p>
                 )}
@@ -129,7 +129,7 @@ export default function ReceiptReviewModal({
             {/* Fuel Type Select */}
             {needsFuelType && (
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Fuel Type <span className="text-danger-500">*</span>
                 </label>
                 <select
@@ -138,9 +138,9 @@ export default function ReceiptReviewModal({
                   onChange={(e) => setFormData({ ...formData, fuelType: e.target.value })}
                   className="
                     w-full px-4 py-3 
-                    bg-dark-200 border border-gray-800
+                    bg-gray-50 border border-gray-200
                     rounded-xl
-                    text-gray-100
+                    text-gray-900
                     focus:outline-none focus:ring-2 focus:ring-primary-500
                   "
                 >
@@ -156,8 +156,8 @@ export default function ReceiptReviewModal({
             
             {/* Optional Fields */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Vehicle Number <span className="text-gray-500">(Optional)</span>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Vehicle Number <span className="text-gray-400">(Optional)</span>
               </label>
               <input
                 type="text"
@@ -165,9 +165,9 @@ export default function ReceiptReviewModal({
                 onChange={(e) => setFormData({ ...formData, vehicleNumber: e.target.value })}
                 className="
                   w-full px-4 py-3 
-                  bg-dark-200 border border-gray-800
+                  bg-gray-50 border border-gray-200
                   rounded-xl
-                  text-gray-100 placeholder-gray-500
+                  text-gray-900 placeholder-gray-400
                   focus:outline-none focus:ring-2 focus:ring-primary-500
                 "
                 placeholder="e.g., KBX 123A"
@@ -175,8 +175,8 @@ export default function ReceiptReviewModal({
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Odometer Reading <span className="text-gray-500">(Optional)</span>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Odometer Reading <span className="text-gray-400">(Optional)</span>
               </label>
               <input
                 type="number"
@@ -184,9 +184,9 @@ export default function ReceiptReviewModal({
                 onChange={(e) => setFormData({ ...formData, odometer: parseInt(e.target.value) })}
                 className="
                   w-full px-4 py-3 
-                  bg-dark-200 border border-gray-800
+                  bg-gray-50 border border-gray-200
                   rounded-xl
-                  text-gray-100 placeholder-gray-500
+                  text-gray-900 placeholder-gray-400
                   focus:outline-none focus:ring-2 focus:ring-primary-500
                 "
                 placeholder="e.g., 45000"

@@ -57,10 +57,10 @@ export default function ExpenseCard({
           
           {/* Details */}
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-gray-100 truncate">
+            <h3 className="font-semibold text-gray-900 truncate">
               {merchant}
             </h3>
-            <div className="flex items-center gap-2 mt-1 text-sm text-gray-400">
+            <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
               <span>{category}</span>
               <span>•</span>
               <span>{date}</span>
@@ -73,9 +73,9 @@ export default function ExpenseCard({
             )}
             {litres && pricePerLitre && (
               <div className="flex items-center gap-2 mt-2 text-xs">
-                <span className="text-gray-400">{litres}L</span>
-                <span className="text-gray-600">•</span>
-                <span className="text-gray-400">KES {pricePerLitre.toFixed(2)}/L</span>
+                <span className="text-gray-500">{litres}L</span>
+                <span className="text-gray-400">•</span>
+                <span className="text-gray-500">KES {pricePerLitre.toFixed(2)}/L</span>
               </div>
             )}
           </div>
@@ -83,7 +83,7 @@ export default function ExpenseCard({
         
         {/* Amount & Status */}
         <div className="text-right flex-shrink-0 ml-3">
-          <span className="font-mono font-semibold text-lg text-gray-100 block">
+          <span className="font-mono font-semibold text-lg text-gray-900 block">
             KES {amount.toFixed(2)}
           </span>
           {status && (status !== 'approved' || litres) && (
@@ -97,7 +97,7 @@ export default function ExpenseCard({
       
       {/* Receipt Thumbnail */}
       {imageUrl && (
-        <div className="mt-3 pt-3 border-t border-gray-800">
+        <div className="mt-3 pt-3 border-t border-gray-200">
           <img 
             src={imageUrl} 
             className="w-full h-32 object-cover rounded-lg"
