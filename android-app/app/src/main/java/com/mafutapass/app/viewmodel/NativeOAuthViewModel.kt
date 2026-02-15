@@ -258,7 +258,6 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
                 Log.d(TAG, "🔄 Exchanging for Supabase token...")
                 
                 val json = JSONObject().apply {
-                    put("token", clerkToken)
                     put("userId", userId)
                     put("email", email)
                 }
@@ -268,6 +267,7 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
                 
                 val request = Request.Builder()
                     .url(MOBILE_AUTH_URL)
+                    .addHeader("Authorization", "Bearer $clerkToken")
                     .post(requestBody)
                     .build()
                 
