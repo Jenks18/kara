@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.mafutapass.app.auth.TokenRepository
 import com.mafutapass.app.ui.theme.*
 import com.mafutapass.app.viewmodel.NativeOAuthViewModel
 import com.mafutapass.app.viewmodel.SignInViewModel
@@ -86,7 +87,7 @@ fun SignInOrUpScreen() {
             android.util.Log.d("SignInScreen", "Is new user: $isNewUser")
             android.util.Log.d("SignInScreen", "Name: $firstName $lastName")
             
-            // Store the tokens and user info for API calls using commit() for synchronous write
+            // Store token in BOTH legacy prefs (for backward compat) AND AccountManager/TokenRepository
             val prefs = context.getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
             val stored = prefs.edit().apply {
                 putString("session_token", token)
@@ -104,7 +105,11 @@ fun SignInOrUpScreen() {
                 }
             }.commit()  // Use commit() for immediate write
             
-            android.util.Log.d("SignInScreen", "Tokens stored: $stored")
+            // Store in AccountManager (primary) + EncryptedSharedPreferences (fallback)
+            // This is a suspend function, so it runs properly in LaunchedEffect
+            TokenRepository.getInstance(context).storeToken(token, userId, email)
+            
+            android.util.Log.d("SignInScreen", "Tokens stored: $stored (legacy + AccountManager)")
             android.util.Log.d("SignInScreen", "User: $email (ID: $userId)")
             android.util.Log.d("SignInScreen", "Clerk token: ${token.take(30)}...")
             if (supabaseToken != null) {

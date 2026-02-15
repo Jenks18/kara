@@ -62,9 +62,47 @@ data class Workspace(
             .ifEmpty { name.take(1).uppercase() }
 }
 
+/**
+ * User profile data model.
+ * Matches the backend API response structure.
+ */
 data class User(
     val id: String = "",
     val name: String = "",
     val email: String = "",
-    val avatar: String? = null
+    val avatar: String? = null,
+    val firstName: String? = null,
+    val lastName: String? = null,
+    val displayName: String? = null,
+    val phoneNumber: String? = null,
+    val dateOfBirth: String? = null,
+    val address: String? = null,
+    val city: String? = null,
+    val country: String? = null,
+    val postalCode: String? = null
+)
+
+/**
+ * Request body for updating user profile.
+ * Only include fields that are being updated.
+ */
+data class UpdateProfileRequest(
+    val firstName: String? = null,
+    val lastName: String? = null,
+    val displayName: String? = null,
+    val phoneNumber: String? = null,
+    val dateOfBirth: String? = null,
+    val address: String? = null,
+    val city: String? = null,
+    val country: String? = null,
+    val postalCode: String? = null
+)
+
+/**
+ * Response from profile update API.
+ */
+data class UpdateProfileResponse(
+    val success: Boolean,
+    val message: String? = null,
+    val user: User? = null
 )

@@ -9,6 +9,8 @@ val Emerald100 = Color(0xFFD1FAE5) // rgb(209, 250, 229) = 0.820, 0.980, 0.898
 val Emerald200 = Color(0xFFA7F3D0)
 val Emerald400 = Color(0xFF34D399) // rgb(52, 211, 153)
 val Emerald600 = Color(0xFF10B981) // rgb(16, 185, 129) = 0.063, 0.725, 0.506 - primary
+val Emerald700 = Color(0xFF059669) // rgb(5, 150, 105) - dark theme container
+val Emerald900 = Color(0xFF064E3B) // rgb(6, 78, 59) - dark theme on-primary
 
 // Grayscale
 val Gray50 = Color(0xFFF9FAFB)

@@ -42,7 +42,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
 
     fun signOut() {
         Log.d("AuthViewModel", "Sign out initiated")
-        tokenRepository.clearTokens()
+        tokenRepository.clearTokensSync()
         Log.d("AuthViewModel", "✅ Sign out complete")
     }
 }

@@ -33,7 +33,9 @@ import com.mafutapass.app.ui.screens.*
 import com.mafutapass.app.ui.theme.MafutaPassTheme
 import com.mafutapass.app.viewmodel.AuthViewModel
 import com.mafutapass.app.viewmodel.AuthState
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

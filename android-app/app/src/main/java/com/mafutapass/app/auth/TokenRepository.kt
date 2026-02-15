@@ -10,6 +10,7 @@ import androidx.work.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import okhttp3.MediaType.Companion.toMediaType
@@ -21,16 +22,17 @@ import java.util.concurrent.TimeUnit
 
 /**
  * Production-grade token repository with:
- * - Encrypted local storage
+ * - Primary storage: Android AccountManager (system-level accounts)
+ * - Fallback: EncryptedSharedPreferences (for migration)
+ * - Legacy support: Plain SharedPreferences (old app versions)
  * - Background token refresh via WorkManager
  * - Async-first API (no blocking calls)
- * - Request queuing for failed auth attempts
- * - Offline caching support
  */
 class TokenRepository private constructor(context: Context) {
     companion object {
         private const val TAG = "TokenRepository"
         private const val PREFS_NAME = "clerk_session_encrypted"
+        private const val LEGACY_PREFS_NAME = "clerk_session" // Old non-encrypted location
         private const val KEY_ACCESS_TOKEN = "access_token"
         private const val KEY_USER_ID = "user_id"
         private const val KEY_USER_EMAIL = "user_email"
@@ -52,8 +54,18 @@ class TokenRepository private constructor(context: Context) {
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
+    
+    // AccountHelper for system-level account management (PRIMARY)
+    private val accountHelper: AccountHelper by lazy {
+        AccountHelper.getInstance(appContext)
+    }
 
-    // Encrypted SharedPreferences
+    // Legacy SharedPreferences (for backward compatibility)
+    private val legacyPrefs: SharedPreferences by lazy {
+        appContext.getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
+    }
+
+    // Encrypted SharedPreferences (FALLBACK)
     private val encryptedPrefs: SharedPreferences by lazy {
         val masterKey = MasterKey.Builder(appContext)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
@@ -79,17 +91,71 @@ class TokenRepository private constructor(context: Context) {
     }
 
     init {
-        // Initialize token state
-        val token = encryptedPrefs.getString(KEY_ACCESS_TOKEN, null)
-        val userId = encryptedPrefs.getString(KEY_USER_ID, null)
+        // Initialize token state - check AccountManager first, then fallbacks
+        val (token, userId) = getTokenFromBestSource()
         
         _tokenState.value = when {
             token != null && userId != null && !isTokenExpired(token) -> {
-                // Schedule background refresh if needed
                 scheduleRefreshIfNeeded()
                 TokenState.Valid(token, userId)
             }
             else -> TokenState.Invalid
+        }
+    }
+    
+    /**
+     * Get token from the best available source.
+     * Priority: AccountManager > EncryptedPrefs > LegacyPrefs
+     */
+    private fun getTokenFromBestSource(): Pair<String?, String?> {
+        // 1. Try AccountManager (primary)
+        val accountToken = accountHelper.getClerkToken()
+        val accountUserId = accountHelper.getUserId()
+        if (accountToken != null && accountUserId != null) {
+            Log.d(TAG, "✅ Token loaded from AccountManager")
+            return accountToken to accountUserId
+        }
+        
+        // 2. Try EncryptedSharedPreferences
+        val encryptedToken = encryptedPrefs.getString(KEY_ACCESS_TOKEN, null)
+        val encryptedUserId = encryptedPrefs.getString(KEY_USER_ID, null)
+        if (encryptedToken != null && encryptedUserId != null) {
+            val encryptedEmail = encryptedPrefs.getString(KEY_USER_EMAIL, "") ?: ""
+            Log.d(TAG, "🔄 Migrating token from EncryptedPrefs to AccountManager")
+            migrateToAccountManager(encryptedToken, encryptedUserId, encryptedEmail)
+            return encryptedToken to encryptedUserId
+        }
+        
+        // 3. Try legacy SharedPreferences
+        val legacyToken = legacyPrefs.getString("session_token", null)
+        val legacyUserId = legacyPrefs.getString("user_id", null)
+        if (legacyToken != null && legacyUserId != null) {
+            val legacyEmail = legacyPrefs.getString("user_email", "") ?: ""
+            Log.d(TAG, "🔄 Migrating token from LegacyPrefs to AccountManager")
+            migrateToAccountManager(legacyToken, legacyUserId, legacyEmail)
+            return legacyToken to legacyUserId
+        }
+        
+        return null to null
+    }
+    
+    private fun migrateToAccountManager(token: String, userId: String, email: String) {
+        runBlocking {
+            try {
+                val expiry = extractTokenExpiry(token) * 1000 // Convert to milliseconds
+                accountHelper.signIn(
+                    email = email,
+                    userId = userId,
+                    clerkToken = token,
+                    expiresAt = expiry
+                )
+                // Clear old storage after successful migration
+                encryptedPrefs.edit().clear().apply()
+                legacyPrefs.edit().clear().apply()
+                Log.d(TAG, "✅ Migration to AccountManager complete")
+            } catch (e: Exception) {
+                Log.w(TAG, "Migration to AccountManager failed: ${e.message}")
+            }
         }
     }
 
@@ -98,45 +164,108 @@ class TokenRepository private constructor(context: Context) {
      * Returns null if no valid token available.
      */
     suspend fun getValidTokenAsync(): String? = mutex.withLock {
-        val currentToken = encryptedPrefs.getString(KEY_ACCESS_TOKEN, null)
+        // Check AccountManager first
+        val accountToken = accountHelper.getClerkToken()
+        val accountUserId = accountHelper.getUserId()
         
-        return when {
-            currentToken == null -> {
-                _tokenState.value = TokenState.Invalid
-                null
+        if (accountToken != null && accountUserId != null) {
+            return if (isTokenExpired(accountToken)) {
+                refreshTokenImmediate(accountToken)
+            } else {
+                accountToken
             }
-            isTokenExpired(currentToken) -> {
-                // Try immediate refresh (don't wait for WorkManager)
-                refreshTokenImmediate(currentToken)
-            }
-            else -> currentToken
         }
+        
+        // Fallback to encrypted prefs
+        val encryptedToken = encryptedPrefs.getString(KEY_ACCESS_TOKEN, null)
+        if (encryptedToken != null) {
+            val userId = encryptedPrefs.getString(KEY_USER_ID, null) ?: ""
+            val email = encryptedPrefs.getString(KEY_USER_EMAIL, "") ?: ""
+            migrateToAccountManager(encryptedToken, userId, email)
+            return encryptedToken
+        }
+        
+        // Fallback to legacy prefs
+        val legacyToken = legacyPrefs.getString("session_token", null)
+        if (legacyToken != null) {
+            val userId = legacyPrefs.getString("user_id", null) ?: ""
+            val email = legacyPrefs.getString("user_email", "") ?: ""
+            migrateToAccountManager(legacyToken, userId, email)
+            return legacyToken
+        }
+        
+        _tokenState.value = TokenState.Invalid
+        null
     }
 
     /**
      * Store new token (called after successful sign-in)
+     * Now uses AccountManager as primary storage
      */
-    fun storeToken(token: String, userId: String, userEmail: String) {
-        encryptedPrefs.edit()
-            .putString(KEY_ACCESS_TOKEN, token)
-            .putString(KEY_USER_ID, userId)
-            .putString(KEY_USER_EMAIL, userEmail)
-            .putLong(KEY_TOKEN_EXPIRES_AT, extractTokenExpiry(token))
-            .apply()
+    suspend fun storeToken(token: String, userId: String, userEmail: String) {
+        val expiry = extractTokenExpiry(token) * 1000 // Convert to milliseconds
+        
+        // Store in AccountManager (primary)
+        val success = accountHelper.signIn(
+            email = userEmail,
+            userId = userId,
+            clerkToken = token,
+            expiresAt = expiry
+        )
+        
+        if (success) {
+            _tokenState.value = TokenState.Valid(token, userId)
+            scheduleRefreshIfNeeded()
+            Log.d(TAG, "✅ Token stored in AccountManager")
+        } else {
+            // Fallback to EncryptedPrefs if AccountManager fails
+            encryptedPrefs.edit()
+                .putString(KEY_ACCESS_TOKEN, token)
+                .putString(KEY_USER_ID, userId)
+                .putString(KEY_USER_EMAIL, userEmail)
+                .putLong(KEY_TOKEN_EXPIRES_AT, extractTokenExpiry(token))
+                .apply()
             
-        _tokenState.value = TokenState.Valid(token, userId)
-        scheduleRefreshIfNeeded()
-        Log.d(TAG, "✅ Token stored and refresh scheduled")
+            _tokenState.value = TokenState.Valid(token, userId)
+            scheduleRefreshIfNeeded()
+            Log.w(TAG, "⚠️ AccountManager failed, stored in EncryptedPrefs")
+        }
+    }
+    
+    /**
+     * Legacy sync method for backward compatibility
+     */
+    fun storeTokenSync(token: String, userId: String, userEmail: String) {
+        runBlocking {
+            storeToken(token, userId, userEmail)
+        }
     }
 
     /**
      * Clear all tokens (sign out)
      */
-    fun clearTokens() {
+    suspend fun clearTokens() {
+        // Clear AccountManager
+        accountHelper.signOut()
+        
+        // Clear encrypted prefs
         encryptedPrefs.edit().clear().apply()
+        
+        // Clear legacy prefs
+        legacyPrefs.edit().clear().apply()
+        
         _tokenState.value = TokenState.Invalid
         WorkManager.getInstance(appContext).cancelAllWorkByTag("token_refresh")
-        Log.d(TAG, "🔑 All tokens cleared")
+        Log.d(TAG, "🔑 All tokens cleared from all storage locations")
+    }
+    
+    /**
+     * Legacy sync method for backward compatibility
+     */
+    fun clearTokensSync() {
+        runBlocking {
+            clearTokens()
+        }
     }
 
     private fun isTokenExpired(token: String): Boolean {
@@ -174,17 +303,16 @@ class TokenRepository private constructor(context: Context) {
                 val json = JSONObject(body)
                 val newToken = json.optString("token", "")
                 val userId = json.optString("userId", "")
+                val userEmail = json.optString("email", accountHelper.getUserEmail() ?: "")
                 
                 if (newToken.isNotEmpty() && userId.isNotEmpty()) {
-                    // Update stored token
-                    encryptedPrefs.edit()
-                        .putString(KEY_ACCESS_TOKEN, newToken)
-                        .putLong(KEY_TOKEN_EXPIRES_AT, extractTokenExpiry(newToken))
-                        .apply()
+                    // Update token in AccountManager (primary)
+                    val expiry = extractTokenExpiry(newToken) * 1000
+                    accountHelper.updateTokens(newToken, null, expiry)
                         
                     _tokenState.value = TokenState.Valid(newToken, userId)
                     scheduleRefreshIfNeeded()
-                    Log.d(TAG, "✅ Token refreshed immediately")
+                    Log.d(TAG, "✅ Token refreshed immediately (stored in AccountManager)")
                     newToken
                 } else {
                     _tokenState.value = TokenState.Invalid
@@ -203,7 +331,10 @@ class TokenRepository private constructor(context: Context) {
     }
 
     private fun scheduleRefreshIfNeeded() {
-        val token = encryptedPrefs.getString(KEY_ACCESS_TOKEN, null) ?: return
+        // Try AccountManager first, then encrypted prefs
+        val token = accountHelper.getClerkToken() 
+            ?: encryptedPrefs.getString(KEY_ACCESS_TOKEN, null) 
+            ?: return
         
         try {
             val expiryTime = extractTokenExpiry(token)
