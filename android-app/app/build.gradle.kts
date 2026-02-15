@@ -118,11 +118,11 @@ dependencies {
     implementation("io.github.jan-tennert.supabase:gotrue-kt")
     
     // Ktor dependencies for Supabase
-    implementation("io.ktor:ktor-client-android:2.3.7")
-    implementation("io.ktor:ktor-client-core:2.3.7")
-    implementation("io.ktor:ktor-client-content-negotiation:2.3.7")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.7")
-    implementation("io.ktor:ktor-utils:2.3.7")
+    implementation("io.ktor:ktor-client-android:3.4.0")
+    implementation("io.ktor:ktor-client-core:3.4.0")
+    implementation("io.ktor:ktor-client-content-negotiation:3.4.0")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:3.4.0")
+    implementation("io.ktor:ktor-utils:3.4.0")
 
     // Google Sign-In (Credentials API)
     implementation("androidx.credentials:credentials:1.2.2")
