@@ -14,8 +14,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -84,23 +82,23 @@ fun AccountScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(brush = Brush.verticalGradient(listOf(Emerald50, Green50, Emerald100)))
+            .background(AppTheme.colors.backgroundGradient)
     ) {
         // Profile header
-        Surface(color = Color.White, modifier = Modifier.fillMaxWidth()) {
+        Surface(color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxWidth()) {
             Row(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp).fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
                     modifier = Modifier.size(48.dp).clip(CircleShape)
-                        .background(brush = Brush.verticalGradient(listOf(Emerald400, Emerald600))),
+                        .background(AppTheme.colors.primaryGradient),
                     contentAlignment = Alignment.Center
                 ) { Text(avatarEmoji, fontSize = 24.sp) }
                 Spacer(Modifier.width(12.dp))
                 Column {
-                    Text(displayName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = Gray900)
-                    Text(displayEmail, style = MaterialTheme.typography.bodyMedium, color = Gray500)
+                    Text(displayName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+                    Text(displayEmail, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -114,7 +112,7 @@ fun AccountScreen(
             // ACCOUNT section
             item {
                 Text("ACCOUNT", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold,
-                    color = Gray500, letterSpacing = 1.sp, modifier = Modifier.padding(top = 8.dp, bottom = 4.dp, start = 4.dp))
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 1.sp, modifier = Modifier.padding(top = 8.dp, bottom = 4.dp, start = 4.dp))
             }
             val accountItems = listOf(
                 Triple(Icons.Filled.Person, "Profile", "profile"),
@@ -134,7 +132,7 @@ fun AccountScreen(
             // GENERAL section
             item {
                 Text("GENERAL", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold,
-                    color = Gray500, letterSpacing = 1.sp, modifier = Modifier.padding(top = 16.dp, bottom = 4.dp, start = 4.dp))
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 1.sp, modifier = Modifier.padding(top = 16.dp, bottom = 4.dp, start = 4.dp))
             }
             val generalItems = listOf(
                 Triple(Icons.Filled.Help, "Help", "help"),
@@ -157,16 +155,16 @@ fun AccountScreen(
             item {
                 Spacer(Modifier.height(12.dp))
                 Surface(
-                    shape = RoundedCornerShape(12.dp), color = Color.White, shadowElevation = 1.dp,
+                    shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.surface, shadowElevation = 1.dp,
                     modifier = Modifier.fillMaxWidth().clickable { onSignOut() }
                 ) {
                     Row(
                         modifier = Modifier.padding(16.dp).fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Filled.Logout, null, tint = Red500, modifier = Modifier.size(22.dp))
+                        Icon(Icons.Filled.Logout, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(22.dp))
                         Spacer(Modifier.width(14.dp))
-                        Text("Sign Out", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, color = Red500)
+                        Text("Sign Out", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.error)
                     }
                 }
             }
@@ -179,16 +177,16 @@ fun AccountScreen(
 @Composable
 private fun MenuRow(icon: ImageVector, label: String, onClick: () -> Unit) {
     Surface(
-        shape = RoundedCornerShape(12.dp), color = Color.White, shadowElevation = 1.dp,
+        shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.surface, shadowElevation = 1.dp,
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)
     ) {
         Row(
             modifier = Modifier.padding(16.dp).fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(imageVector = icon, contentDescription = label, tint = Emerald600, modifier = Modifier.size(22.dp))
+            Icon(imageVector = icon, contentDescription = label, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
             Spacer(Modifier.width(14.dp))
-            Text(label, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, color = Gray800)
+            Text(label, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
         }
     }
 }

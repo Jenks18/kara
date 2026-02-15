@@ -12,8 +12,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -56,11 +54,7 @@ fun CreateScreen() {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(Emerald50, Green50, Emerald100)
-                )
-            )
+            .background(AppTheme.colors.backgroundGradient)
             .padding(16.dp)
     ) {
         Spacer(modifier = Modifier.height(24.dp))
@@ -75,13 +69,13 @@ fun CreateScreen() {
             Spacer(modifier = Modifier.height(16.dp))
             Surface(
                 shape = RoundedCornerShape(8.dp),
-                color = if (msg.startsWith("✅")) Emerald100 else Color(0xFFFEE2E2)
+                color = if (msg.startsWith("✅")) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer
             ) {
                 Text(
                     text = msg,
                     modifier = Modifier.padding(12.dp),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (msg.startsWith("✅")) Emerald600 else Red500
+                    color = if (msg.startsWith("✅")) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                 )
             }
         }
@@ -128,7 +122,7 @@ fun CreateScreen() {
                     },
                     enabled = reportTitle.isNotBlank() && !isCreating
                 ) {
-                    Text(if (isCreating) "Creating..." else "Create", color = Emerald600)
+                    Text(if (isCreating) "Creating..." else "Create", color = MaterialTheme.colorScheme.primary)
                 }
             },
             dismissButton = {
@@ -148,7 +142,7 @@ fun CreateScreen() {
             text = { Text("$feature will be available in a future update.") },
             confirmButton = {
                 TextButton(onClick = { showComingSoonDialog = null }) {
-                    Text("OK", color = Emerald600)
+                    Text("OK", color = MaterialTheme.colorScheme.primary)
                 }
             }
         )
@@ -167,7 +161,7 @@ data class CreateOption(
 fun CreateOptionCard(option: CreateOption) {
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = Color.White,
+        color = MaterialTheme.colorScheme.surface,
         shadowElevation = 2.dp,
         modifier = Modifier
             .fillMaxWidth()
@@ -184,13 +178,13 @@ fun CreateOptionCard(option: CreateOption) {
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape)
-                    .background(Emerald100),
+                    .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = option.icon,
                     contentDescription = option.label,
-                    tint = Emerald600,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -202,12 +196,12 @@ fun CreateOptionCard(option: CreateOption) {
                     text = option.label,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = Gray900
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = option.description,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Gray600
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }

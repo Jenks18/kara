@@ -20,7 +20,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -49,15 +48,11 @@ fun ReportsScreen(viewModel: ReportsViewModel = viewModel()) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(Emerald50, Green50, Emerald100)
-                )
-            )
+            .background(AppTheme.colors.backgroundGradient)
     ) {
         // Header
         Surface(
-            color = Color.White,
+            color = MaterialTheme.colorScheme.surface,
             shadowElevation = 1.dp
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
@@ -72,13 +67,13 @@ fun ReportsScreen(viewModel: ReportsViewModel = viewModel()) {
                         text = "Reports",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
-                        color = Gray900
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     IconButton(onClick = { viewModel.refresh() }) {
                         Icon(
                             imageVector = Icons.Filled.Refresh,
                             contentDescription = "Refresh",
-                            tint = Emerald600
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
@@ -86,8 +81,8 @@ fun ReportsScreen(viewModel: ReportsViewModel = viewModel()) {
                 // Segmented Control
                 TabRow(
                     selectedTabIndex = selectedTab,
-                    containerColor = Color.White,
-                    contentColor = Emerald600,
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.primary,
                     indicator = {},
                     divider = {},
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
@@ -99,12 +94,12 @@ fun ReportsScreen(viewModel: ReportsViewModel = viewModel()) {
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(
-                                    if (selectedTab == index) Emerald600 else Color.Transparent
+                                    if (selectedTab == index) MaterialTheme.colorScheme.primary else Color.Transparent
                                 )
                         ) {
                             Text(
                                 text = title,
-                                color = if (selectedTab == index) Color.White else Gray600,
+                                color = if (selectedTab == index) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontWeight = if (selectedTab == index) FontWeight.SemiBold else FontWeight.Normal,
                                 modifier = Modifier.padding(vertical = 8.dp)
                             )
@@ -112,7 +107,7 @@ fun ReportsScreen(viewModel: ReportsViewModel = viewModel()) {
                     }
                 }
 
-                HorizontalDivider(color = Emerald100.copy(alpha = 0.3f))
+                HorizontalDivider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))
             }
         }
 
@@ -122,7 +117,7 @@ fun ReportsScreen(viewModel: ReportsViewModel = viewModel()) {
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(color = Emerald600)
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
         } else if (selectedTab == 0) {
             ExpensesTab(expenses)
@@ -176,16 +171,16 @@ fun ExpenseCard(expense: ExpenseItem) {
     val displayDate = DateUtils.formatShort(expense.transactionDate ?: expense.createdAt)
 
     val statusColor = when (expense.processingStatus) {
-        "processed" -> Emerald600
-        "scanning" -> Color(0xFFD97706) // amber
-        "error" -> Color(0xFFDC2626) // red
-        else -> Gray500
+        "processed" -> MaterialTheme.colorScheme.primary
+        "scanning" -> AppTheme.colors.statusPending
+        "error" -> MaterialTheme.colorScheme.error
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
     val statusLabel = expense.processingStatus.replaceFirstChar { it.uppercase() }
 
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = Color.White,
+        color = MaterialTheme.colorScheme.surface,
         shadowElevation = 2.dp,
         modifier = Modifier
             .fillMaxWidth()
@@ -209,20 +204,20 @@ fun ExpenseCard(expense: ExpenseItem) {
                     modifier = Modifier
                         .size(56.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(Emerald50)
+                        .background(MaterialTheme.colorScheme.background)
                 )
             } else {
                 Box(
                     modifier = Modifier
                         .size(56.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(Emerald100),
+                        .background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Receipt,
                         contentDescription = "Receipt",
-                        tint = Emerald600,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(28.dp)
                     )
                 }
@@ -234,7 +229,7 @@ fun ExpenseCard(expense: ExpenseItem) {
                 Text(
                     text = expense.merchantName ?: "Receipt",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Gray900,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -259,14 +254,14 @@ fun ExpenseCard(expense: ExpenseItem) {
                     Text(
                         text = expense.category,
                         style = MaterialTheme.typography.bodySmall,
-                        color = Gray500
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     if (displayDate.isNotEmpty()) {
-                        Text("•", style = MaterialTheme.typography.bodySmall, color = Gray500)
+                        Text("•", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text(
                             text = displayDate,
                             style = MaterialTheme.typography.bodySmall,
-                            color = Gray500
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -280,13 +275,13 @@ fun ExpenseCard(expense: ExpenseItem) {
                         Icon(
                             imageVector = Icons.Filled.CheckCircle,
                             contentDescription = "KRA Verified",
-                            tint = Emerald600,
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(14.dp)
                         )
                         Text(
                             text = "KRA Verified",
                             style = MaterialTheme.typography.labelSmall,
-                            color = Emerald600
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
@@ -297,7 +292,7 @@ fun ExpenseCard(expense: ExpenseItem) {
                     text = "KES ${String.format("%.2f", expense.amount)}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Emerald600
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }
@@ -311,7 +306,7 @@ fun ReportCard(report: ExpenseReport) {
 
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = Color.White,
+        color = MaterialTheme.colorScheme.surface,
         shadowElevation = 2.dp,
         modifier = Modifier
             .fillMaxWidth()
@@ -331,7 +326,7 @@ fun ReportCard(report: ExpenseReport) {
                     text = report.title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = Gray900,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
                 )
                 if (report.totalAmount > 0) {
@@ -339,7 +334,7 @@ fun ReportCard(report: ExpenseReport) {
                         text = "KES ${String.format("%.2f", report.totalAmount)}",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = Emerald600
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }
@@ -366,7 +361,7 @@ fun ReportCard(report: ExpenseReport) {
                                 modifier = Modifier
                                     .size(48.dp)
                                     .clip(RoundedCornerShape(6.dp))
-                                    .background(Emerald50)
+                                    .background(MaterialTheme.colorScheme.background)
                             )
                         }
                     }
@@ -380,10 +375,10 @@ fun ReportCard(report: ExpenseReport) {
             ) {
                 // Status badge
                 val statusColor = when (report.status) {
-                    "approved" -> Emerald600
+                    "approved" -> MaterialTheme.colorScheme.primary
                     "submitted" -> Color(0xFF2563EB) // blue
-                    "rejected" -> Color(0xFFDC2626) // red
-                    else -> Color(0xFF6B7280) // gray for draft
+                    "rejected" -> MaterialTheme.colorScheme.error
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant // gray for draft
                 }
                 Surface(
                     shape = RoundedCornerShape(12.dp),
@@ -401,15 +396,15 @@ fun ReportCard(report: ExpenseReport) {
                 Text(
                     text = "${report.itemsCount} items",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Gray500
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 if (displayDate.isNotEmpty()) {
-                    Text("•", style = MaterialTheme.typography.bodySmall, color = Gray500)
+                    Text("•", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(
                         text = displayDate,
                         style = MaterialTheme.typography.bodySmall,
-                        color = Gray500
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -420,7 +415,7 @@ fun ReportCard(report: ExpenseReport) {
                 Text(
                     text = report.workspaceName,
                     style = MaterialTheme.typography.bodySmall,
-                    color = Gray500
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -437,13 +432,13 @@ fun EmptyState(message: String, description: String) {
             Text(
                 text = message,
                 style = MaterialTheme.typography.titleLarge,
-                color = Gray900
+                color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = description,
                 style = MaterialTheme.typography.bodyMedium,
-                color = Gray500
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

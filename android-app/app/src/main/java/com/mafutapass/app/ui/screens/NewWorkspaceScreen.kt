@@ -15,8 +15,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -65,11 +63,7 @@ fun NewWorkspaceScreen(onBack: () -> Unit, onConfirm: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(Emerald50, Green50, Emerald100)
-                )
-            )
+            .background(brush = AppTheme.colors.backgroundGradient)
     ) {
         // Header
         TopAppBar(
@@ -85,7 +79,7 @@ fun NewWorkspaceScreen(onBack: () -> Unit, onConfirm: () -> Unit) {
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = Color.White
+                containerColor = MaterialTheme.colorScheme.surface
             )
         )
         
@@ -101,7 +95,7 @@ fun NewWorkspaceScreen(onBack: () -> Unit, onConfirm: () -> Unit) {
                 modifier = Modifier
                     .size(100.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Emerald600)
+                    .background(MaterialTheme.colorScheme.primary)
                     .align(Alignment.CenterHorizontally),
                 contentAlignment = Alignment.Center
             ) {
@@ -109,7 +103,7 @@ fun NewWorkspaceScreen(onBack: () -> Unit, onConfirm: () -> Unit) {
                     text = displayAvatar,
                     fontSize = 48.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onPrimary
                 )
             }
             
@@ -123,16 +117,13 @@ fun NewWorkspaceScreen(onBack: () -> Unit, onConfirm: () -> Unit) {
                 placeholder = { Text("My Workspace") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Emerald600,
-                    focusedLabelColor = Emerald600
-                )
+                colors = appOutlinedTextFieldColors()
             )
             
             // Currency Selector
             Surface(
                 shape = RoundedCornerShape(12.dp),
-                color = Color.White,
+                color = MaterialTheme.colorScheme.surface,
                 shadowElevation = 1.dp,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -149,7 +140,7 @@ fun NewWorkspaceScreen(onBack: () -> Unit, onConfirm: () -> Unit) {
                         Text(
                             text = "Currency",
                             style = MaterialTheme.typography.bodySmall,
-                            color = Gray500
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
@@ -161,7 +152,7 @@ fun NewWorkspaceScreen(onBack: () -> Unit, onConfirm: () -> Unit) {
                     Icon(
                         imageVector = Icons.Filled.ChevronRight,
                         contentDescription = "Select",
-                        tint = Gray500
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -172,7 +163,7 @@ fun NewWorkspaceScreen(onBack: () -> Unit, onConfirm: () -> Unit) {
             if (errorMessage != null) {
                 Text(
                     text = errorMessage!!,
-                    color = Red500,
+                    color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
@@ -207,8 +198,8 @@ fun NewWorkspaceScreen(onBack: () -> Unit, onConfirm: () -> Unit) {
                     .height(56.dp),
                 enabled = workspaceName.isNotBlank() && !isCreating,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Emerald600,
-                    disabledContainerColor = Gray300
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    disabledContainerColor = MaterialTheme.colorScheme.outlineVariant
                 ),
                 shape = RoundedCornerShape(12.dp)
             ) {
@@ -243,7 +234,7 @@ fun NewWorkspaceScreen(onBack: () -> Unit, onConfirm: () -> Unit) {
                             Text(currency.symbol, fontWeight = FontWeight.Bold)
                         }
                         if (currency != CURRENCIES.last()) {
-                            Divider(color = Gray100)
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                         }
                     }
                 }

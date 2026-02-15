@@ -17,8 +17,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -92,7 +90,7 @@ fun WorkspaceMembersScreen(
 
     if (isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = Emerald600)
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
         }
         return
     }
@@ -100,11 +98,7 @@ fun WorkspaceMembersScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(Emerald50, Green50, Emerald100)
-                )
-            )
+            .background(brush = AppTheme.colors.backgroundGradient)
     ) {
         // Header
         TopAppBar(
@@ -113,7 +107,7 @@ fun WorkspaceMembersScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(Icons.Filled.People, null, tint = Emerald600)
+                    Icon(Icons.Filled.People, null, tint = MaterialTheme.colorScheme.primary)
                     Text("Members", fontWeight = FontWeight.Bold)
                 }
             },
@@ -122,7 +116,7 @@ fun WorkspaceMembersScreen(
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
                 }
             },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
         )
 
         LazyColumn(
@@ -138,7 +132,7 @@ fun WorkspaceMembersScreen(
                     Button(
                         onClick = { showInviteDialog = true },
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(containerColor = Emerald600),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Icon(Icons.Filled.PersonAdd, null, modifier = Modifier.size(20.dp))
@@ -151,11 +145,11 @@ fun WorkspaceMembersScreen(
                             onClick = { showMoreMenu = !showMoreMenu },
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text("More", color = Gray700)
+                            Text("More", color = MaterialTheme.colorScheme.onSurface)
                             Icon(
                                 if (showMoreMenu) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
                                 null,
-                                tint = Gray700
+                                tint = MaterialTheme.colorScheme.onSurface
                             )
                         }
 
@@ -169,15 +163,15 @@ fun WorkspaceMembersScreen(
                                     showMoreMenu = false
                                     showShareDialog = true
                                 },
-                                leadingIcon = { Icon(Icons.Filled.Share, null, tint = Emerald600) }
+                                leadingIcon = { Icon(Icons.Filled.Share, null, tint = MaterialTheme.colorScheme.primary) }
                             )
                             DropdownMenuItem(
-                                text = { Text("Delete", color = Color(0xFFDC2626)) },
+                                text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
                                 onClick = {
                                     showMoreMenu = false
                                     showDeleteDialog = true
                                 },
-                                leadingIcon = { Icon(Icons.Filled.Delete, null, tint = Color(0xFFDC2626)) }
+                                leadingIcon = { Icon(Icons.Filled.Delete, null, tint = MaterialTheme.colorScheme.error) }
                             )
                         }
                     }
@@ -189,7 +183,7 @@ fun WorkspaceMembersScreen(
                 Text(
                     "Total workspace members: ${members.size}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Gray500
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -201,8 +195,8 @@ fun WorkspaceMembersScreen(
                         .padding(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Member", style = MaterialTheme.typography.bodySmall, color = Gray500)
-                    Text("Role", style = MaterialTheme.typography.bodySmall, color = Gray500)
+                    Text("Member", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Role", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
@@ -216,7 +210,7 @@ fun WorkspaceMembersScreen(
 
                 Surface(
                     shape = RoundedCornerShape(12.dp),
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.surface,
                     shadowElevation = 1.dp,
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -237,9 +231,7 @@ fun WorkspaceMembersScreen(
                                 modifier = Modifier
                                     .size(48.dp)
                                     .background(
-                                        brush = Brush.verticalGradient(
-                                            listOf(Emerald600, Color(0xFF059669))
-                                        ),
+                                        brush = AppTheme.colors.headerGradient,
                                         shape = CircleShape
                                     ),
                                 contentAlignment = Alignment.Center
@@ -247,7 +239,7 @@ fun WorkspaceMembersScreen(
                                 Text(
                                     member.avatarEmoji ?: member.email.first().uppercase(),
                                     fontSize = 20.sp,
-                                    color = Color.White,
+                                    color = MaterialTheme.colorScheme.onPrimary,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -256,13 +248,13 @@ fun WorkspaceMembersScreen(
                                     displayText,
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = Gray900
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                                 if (secondaryText.isNotEmpty()) {
                                     Text(
                                         secondaryText,
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = Gray500
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
@@ -271,13 +263,13 @@ fun WorkspaceMembersScreen(
                         // Role badge
                         Surface(
                             shape = RoundedCornerShape(20.dp),
-                            color = if (member.role == "admin") Emerald100 else Color(0xFFF3F4F6)
+                            color = if (member.role == "admin") MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
                         ) {
                             Text(
                                 if (member.role == "admin") "Admin" else "Member",
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Medium,
-                                color = if (member.role == "admin") Emerald600 else Gray700,
+                                color = if (member.role == "admin") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                             )
                         }
@@ -294,7 +286,7 @@ fun WorkspaceMembersScreen(
                             .padding(vertical = 32.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("No members found", color = Gray500)
+                        Text("No members found", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -308,7 +300,7 @@ fun WorkspaceMembersScreen(
         Dialog(onDismissRequest = { showInviteDialog = false }) {
             Surface(
                 shape = RoundedCornerShape(24.dp),
-                color = Color.White,
+                color = MaterialTheme.colorScheme.surface,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(24.dp)) {
@@ -329,7 +321,7 @@ fun WorkspaceMembersScreen(
                     Text(
                         "Add members to this workspace",
                         style = MaterialTheme.typography.bodySmall,
-                        color = Gray500
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(Modifier.height(16.dp))
                     OutlinedTextField(
@@ -349,7 +341,7 @@ fun WorkspaceMembersScreen(
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = Emerald600),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         shape = RoundedCornerShape(16.dp)
                     ) {
                         Text("Next", fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(vertical = 8.dp))
@@ -364,7 +356,7 @@ fun WorkspaceMembersScreen(
         Dialog(onDismissRequest = { showShareDialog = false }) {
             Surface(
                 shape = RoundedCornerShape(24.dp),
-                color = Color.White,
+                color = MaterialTheme.colorScheme.surface,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
@@ -389,12 +381,12 @@ fun WorkspaceMembersScreen(
 
                     Surface(
                         shape = RoundedCornerShape(12.dp),
-                        color = Emerald50
+                        color = MaterialTheme.colorScheme.primaryContainer
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Share link", style = MaterialTheme.typography.bodySmall, color = Gray500)
+                            Text("Share link", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Spacer(Modifier.height(4.dp))
-                            Text(shareUrl, style = MaterialTheme.typography.bodySmall, color = Gray900)
+                            Text(shareUrl, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface)
                         }
                     }
 
@@ -407,7 +399,7 @@ fun WorkspaceMembersScreen(
                             Toast.makeText(context, "Link copied to clipboard!", Toast.LENGTH_SHORT).show()
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = Emerald600),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Icon(Icons.Filled.Share, null, modifier = Modifier.size(18.dp))
@@ -424,7 +416,7 @@ fun WorkspaceMembersScreen(
         Dialog(onDismissRequest = { showDeleteDialog = false }) {
             Surface(
                 shape = RoundedCornerShape(24.dp),
-                color = Color.White,
+                color = MaterialTheme.colorScheme.surface,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
@@ -434,13 +426,13 @@ fun WorkspaceMembersScreen(
                     Box(
                         modifier = Modifier
                             .size(64.dp)
-                            .background(Color(0xFFFEE2E2), CircleShape),
+                            .background(MaterialTheme.colorScheme.errorContainer, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             Icons.Filled.Delete,
                             null,
-                            tint = Color(0xFFDC2626),
+                            tint = MaterialTheme.colorScheme.error,
                             modifier = Modifier.size(32.dp)
                         )
                     }
@@ -454,7 +446,7 @@ fun WorkspaceMembersScreen(
                     Text(
                         "Are you sure you want to delete \"${workspace?.name}\"? This action cannot be undone and all data will be permanently lost.",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Gray500,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
                     )
                     Spacer(Modifier.height(24.dp))
@@ -484,7 +476,7 @@ fun WorkspaceMembersScreen(
                                 }
                             },
                             modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Text("Delete")

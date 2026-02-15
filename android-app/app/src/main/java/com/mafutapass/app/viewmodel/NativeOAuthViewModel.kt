@@ -1,11 +1,14 @@
 package com.mafutapass.app.viewmodel
 
+import android.app.Activity
 import android.app.Application
 import android.content.Context
 import android.util.Log
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialException
+import androidx.credentials.exceptions.NoCredentialException
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
@@ -116,16 +119,39 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
                 val credential = GoogleIdTokenCredential.createFrom(result.credential.data)
                 val idToken = credential.idToken
 
-                Log.d(TAG, "✅ Got Google ID token: ${idToken.take(30)}...")
+                Log.d(TAG, "✅ Got Google ID token")
 
                 // Send to backend for verification and Clerk session creation
                 authenticateWithBackend(idToken)
 
+            } catch (e: NoCredentialException) {
+                Log.e(TAG, "❌ No credential available: ${e.message}", e)
+                Log.e(TAG, "💡 This usually means:")
+                Log.e(TAG, "   1. No Google account is signed in on this device")
+                Log.e(TAG, "   2. Google Play Services needs updating")
+                Log.e(TAG, "   3. SHA-1 fingerprint not registered in Google Cloud Console")
+                _oauthState.value = NativeOAuthState.Error(
+                    "No Google account available. Please ensure you are signed into a Google account on this device and Google Play Services is up to date."
+                )
+            } catch (e: GetCredentialCancellationException) {
+                Log.d(TAG, "ℹ️ User cancelled Google Sign-In")
+                _oauthState.value = NativeOAuthState.Idle
             } catch (e: GetCredentialException) {
-                Log.e(TAG, "❌ Credential error: ${e.message}", e)
-                _oauthState.value = NativeOAuthState.Error("Failed to get Google credential: ${e.message}")
+                Log.e(TAG, "❌ Credential error (${e.type}): ${e.message}", e)
+                Log.e(TAG, "💡 Exception type: ${e.javaClass.simpleName}")
+                Log.e(TAG, "💡 Error type string: ${e.type}")
+                val userMessage = when {
+                    e.message?.contains("no credentials available", ignoreCase = true) == true ||
+                    e.message?.contains("credentials lacking", ignoreCase = true) == true ->
+                        "No Google credentials found. Please sign into a Google account in your device Settings > Accounts."
+                    e.message?.contains("cancelled", ignoreCase = true) == true ||
+                    e.message?.contains("canceled", ignoreCase = true) == true ->
+                        "Sign-in was cancelled."
+                    else -> "Google Sign-In failed: ${e.message}"
+                }
+                _oauthState.value = NativeOAuthState.Error(userMessage)
             } catch (e: Exception) {
-                Log.e(TAG, "❌ Auth error", e)
+                Log.e(TAG, "❌ Unexpected auth error: ${e.javaClass.simpleName}: ${e.message}", e)
                 _oauthState.value = NativeOAuthState.Error(e.message ?: "Authentication failed")
             }
         }
@@ -159,11 +185,9 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
             }
 
             Log.d(TAG, "📥 Response code: ${response.code}")
-            Log.d(TAG, "📥 Response body: $responseBody")
 
             if (!response.isSuccessful) {
                 Log.e(TAG, "❌ Backend HTTP error ${response.code}")
-                Log.e(TAG, "❌ Error body: $responseBody")
                 _oauthState.value = NativeOAuthState.Error("Server error: ${response.code}")
                 return
             }
@@ -178,7 +202,6 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
                 val lastName = jsonResponse.optString("lastName", "")
                 
                 Log.d(TAG, "📝 New user - username selection required")
-                Log.d(TAG, "Email: $email")
                 
                 _oauthState.value = NativeOAuthState.PendingUsername(
                     pendingSignupToken = pendingToken,
@@ -216,9 +239,7 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
             val lastName = userObj.optString("lastName", null)
 
             Log.d(TAG, "✅ Authentication successful!")
-            Log.d(TAG, "User: $email (ID: $userId)")
             Log.d(TAG, "Is new user: $isNewUser")
-            Log.d(TAG, "Clerk token: ${token.take(30)}...")
 
             // Exchange Clerk token for Supabase token
             val supabaseToken = exchangeForSupabaseToken(token, userId, email)
@@ -226,7 +247,7 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
             if (supabaseToken == null) {
                 Log.w(TAG, "⚠️ Failed to get Supabase token, continuing with Clerk token only")
             } else {
-                Log.d(TAG, "✅ Got Supabase token: ${supabaseToken.take(30)}...")
+                Log.d(TAG, "✅ Got Supabase token")
             }
 
             _oauthState.value = NativeOAuthState.Success(
@@ -304,7 +325,7 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
     fun completeGoogleSignup(username: String, pendingSignupToken: String) {
         viewModelScope.launch {
             try {
-                Log.d(TAG, "🚀 Completing Google sign-up with username: $username")
+                Log.d(TAG, "🚀 Completing Google sign-up")
                 _oauthState.value = NativeOAuthState.Loading
                 
                 val json = JSONObject().apply {
@@ -327,7 +348,6 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
                 }
                 
                 Log.d(TAG, "📥 Complete signup response: ${response.code}")
-                Log.d(TAG, "📥 Response body: $responseBody")
                 
                 if (!response.isSuccessful) {
                     // Try to parse error as JSON, but handle HTML responses
@@ -335,8 +355,8 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
                         val errorJson = JSONObject(responseBody)
                         errorJson.optString("error", "Failed to complete signup")
                     } catch (e: Exception) {
-                        Log.e(TAG, "❌ Non-JSON error response: ${responseBody.take(200)}")
-                        "Server error (${response.code}): ${if (responseBody.contains("<!DOCTYPE")) "HTML error page" else responseBody.take(100)}"
+                        Log.e(TAG, "❌ Non-JSON error response")
+                        "Server error (${response.code}): ${if (responseBody.contains("<!DOCTYPE")) "HTML error page" else "Unknown error"}"
                     }
                     Log.e(TAG, "❌ Complete signup failed: $error")
                     _oauthState.value = NativeOAuthState.Error(error)
@@ -346,7 +366,7 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
                 val jsonResponse = try {
                     JSONObject(responseBody)
                 } catch (e: Exception) {
-                    Log.e(TAG, "❌ Invalid JSON response: ${responseBody.take(200)}")
+                    Log.e(TAG, "❌ Invalid JSON response")
                     _oauthState.value = NativeOAuthState.Error("Invalid server response")
                     return@launch
                 }
@@ -367,7 +387,6 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
                 val lastName = userObj.optString("lastName", null)
                 
                 Log.d(TAG, "✅ Signup completed successfully!")
-                Log.d(TAG, "User: $email (ID: $userId)")
                 
                 // Exchange for Supabase token
                 val supabaseToken = exchangeForSupabaseToken(token, userId, email)

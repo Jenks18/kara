@@ -10,9 +10,12 @@
 export async function exchangeSignInTokenForJwt(
   signInTokenValue: string
 ): Promise<{ jwt: string; userId: string } | null> {
-  const frontendApi = process.env.NEXT_PUBLIC_CLERK_FRONTEND_API;
+  const frontendApi = process.env.CLERK_FRONTEND_API_URL
+    || process.env.NEXT_PUBLIC_CLERK_FRONTEND_API
+    || 'https://clerk.mafutapass.com';
+  
   if (!frontendApi) {
-    console.error('❌ NEXT_PUBLIC_CLERK_FRONTEND_API not configured');
+    console.error('❌ Clerk Frontend API URL not configured');
     return null;
   }
 

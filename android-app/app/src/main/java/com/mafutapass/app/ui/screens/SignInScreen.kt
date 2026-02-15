@@ -14,7 +14,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -28,6 +27,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mafutapass.app.auth.TokenRepository
 import com.mafutapass.app.ui.theme.*
+import com.mafutapass.app.ui.theme.AppTheme
+import com.mafutapass.app.ui.theme.appOutlinedTextFieldColors
 import com.mafutapass.app.viewmodel.NativeOAuthViewModel
 import com.mafutapass.app.viewmodel.SignInViewModel
 import com.mafutapass.app.viewmodel.SignUpViewModel
@@ -50,16 +51,12 @@ fun SignInOrUpScreen() {
     }    
     // Log OAuth state changes
     LaunchedEffect(oauthState) {
-        android.util.Log.d("SignInScreen", "OAuth state changed to: ${oauthState::class.simpleName}")
-        
         when (oauthState) {
             is com.mafutapass.app.viewmodel.NativeOAuthState.PendingUsername -> {
-                val pendingState = (oauthState as com.mafutapass.app.viewmodel.NativeOAuthState.PendingUsername)
-                android.util.Log.d("SignInScreen", "🔤 Username selection required for: ${pendingState.email}")
+                android.util.Log.d("SignInScreen", "🔤 Username selection required")
             }
             is com.mafutapass.app.viewmodel.NativeOAuthState.Error -> {
-                val errorMsg = (oauthState as com.mafutapass.app.viewmodel.NativeOAuthState.Error).message
-                android.util.Log.e("SignInScreen", "❌ OAuth Error: $errorMsg")
+                android.util.Log.e("SignInScreen", "❌ OAuth Error")
             }
             is com.mafutapass.app.viewmodel.NativeOAuthState.Loading -> {
                 android.util.Log.d("SignInScreen", "⏳ OAuth Loading...")
@@ -73,7 +70,7 @@ fun SignInOrUpScreen() {
     // Handle OAuth success - Store the token and trigger sign-in
     LaunchedEffect(oauthState) {
         if (oauthState is com.mafutapass.app.viewmodel.NativeOAuthState.Success) {
-            android.util.Log.d("SignInScreen", "========== OAuth Success Detected ==========")
+            android.util.Log.d("SignInScreen", "✅ OAuth Success - storing tokens")
             
             val successState = oauthState as com.mafutapass.app.viewmodel.NativeOAuthState.Success
             val token = successState.token
@@ -84,37 +81,22 @@ fun SignInOrUpScreen() {
             val firstName = successState.firstName
             val lastName = successState.lastName
             
-            android.util.Log.d("SignInScreen", "Is new user: $isNewUser")
-            android.util.Log.d("SignInScreen", "Name: $firstName $lastName")
+            // Store in AccountManager (primary) + EncryptedSharedPreferences (fallback)
+            TokenRepository.getInstance(context).storeToken(token, userId, email)
             
-            // Store token in BOTH legacy prefs (for backward compat) AND AccountManager/TokenRepository
+            // Store in legacy prefs for backward compatibility
             val prefs = context.getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
-            val stored = prefs.edit().apply {
+            prefs.edit().apply {
                 putString("session_token", token)
                 putString("user_id", userId)
                 putString("user_email", email)
                 putBoolean("is_new_user", isNewUser)
-                if (firstName != null) {
-                    putString("first_name", firstName)
-                }
-                if (lastName != null) {
-                    putString("last_name", lastName)
-                }
-                if (supabaseToken != null) {
-                    putString("supabase_token", supabaseToken)
-                }
-            }.commit()  // Use commit() for immediate write
+                if (firstName != null) putString("first_name", firstName)
+                if (lastName != null) putString("last_name", lastName)
+                if (supabaseToken != null) putString("supabase_token", supabaseToken)
+            }.apply()
             
-            // Store in AccountManager (primary) + EncryptedSharedPreferences (fallback)
-            // This is a suspend function, so it runs properly in LaunchedEffect
-            TokenRepository.getInstance(context).storeToken(token, userId, email)
-            
-            android.util.Log.d("SignInScreen", "Tokens stored: $stored (legacy + AccountManager)")
-            android.util.Log.d("SignInScreen", "User: $email (ID: $userId)")
-            android.util.Log.d("SignInScreen", "Clerk token: ${token.take(30)}...")
-            if (supabaseToken != null) {
-                android.util.Log.d("SignInScreen", "Supabase token: ${supabaseToken.take(30)}...")
-            }
+            android.util.Log.d("SignInScreen", "✅ Tokens stored, refreshing auth state")
             
             // Refresh auth state to navigate to main app (or profile setup if new user)
             authViewModel.refreshAuthState()
@@ -145,15 +127,7 @@ fun SignInOrUpScreen() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.linearGradient(
-                    colors = listOf(
-                        Color(0xFFECFDF5),
-                        Color(0xFFD1FAE5),
-                        Color(0xFFECFDF5)
-                    )
-                )
-            )
+            .background(AppTheme.colors.backgroundGradient)
     ) {
         Column(
             modifier = Modifier
@@ -168,14 +142,14 @@ fun SignInOrUpScreen() {
                 text = "MafutaPass",
                 style = MaterialTheme.typography.displaySmall,
                 fontWeight = FontWeight.Bold,
-                color = Emerald600,
+                color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             
             Text(
                 text = "Expense Management Made Easy",
                 style = MaterialTheme.typography.bodyLarge,
-                color = Gray600,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(bottom = 48.dp)
             )
@@ -184,7 +158,7 @@ fun SignInOrUpScreen() {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                color = Color.White,
+                color = MaterialTheme.colorScheme.surface,
                 shadowElevation = 4.dp
             ) {
                 Column(
@@ -203,15 +177,15 @@ fun SignInOrUpScreen() {
                             .height(48.dp),
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = Color.White
+                            containerColor = MaterialTheme.colorScheme.surface
                         ),
-                        border = BorderStroke(1.dp, Gray300)
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                     ) {
                         if (oauthState is com.mafutapass.app.viewmodel.NativeOAuthState.Loading) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(20.dp),
                                 strokeWidth = 2.dp,
-                                color = Emerald600
+                                color = MaterialTheme.colorScheme.primary
                             )
                         } else {
                             Row(
@@ -223,12 +197,12 @@ fun SignInOrUpScreen() {
                                     text = "G",
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF4285F4),
+                                    color = AppTheme.colors.googleBlue,
                                     modifier = Modifier.padding(end = 12.dp)
                                 )
                                 Text(
                                     text = if (isSignUp) "Sign up with Google" else "Continue with Google",
-                                    color = Gray700,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     fontWeight = FontWeight.Medium,
                                     fontSize = 15.sp
                                 )
@@ -253,15 +227,15 @@ fun SignInOrUpScreen() {
                             .padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        HorizontalDivider(modifier = Modifier.weight(1f), color = Gray300)
+                        HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outline)
                         Text(
                             text = "OR",
                             modifier = Modifier.padding(horizontal = 16.dp),
                             style = MaterialTheme.typography.bodySmall,
-                            color = Gray500,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Medium
                         )
-                        HorizontalDivider(modifier = Modifier.weight(1f), color = Gray300)
+                        HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outline)
                     }
 
                     if (isSignUp) {
@@ -277,7 +251,7 @@ fun SignInOrUpScreen() {
                     ) {
                         Text(
                             text = if (isSignUp) "Already have an account? Sign in" else "Don't have an account? Sign up",
-                            color = Emerald600,
+                            color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Medium,
                             fontSize = 15.sp
                         )
@@ -291,7 +265,7 @@ fun SignInOrUpScreen() {
             Text(
                 text = "By continuing, you agree to our Terms of Service and Privacy Policy",
                 style = MaterialTheme.typography.bodySmall,
-                color = Gray500,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
@@ -331,13 +305,13 @@ fun SignInView() {
             text = "Sign in to MafutaPass",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
-            color = Gray900
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         Text(
             text = "Welcome back! Enter your credentials to continue.",
             style = MaterialTheme.typography.bodyMedium,
-            color = Gray600
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -351,11 +325,7 @@ fun SignInView() {
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Emerald600,
-                focusedLabelColor = Emerald600,
-                cursorColor = Emerald600
-            ),
+            colors = appOutlinedTextFieldColors(),
             enabled = state !is SignInViewModel.SignInUiState.Loading
         )
 
@@ -377,11 +347,7 @@ fun SignInView() {
             },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Emerald600,
-                focusedLabelColor = Emerald600,
-                cursorColor = Emerald600
-            ),
+            colors = appOutlinedTextFieldColors(),
             enabled = state !is SignInViewModel.SignInUiState.Loading
         )
 
@@ -408,7 +374,7 @@ fun SignInView() {
                 .fillMaxWidth()
                 .height(48.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Emerald600
+                containerColor = MaterialTheme.colorScheme.primary
             ),
             shape = RoundedCornerShape(8.dp),
             enabled = state !is SignInViewModel.SignInUiState.Loading && email.isNotBlank() && password.isNotBlank()
@@ -416,7 +382,7 @@ fun SignInView() {
             if (state is SignInViewModel.SignInUiState.Loading) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(24.dp),
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onPrimary,
                     strokeWidth = 2.dp
                 )
             } else {
@@ -473,13 +439,13 @@ fun SignUpView(onSwitchToSignIn: () -> Unit = {}) {
             text = "Create your account",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
-            color = Gray900
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         Text(
             text = "Start your expense management journey with MafutaPass.",
             style = MaterialTheme.typography.bodyMedium,
-            color = Gray600
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -487,17 +453,16 @@ fun SignUpView(onSwitchToSignIn: () -> Unit = {}) {
         // Username field
         OutlinedTextField(
             value = username,
-            onValueChange = { username = it },
+            onValueChange = { newValue ->
+                // Strip whitespace and special characters - only allow alphanumeric, underscore, hyphen
+                username = newValue.filter { it.isLetterOrDigit() || it == '_' || it == '-' }
+            },
                     label = { Text("Username") },
                     placeholder = { Text("Choose a username") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Emerald600,
-                        focusedLabelColor = Emerald600,
-                        cursorColor = Emerald600
-                    ),
+                    colors = appOutlinedTextFieldColors(),
                     enabled = state !is SignUpViewModel.SignUpUiState.Loading
                 )
 
@@ -510,11 +475,7 @@ fun SignUpView(onSwitchToSignIn: () -> Unit = {}) {
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Emerald600,
-                        focusedLabelColor = Emerald600,
-                        cursorColor = Emerald600
-                    ),
+                    colors = appOutlinedTextFieldColors(),
                     enabled = state !is SignUpViewModel.SignUpUiState.Loading
                 )
 
@@ -527,11 +488,7 @@ fun SignUpView(onSwitchToSignIn: () -> Unit = {}) {
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Emerald600,
-                        focusedLabelColor = Emerald600,
-                        cursorColor = Emerald600
-                    ),
+                    colors = appOutlinedTextFieldColors(),
                     enabled = state !is SignUpViewModel.SignUpUiState.Loading
                 )
 
@@ -543,11 +500,7 @@ fun SignUpView(onSwitchToSignIn: () -> Unit = {}) {
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Emerald600,
-                        focusedLabelColor = Emerald600,
-                        cursorColor = Emerald600
-                    ),
+                    colors = appOutlinedTextFieldColors(),
                     enabled = state !is SignUpViewModel.SignUpUiState.Loading
                 )
 
@@ -568,11 +521,7 @@ fun SignUpView(onSwitchToSignIn: () -> Unit = {}) {
                     },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Emerald600,
-                        focusedLabelColor = Emerald600,
-                        cursorColor = Emerald600
-                    ),
+                    colors = appOutlinedTextFieldColors(),
                     enabled = state !is SignUpViewModel.SignUpUiState.Loading
                 )
 
@@ -597,7 +546,7 @@ fun SignUpView(onSwitchToSignIn: () -> Unit = {}) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Emerald600),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                     shape = RoundedCornerShape(8.dp),
                     enabled = state !is SignUpViewModel.SignUpUiState.Loading && 
                               username.isNotBlank() && email.isNotBlank() && password.isNotBlank() &&
@@ -606,7 +555,7 @@ fun SignUpView(onSwitchToSignIn: () -> Unit = {}) {
                     if (state is SignUpViewModel.SignUpUiState.Loading) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(24.dp),
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onPrimary,
                             strokeWidth = 2.dp
                         )
                     } else {

@@ -14,8 +14,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -61,11 +59,11 @@ fun WorkspacesScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Emerald50)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         // Header
         Surface(
-            color = Color.White,
+            color = MaterialTheme.colorScheme.surface,
             shadowElevation = 1.dp
         ) {
             Row(
@@ -79,14 +77,14 @@ fun WorkspacesScreen(
                     text = "Workspaces",
                     style = MaterialTheme.typography.displayLarge,
                     fontWeight = FontWeight.Bold,
-                    color = Gray900
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 
                 IconButton(onClick = { /* TODO: Search */ }) {
                     Icon(
                         imageVector = Icons.Filled.Search,
                         contentDescription = "Search",
-                        tint = Gray600,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -99,7 +97,7 @@ fun WorkspacesScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(color = Emerald600)
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
         } else {
         LazyColumn(
@@ -118,13 +116,13 @@ fun WorkspacesScreen(
                             Text(
                                 text = "No workspaces yet",
                                 style = MaterialTheme.typography.titleMedium,
-                                color = Gray500
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "Create a workspace to get started",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Gray400
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -146,7 +144,7 @@ fun WorkspacesScreen(
                         .fillMaxWidth()
                         .height(56.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Emerald600
+                        containerColor = MaterialTheme.colorScheme.primary
                     ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
@@ -177,7 +175,7 @@ fun WorkspaceCard(workspace: Workspace, onClick: () -> Unit = {}, onDeleted: () 
     
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = Color.White,
+        color = MaterialTheme.colorScheme.surface,
         shadowElevation = 1.dp,
         modifier = Modifier
             .fillMaxWidth()
@@ -202,19 +200,19 @@ fun WorkspaceCard(workspace: Workspace, onClick: () -> Unit = {}, onDeleted: () 
                     modifier = Modifier
                         .size(56.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Emerald100)
+                        .background(MaterialTheme.colorScheme.primaryContainer)
                 )
             } else {
                 Box(
                     modifier = Modifier
                         .size(56.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Emerald600),
+                        .background(MaterialTheme.colorScheme.primary),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = workspace.initials,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onPrimary,
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -228,12 +226,12 @@ fun WorkspaceCard(workspace: Workspace, onClick: () -> Unit = {}, onDeleted: () 
                     text = workspace.name,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = Gray900
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = "${workspace.currency} - ${workspace.currencySymbol}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Gray500
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             
@@ -242,7 +240,7 @@ fun WorkspaceCard(workspace: Workspace, onClick: () -> Unit = {}, onDeleted: () 
                     Icon(
                         imageVector = Icons.Filled.MoreVert,
                         contentDescription = "More options",
-                        tint = Gray600
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 
@@ -258,7 +256,7 @@ fun WorkspaceCard(workspace: Workspace, onClick: () -> Unit = {}, onDeleted: () 
                         }
                     )
                     DropdownMenuItem(
-                        text = { Text("Delete", color = Red500) },
+                        text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
                         onClick = {
                             showMenu = false
                             showDeleteConfirm = true
@@ -298,7 +296,7 @@ fun WorkspaceCard(workspace: Workspace, onClick: () -> Unit = {}, onDeleted: () 
                     if (isDeleting) {
                         CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                     } else {
-                        Text("Delete", color = Red500)
+                        Text("Delete", color = MaterialTheme.colorScheme.error)
                     }
                 }
             },

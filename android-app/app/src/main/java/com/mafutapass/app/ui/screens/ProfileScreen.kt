@@ -147,17 +147,17 @@ fun ProfileScreen(
 
     Column(
         modifier = Modifier.fillMaxSize()
-            .background(brush = Brush.verticalGradient(listOf(Emerald50, Green50, Emerald100)))
+            .background(AppTheme.colors.backgroundGradient)
     ) {
         TopAppBar(
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Icon(Icons.Filled.Person, null, tint = Emerald600)
+                    Icon(Icons.Filled.Person, null, tint = MaterialTheme.colorScheme.primary)
                     Text("Profile", fontWeight = FontWeight.Bold)
                 }
             },
             navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White),
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
             windowInsets = WindowInsets(0, 0, 0, 0)
         )
 
@@ -167,8 +167,8 @@ fun ProfileScreen(
         ) {
             item {
                 Column(modifier = Modifier.padding(bottom = 6.dp)) {
-                    Text("Public", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = Gray900)
-                    Text("These details are displayed on your public profile.", style = MaterialTheme.typography.bodySmall, color = Gray500)
+                    Text("Public", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+                    Text("These details are displayed on your public profile.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
@@ -182,10 +182,10 @@ fun ProfileScreen(
                                 .clickable { showAvatarPicker = true },
                             contentAlignment = Alignment.Center
                         ) { Text(selectedAvatar.emoji, fontSize = 56.sp) }
-                        Surface(shape = CircleShape, color = Emerald600, shadowElevation = 4.dp,
+                        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primary, shadowElevation = 4.dp,
                             modifier = Modifier.size(36.dp).clickable { showAvatarPicker = true }) {
                             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                                Icon(Icons.Filled.Edit, "Change avatar", tint = Color.White, modifier = Modifier.size(18.dp))
+                                Icon(Icons.Filled.Edit, "Change avatar", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(18.dp))
                             }
                         }
                     }
@@ -197,8 +197,8 @@ fun ProfileScreen(
 
             item {
                 Column(modifier = Modifier.padding(top = 8.dp, bottom = 6.dp)) {
-                    Text("Private", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = Gray900)
-                    Text("These details are used for travel and payments.", style = MaterialTheme.typography.bodySmall, color = Gray500)
+                    Text("Private", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+                    Text("These details are used for travel and payments.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
@@ -213,13 +213,13 @@ fun ProfileScreen(
     // Avatar picker dialog
     if (showAvatarPicker) {
         Dialog(onDismissRequest = { showAvatarPicker = false }) {
-            Surface(shape = RoundedCornerShape(24.dp), color = Color.White, modifier = Modifier.fillMaxWidth()) {
+            Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(20.dp)) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Text("Edit profile picture", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                         IconButton(onClick = { showAvatarPicker = false }) { Icon(Icons.Filled.Close, "Close") }
                     }
-                    Text("Choose a custom avatar", style = MaterialTheme.typography.bodySmall, color = Gray500)
+                    Text("Choose a custom avatar", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.height(16.dp))
                     LazyVerticalGrid(columns = GridCells.Fixed(5), horizontalArrangement = Arrangement.spacedBy(10.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.height(340.dp)) {
@@ -245,13 +245,13 @@ fun ProfileScreen(
 
 @Composable
 fun ProfileField(label: String, value: String, onClick: () -> Unit) {
-    Surface(shape = RoundedCornerShape(12.dp), color = Color.White, shadowElevation = 1.dp,
+    Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.surface, shadowElevation = 1.dp,
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Column(modifier = Modifier.padding(18.dp).fillMaxWidth()) {
-            Text(label, style = MaterialTheme.typography.bodySmall, color = Emerald600)
+            Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
             Spacer(Modifier.height(6.dp))
             Text(value, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium,
-                color = if (value == "Not set") Gray400 else Gray800)
+                color = if (value == "Not set") MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface)
         }
     }
 }

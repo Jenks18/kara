@@ -18,8 +18,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -70,14 +68,14 @@ fun WorkspaceOverviewScreen(
 
     if (isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = Emerald600)
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
         }
         return
     }
 
     if (ws == null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Workspace not found", color = Gray500)
+            Text("Workspace not found", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         return
     }
@@ -85,11 +83,7 @@ fun WorkspaceOverviewScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(Emerald50, Green50, Emerald100)
-                )
-            )
+            .background(brush = AppTheme.colors.backgroundGradient)
     ) {
         TopAppBar(
             title = {
@@ -97,7 +91,7 @@ fun WorkspaceOverviewScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(Icons.Filled.Description, null, tint = Emerald600)
+                    Icon(Icons.Filled.Description, null, tint = MaterialTheme.colorScheme.primary)
                     Text("Overview", fontWeight = FontWeight.Bold)
                 }
             },
@@ -106,7 +100,7 @@ fun WorkspaceOverviewScreen(
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
                 }
             },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
         )
 
         LazyColumn(
@@ -121,7 +115,7 @@ fun WorkspaceOverviewScreen(
                     Button(
                         onClick = { showInviteDialog = true },
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(containerColor = Emerald600),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Icon(Icons.Filled.PersonAdd, null, modifier = Modifier.size(20.dp))
@@ -133,11 +127,11 @@ fun WorkspaceOverviewScreen(
                             onClick = { showMoreMenu = !showMoreMenu },
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text("More", color = Gray700)
+                            Text("More", color = MaterialTheme.colorScheme.onSurface)
                             Icon(
                                 if (showMoreMenu) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
                                 null,
-                                tint = Gray700
+                                tint = MaterialTheme.colorScheme.onSurface
                             )
                         }
                         DropdownMenu(
@@ -150,15 +144,15 @@ fun WorkspaceOverviewScreen(
                                     showMoreMenu = false
                                     showShareDialog = true
                                 },
-                                leadingIcon = { Icon(Icons.Filled.Share, null, tint = Emerald600) }
+                                leadingIcon = { Icon(Icons.Filled.Share, null, tint = MaterialTheme.colorScheme.primary) }
                             )
                             DropdownMenuItem(
-                                text = { Text("Delete", color = Color(0xFFDC2626)) },
+                                text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
                                 onClick = {
                                     showMoreMenu = false
                                     showDeleteDialog = true
                                 },
-                                leadingIcon = { Icon(Icons.Filled.Delete, null, tint = Color(0xFFDC2626)) }
+                                leadingIcon = { Icon(Icons.Filled.Delete, null, tint = MaterialTheme.colorScheme.error) }
                             )
                         }
                     }
@@ -181,16 +175,14 @@ fun WorkspaceOverviewScreen(
                             modifier = Modifier
                                 .size(96.dp)
                                 .clip(RoundedCornerShape(16.dp))
-                                .background(Emerald100)
+                                .background(MaterialTheme.colorScheme.primaryContainer)
                         )
                     } else {
                         Box(
                             modifier = Modifier
                                 .size(96.dp)
                                 .background(
-                                    brush = Brush.verticalGradient(
-                                        listOf(Emerald600, Color(0xFF059669))
-                                    ),
+                                    brush = AppTheme.colors.headerGradient,
                                     shape = RoundedCornerShape(16.dp)
                                 ),
                             contentAlignment = Alignment.Center
@@ -199,7 +191,7 @@ fun WorkspaceOverviewScreen(
                                 text = ws.avatar ?: ws.initials,
                                 fontSize = 40.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White
+                                color = MaterialTheme.colorScheme.onPrimary
                             )
                         }
                     }
@@ -234,7 +226,7 @@ fun WorkspaceOverviewScreen(
     // Invite Dialog
     if (showInviteDialog) {
         Dialog(onDismissRequest = { showInviteDialog = false }) {
-            Surface(shape = RoundedCornerShape(24.dp), color = Color.White, modifier = Modifier.fillMaxWidth()) {
+            Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(24.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -244,7 +236,7 @@ fun WorkspaceOverviewScreen(
                         Text("Invite new members", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                         IconButton(onClick = { showInviteDialog = false }) { Icon(Icons.Filled.Close, "Close") }
                     }
-                    Text(ws.name, style = MaterialTheme.typography.bodySmall, color = Gray500)
+                    Text(ws.name, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.height(16.dp))
                     OutlinedTextField(
                         value = inviteInput, onValueChange = { inviteInput = it },
@@ -260,7 +252,7 @@ fun WorkspaceOverviewScreen(
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = Emerald600),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         shape = RoundedCornerShape(16.dp)
                     ) {
                         Text("Next", fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(vertical = 8.dp))
@@ -273,7 +265,7 @@ fun WorkspaceOverviewScreen(
     // Share Dialog
     if (showShareDialog) {
         Dialog(onDismissRequest = { showShareDialog = false }) {
-            Surface(shape = RoundedCornerShape(24.dp), color = Color.White, modifier = Modifier.fillMaxWidth()) {
+            Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -284,11 +276,11 @@ fun WorkspaceOverviewScreen(
                         IconButton(onClick = { showShareDialog = false }) { Icon(Icons.Filled.Close, "Close") }
                     }
                     Spacer(Modifier.height(16.dp))
-                    Surface(shape = RoundedCornerShape(12.dp), color = Emerald50) {
+                    Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.primaryContainer) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Share link", style = MaterialTheme.typography.bodySmall, color = Gray500)
+                            Text("Share link", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Spacer(Modifier.height(4.dp))
-                            Text(shareUrl, style = MaterialTheme.typography.bodySmall, color = Gray900)
+                            Text(shareUrl, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface)
                         }
                     }
                     Spacer(Modifier.height(16.dp))
@@ -299,7 +291,7 @@ fun WorkspaceOverviewScreen(
                             Toast.makeText(context, "Link copied to clipboard!", Toast.LENGTH_SHORT).show()
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = Emerald600),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Icon(Icons.Filled.Share, null, modifier = Modifier.size(18.dp))
@@ -314,20 +306,20 @@ fun WorkspaceOverviewScreen(
     // Delete Confirmation Dialog
     if (showDeleteDialog) {
         Dialog(onDismissRequest = { showDeleteDialog = false }) {
-            Surface(shape = RoundedCornerShape(24.dp), color = Color.White, modifier = Modifier.fillMaxWidth()) {
+            Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Box(
-                        modifier = Modifier.size(64.dp).background(Color(0xFFFEE2E2), CircleShape),
+                        modifier = Modifier.size(64.dp).background(MaterialTheme.colorScheme.errorContainer, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Filled.Delete, null, tint = Color(0xFFDC2626), modifier = Modifier.size(32.dp))
+                        Icon(Icons.Filled.Delete, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(32.dp))
                     }
                     Spacer(Modifier.height(16.dp))
                     Text("Delete workspace?", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(8.dp))
                     Text(
                         "Are you sure you want to delete \"${ws.name}\"? This action cannot be undone and all data will be permanently lost.",
-                        style = MaterialTheme.typography.bodyMedium, color = Gray500, textAlign = TextAlign.Center
+                        style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center
                     )
                     Spacer(Modifier.height(24.dp))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -346,7 +338,7 @@ fun WorkspaceOverviewScreen(
                                 }
                             },
                             modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                             shape = RoundedCornerShape(12.dp)
                         ) { Text("Delete") }
                     }
@@ -358,16 +350,16 @@ fun WorkspaceOverviewScreen(
 
 @Composable
 private fun OverviewField(label: String, value: String, subtitle: String? = null) {
-    Surface(shape = RoundedCornerShape(12.dp), color = Color.White, shadowElevation = 1.dp, modifier = Modifier.fillMaxWidth()) {
+    Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.surface, shadowElevation = 1.dp, modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(16.dp).fillMaxWidth()
         ) {
-            Text(label, style = MaterialTheme.typography.bodySmall, color = Gray500)
+            Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(4.dp))
-            Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = Gray900)
+            Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
             if (subtitle != null) {
                 Spacer(Modifier.height(4.dp))
-                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = Gray500)
+                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }

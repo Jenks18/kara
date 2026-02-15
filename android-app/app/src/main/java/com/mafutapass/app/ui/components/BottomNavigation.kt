@@ -29,9 +29,8 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.mafutapass.app.ui.Screen
-import com.mafutapass.app.ui.theme.Emerald400
-import com.mafutapass.app.ui.theme.Emerald600
-import com.mafutapass.app.ui.theme.Gray500
+import com.mafutapass.app.ui.theme.*
+import com.mafutapass.app.ui.theme.AppTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -65,7 +64,7 @@ fun BottomNavBar(navController: NavController) {
     }
 
     NavigationBar(
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.surface,
         tonalElevation = 0.dp,
         modifier = Modifier.height(80.dp)
     ) {
@@ -81,9 +80,7 @@ fun BottomNavBar(navController: NavController) {
                                 .size(28.dp)
                                 .clip(CircleShape)
                                 .background(
-                                    brush = Brush.verticalGradient(
-                                        listOf(Emerald400, Emerald600)
-                                    )
+                                    brush = AppTheme.colors.primaryGradient
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
@@ -119,11 +116,11 @@ fun BottomNavBar(navController: NavController) {
                     }
                 },
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Emerald600,
-                    selectedTextColor = Emerald600,
-                    indicatorColor = Color.White,
-                    unselectedIconColor = Gray500,
-                    unselectedTextColor = Gray500
+                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                    indicatorColor = MaterialTheme.colorScheme.surface,
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             )
         }

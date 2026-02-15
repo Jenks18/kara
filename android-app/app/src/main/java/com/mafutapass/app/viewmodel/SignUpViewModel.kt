@@ -14,6 +14,8 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
+import com.mafutapass.app.auth.ClerkAuthManager
+import com.mafutapass.app.auth.TokenRepository
 import java.util.concurrent.TimeUnit
 
 class SignUpViewModel(application: Application) : AndroidViewModel(application) {
@@ -26,14 +28,25 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
         .build()
 
     fun signUp(email: String, password: String, username: String, firstName: String, lastName: String) {
+        // Sanitize username: strip whitespace, lowercase
+        val cleanUsername = username.trim().replace("\\s+".toRegex(), "").lowercase()
+        if (cleanUsername.length < 3) {
+            _uiState.value = SignUpUiState.Error("Username must be at least 3 characters")
+            return
+        }
+        if (!cleanUsername.matches("^[a-z0-9_-]+$".toRegex())) {
+            _uiState.value = SignUpUiState.Error("Username can only contain letters, numbers, underscores, and hyphens")
+            return
+        }
+
         viewModelScope.launch {
             _uiState.value = SignUpUiState.Loading
 
             try {
-                Log.d("SignUpViewModel", "📱 Creating account: $email")
+                Log.d("SignUpViewModel", "📱 Creating account")
 
                 // Step 1: Create user + get JWT in one call (backend does signup + exchange)
-                val result = createUserViaBackend(email, password, username, firstName, lastName)
+                val result = createUserViaBackend(email, password, cleanUsername, firstName, lastName)
 
                 if (!result.success) {
                     Log.e("SignUpViewModel", "❌ Sign up failed: ${result.error}")
@@ -41,21 +54,40 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
                     return@launch
                 }
 
-                val jwt = result.token
+                var jwt = result.token
                 val userId = result.userId
 
-                if (jwt == null || userId == null) {
-                    Log.e("SignUpViewModel", "❌ No token or userId in response")
-                    _uiState.value = SignUpUiState.Error("Authentication failed after sign-up")
+                if (userId == null) {
+                    Log.e("SignUpViewModel", "❌ No userId in response")
+                    _uiState.value = SignUpUiState.Error("Sign-up failed: no user ID returned")
+                    return@launch
+                }
+
+                // If no JWT but we have a signInToken, try to exchange it client-side
+                if (jwt == null && result.signInToken != null) {
+                    Log.d("SignUpViewModel", "🔄 JWT missing, attempting signInToken exchange")
+                    val exchangeResult = ClerkAuthManager.signInWithToken(result.signInToken)
+                    if (exchangeResult.success && exchangeResult.token != null) {
+                        jwt = exchangeResult.token
+                        Log.d("SignUpViewModel", "✅ Got JWT via signInToken exchange")
+                    }
+                }
+
+                if (jwt == null) {
+                    Log.e("SignUpViewModel", "❌ No JWT obtained after sign-up")
+                    _uiState.value = SignUpUiState.Error("Account created but authentication failed. Please sign in.")
                     return@launch
                 }
 
                 Log.d("SignUpViewModel", "✅ Account created + authenticated")
 
                 // Step 2: Create Supabase profile
-                createSupabaseProfile(jwt, email, username, firstName, lastName)
+                createSupabaseProfile(jwt, email, cleanUsername, firstName, lastName)
 
-                // Step 3: Store session
+                // Step 3: Store session in TokenRepository (primary) - this triggers auth state change
+                TokenRepository.getInstance(getApplication()).storeToken(jwt, userId, email)
+
+                // Also store in legacy prefs for backward compatibility
                 val prefs = getApplication<Application>()
                     .getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
                 prefs.edit().apply {
@@ -63,7 +95,7 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
                     putString("user_id", userId)
                     putString("user_email", email)
                     putBoolean("is_new_user", false)
-                }.commit()
+                }.apply()
 
                 Log.d("SignUpViewModel", "🎉 Sign-up complete!")
                 _uiState.value = SignUpUiState.Success
@@ -78,6 +110,7 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
     private data class SignupResult(
         val success: Boolean,
         val token: String? = null,
+        val signInToken: String? = null,
         val userId: String? = null,
         val error: String? = null
     )
@@ -106,7 +139,7 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
         val response = httpClient.newCall(request).execute()
         val responseBody = response.body.string()
 
-        Log.d("SignUpViewModel", "📥 Signup response: $responseBody")
+        Log.d("SignUpViewModel", "📥 Signup response code: ${response.code}")
 
         if (!response.isSuccessful) {
             val error = try {
@@ -118,12 +151,14 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
         }
 
         val jsonResponse = JSONObject(responseBody)
-        val token = jsonResponse.optString("token").takeIf { it.isNotEmpty() }
+        val token = jsonResponse.optString("token").takeIf { it.isNotEmpty() && it != "null" }
+        val signInToken = jsonResponse.optString("signInToken").takeIf { it.isNotEmpty() && it != "null" }
         val userId = jsonResponse.optString("userId").takeIf { it.isNotEmpty() }
 
         SignupResult(
             success = true,
             token = token,
+            signInToken = signInToken,
             userId = userId
         )
     }

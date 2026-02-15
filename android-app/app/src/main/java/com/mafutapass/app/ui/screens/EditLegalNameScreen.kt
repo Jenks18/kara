@@ -10,8 +10,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -55,27 +53,27 @@ fun EditLegalNameScreen(onBack: () -> Unit) {
         } else isLoading = false
     }
 
-    Column(modifier = Modifier.fillMaxSize().background(brush = Brush.verticalGradient(listOf(Emerald50, Green50, Emerald100)))) {
+    Column(modifier = Modifier.fillMaxSize().background(AppTheme.colors.backgroundGradient)) {
         TopAppBar(title = { Text("Legal name", fontWeight = FontWeight.Bold) },
             navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White),
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
             windowInsets = WindowInsets(0, 0, 0, 0))
 
-        if (isLoading) { Box(Modifier.fillMaxSize(), Alignment.Center) { CircularProgressIndicator(color = Emerald600) } }
+        if (isLoading) { Box(Modifier.fillMaxSize(), Alignment.Center) { CircularProgressIndicator(color = MaterialTheme.colorScheme.primary) } }
         else {
             Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.SpaceBetween) {
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     Column {
-                        Text("First name", style = MaterialTheme.typography.bodySmall, color = Emerald600, modifier = Modifier.padding(bottom = 8.dp))
+                        Text("First name", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(bottom = 8.dp))
                         OutlinedTextField(value = firstName, onValueChange = { firstName = it }, placeholder = { Text("First name") },
                             singleLine = true, enabled = !isSaving, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Emerald600, unfocusedBorderColor = Gray300, focusedContainerColor = Color.White, unfocusedContainerColor = Color.White))
+                            colors = appOutlinedTextFieldColors())
                     }
                     Column {
-                        Text("Last name", style = MaterialTheme.typography.bodySmall, color = Emerald600, modifier = Modifier.padding(bottom = 8.dp))
+                        Text("Last name", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(bottom = 8.dp))
                         OutlinedTextField(value = lastName, onValueChange = { lastName = it }, placeholder = { Text("Last name") },
                             singleLine = true, enabled = !isSaving, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Emerald600, unfocusedBorderColor = Gray300, focusedContainerColor = Color.White, unfocusedContainerColor = Color.White))
+                            colors = appOutlinedTextFieldColors())
                     }
                 }
                 Button(onClick = {
@@ -96,8 +94,8 @@ fun EditLegalNameScreen(onBack: () -> Unit) {
                         isSaving = false
                     }
                 }, enabled = !isSaving, modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp).height(56.dp),
-                    shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = Emerald600, disabledContainerColor = Gray300)) {
-                    if (isSaving) CircularProgressIndicator(Modifier.size(20.dp), Color.White, strokeWidth = 2.dp)
+                    shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, disabledContainerColor = MaterialTheme.colorScheme.outline)) {
+                    if (isSaving) CircularProgressIndicator(Modifier.size(20.dp), MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
                     else Text("Save", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium)
                 }
             }

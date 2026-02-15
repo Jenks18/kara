@@ -40,10 +40,11 @@ class SupabaseAuthManager(
 
     /**
      * Sign in with Google using ID token (native sign-in).
-     * After successful authentication, syncs the user to Clerk.
      * 
-     * @param idToken The Google ID token obtained from Credential Manager
+     * @deprecated This flow is not used. Google Sign-In goes through
+     * NativeOAuthViewModel -> Credential Manager -> /api/auth/google-native
      */
+    @Suppress("unused")
     suspend fun signInWithGoogleIdToken(idToken: String): Result<String> {
         return try {
             Log.d(TAG, "🚀 Starting Google Sign-In with ID token")
@@ -55,7 +56,6 @@ class SupabaseAuthManager(
                 provider = Google
             }
 
-            // After successful authentication, get the user
             val user = supabase.auth.currentUserOrNull()
             if (user == null) {
                 Log.e(TAG, "❌ No user after Supabase authentication")
@@ -63,47 +63,10 @@ class SupabaseAuthManager(
                 return Result.failure(Exception("No user after authentication"))
             }
 
+            val email = user.email ?: "unknown"
             Log.d(TAG, "✅ Supabase authentication successful")
-            Log.d(TAG, "User ID: ${user.id}")
-            Log.d(TAG, "User email: ${user.email}")
-
-            // Now sync this user to Clerk
-            val email = user.email ?: run {
-                Log.e(TAG, "❌ No email from Supabase user")
-                _authState.value = SupabaseAuthState.Error("No email provided")
-                return Result.failure(Exception("No email from OAuth"))
-            }
-
-            // Get user's full name from metadata
-            val userMetadata = user.userMetadata
-            val fullName = userMetadata?.get("full_name")?.toString() ?: ""
-            val firstName = userMetadata?.get("given_name")?.toString() ?: fullName.split(" ").firstOrNull() ?: ""
-            val lastName = userMetadata?.get("family_name")?.toString() ?: fullName.split(" ").getOrNull(1) ?: ""
-            
-            Log.d(TAG, "🔄 Syncing user to Clerk: $email")
-            
-            // Sync user to Clerk (sign in or sign up)
-            // Note: This path is not currently used - we use Credential Manager instead
-            val clerkResult = clerkAuthManager.signInOrSignUpWithOAuth(
-                idToken = "", // Not available in Supabase flow
-                email = email,
-                firstName = firstName,
-                lastName = lastName,
-                oauthProvider = "google"
-            )
-
-            clerkResult.fold(
-                onSuccess = { sessionToken ->
-                    Log.d(TAG, "✅ Clerk session created successfully")
-                    _authState.value = SupabaseAuthState.Success(email)
-                    Result.success(sessionToken)
-                },
-                onFailure = { error ->
-                    Log.e(TAG, "❌ Failed to create Clerk session: ${error.message}")
-                    _authState.value = SupabaseAuthState.Error(error.message ?: "Clerk sync failed")
-                    Result.failure(error)
-                }
-            )
+            _authState.value = SupabaseAuthState.Success(email)
+            Result.success(user.id)
         } catch (e: Exception) {
             Log.e(TAG, "❌ Google Sign-In with ID token failed", e)
             _authState.value = SupabaseAuthState.Error(e.message ?: "Unknown error")

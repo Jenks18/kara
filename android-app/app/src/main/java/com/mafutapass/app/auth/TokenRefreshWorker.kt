@@ -37,9 +37,8 @@ class TokenRefreshWorker(
         val tokenRepository = TokenRepository.getInstance(applicationContext)
         
         try {
-            // Get current token from encrypted storage
-            val encryptedPrefs = applicationContext.getSharedPreferences("clerk_session", Context.MODE_PRIVATE)
-            val oldToken = encryptedPrefs.getString("session_token", null)
+            // Get current token from TokenRepository (uses AccountManager -> EncryptedPrefs -> Legacy fallback)
+            val oldToken = tokenRepository.getValidTokenAsync()
             
             if (oldToken == null) {
                 Log.w(TAG, "❌ No token found for refresh")
@@ -60,10 +59,10 @@ class TokenRefreshWorker(
                 val json = JSONObject(body)
                 val newToken = json.optString("token", "")
                 val userId = json.optString("userId", "")
+                val userEmail = json.optString("email", "")
                 
                 if (newToken.isNotEmpty() && userId.isNotEmpty()) {
                     // Store the new token using TokenRepository
-                    val userEmail = encryptedPrefs.getString("user_email", "") ?: ""
                     tokenRepository.storeToken(newToken, userId, userEmail)
                     
                     Log.d(TAG, "✅ Background token refresh successful")
@@ -73,7 +72,7 @@ class TokenRefreshWorker(
                     Result.failure()
                 }
             } else {
-                Log.e(TAG, "❌ Background refresh failed: ${response.code} - ${body}")
+                Log.e(TAG, "❌ Background refresh failed: ${response.code}")
                 
                 // Retry on server errors, fail on auth errors
                 if (response.code in 500..599) {

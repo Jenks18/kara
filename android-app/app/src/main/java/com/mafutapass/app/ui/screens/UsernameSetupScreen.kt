@@ -10,14 +10,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mafutapass.app.ui.theme.*
+import com.mafutapass.app.ui.theme.AppTheme
+import com.mafutapass.app.ui.theme.appOutlinedTextFieldColors
 
 @Composable
 fun GoogleUsernameSetupScreen(
@@ -33,15 +33,7 @@ fun GoogleUsernameSetupScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.linearGradient(
-                    colors = listOf(
-                        Color(0xFFECFDF5),
-                        Color(0xFFD1FAE5),
-                        Color(0xFFECFDF5)
-                    )
-                )
-            )
+            .background(AppTheme.colors.backgroundGradient)
     ) {
         Column(
             modifier = Modifier
@@ -54,7 +46,7 @@ fun GoogleUsernameSetupScreen(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                color = Color.White,
+                color = MaterialTheme.colorScheme.surface,
                 shadowElevation = 4.dp
             ) {
                 Column(
@@ -65,7 +57,7 @@ fun GoogleUsernameSetupScreen(
                         text = "Choose a username to complete your setup",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
-                        color = Gray900,
+                        color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.Center
                     )
 
@@ -83,17 +75,13 @@ fun GoogleUsernameSetupScreen(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Emerald600,
-                            focusedLabelColor = Emerald600,
-                            cursorColor = Emerald600
-                        ),
+                        colors = appOutlinedTextFieldColors(),
                         enabled = !pending,
                         supportingText = {
                             Text(
                                 text = "Lowercase letters, numbers, and underscores only",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Gray500
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     )
@@ -127,7 +115,7 @@ fun GoogleUsernameSetupScreen(
                             .fillMaxWidth()
                             .height(48.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Emerald600
+                            containerColor = MaterialTheme.colorScheme.primary
                         ),
                         shape = RoundedCornerShape(8.dp),
                         enabled = !pending && username.isNotBlank() && username.length >= 3
@@ -135,7 +123,7 @@ fun GoogleUsernameSetupScreen(
                         if (pending) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(24.dp),
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onPrimary,
                                 strokeWidth = 2.dp
                             )
                         } else {

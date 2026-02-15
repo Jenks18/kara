@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -33,6 +34,7 @@ import com.mafutapass.app.ui.screens.*
 import com.mafutapass.app.ui.theme.MafutaPassTheme
 import com.mafutapass.app.viewmodel.AuthViewModel
 import com.mafutapass.app.viewmodel.AuthState
+import com.mafutapass.app.viewmodel.ThemeViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -41,9 +43,25 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         Log.d("MainActivity", "MainActivity created")
         setContent {
-            MafutaPassTheme {
+            val themeViewModel: ThemeViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return ThemeViewModel(application) as T
+                    }
+                }
+            )
+            val themeMode by themeViewModel.themeMode.collectAsState()
+
+            val isDark = when (themeMode) {
+                ThemeViewModel.ThemeMode.Light -> false
+                ThemeViewModel.ThemeMode.Dark -> true
+                ThemeViewModel.ThemeMode.System -> isSystemInDarkTheme()
+            }
+
+            MafutaPassTheme(darkTheme = isDark) {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    MafutaPassApp()
+                    MafutaPassApp(themeViewModel = themeViewModel)
                 }
             }
         }
@@ -51,7 +69,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun MafutaPassApp() {
+fun MafutaPassApp(themeViewModel: ThemeViewModel) {
     val context = LocalContext.current
     val authViewModel: AuthViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
@@ -125,7 +143,17 @@ fun MafutaPassApp() {
                         EditAddressScreen(onBack = { profileRefreshKey++; navController.popBackStack() })
                     }
                     composable("preferences") {
-                        PreferencesScreen(onBack = { navController.popBackStack() })
+                        PreferencesScreen(
+                            onBack = { navController.popBackStack() },
+                            onThemeChanged = { theme ->
+                                val mode = when (theme) {
+                                    "Light" -> ThemeViewModel.ThemeMode.Light
+                                    "Dark" -> ThemeViewModel.ThemeMode.Dark
+                                    else -> ThemeViewModel.ThemeMode.System
+                                }
+                                themeViewModel.setThemeMode(mode)
+                            }
+                        )
                     }
                     composable("security") {
                         SecurityScreen(onBack = { navController.popBackStack() })

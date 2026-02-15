@@ -37,7 +37,7 @@ object ClerkAuthManager {
     
     suspend fun signIn(email: String, password: String): AuthResult = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "🔐 Step 1: Starting sign-in with identifier: $email")
+            Log.d(TAG, "🔐 Step 1: Starting sign-in")
             
             // Step 1: Create sign-in with identifier and strategy
             val url1 = URL("${ClerkConfig.FRONTEND_API}/v1/client/sign_ins")
@@ -45,6 +45,8 @@ object ClerkAuthManager {
             
             connection1.requestMethod = "POST"
             connection1.setRequestProperty("Content-Type", "application/json")
+            connection1.connectTimeout = 15000
+            connection1.readTimeout = 15000
             connection1.doOutput = true
             
             val requestBody1 = JSONObject().apply {
@@ -70,7 +72,6 @@ object ClerkAuthManager {
             }
             
             Log.d(TAG, "📥 Step 1 response code: $responseCode1")
-            Log.d(TAG, "📥 Step 1 response: ${responseBody1.take(500)}")
             if (cookies.isNotEmpty()) {
                 Log.d(TAG, "🍪 Captured cookies for session")
             }
@@ -123,6 +124,8 @@ object ClerkAuthManager {
             connection2.requestMethod = "POST"
             connection2.setRequestProperty("Content-Type", "application/json")
             connection2.setRequestProperty("Cookie", cookies)  // Include cookies from first request
+            connection2.connectTimeout = 15000
+            connection2.readTimeout = 15000
             connection2.doOutput = true
             
             val requestBody2 = JSONObject().apply {
@@ -142,7 +145,6 @@ object ClerkAuthManager {
             }
             
             Log.d(TAG, "📥 Step 2 response code: $responseCode2")
-            Log.d(TAG, "📥 Step 2 response: ${responseBody2.take(1000)}")
             
             if (responseCode2 != HttpURLConnection.HTTP_OK) {
                 return@withContext AuthResult(
@@ -216,155 +218,6 @@ object ClerkAuthManager {
         }
     }
     
-    suspend fun signUp(
-        email: String,
-        password: String,
-        username: String,
-        firstName: String,
-        lastName: String
-    ): AuthResult = withContext(Dispatchers.IO) {
-        try {
-            val url = URL("${ClerkConfig.FRONTEND_API}/v1/client/sign_ups")
-            val connection = url.openConnection() as HttpURLConnection
-            
-            connection.requestMethod = "POST"
-            connection.setRequestProperty("Content-Type", "application/json")
-            connection.doOutput = true
-            
-            val requestBody = JSONObject().apply {
-                put("email_address", email)
-                put("password", password)
-                put("username", username)
-                put("first_name", firstName)
-                put("last_name", lastName)
-            }
-            
-            connection.outputStream.use { os ->
-                os.write(requestBody.toString().toByteArray())
-            }
-            
-            val responseCode = connection.responseCode
-            val responseBody = if (responseCode == HttpURLConnection.HTTP_OK) {
-                connection.inputStream.bufferedReader().use { it.readText() }
-            } else {
-                connection.errorStream?.bufferedReader()?.use { it.readText() } ?: ""
-            }
-            
-            Log.d(TAG, "Sign up response code: $responseCode")
-            Log.d(TAG, "Sign up response: ${responseBody.take(500)}")
-            
-            if (responseCode != HttpURLConnection.HTTP_OK) {
-                val errorMessage = try {
-                    val errorJson = JSONObject(responseBody)
-                    val errors = errorJson.getJSONArray("errors")
-                    if (errors.length() > 0) {
-                        errors.getJSONObject(0).getString("message")
-                    } else {
-                        "Sign up failed"
-                    }
-                } catch (e: Exception) {
-                    "Sign up failed"
-                }
-                
-                return@withContext AuthResult(
-                    success = false,
-                    error = errorMessage
-                )
-            }
-            
-            // Parse response for verification status and token
-            val json = JSONObject(responseBody)
-            val status = json.optString("status", "")
-            val signUpId = json.optString("id", "")
-            
-            Log.d(TAG, "Sign up status: $status, ID: $signUpId")
-            
-            // Check if email verification is required
-            val verifications = json.optJSONObject("verifications")
-            val emailAddressVerification = verifications?.optJSONObject("email_address")
-            val verificationStatus = emailAddressVerification?.optString("status", "")
-            
-            // Extract email address ID
-            val emailAddressId = try {
-                val emailAddress = json.getJSONObject("email_address")
-                emailAddress.getString("id")
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to extract email address ID: ${e.message}")
-                ""
-            }
-            
-            Log.d(TAG, "Verification status: $verificationStatus")
-            Log.d(TAG, "Email address ID: $emailAddressId")
-            
-            // If email verification is required (status should be "unverified")
-            if (verificationStatus == "unverified" || status == "missing_requirements") {
-                Log.d(TAG, "📧 Email verification required - Clerk will send verification code")
-                
-                // Prepare email code verification
-                val prepareUrl = URL("${ClerkConfig.FRONTEND_API}/v1/client/sign_ups/$signUpId/prepare_verification")
-                val prepareConnection = prepareUrl.openConnection() as HttpURLConnection
-                prepareConnection.requestMethod = "POST"
-                prepareConnection.setRequestProperty("Content-Type", "application/json")
-                prepareConnection.doOutput = true
-                
-                val prepareBody = JSONObject().apply {
-                    put("strategy", "email_code")
-                }
-                
-                prepareConnection.outputStream.use { os ->
-                    os.write(prepareBody.toString().toByteArray())
-                }
-                
-                val prepareResponseCode = prepareConnection.responseCode
-                val prepareResponseBody = if (prepareResponseCode == HttpURLConnection.HTTP_OK) {
-                    prepareConnection.inputStream.bufferedReader().use { it.readText() }
-                } else {
-                    prepareConnection.errorStream?.bufferedReader()?.use { it.readText() } ?: ""
-                }
-                
-                Log.d(TAG, "Prepare verification response: $prepareResponseCode")
-                Log.d(TAG, "Prepare response body: ${prepareResponseBody.take(300)}")
-                
-                if (prepareResponseCode == HttpURLConnection.HTTP_OK) {
-                    Log.d(TAG, "✅ Clerk sent verification email")
-                } else {
-                    Log.e(TAG, "❌ Failed to trigger verification email")
-                }
-                
-                AuthResult(
-                    success = true,
-                    needsVerification = true,
-                    signUpId = signUpId,
-                    emailAddressId = emailAddressId
-                )
-            } else {
-                // Try to extract session token if verification not required
-                val token = try {
-                    val client = json.getJSONObject("client")
-                    val sessions = client.getJSONArray("sessions")
-                    if (sessions.length() > 0) {
-                        val firstSession = sessions.getJSONObject(0)
-                        val lastActiveToken = firstSession.getJSONObject("last_active_token")
-                        lastActiveToken.getString("jwt")
-                    } else {
-                        null
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to extract token: ${e.message}")
-                    null
-                }
-                
-                AuthResult(success = true, token = token)
-            }
-            
-        } catch (e: Exception) {
-            AuthResult(
-                success = false,
-                error = "Sign up failed: ${e.message}"
-            )
-        }
-    }
-    
     /**
      * Sign up via backend API (bypasses CAPTCHA requirement)
      * Backend uses Clerk Backend SDK which doesn't require CAPTCHA
@@ -378,13 +231,15 @@ object ClerkAuthManager {
         userId: String? = null
     ): AuthResult = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "📱 Signing in via backend: $email${if (userId != null) " (userId: $userId)" else ""}")
+            Log.d(TAG, "📱 Signing in via backend")
             
             val url = URL("https://www.mafutapass.com/api/auth/mobile-signin")
             val connection = url.openConnection() as HttpURLConnection
             
             connection.requestMethod = "POST"
             connection.setRequestProperty("Content-Type", "application/json")
+            connection.connectTimeout = 15000
+            connection.readTimeout = 15000
             connection.doOutput = true
             
             val requestBody = JSONObject().apply {
@@ -404,7 +259,6 @@ object ClerkAuthManager {
             
             if (responseCode == HttpURLConnection.HTTP_OK) {
                 val response = connection.inputStream.bufferedReader().use { it.readText() }
-                Log.d(TAG, "📥 Backend sign-in response: $response")
                 
                 val responseJson = JSONObject(response)
                 
@@ -412,7 +266,7 @@ object ClerkAuthManager {
                 if (responseJson.optBoolean("needsVerification", false)) {
                     // Email verification required
                     val userId = responseJson.getString("userId")
-                    Log.d(TAG, "📧 Email verification required for user: $userId")
+                    Log.d(TAG, "📧 Email verification required")
                     
                     AuthResult(
                         success = true,
@@ -425,7 +279,7 @@ object ClerkAuthManager {
                     val token = responseJson.getString("token")
                     val userId = responseJson.getString("userId")
                     
-                    Log.d(TAG, "✅ Backend sign-in successful! userId=$userId")
+                    Log.d(TAG, "✅ Backend sign-in successful!")
                     
                     AuthResult(
                         success = true,
@@ -473,13 +327,15 @@ object ClerkAuthManager {
         lastName: String
     ): AuthResult = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "📱 Signing up via backend (bypasses CAPTCHA): $email")
+            Log.d(TAG, "📱 Signing up via backend")
             
             val url = URL("https://www.mafutapass.com/api/auth/mobile-signup")
             val connection = url.openConnection() as HttpURLConnection
             
             connection.requestMethod = "POST"
             connection.setRequestProperty("Content-Type", "application/json")
+            connection.connectTimeout = 15000
+            connection.readTimeout = 15000
             connection.doOutput = true
             
             val requestBody = JSONObject().apply {
@@ -490,8 +346,6 @@ object ClerkAuthManager {
                 put("lastName", lastName)
             }
             
-            Log.d(TAG, "📤 Backend request: ${requestBody.toString()}")
-            
             connection.outputStream.use { os ->
                 os.write(requestBody.toString().toByteArray())
             }
@@ -501,7 +355,6 @@ object ClerkAuthManager {
             
             if (responseCode == HttpURLConnection.HTTP_OK) {
                 val response = connection.inputStream.bufferedReader().use { it.readText() }
-                Log.d(TAG, "📥 Backend response: $response")
                 
                 val responseJson = JSONObject(response)
                 
@@ -510,10 +363,7 @@ object ClerkAuthManager {
                     val email = responseJson.getString("email")
                     val signInToken = responseJson.optString("signInToken", null)
                     
-                    Log.d(TAG, "✅ Backend sign-up successful! userId=$userId")
-                    if (signInToken != null) {
-                        Log.d(TAG, "🎫 Sign-in token received for instant authentication")
-                    }
+                    Log.d(TAG, "✅ Backend sign-up successful!")
                     
                     AuthResult(
                         success = true,
@@ -560,20 +410,19 @@ object ClerkAuthManager {
     suspend fun signInWithToken(signInToken: String): AuthResult = withContext(Dispatchers.IO) {
         try {
             Log.d(TAG, "🎫 Signing in with sign-in token via backend...")
-            Log.d(TAG, "🎫 Token value: ${signInToken.take(20)}...")
             
             val url = URL("https://www.mafutapass.com/api/auth/mobile-signin")
             val connection = url.openConnection() as HttpURLConnection
             
             connection.requestMethod = "POST"
             connection.setRequestProperty("Content-Type", "application/json")
+            connection.connectTimeout = 15000
+            connection.readTimeout = 15000
             connection.doOutput = true
             
             val requestBody = JSONObject().apply {
                 put("signInToken", signInToken)
             }
-            
-            Log.d(TAG, "📤 Request body: $requestBody")
             
             connection.outputStream.use { os ->
                 os.write(requestBody.toString().toByteArray())
@@ -587,7 +436,6 @@ object ClerkAuthManager {
             }
             
             Log.d(TAG, "📥 Token sign-in response code: $responseCode")
-            Log.d(TAG, "📥 Response body: ${responseBody.take(500)}")
             
             if (responseCode == HttpURLConnection.HTTP_OK) {
                 val json = JSONObject(responseBody)
@@ -626,87 +474,8 @@ object ClerkAuthManager {
     // Removed: exchangeTicketForSession (no longer needed)
     // Removed: verifyEmailCode (email verification not used)
     
-    /**
-     * Sign in or sign up a user who has authenticated via OAuth (Google).
-     * Sends Google ID token to backend for verification and Clerk authentication.
-     */
-    suspend fun signInOrSignUpWithOAuth(
-        idToken: String,
-        email: String,
-        firstName: String,
-        lastName: String,
-        oauthProvider: String
-    ): Result<String> = withContext(Dispatchers.IO) {
-        try {
-            // Call backend endpoint to verify Google token and create/authenticate Clerk user
-            val backendUrl = URL("https://mafutapass.com/api/auth/google-mobile")
-            val connection = backendUrl.openConnection() as HttpURLConnection
-            
-            connection.requestMethod = "POST"
-            connection.setRequestProperty("Content-Type", "application/json")
-            connection.doOutput = true
-            connection.connectTimeout = 15000
-            connection.readTimeout = 15000
-            
-            val requestBody = JSONObject().apply {
-                put("idToken", idToken)
-                put("email", email)
-                put("firstName", firstName)
-                put("lastName", lastName)
-            }
-            
-            Log.d(TAG, "Sending Google ID token to backend for verification...")
-            
-            connection.outputStream.use { os ->
-                os.write(requestBody.toString().toByteArray())
-            }
-            
-            val responseCode = connection.responseCode
-            val responseBody = if (responseCode == HttpURLConnection.HTTP_OK) {
-                connection.inputStream.bufferedReader().use { it.readText() }
-            } else {
-                connection.errorStream?.bufferedReader()?.use { it.readText() } ?: ""
-            }
-            
-            Log.d(TAG, "Backend response code: $responseCode")
-            Log.d(TAG, "Backend response: ${responseBody.take(300)}")
-            
-            if (responseCode != HttpURLConnection.HTTP_OK) {
-                val errorMessage = try {
-                    val errorJson = JSONObject(responseBody)
-                    errorJson.optString("error", "Authentication failed")
-                } catch (e: Exception) {
-                    "Authentication failed"
-                }
-                return@withContext Result.failure(Exception(errorMessage))
-            }
-            
-            // Parse successful response
-            val json = JSONObject(responseBody)
-            val userId = json.getString("userId")
-            
-            Log.d(TAG, "✅ Backend authenticated user: $userId")
-            
-            // Return userId as token for now
-            // TODO: Backend should return actual session token
-            Result.success(userId)
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "OAuth backend authentication error: ${e.message}", e)
-            Result.failure(Exception("OAuth sign-in failed: ${e.message}"))
-        }
-    }
-
-    
-    /**
-     * Generate a random password for OAuth users (they won't need it)
-     */
-    private fun generateRandomPassword(): String {
-        val allowedChars = ('A'..'Z') + ('a'..'z') + ('0'..'9') + listOf('!', '@', '#', '$', '%')
-        return (1..16)
-            .map { allowedChars.random() }
-            .joinToString("")
-    }
+    // Removed: signInOrSignUpWithOAuth (dead code — Credential Manager flow used instead)
+    // Removed: generateRandomPassword (unused)
     
     suspend fun signOut() {
         // Clerk sign out will be handled by the SDK

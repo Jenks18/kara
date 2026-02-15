@@ -14,6 +14,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
+import com.mafutapass.app.auth.TokenRepository
 import java.util.concurrent.TimeUnit
 
 class SignInViewModel(application: Application) : AndroidViewModel(application) {
@@ -28,22 +29,25 @@ class SignInViewModel(application: Application) : AndroidViewModel(application) 
     fun signIn(email: String, password: String) {
         viewModelScope.launch {
             _uiState.value = SignInUiState.Loading
-            Log.d("SignInViewModel", "🔐 Signing in: $email")
+            Log.d("SignInViewModel", "🔐 Signing in")
 
             try {
                 val result = signInViaBackend(email, password)
 
                 if (result.token != null && result.userId != null) {
-                    // Save session to SharedPreferences
+                    // Store in TokenRepository (primary) - this triggers auth state change
+                    TokenRepository.getInstance(getApplication()).storeToken(result.token, result.userId, email)
+
+                    // Also store in legacy prefs for backward compat
                     val prefs = getApplication<Application>()
                         .getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
                     prefs.edit().apply {
                         putString("session_token", result.token)
                         putString("user_id", result.userId)
                         putString("user_email", email)
-                    }.commit()
+                    }.apply()
 
-                    Log.d("SignInViewModel", "✅ Sign-in successful, session saved")
+                    Log.d("SignInViewModel", "✅ Sign-in successful")
                     _uiState.value = SignInUiState.Success
                 } else {
                     Log.e("SignInViewModel", "❌ Sign-in failed: ${result.error}")
@@ -77,7 +81,7 @@ class SignInViewModel(application: Application) : AndroidViewModel(application) 
         val response = httpClient.newCall(request).execute()
         val responseBody = response.body.string()
 
-        Log.d("SignInViewModel", "📥 Sign-in response: ${responseBody.take(200)}")
+        Log.d("SignInViewModel", "📥 Sign-in response code: ${response.code}")
 
         if (!response.isSuccessful) {
             val error = try {

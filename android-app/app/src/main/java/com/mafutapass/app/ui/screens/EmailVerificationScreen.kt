@@ -6,16 +6,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.mafutapass.app.ui.theme.Emerald600
-import com.mafutapass.app.ui.theme.Gray500
-import com.mafutapass.app.ui.theme.Gray600
-import com.mafutapass.app.ui.theme.Gray900
+import com.mafutapass.app.ui.theme.*
+import com.mafutapass.app.ui.theme.appOutlinedTextFieldColors
 
 @Composable
 fun EmailVerificationScreen(
@@ -44,14 +41,14 @@ fun EmailVerificationScreen(
             text = "Verify Your Email",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
-            color = Gray900,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(bottom = 8.dp)
         )
 
         Text(
             text = "We sent a 6-digit verification code to",
             style = MaterialTheme.typography.bodyMedium,
-            color = Gray600,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
 
@@ -59,7 +56,7 @@ fun EmailVerificationScreen(
             text = email,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.SemiBold,
-            color = Emerald600,
+            color = MaterialTheme.colorScheme.primary,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(bottom = 32.dp)
         )
@@ -72,11 +69,7 @@ fun EmailVerificationScreen(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Emerald600,
-                focusedLabelColor = Emerald600,
-                cursorColor = Emerald600
-            ),
+            colors = appOutlinedTextFieldColors(),
             enabled = !pending,
             textStyle = LocalTextStyle.current.copy(
                 fontSize = 24.sp,
@@ -106,14 +99,14 @@ fun EmailVerificationScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Emerald600),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
             shape = MaterialTheme.shapes.medium,
             enabled = !pending && code.length == 6
         ) {
             if (pending) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(24.dp),
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onPrimary,
                     strokeWidth = 2.dp
                 )
             } else {
@@ -126,7 +119,7 @@ fun EmailVerificationScreen(
         Text(
             text = "Didn't receive the code? Check your spam folder",
             style = MaterialTheme.typography.bodySmall,
-            color = Gray500,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
     }

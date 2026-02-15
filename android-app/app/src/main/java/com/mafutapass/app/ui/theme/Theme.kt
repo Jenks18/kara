@@ -8,6 +8,7 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
@@ -23,9 +24,13 @@ private val LightColorScheme = lightColorScheme(
     surface = Color.White,
     onSurface = Gray900,
     surfaceVariant = Gray100,
-    onSurfaceVariant = Gray700,
+    onSurfaceVariant = Gray600,
+    outline = Gray300,
+    outlineVariant = Gray200,
     error = Red500,
-    onError = Color.White
+    onError = Color.White,
+    errorContainer = Color(0xFFFEE2E2),
+    onErrorContainer = Color(0xFFDC2626)
 )
 
 private val DarkColorScheme = darkColorScheme(
@@ -41,8 +46,12 @@ private val DarkColorScheme = darkColorScheme(
     onSurface = Color.White,
     surfaceVariant = Color(0xFF2D2D2D),
     onSurfaceVariant = Gray300,
+    outline = Color(0xFF444444),
+    outlineVariant = Color(0xFF333333),
     error = Color(0xFFCF6679),
-    onError = Color.Black
+    onError = Color.Black,
+    errorContainer = Color(0xFF442222),
+    onErrorContainer = Color(0xFFCF6679)
 )
 
 @Composable
@@ -61,9 +70,13 @@ fun MafutaPassTheme(
         else -> LightColorScheme
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+    val appColors = if (darkTheme) DarkAppColors else LightAppColors
+
+    CompositionLocalProvider(LocalAppColors provides appColors) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = Typography,
+            content = content
+        )
+    }
 }

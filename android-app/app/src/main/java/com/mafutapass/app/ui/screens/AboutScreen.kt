@@ -15,32 +15,31 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.mafutapass.app.ui.theme.*
+import com.mafutapass.app.ui.theme.AppTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutScreen(onBack: () -> Unit) {
     val context = LocalContext.current
-    Column(modifier = Modifier.fillMaxSize().background(brush = Brush.verticalGradient(listOf(Emerald50, Green50, Emerald100)))) {
+    Column(modifier = Modifier.fillMaxSize().background(brush = AppTheme.colors.backgroundGradient)) {
         TopAppBar(
-            title = { Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) { Icon(Icons.Filled.Info, null, tint = Emerald600); Text("About", fontWeight = FontWeight.Bold) } },
+            title = { Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) { Icon(Icons.Filled.Info, null, tint = MaterialTheme.colorScheme.primary); Text("About", fontWeight = FontWeight.Bold) } },
             navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White),
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
             windowInsets = WindowInsets(0, 0, 0, 0))
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            item { Text("v1.0.0", style = MaterialTheme.typography.bodySmall, color = Gray500, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) }
+            item { Text("v1.0.0", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) }
             item {
-                Surface(shape = RoundedCornerShape(12.dp), color = Color.White, shadowElevation = 1.dp, modifier = Modifier.fillMaxWidth()) {
+                Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.surface, shadowElevation = 1.dp, modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("About MafutaPass", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, color = Gray900)
-                        Text("MafutaPass is a fuel expense tracking app built for Kenyan businesses and drivers. Track your fuel expenses, receipts, and mileage all in one place.", style = MaterialTheme.typography.bodyMedium, color = Gray600, lineHeight = MaterialTheme.typography.bodyMedium.lineHeight)
+                        Text("About MafutaPass", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+                        Text("MafutaPass is a fuel expense tracking app built for Kenyan businesses and drivers. Track your fuel expenses, receipts, and mileage all in one place.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = MaterialTheme.typography.bodyMedium.lineHeight)
                     }
                 }
             }
@@ -52,17 +51,17 @@ fun AboutScreen(onBack: () -> Unit) {
                     AboutRow(Icons.Filled.BugReport, "Report a bug") { context.startActivity(Intent(Intent.ACTION_SENDTO).apply { data = Uri.parse("mailto:support@mafutapass.com"); putExtra(Intent.EXTRA_SUBJECT, "Bug Report - MafutaPass Android") }) }
                 }
             }
-            item { Text("Read the Terms of Service and Privacy.", style = MaterialTheme.typography.bodySmall, color = Gray500, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) }
+            item { Text("Read the Terms of Service and Privacy.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) }
         }
     }
 }
 
 @Composable
 fun AboutRow(icon: ImageVector, label: String, onClick: () -> Unit) {
-    Surface(shape = RoundedCornerShape(12.dp), color = Color.White, shadowElevation = 1.dp, modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+    Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.surface, shadowElevation = 1.dp, modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            Icon(icon, label, tint = Emerald600, modifier = Modifier.size(22.dp))
-            Text(label, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, color = Gray800)
+            Icon(icon, label, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
+            Text(label, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
         }
     }
 }

@@ -12,8 +12,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -66,14 +64,14 @@ fun WorkspaceDetailScreen(
     val ws = workspace
     if (isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = Emerald600)
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
         }
         return
     }
 
     if (ws == null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Workspace not found", color = Gray500)
+            Text("Workspace not found", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         return
     }
@@ -81,11 +79,7 @@ fun WorkspaceDetailScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(Emerald50, Green50, Emerald100)
-                )
-            )
+            .background(brush = AppTheme.colors.backgroundGradient)
     ) {
         TopAppBar(
             title = {
@@ -105,16 +99,14 @@ fun WorkspaceDetailScreen(
                             modifier = Modifier
                                 .size(48.dp)
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(Emerald100)
+                                .background(MaterialTheme.colorScheme.primaryContainer)
                         )
                     } else {
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
                                 .background(
-                                    brush = Brush.verticalGradient(
-                                        listOf(Emerald600, Color(0xFF059669))
-                                    ),
+                                    brush = AppTheme.colors.headerGradient,
                                     shape = RoundedCornerShape(12.dp)
                                 ),
                             contentAlignment = Alignment.Center
@@ -123,7 +115,7 @@ fun WorkspaceDetailScreen(
                                 text = ws.avatar ?: ws.initials,
                                 fontSize = 24.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White
+                                color = MaterialTheme.colorScheme.onPrimary
                             )
                         }
                     }
@@ -139,7 +131,7 @@ fun WorkspaceDetailScreen(
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
                 }
             },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
         )
 
         Column(
@@ -170,7 +162,7 @@ fun WorkspaceDetailOption(
 ) {
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = Color.White,
+        color = MaterialTheme.colorScheme.surface,
         shadowElevation = 1.dp,
         modifier = Modifier
             .fillMaxWidth()
@@ -188,14 +180,14 @@ fun WorkspaceDetailOption(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.weight(1f)
             ) {
-                Icon(icon, label, tint = Emerald600)
+                Icon(icon, label, tint = MaterialTheme.colorScheme.primary)
                 Text(
                     label,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium
                 )
             }
-            Icon(Icons.Filled.ChevronRight, "Navigate", tint = Gray500)
+            Icon(Icons.Filled.ChevronRight, "Navigate", tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

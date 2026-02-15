@@ -7,10 +7,12 @@ import android.util.Log
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import androidx.work.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import okhttp3.MediaType.Companion.toMediaType
@@ -140,7 +142,8 @@ class TokenRepository private constructor(context: Context) {
     }
     
     private fun migrateToAccountManager(token: String, userId: String, email: String) {
-        runBlocking {
+        // Run migration asynchronously to avoid blocking main thread
+        CoroutineScope(Dispatchers.IO).launch {
             try {
                 val expiry = extractTokenExpiry(token) * 1000 // Convert to milliseconds
                 accountHelper.signIn(
@@ -233,10 +236,11 @@ class TokenRepository private constructor(context: Context) {
     }
     
     /**
-     * Legacy sync method for backward compatibility
+     * Legacy sync method for backward compatibility.
+     * Uses CoroutineScope to avoid blocking the calling thread.
      */
     fun storeTokenSync(token: String, userId: String, userEmail: String) {
-        runBlocking {
+        CoroutineScope(Dispatchers.IO).launch {
             storeToken(token, userId, userEmail)
         }
     }
@@ -260,10 +264,11 @@ class TokenRepository private constructor(context: Context) {
     }
     
     /**
-     * Legacy sync method for backward compatibility
+     * Legacy sync method for backward compatibility.
+     * Uses CoroutineScope to avoid blocking the calling thread.
      */
     fun clearTokensSync() {
-        runBlocking {
+        CoroutineScope(Dispatchers.IO).launch {
             clearTokens()
         }
     }
