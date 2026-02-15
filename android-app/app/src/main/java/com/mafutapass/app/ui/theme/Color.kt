@@ -19,6 +19,7 @@ val Gray400 = Color(0xFF9CA3AF)
 val Gray500 = Color(0xFF6B7280)
 val Gray600 = Color(0xFF4B5563)
 val Gray700 = Color(0xFF374151)
+val Gray800 = Color(0xFF1F2937)
 val Gray900 = Color(0xFF111827)
 
 // Status colors

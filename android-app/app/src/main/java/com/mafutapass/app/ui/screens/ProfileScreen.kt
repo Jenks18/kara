@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.mafutapass.app.auth.TokenManager
 import com.mafutapass.app.ui.theme.*
 import com.mafutapass.app.util.DateUtils
 import kotlinx.coroutines.Dispatchers
@@ -80,7 +81,6 @@ fun ProfileScreen(
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val prefs = context.getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
-    val sessionToken = prefs.getString("session_token", null)
 
     var showAvatarPicker by remember { mutableStateOf(false) }
     var selectedAvatar by remember { mutableStateOf(AVATAR_OPTIONS[0]) }
@@ -104,9 +104,10 @@ fun ProfileScreen(
 
     // Fetch from API in background — keyed on refreshTrigger
     LaunchedEffect(refreshTrigger) {
-        if (sessionToken != null) {
+        val validToken = TokenManager.getValidToken(context)
+        if (validToken != null) {
             try {
-                val result = withContext(Dispatchers.IO) { fetchProfileData(sessionToken) }
+                val result = withContext(Dispatchers.IO) { fetchProfileData(validToken) }
                 if (result != null) {
                     val clerk = result.optJSONObject("clerk")
                     val profile = result.optJSONObject("profile")
@@ -228,7 +229,7 @@ fun ProfileScreen(
                                     .then(if (selectedAvatar.emoji == option.emoji) Modifier.padding(3.dp) else Modifier)
                                     .clickable {
                                         selectedAvatar = option; showAvatarPicker = false
-                                        if (sessionToken != null) { coroutineScope.launch(Dispatchers.IO) { saveAvatarToBackend(sessionToken, option.emoji) } }
+                                        coroutineScope.launch { val t = TokenManager.getValidToken(context); if (t != null) withContext(Dispatchers.IO) { saveAvatarToBackend(t, option.emoji) } }
                                         prefs.edit().putString("avatar_emoji", option.emoji).apply()
                                     },
                                 contentAlignment = Alignment.Center

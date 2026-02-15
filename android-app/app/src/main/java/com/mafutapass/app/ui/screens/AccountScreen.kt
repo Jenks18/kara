@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mafutapass.app.auth.TokenManager
 import com.mafutapass.app.ui.theme.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -39,7 +40,6 @@ fun AccountScreen(
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val prefs = context.getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
-    val sessionToken = prefs.getString("session_token", null)
     val userEmail = prefs.getString("user_email", null) ?: "User"
 
     // Instant display from cache — no flash
@@ -53,9 +53,10 @@ fun AccountScreen(
         prefs.getString("cached_display_name", null)?.let { displayName = it }
         prefs.getString("avatar_emoji", null)?.let { avatarEmoji = it }
 
-        if (sessionToken != null) {
+        val validToken = TokenManager.getValidToken(context)
+        if (validToken != null) {
             try {
-                val result = withContext(Dispatchers.IO) { fetchAccountProfile(sessionToken) }
+                val result = withContext(Dispatchers.IO) { fetchAccountProfile(validToken) }
                 if (result != null) {
                     fun JSONObject.s(key: String): String {
                         val v = optString(key, "")

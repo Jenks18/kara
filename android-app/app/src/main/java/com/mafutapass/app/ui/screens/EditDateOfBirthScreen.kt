@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.mafutapass.app.auth.TokenManager
 import com.mafutapass.app.ui.theme.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -33,7 +34,6 @@ private val MONTHS = listOf("January","February","March","April","May","June","J
 fun EditDateOfBirthScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val prefs = context.getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
-    val sessionToken = prefs.getString("session_token", null)
     var day by remember { mutableStateOf("") }
     var monthIndex by remember { mutableStateOf(-1) }
     var year by remember { mutableStateOf("") }
@@ -42,10 +42,11 @@ fun EditDateOfBirthScreen(onBack: () -> Unit) {
     var monthExpanded by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(sessionToken) {
-        if (sessionToken != null) {
+    LaunchedEffect(Unit) {
+        val token = TokenManager.getValidToken(context)
+        if (token != null) {
             try {
-                val r = withContext(Dispatchers.IO) { fetchProfileData(sessionToken) }
+                val r = withContext(Dispatchers.IO) { fetchProfileData(token) }
                 r?.optJSONObject("profile")?.let { p ->
                     fun JSONObject.s(k: String): String { val v = optString(k, ""); return if (v == "null" || v.isBlank()) "" else v }
                     val dob = p.s("date_of_birth")
@@ -93,14 +94,16 @@ fun EditDateOfBirthScreen(onBack: () -> Unit) {
                     }
                 }
                 Button(onClick = {
-                    if (sessionToken == null) return@Button; isSaving = true
+                    isSaving = true
                     scope.launch {
                         try {
+                            val token = TokenManager.getValidToken(context)
+                            if (token == null) { Toast.makeText(context, "Session expired. Please sign in again.", Toast.LENGTH_SHORT).show(); isSaving = false; return@launch }
                             val d = day.padStart(2, '0'); val m = (monthIndex + 1).toString().padStart(2, '0'); val isoDate = "$year-$m-$d"
                             val ok = withContext(Dispatchers.IO) {
                                 val json = JSONObject().apply { put("date_of_birth", isoDate) }
                                 val body = json.toString().toRequestBody("application/json".toMediaType())
-                                val req = Request.Builder().url("https://www.mafutapass.com/api/auth/mobile-profile").patch(body).addHeader("Authorization", "Bearer $sessionToken").build()
+                                val req = Request.Builder().url("https://www.mafutapass.com/api/auth/mobile-profile").patch(body).addHeader("Authorization", "Bearer $token").build()
                                 OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS).readTimeout(15, TimeUnit.SECONDS).build().newCall(req).execute().isSuccessful
                             }
                             if (ok) { prefs.edit().putString("cached_dob", "$year-$m-$d").apply(); onBack() }

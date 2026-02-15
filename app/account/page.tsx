@@ -26,6 +26,31 @@ export default function AccountPage() {
   const { avatar } = useAvatar()
   const router = useRouter()
 
+  // Show skeleton while Clerk loads to prevent flash of empty content
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen pb-20 bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
+        <div className="sticky top-0 z-30 bg-white border-b border-gray-200">
+          <div className="px-6 py-4 max-w-md mx-auto">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-gray-200 animate-pulse flex-shrink-0" />
+              <div className="flex-1 min-w-0 space-y-2">
+                <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
+                <div className="h-3 w-48 bg-gray-200 rounded animate-pulse" />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="px-4 py-6 max-w-md mx-auto space-y-4">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="h-[60px] bg-white rounded-xl border border-gray-200 animate-pulse" />
+          ))}
+        </div>
+        <BottomNav />
+      </div>
+    )
+  }
+
   // Use Clerk data directly — no extra Supabase fetch needed for account page
   const displayName = user?.fullName || ''
   const displayEmail = user?.emailAddresses?.[0]?.emailAddress || ''

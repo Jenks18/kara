@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.mafutapass.app.auth.TokenManager
 import com.mafutapass.app.ui.theme.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -34,16 +35,16 @@ import androidx.compose.ui.unit.sp
 fun EditPhoneNumberScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val prefs = context.getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
-    val sessionToken = prefs.getString("session_token", null)
     var phoneDigits by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(true) }
     var isSaving by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(sessionToken) {
-        if (sessionToken != null) {
+    LaunchedEffect(Unit) {
+        val token = TokenManager.getValidToken(context)
+        if (token != null) {
             try {
-                val r = withContext(Dispatchers.IO) { fetchProfileData(sessionToken) }
+                val r = withContext(Dispatchers.IO) { fetchProfileData(token) }
                 r?.optJSONObject("profile")?.let { p ->
                     fun JSONObject.s(k: String): String { val v = optString(k, ""); return if (v == "null" || v.isBlank()) "" else v }
                     val num = p.s("phone_number").replace(Regex("[\\s\\-]"), "")
@@ -93,14 +94,16 @@ fun EditPhoneNumberScreen(onBack: () -> Unit) {
                     }
                 }
                 Button(onClick = {
-                    if (sessionToken == null) return@Button; isSaving = true
+                    isSaving = true
                     scope.launch {
                         try {
+                            val token = TokenManager.getValidToken(context)
+                            if (token == null) { Toast.makeText(context, "Session expired. Please sign in again.", Toast.LENGTH_SHORT).show(); isSaving = false; return@launch }
                             val fullNum = if (phoneDigits.isNotBlank()) "+254${phoneDigits.trim()}" else ""
                             val ok = withContext(Dispatchers.IO) {
                                 val json = JSONObject().apply { put("phone_number", fullNum) }
                                 val body = json.toString().toRequestBody("application/json".toMediaType())
-                                val req = Request.Builder().url("https://www.mafutapass.com/api/auth/mobile-profile").patch(body).addHeader("Authorization", "Bearer $sessionToken").build()
+                                val req = Request.Builder().url("https://www.mafutapass.com/api/auth/mobile-profile").patch(body).addHeader("Authorization", "Bearer $token").build()
                                 OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS).readTimeout(15, TimeUnit.SECONDS).build().newCall(req).execute().isSuccessful
                             }
                             if (ok) { prefs.edit().putString("cached_phone", fullNum).apply(); onBack() }
