@@ -12,9 +12,11 @@ export async function OPTIONS() {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
+
     const mobileClient = await createMobileClient(request);
     if (!mobileClient) {
       return NextResponse.json(
@@ -33,7 +35,7 @@ export async function GET(
         processing_status, report_id, kra_invoice_number,
         expense_reports!inner ( user_id, workspace_name, title )
       `)
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
 
     if (error || !data) {

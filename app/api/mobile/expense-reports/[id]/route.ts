@@ -12,9 +12,11 @@ export async function OPTIONS() {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
+
     const mobileClient = await createMobileClient(request);
     if (!mobileClient) {
       return NextResponse.json(
@@ -28,7 +30,7 @@ export async function GET(
     const { data: report, error: reportError } = await supabase
       .from('expense_reports')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
 
     if (reportError || !report) {
@@ -41,7 +43,7 @@ export async function GET(
     const { data: items } = await supabase
       .from('expense_items')
       .select('id, image_url, amount, category, merchant_name, transaction_date, created_at, kra_verified, processing_status, description')
-      .eq('report_id', params.id)
+      .eq('report_id', id)
       .order('created_at', { ascending: false });
 
     const itemsList = items || [];

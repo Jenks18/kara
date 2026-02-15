@@ -137,6 +137,42 @@ These are the auth infrastructure itself. They cannot use the Retrofit pipeline 
 | `ClerkUserData` | DTO for Clerk user sub-object (camelCase naturally) | Models.kt |
 | `UpdateProfileRequest` | Request body for PATCH /mobile-profile (snake_case via @SerializedName) | Models.kt |
 | `UpdateProfileResponse` | Response for PATCH /mobile-profile | Models.kt |
+| `ReceiptUploadResponse` | Response for POST /mobile/receipts/upload (camelCase, NO @SerializedName) | Models.kt |
+| `ExpenseReportDetail` | Report with nested items for detail screen (snake_case via @SerializedName) | Models.kt |
+
+### Mobile API Endpoints (Bearer JWT auth)
+
+All mobile endpoints authenticate via `verifyAndExtractUser()` + `createMobileClient()`.
+Backend mints a Supabase JWT so RLS auto-filters data by user.
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/mobile/receipts` | GET | List expense items |
+| `/api/mobile/receipts/:id` | GET | Single expense item detail |
+| `/api/mobile/receipts/upload` | POST | Upload receipt image (multipart, 10MB max, type-validated) |
+| `/api/mobile/expense-reports` | GET | List expense reports |
+| `/api/mobile/expense-reports` | POST | Create expense report |
+| `/api/mobile/expense-reports/:id` | GET | Single report with nested items |
+| `/api/mobile/workspaces` | GET/POST | List/create workspaces |
+| `/api/mobile/workspaces/:id` | GET/DELETE | Workspace detail/soft-delete |
+| `/api/mobile/workspaces/:id/members` | GET | Workspace members |
+
+**RULES:**
+1. All mobile API routes live under `/api/mobile/` and use Bearer JWT auth — never Clerk session auth.
+2. Next.js 15 dynamic route params MUST use `Promise<{ id: string }>` and `await params` — plain `{ id: string }` causes build failure.
+3. Upload endpoints must validate file size (<10MB) and content type before processing.
+4. When inserting `expense_reports`, always include `user_email` — it's NOT NULL in the schema.
+5. Response JSON should use camelCase for mobile endpoints (Android Gson maps directly without @SerializedName).
+
+### Android Screens & Navigation
+
+| Route | Screen | ViewModel |
+|-------|--------|-----------|
+| `scan-receipt` | ScanReceiptScreen | ScanReceiptViewModel |
+| `expenses/{id}` | ExpenseDetailScreen | ExpenseDetailViewModel |
+| `reports/{id}` | ReportDetailScreen | ReportDetailViewModel |
+
+ScanReceiptScreen state machine: `ChooseMethod → ReviewImages → Uploading → Results`
 
 ---
 
@@ -190,6 +226,8 @@ These are the auth infrastructure itself. They cannot use the Retrofit pipeline 
 4. **ProGuard enabled for release builds.** `isMinifyEnabled = true`, `isShrinkResources = true`.
 5. **ProGuard must keep @SerializedName fields.** Without this, release builds silently break JSON deserialization.
 6. **No `.debug` applicationIdSuffix.** It breaks Google Sign-In unless a separate OAuth client is registered.
+7. **No verbose error logging in production.** Use `error?.message || error` — never log full error objects, stack traces, or `JSON.stringify(error)`.
+8. **No stack traces or internal details in API error responses.** Return only `error.message` to the client.
 
 ---
 

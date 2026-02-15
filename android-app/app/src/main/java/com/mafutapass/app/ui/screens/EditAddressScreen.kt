@@ -9,6 +9,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,6 +37,7 @@ fun EditAddressScreen(
     var country by remember { mutableStateOf("Kenya") }
     var state by remember { mutableStateOf("") }
     var city by remember { mutableStateOf("") }
+    @Suppress("UNUSED_VALUE")
     var zipCode by remember { mutableStateOf("") }
     var countryExpanded by remember { mutableStateOf(false) }
     var initialized by remember { mutableStateOf(false) }
@@ -89,7 +91,7 @@ fun EditAddressScreen(
                         Text("Country", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(bottom = 8.dp))
                         ExposedDropdownMenuBox(expanded = countryExpanded, onExpandedChange = { countryExpanded = it }) {
                             OutlinedTextField(value = country, onValueChange = {}, readOnly = true, trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = countryExpanded) },
-                                modifier = Modifier.fillMaxWidth().menuAnchor(), shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable, true), shape = RoundedCornerShape(12.dp),
                                 colors = appOutlinedTextFieldColors())
                             ExposedDropdownMenu(expanded = countryExpanded, onDismissRequest = { countryExpanded = false }) {
                                 COUNTRIES.forEach { c -> DropdownMenuItem(text = { Text(c) }, onClick = { country = c; countryExpanded = false }) }
