@@ -26,7 +26,7 @@ export function UserProfileInit() {
           console.error('Profile init failed:', response.status)
         }
       } catch (error) {
-        if (error.name !== 'AbortError') {
+        if (error instanceof Error && error.name !== 'AbortError') {
           console.error('Error initializing user profile:', error)  
         }
         // Don't block UI - continue silently
