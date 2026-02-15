@@ -1,12 +1,13 @@
 import { SignIn } from '@clerk/nextjs'
 
-export default function SignInPage({
+export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: { mobile?: string }
+  searchParams: Promise<{ mobile?: string }>
 }) {
   // If coming from mobile app, redirect to mobile-redirect endpoint after sign in
-  const isMobile = searchParams.mobile === 'android'
+  const params = await searchParams
+  const isMobile = params.mobile === 'android'
   const redirectUrl = isMobile ? '/api/auth/android-callback' : '/reports'
   
   return (
@@ -26,7 +27,7 @@ export default function SignInPage({
             }
           }}
           signUpUrl="/sign-up"
-          redirectUrl={redirectUrl}
+          fallbackRedirectUrl={redirectUrl}
           routing="hash"
         />
       </div>
