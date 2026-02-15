@@ -24,7 +24,7 @@ export async function GET(
 
     return NextResponse.json({ workspace })
   } catch (error: any) {
-    console.error('Error fetching workspace:', error?.message || error)
+    console.error('Error fetching workspace:', error instanceof Error ? error.message : String(error))
     return NextResponse.json(
       { error: error.message || 'Failed to fetch workspace' },
       { status: 500 }
@@ -71,7 +71,7 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, workspace: result.workspace })
   } catch (error: any) {
-    console.error('Error updating workspace:', error?.message || error)
+    console.error('Error updating workspace:', error instanceof Error ? error.message : String(error))
     return NextResponse.json(
       { error: error.message || 'Failed to update workspace' },
       { status: 500 }
@@ -101,7 +101,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true })
   } catch (error: any) {
-    console.error('Error deleting workspace:', error?.message || error)
+    console.error('Error deleting workspace:', error instanceof Error ? error.message : String(error))
     return NextResponse.json(
       { error: error.message || 'Failed to delete workspace' },
       { status: 500 }

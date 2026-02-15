@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       url: urlData.publicUrl 
     })
   } catch (error) {
-    console.error('Error uploading avatar:', error?.message || error)
+    console.error('Error uploading avatar:', error instanceof Error ? error.message : String(error))
     return NextResponse.json({ error: 'Upload failed' }, { status: 500 })
   }
 }

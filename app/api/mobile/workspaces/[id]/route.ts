@@ -39,7 +39,7 @@ export async function GET(
 
     return NextResponse.json(workspace, { headers: corsHeaders });
   } catch (error: any) {
-    console.error('Error in mobile workspace detail:', error?.message || error);
+    console.error('Error in mobile workspace detail:', error instanceof Error ? error.message : String(error));
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500, headers: corsHeaders }
@@ -73,7 +73,7 @@ export async function DELETE(
       .eq('id', id);
 
     if (error) {
-      console.error('Error deleting workspace:', error?.message || error);
+      console.error('Error deleting workspace:', error instanceof Error ? error.message : String(error));
       return NextResponse.json(
         { error: 'Failed to delete workspace', detail: error.message },
         { status: 500, headers: corsHeaders }
@@ -82,7 +82,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true }, { headers: corsHeaders });
   } catch (error: any) {
-    console.error('Error in mobile workspace delete:', error?.message || error);
+    console.error('Error in mobile workspace delete:', error instanceof Error ? error.message : String(error));
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500, headers: corsHeaders }

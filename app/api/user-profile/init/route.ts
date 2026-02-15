@@ -70,13 +70,13 @@ export async function POST() {
       .single()
 
     if (error) {
-      console.error('Error creating user profile:', error?.message || error)
+      console.error('Error creating user profile:', error instanceof Error ? error.message : String(error))
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
     return NextResponse.json({ profile: newProfile })
   } catch (error) {
-    console.error('Error in user profile init:', error?.message || error)
+    console.error('Error in user profile init:', error instanceof Error ? error.message : String(error))
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

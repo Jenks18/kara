@@ -14,7 +14,7 @@ export async function GET() {
     const workspaces = await getWorkspaces(userId)
     return NextResponse.json({ workspaces })
   } catch (error: any) {
-    console.error('Error fetching workspaces:', error?.message || error)
+    console.error('Error fetching workspaces:', error instanceof Error ? error.message : String(error))
     return NextResponse.json(
       { error: error.message || 'Failed to fetch workspaces' },
       { status: 500 }
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ workspace: result.workspace })
   } catch (error: any) {
-    console.error('Error creating workspace:', error?.message || error)
+    console.error('Error creating workspace:', error instanceof Error ? error.message : String(error))
     return NextResponse.json(
       { error: error.message || 'Failed to create workspace' },
       { status: 500 }
