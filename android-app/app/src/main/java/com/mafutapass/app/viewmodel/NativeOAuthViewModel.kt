@@ -154,7 +154,7 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
             // Execute HTTP request on IO dispatcher (not main thread)
             val (response, responseBody) = withContext(Dispatchers.IO) {
                 val resp = httpClient.newCall(request).execute()
-                val body = resp.body?.string() ?: ""
+                val body = resp.body.string()
                 Pair(resp, body)
             }
 
@@ -272,7 +272,7 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
                     .build()
                 
                 val response = httpClient.newCall(request).execute()
-                val responseBody = response.body?.string() ?: ""
+                val responseBody = response.body.string()
                 
                 Log.d(TAG, "📥 Supabase auth response: ${response.code}")
                 
@@ -322,7 +322,7 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
                 
                 val (response, responseBody) = withContext(Dispatchers.IO) {
                     val resp = httpClient.newCall(request).execute()
-                    val body = resp.body?.string() ?: ""
+                    val body = resp.body.string()
                     Pair(resp, body)
                 }
                 

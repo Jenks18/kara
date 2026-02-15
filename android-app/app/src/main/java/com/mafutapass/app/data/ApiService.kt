@@ -1,7 +1,7 @@
 package com.mafutapass.app.data
 
 import android.content.Context
-import com.mafutapass.app.auth.TokenManager
+import com.mafutapass.app.auth.TokenRepository
 import kotlinx.coroutines.runBlocking
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -54,11 +54,11 @@ object ApiClient {
     }
     
     private val authInterceptor: (okhttp3.Interceptor.Chain) -> okhttp3.Response = { chain ->
-        // Use TokenManager to get a valid (auto-refreshed) token for every request.
-        // runBlocking is safe here — OkHttp interceptors run on OkHttp's IO dispatcher,
-        // never on the main thread.
+        // Use async TokenRepository for production-grade token management.
+        // This is safe in OkHttp interceptors which run on IO threads.
         val token = applicationContext?.let { context ->
-            runBlocking { TokenManager.getValidToken(context) }
+            val tokenRepository = TokenRepository.getInstance(context)
+            runBlocking { tokenRepository.getValidTokenAsync() }
         }
         
         val request = chain.request().newBuilder()

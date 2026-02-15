@@ -99,11 +99,25 @@ export async function PATCH(request: NextRequest) {
       updated_at: new Date().toISOString(),
     };
 
+    // Always ensure user_email is present (required NOT NULL column).
+    // If the caller didn't send it, look it up from Clerk.
+    if (body.user_email) {
+      updates.user_email = body.user_email;
+    } else {
+      try {
+        const clerk = await clerkClient();
+        const clerkUser = await clerk.users.getUser(mobileClient.userId);
+        updates.user_email = clerkUser.emailAddresses[0]?.emailAddress || '';
+      } catch {
+        updates.user_email = '';
+      }
+    }
+
     const allowedFields = [
       'display_name', 'first_name', 'last_name', 'phone_number',
       'date_of_birth', 'legal_first_name', 'legal_last_name',
       'address_line1', 'address_line2', 'city', 'state', 'zip_code', 'country',
-      'avatar_emoji', 'avatar_color', 'avatar_image_url', 'user_email',
+      'avatar_emoji', 'avatar_color', 'avatar_image_url',
     ];
 
     for (const field of allowedFields) {

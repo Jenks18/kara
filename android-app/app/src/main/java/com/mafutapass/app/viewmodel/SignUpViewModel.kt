@@ -104,7 +104,7 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
             .build()
 
         val response = httpClient.newCall(request).execute()
-        val responseBody = response.body?.string() ?: ""
+        val responseBody = response.body.string()
 
         Log.d("SignUpViewModel", "📥 Signup response: $responseBody")
 

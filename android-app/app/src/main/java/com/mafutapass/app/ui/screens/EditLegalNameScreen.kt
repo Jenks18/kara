@@ -15,7 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.mafutapass.app.auth.TokenManager
+import com.mafutapass.app.auth.TokenRepository
 import com.mafutapass.app.ui.theme.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -39,13 +39,16 @@ fun EditLegalNameScreen(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
-        val token = TokenManager.getValidToken(context)
+        val token = TokenRepository.getInstance(context).getValidTokenAsync()
         if (token != null) {
             try {
                 val r = withContext(Dispatchers.IO) { fetchProfileData(token) }
-                r?.optJSONObject("profile")?.let { p ->
+                if (r != null) {
                     fun JSONObject.s(k: String): String { val v = optString(k, ""); return if (v == "null" || v.isBlank()) "" else v }
-                    firstName = p.s("legal_first_name"); lastName = p.s("legal_last_name")
+                    val profile = r.optJSONObject("profile")
+                    val clerk = r.optJSONObject("clerk")
+                    firstName = profile?.s("legal_first_name")?.ifEmpty { null } ?: clerk?.s("firstName") ?: ""
+                    lastName = profile?.s("legal_last_name")?.ifEmpty { null } ?: clerk?.s("lastName") ?: ""
                 }
             } catch (_: Exception) {}
             isLoading = false
@@ -79,7 +82,7 @@ fun EditLegalNameScreen(onBack: () -> Unit) {
                     isSaving = true
                     scope.launch {
                         try {
-                            val token = TokenManager.getValidToken(context)
+                            val token = TokenRepository.getInstance(context).getValidTokenAsync()
                             if (token == null) { Toast.makeText(context, "Session expired. Please sign in again.", Toast.LENGTH_SHORT).show(); isSaving = false; return@launch }
                             val ok = withContext(Dispatchers.IO) {
                                 val json = JSONObject().apply { put("legal_first_name", firstName.trim()); put("legal_last_name", lastName.trim()) }

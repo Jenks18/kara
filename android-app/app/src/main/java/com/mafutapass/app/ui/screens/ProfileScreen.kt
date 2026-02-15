@@ -23,7 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import com.mafutapass.app.auth.TokenManager
+import com.mafutapass.app.auth.TokenRepository
 import com.mafutapass.app.ui.theme.*
 import com.mafutapass.app.util.DateUtils
 import kotlinx.coroutines.Dispatchers
@@ -105,7 +105,7 @@ fun ProfileScreen(
 
     // Fetch from API in background — keyed on refreshTrigger
     LaunchedEffect(refreshTrigger) {
-        val validToken = TokenManager.getValidToken(context)
+        val validToken = TokenRepository.getInstance(context).getValidTokenAsync()
         if (validToken != null) {
             try {
                 val result = withContext(Dispatchers.IO) { fetchProfileData(validToken) }
@@ -162,11 +162,11 @@ fun ProfileScreen(
         )
 
         LazyColumn(
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item {
-                Column(modifier = Modifier.padding(bottom = 2.dp)) {
+                Column(modifier = Modifier.padding(bottom = 6.dp)) {
                     Text("Public", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = Gray900)
                     Text("These details are displayed on your public profile.", style = MaterialTheme.typography.bodySmall, color = Gray500)
                 }
@@ -174,7 +174,7 @@ fun ProfileScreen(
 
             // Avatar — large centered, no label text
             item {
-                Box(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
+                Box(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
                     Box(contentAlignment = Alignment.BottomEnd) {
                         Box(
                             modifier = Modifier.size(120.dp).clip(CircleShape)
@@ -196,7 +196,7 @@ fun ProfileScreen(
             item { ProfileField("Contact methods", userEmail.ifEmpty { "Not set" }) { } }
 
             item {
-                Column(modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)) {
+                Column(modifier = Modifier.padding(top = 8.dp, bottom = 6.dp)) {
                     Text("Private", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = Gray900)
                     Text("These details are used for travel and payments.", style = MaterialTheme.typography.bodySmall, color = Gray500)
                 }
@@ -206,7 +206,7 @@ fun ProfileScreen(
             item { ProfileField("Date of birth", if (dateOfBirth.isNotEmpty()) DateUtils.formatFull(dateOfBirth) else "Not set") { onNavigateToEditDateOfBirth() } }
             item { ProfileField("Phone number", phoneNumber.ifEmpty { "Not set" }) { onNavigateToEditPhoneNumber() } }
             item { ProfileField("Address", address.ifEmpty { "Not set" }) { onNavigateToEditAddress() } }
-            item { Spacer(Modifier.height(8.dp)) }
+            item { Spacer(Modifier.height(16.dp)) }
         }
     }
 
@@ -230,7 +230,7 @@ fun ProfileScreen(
                                     .then(if (selectedAvatar.emoji == option.emoji) Modifier.padding(3.dp) else Modifier)
                                     .clickable {
                                         selectedAvatar = option; showAvatarPicker = false
-                                        coroutineScope.launch { val t = TokenManager.getValidToken(context); if (t != null) withContext(Dispatchers.IO) { saveAvatarToBackend(t, option.emoji) } }
+                                        coroutineScope.launch { val t = TokenRepository.getInstance(context).getValidTokenAsync(); if (t != null) withContext(Dispatchers.IO) { saveAvatarToBackend(t, option.emoji) } }
                                         prefs.edit().putString("avatar_emoji", option.emoji).apply()
                                     },
                                 contentAlignment = Alignment.Center
@@ -247,9 +247,9 @@ fun ProfileScreen(
 fun ProfileField(label: String, value: String, onClick: () -> Unit) {
     Surface(shape = RoundedCornerShape(12.dp), color = Color.White, shadowElevation = 1.dp,
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
-        Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
+        Column(modifier = Modifier.padding(18.dp).fillMaxWidth()) {
             Text(label, style = MaterialTheme.typography.bodySmall, color = Emerald600)
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(6.dp))
             Text(value, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium,
                 color = if (value == "Not set") Gray400 else Gray800)
         }
@@ -261,7 +261,7 @@ internal fun fetchProfileData(token: String): JSONObject? {
     val request = Request.Builder().url("https://www.mafutapass.com/api/auth/mobile-profile")
         .get().addHeader("Authorization", "Bearer $token").build()
     val response = client.newCall(request).execute()
-    val body = response.body?.string() ?: return null
+    val body = response.body.string()
     if (!response.isSuccessful) return null
     return JSONObject(body)
 }

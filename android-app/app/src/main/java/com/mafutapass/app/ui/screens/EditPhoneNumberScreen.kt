@@ -15,7 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.mafutapass.app.auth.TokenManager
+import com.mafutapass.app.auth.TokenRepository
 import com.mafutapass.app.ui.theme.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -41,7 +41,7 @@ fun EditPhoneNumberScreen(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
-        val token = TokenManager.getValidToken(context)
+        val token = TokenRepository.getInstance(context).getValidTokenAsync()
         if (token != null) {
             try {
                 val r = withContext(Dispatchers.IO) { fetchProfileData(token) }
@@ -97,7 +97,7 @@ fun EditPhoneNumberScreen(onBack: () -> Unit) {
                     isSaving = true
                     scope.launch {
                         try {
-                            val token = TokenManager.getValidToken(context)
+                            val token = TokenRepository.getInstance(context).getValidTokenAsync()
                             if (token == null) { Toast.makeText(context, "Session expired. Please sign in again.", Toast.LENGTH_SHORT).show(); isSaving = false; return@launch }
                             val fullNum = if (phoneDigits.isNotBlank()) "+254${phoneDigits.trim()}" else ""
                             val ok = withContext(Dispatchers.IO) {

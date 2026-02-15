@@ -20,7 +20,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.mafutapass.app.auth.TokenManager
+import com.mafutapass.app.auth.TokenRepository
 import com.mafutapass.app.ui.theme.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -53,7 +53,7 @@ fun AccountScreen(
         prefs.getString("cached_display_name", null)?.let { displayName = it }
         prefs.getString("avatar_emoji", null)?.let { avatarEmoji = it }
 
-        val validToken = TokenManager.getValidToken(context)
+        val validToken = TokenRepository.getInstance(context).getValidTokenAsync()
         if (validToken != null) {
             try {
                 val result = withContext(Dispatchers.IO) { fetchAccountProfile(validToken) }
@@ -140,12 +140,15 @@ fun AccountScreen(
                 Triple(Icons.Filled.Help, "Help", "help"),
                 Triple(Icons.Filled.Star, "What's new", "whats_new"),
                 Triple(Icons.Filled.Info, "About", "about"),
+                Triple(Icons.Filled.Build, "Troubleshoot", "troubleshoot"),
             )
             items(generalItems) { (icon, label, action) ->
                 MenuRow(icon = icon, label = label) {
                     when (action) {
                         "about" -> onNavigateToAbout()
-                        else -> onNavigateToAbout()
+                        "help", "whats_new", "troubleshoot" -> {
+                            // Empty click handlers - these are placeholders like in webapp
+                        }
                     }
                 }
             }
@@ -196,7 +199,7 @@ private fun fetchAccountProfile(token: String): JSONObject? {
         .url("https://www.mafutapass.com/api/auth/mobile-profile")
         .get().addHeader("Authorization", "Bearer $token").build()
     val response = client.newCall(request).execute()
-    val body = response.body?.string() ?: return null
+    val body = response.body.string()
     if (!response.isSuccessful) return null
     return JSONObject(body)
 }

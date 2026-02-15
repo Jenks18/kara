@@ -15,7 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.mafutapass.app.auth.TokenManager
+import com.mafutapass.app.auth.TokenRepository
 import com.mafutapass.app.ui.theme.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -49,7 +49,7 @@ fun EditAddressScreen(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
-        val token = TokenManager.getValidToken(context)
+        val token = TokenRepository.getInstance(context).getValidTokenAsync()
         if (token != null) {
             try {
                 val r = withContext(Dispatchers.IO) { fetchProfileData(token) }
@@ -108,7 +108,7 @@ fun EditAddressScreen(onBack: () -> Unit) {
                     isSaving = true
                     scope.launch {
                         try {
-                            val token = TokenManager.getValidToken(context)
+                            val token = TokenRepository.getInstance(context).getValidTokenAsync()
                             if (token == null) { Toast.makeText(context, "Session expired. Please sign in again.", Toast.LENGTH_SHORT).show(); isSaving = false; return@launch }
                             val ok = withContext(Dispatchers.IO) {
                                 val json = JSONObject().apply { put("address_line1", addressLine1.trim()); put("address_line2", addressLine2.trim()); put("city", city.trim()); put("state", state.trim()); put("zip_code", zipCode.trim()); put("country", country.trim()) }

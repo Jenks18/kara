@@ -15,7 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.mafutapass.app.auth.TokenManager
+import com.mafutapass.app.auth.TokenRepository
 import com.mafutapass.app.ui.theme.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -39,7 +39,7 @@ fun EditDisplayNameScreen(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
-        val token = TokenManager.getValidToken(context)
+        val token = TokenRepository.getInstance(context).getValidTokenAsync()
         if (token != null) {
             try {
                 val r = withContext(Dispatchers.IO) { fetchProfileData(token) }
@@ -47,7 +47,11 @@ fun EditDisplayNameScreen(onBack: () -> Unit) {
                     fun JSONObject.s(k: String): String { val v = optString(k, ""); return if (v == "null" || v.isBlank()) "" else v }
                     val fn = p.s("first_name"); val ln = p.s("last_name")
                     if (fn.isNotEmpty() || ln.isNotEmpty()) { firstName = fn; lastName = ln }
-                    else { val parts = p.s("display_name").trim().split(" ", limit = 2); if (parts.size >= 2) { firstName = parts[0]; lastName = parts[1] } }
+                    else { 
+                        val dn = p.s("display_name").trim()
+                        val parts = dn.split(" ", limit = 2)
+                        if (parts.isNotEmpty()) { firstName = parts[0]; if (parts.size >= 2) lastName = parts[1] }
+                    }
                 }
             } catch (_: Exception) {}
             isLoading = false
@@ -82,7 +86,7 @@ fun EditDisplayNameScreen(onBack: () -> Unit) {
                     isSaving = true
                     scope.launch {
                         try {
-                            val token = TokenManager.getValidToken(context)
+                            val token = TokenRepository.getInstance(context).getValidTokenAsync()
                             if (token == null) { Toast.makeText(context, "Session expired. Please sign in again.", Toast.LENGTH_SHORT).show(); isSaving = false; return@launch }
                             val ok = withContext(Dispatchers.IO) {
                                 val json = JSONObject().apply { put("first_name", firstName.trim()); put("last_name", lastName.trim()); put("display_name", "${firstName.trim()} ${lastName.trim()}".trim()) }

@@ -75,7 +75,7 @@ class SignInViewModel(application: Application) : AndroidViewModel(application) 
             .build()
 
         val response = httpClient.newCall(request).execute()
-        val responseBody = response.body?.string() ?: ""
+        val responseBody = response.body.string()
 
         Log.d("SignInViewModel", "📥 Sign-in response: ${responseBody.take(200)}")
 

@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit
  */
 object TokenManager {
     private const val TAG = "TokenManager"
-    private const val REFRESH_MARGIN_SECONDS = 300L // refresh 5 minutes before expiry
+    private const val REFRESH_MARGIN_SECONDS = 30L // refresh 30 seconds before actual expiry
     private val mutex = Mutex() // prevent concurrent refresh races
 
     private val client = OkHttpClient.Builder()
@@ -40,7 +40,7 @@ object TokenManager {
         val prefs = context.getSharedPreferences("clerk_session", Context.MODE_PRIVATE)
         val token = prefs.getString("session_token", null) ?: return null
 
-        // Check if token is expired or about to expire
+        // Check if token is actually expired or expiring soon
         if (!isTokenExpiringSoon(token)) {
             return token
         }
@@ -53,7 +53,7 @@ object TokenManager {
                 return@withLock currentToken
             }
 
-            Log.d(TAG, "Token expired or expiring soon, refreshing...")
+            Log.d(TAG, "Token expiring in <30s, refreshing...")
             refreshToken(currentToken, prefs)
         }
     }
@@ -90,9 +90,9 @@ object TokenManager {
                     .build()
 
                 val response = client.newCall(request).execute()
-                val body = response.body?.string()
+                val body = response.body.string()
 
-                if (response.isSuccessful && body != null) {
+                if (response.isSuccessful) {
                     val json = JSONObject(body)
                     val newToken = json.optString("token", "")
                     if (newToken.isNotEmpty()) {
