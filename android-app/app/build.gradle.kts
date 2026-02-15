@@ -144,7 +144,7 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.0.0")
 
     // Accompanist for permissions
-    implementation("com.google.accompanist:accompanist-permissions:0.32.0")
+    implementation("com.google.accompanist:accompanist-permissions:0.37.3")
 
     // Hilt Dependency Injection
     implementation("com.google.dagger:hilt-android:2.56.2")
