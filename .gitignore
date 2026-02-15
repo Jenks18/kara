@@ -42,4 +42,5 @@ next-env.d.ts
 *.md
 !README.md
 !ARCHITECTURE.md
+!ARCHITECTURE_DECISIONS.md
 !.github/**/*.md

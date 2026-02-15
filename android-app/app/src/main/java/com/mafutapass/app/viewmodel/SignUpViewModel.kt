@@ -116,7 +116,7 @@ class SignUpViewModel @Inject constructor(
             .build()
 
         val response = httpClient.newCall(request).execute()
-        val responseBody = response.body.string()
+        val responseBody = response.body?.string() ?: ""
 
         Log.d("SignUpViewModel", "📥 Signup response code: ${response.code}")
 

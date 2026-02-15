@@ -109,7 +109,7 @@ class AuthAuthenticator @Inject constructor(
                 .build()
 
             val response = client.newCall(request).execute()
-            val body = response.body.string()
+            val body = response.body?.string() ?: ""
 
             if (response.isSuccessful) {
                 val json = org.json.JSONObject(body)

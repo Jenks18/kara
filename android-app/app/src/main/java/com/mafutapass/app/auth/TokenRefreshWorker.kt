@@ -53,7 +53,7 @@ class TokenRefreshWorker(
                 .build()
 
             val response = client.newCall(request).execute()
-            val body = response.body.string()
+            val body = response.body?.string() ?: ""
 
             if (response.isSuccessful) {
                 val json = JSONObject(body)

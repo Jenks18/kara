@@ -311,7 +311,7 @@ class TokenRepository private constructor(context: Context) {
                 .build()
 
             val response = client.newCall(request).execute()
-            val body = response.body.string()
+            val body = response.body?.string() ?: ""
 
             if (response.isSuccessful) {
                 val json = JSONObject(body)
@@ -322,7 +322,7 @@ class TokenRepository private constructor(context: Context) {
                 if (newToken.isNotEmpty() && userId.isNotEmpty()) {
                     // Update token in AccountManager (primary)
                     val expiry = extractTokenExpiry(newToken) * 1000
-                    accountHelper.updateTokens(newToken, null, expiry)
+                    accountHelper.updateTokens(newToken, expiry)
                         
                     _tokenState.value = TokenState.Valid(newToken, userId)
                     scheduleRefreshIfNeeded()

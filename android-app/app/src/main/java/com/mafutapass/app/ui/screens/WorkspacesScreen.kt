@@ -249,7 +249,7 @@ fun WorkspaceCard(workspace: Workspace, onClick: () -> Unit = {}, onDelete: () -
     // Delete confirmation dialog
     if (showDeleteConfirm) {
         AlertDialog(
-            onDismissRequest = { if (!isDeleting) showDeleteConfirm = false },
+            onDismissRequest = { showDeleteConfirm = false },
             title = { Text("Delete workspace") },
             text = { Text("Are you sure you want to delete \"${workspace.name}\"? This cannot be undone.") },
             confirmButton = {

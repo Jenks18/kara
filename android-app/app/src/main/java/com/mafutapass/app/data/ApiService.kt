@@ -52,6 +52,9 @@ interface ApiService {
     
     @GET("api/auth/mobile-profile")
     suspend fun getUserProfile(): MobileProfileResponse
+
+    @PATCH("api/auth/mobile-profile")
+    suspend fun updateUserProfile(@Body request: UpdateProfileRequest): UpdateProfileResponse
 }
 
 data class WorkspacesResponse(val workspaces: List<Workspace>)

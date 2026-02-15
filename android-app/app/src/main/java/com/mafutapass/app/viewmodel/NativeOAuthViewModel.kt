@@ -182,7 +182,7 @@ class NativeOAuthViewModel @Inject constructor(
             // Execute HTTP request on IO dispatcher (not main thread)
             val (response, responseBody) = withContext(Dispatchers.IO) {
                 val resp = httpClient.newCall(request).execute()
-                val body = resp.body.string()
+                val body = resp.body?.string() ?: ""
                 Pair(resp, body)
             }
 
@@ -281,7 +281,7 @@ class NativeOAuthViewModel @Inject constructor(
                 
                 val (response, responseBody) = withContext(Dispatchers.IO) {
                     val resp = httpClient.newCall(request).execute()
-                    val body = resp.body.string()
+                    val body = resp.body?.string() ?: ""
                     Pair(resp, body)
                 }
                 
