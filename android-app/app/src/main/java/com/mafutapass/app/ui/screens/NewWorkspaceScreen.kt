@@ -19,11 +19,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mafutapass.app.ui.theme.*
-import com.mafutapass.app.data.ApiClient
-import com.mafutapass.app.data.CreateWorkspaceRequest
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import com.mafutapass.app.viewmodel.NewWorkspaceViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 
 data class Currency(
     val code: String,
@@ -48,13 +45,16 @@ val CURRENCIES = listOf(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NewWorkspaceScreen(onBack: () -> Unit, onConfirm: () -> Unit) {
+fun NewWorkspaceScreen(
+    onBack: () -> Unit,
+    onConfirm: () -> Unit,
+    viewModel: NewWorkspaceViewModel = hiltViewModel()
+) {
     var workspaceName by remember { mutableStateOf("") }
     var selectedCurrency by remember { mutableStateOf(CURRENCIES[0]) }
     var showCurrencyPicker by remember { mutableStateOf(false) }
-    var isCreating by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-    val scope = rememberCoroutineScope()
+    val isCreating by viewModel.isCreating.collectAsState()
+    val errorMessage by viewModel.error.collectAsState()
     
     val displayAvatar = if (workspaceName.isNotEmpty()) 
         workspaceName.first().uppercaseChar().toString() 
@@ -170,28 +170,12 @@ fun NewWorkspaceScreen(onBack: () -> Unit, onConfirm: () -> Unit) {
             }
             Button(
                 onClick = {
-                    if (workspaceName.isNotBlank() && !isCreating) {
-                        isCreating = true
-                        errorMessage = null
-                        scope.launch {
-                            try {
-                                withContext(Dispatchers.IO) {
-                                    ApiClient.apiService.createWorkspace(
-                                        CreateWorkspaceRequest(
-                                            name = workspaceName.trim(),
-                                            currency = selectedCurrency.code,
-                                            currencySymbol = selectedCurrency.symbol
-                                        )
-                                    )
-                                }
-                                onConfirm()
-                            } catch (e: Exception) {
-                                android.util.Log.e("NewWorkspace", "Failed to create workspace: ${e.message}", e)
-                                errorMessage = "Failed to create workspace"
-                                isCreating = false
-                            }
-                        }
-                    }
+                    viewModel.createWorkspace(
+                        name = workspaceName,
+                        currency = selectedCurrency.code,
+                        currencySymbol = selectedCurrency.symbol,
+                        onSuccess = { onConfirm() }
+                    )
                 },
                 modifier = Modifier
                     .fillMaxWidth()

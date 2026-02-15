@@ -18,13 +18,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.mafutapass.app.data.ApiClient
 import com.mafutapass.app.data.Workspace
 import com.mafutapass.app.ui.theme.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import com.mafutapass.app.viewmodel.WorkspaceDetailViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,32 +32,14 @@ fun WorkspaceDetailScreen(
     workspaceName: String = "",
     onBack: () -> Unit,
     onNavigateToOverview: () -> Unit = {},
-    onNavigateToMembers: () -> Unit = {}
+    onNavigateToMembers: () -> Unit = {},
+    viewModel: WorkspaceDetailViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
-    var workspace by remember { mutableStateOf<Workspace?>(null) }
-    var isLoading by remember { mutableStateOf(true) }
-    var error by remember { mutableStateOf<String?>(null) }
+    val workspace by viewModel.workspace.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
     LaunchedEffect(workspaceId) {
-        isLoading = true
-        try {
-            val fetched = withContext(Dispatchers.IO) {
-                ApiClient.apiService.getWorkspace(workspaceId)
-            }
-            workspace = fetched
-        } catch (e: Exception) {
-            android.util.Log.e("WorkspaceDetail", "Failed to fetch: ${e.message}", e)
-            error = e.message
-            workspace = Workspace(
-                id = workspaceId,
-                name = workspaceName.ifEmpty { "Workspace" },
-                currency = "KES",
-                currencySymbol = "KSh"
-            )
-        } finally {
-            isLoading = false
-        }
+        viewModel.fetchWorkspace(workspaceId, workspaceName)
     }
 
     val ws = workspace

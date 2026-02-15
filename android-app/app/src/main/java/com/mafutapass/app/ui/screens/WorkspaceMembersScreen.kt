@@ -23,69 +23,34 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import com.mafutapass.app.auth.TokenManager
-import com.mafutapass.app.data.ApiClient
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.mafutapass.app.data.Workspace
+import com.mafutapass.app.data.WorkspaceMember
 import com.mafutapass.app.ui.theme.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import org.json.JSONObject
-import java.util.concurrent.TimeUnit
-
-data class WorkspaceMember(
-    val id: String,
-    val userId: String,
-    val email: String,
-    val role: String,
-    val displayName: String?,
-    val firstName: String?,
-    val lastName: String?,
-    val avatarEmoji: String?
-)
+import com.mafutapass.app.viewmodel.WorkspaceMembersViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkspaceMembersScreen(
     workspaceId: String,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    viewModel: WorkspaceMembersViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
 
-    var workspace by remember { mutableStateOf<Workspace?>(null) }
-    var members by remember { mutableStateOf<List<WorkspaceMember>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
+    val workspace by viewModel.workspace.collectAsState()
+    val members by viewModel.members.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
     var showInviteDialog by remember { mutableStateOf(false) }
     var showMoreMenu by remember { mutableStateOf(false) }
     var showShareDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var inviteInput by remember { mutableStateOf("") }
-    val coroutineScope = rememberCoroutineScope()
     val shareUrl = "https://www.mafutapass.com/workspaces/$workspaceId/join"
 
     // Fetch workspace and members
     LaunchedEffect(workspaceId) {
-        isLoading = true
-        try {
-            val fetched = withContext(Dispatchers.IO) {
-                ApiClient.apiService.getWorkspace(workspaceId)
-            }
-            workspace = fetched
-
-            // Fetch members with auto-refreshed token
-            val token = TokenManager.getValidToken(context)
-            if (token != null) {
-                val membersList = withContext(Dispatchers.IO) {
-                    fetchWorkspaceMembers(token, workspaceId)
-                }
-                members = membersList
-            }
-        } catch (e: Exception) {
-            android.util.Log.e("WorkspaceMembers", "Failed to fetch: ${e.message}", e)
-        }
-        isLoading = false
+        viewModel.loadWorkspaceAndMembers(workspaceId)
     }
 
     if (isLoading) {
@@ -463,16 +428,9 @@ fun WorkspaceMembersScreen(
                         }
                         Button(
                             onClick = {
-                                coroutineScope.launch {
-                                    try {
-                                        withContext(Dispatchers.IO) {
-                                            ApiClient.apiService.deleteWorkspace(workspaceId)
-                                        }
-                                        showDeleteDialog = false
-                                        onBack()
-                                    } catch (e: Exception) {
-                                        Toast.makeText(context, "Failed to delete", Toast.LENGTH_SHORT).show()
-                                    }
+                                viewModel.deleteWorkspace(workspaceId) {
+                                    showDeleteDialog = false
+                                    onBack()
                                 }
                             },
                             modifier = Modifier.weight(1f),
@@ -488,53 +446,4 @@ fun WorkspaceMembersScreen(
     }
 }
 
-/**
- * Fetch workspace members from /api/workspaces/{id}/members endpoint.
- */
-private fun fetchWorkspaceMembers(token: String, workspaceId: String): List<WorkspaceMember> {
-    val client = OkHttpClient.Builder()
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
-        .build()
 
-    val request = Request.Builder()
-        .url("https://www.mafutapass.com/api/workspaces/$workspaceId/members")
-        .get()
-        .addHeader("Authorization", "Bearer $token")
-        .addHeader("Content-Type", "application/json")
-        .build()
-
-    return try {
-        val response = client.newCall(request).execute()
-        val body = response.body.string()
-
-        if (!response.isSuccessful) {
-            android.util.Log.e("WorkspaceMembers", "Members fetch failed: ${response.code}")
-            return emptyList()
-        }
-
-        val json = JSONObject(body)
-        val membersArray = json.optJSONArray("members") ?: return emptyList()
-        val result = mutableListOf<WorkspaceMember>()
-
-        for (i in 0 until membersArray.length()) {
-            val m = membersArray.getJSONObject(i)
-            result.add(
-                WorkspaceMember(
-                    id = m.optString("id", ""),
-                    userId = m.optString("user_id", ""),
-                    email = m.optString("email", ""),
-                    role = m.optString("role", "member"),
-                    displayName = m.optString("display_name", "").ifBlank { null },
-                    firstName = m.optString("first_name", "").ifBlank { null },
-                    lastName = m.optString("last_name", "").ifBlank { null },
-                    avatarEmoji = m.optString("avatar_emoji", "").ifBlank { null }
-                )
-            )
-        }
-        result
-    } catch (e: Exception) {
-        android.util.Log.e("WorkspaceMembers", "Error fetching members: ${e.message}")
-        emptyList()
-    }
-}

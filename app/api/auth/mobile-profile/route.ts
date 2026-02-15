@@ -101,15 +101,19 @@ export async function PATCH(request: NextRequest) {
 
     // Always ensure user_email is present (required NOT NULL column).
     // If the caller didn't send it, look it up from Clerk.
-    if (body.user_email) {
+    if (body.user_email && body.user_email.includes('@')) {
       updates.user_email = body.user_email;
     } else {
       try {
         const clerk = await clerkClient();
         const clerkUser = await clerk.users.getUser(mobileClient.userId);
-        updates.user_email = clerkUser.emailAddresses[0]?.emailAddress || '';
+        const resolvedEmail = clerkUser.emailAddresses[0]?.emailAddress;
+        if (resolvedEmail && resolvedEmail.includes('@')) {
+          updates.user_email = resolvedEmail;
+        }
+        // If no valid email found, omit user_email — don't set empty string
       } catch {
-        updates.user_email = '';
+        // Omit user_email rather than setting invalid value
       }
     }
 

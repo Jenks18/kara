@@ -62,9 +62,58 @@ data class Workspace(
             .ifEmpty { name.take(1).uppercase() }
 }
 
+// ============= Profile API Response Types =============
+
 /**
- * User profile data model.
- * Matches the backend API response structure.
+ * GET /api/auth/mobile-profile response.
+ * Contains both Clerk user data (camelCase) and Supabase profile (snake_case).
+ */
+data class MobileProfileResponse(
+    val success: Boolean = false,
+    val profile: UserProfile? = null,
+    val clerk: ClerkUserData? = null
+)
+
+/**
+ * Supabase user_profiles row (snake_case JSON from database).
+ */
+data class UserProfile(
+    @SerializedName("user_id") val userId: String = "",
+    @SerializedName("user_email") val userEmail: String = "",
+    @SerializedName("display_name") val displayName: String? = null,
+    @SerializedName("first_name") val firstName: String? = null,
+    @SerializedName("last_name") val lastName: String? = null,
+    @SerializedName("phone_number") val phoneNumber: String? = null,
+    @SerializedName("date_of_birth") val dateOfBirth: String? = null,
+    @SerializedName("legal_first_name") val legalFirstName: String? = null,
+    @SerializedName("legal_last_name") val legalLastName: String? = null,
+    @SerializedName("avatar_emoji") val avatarEmoji: String? = null,
+    @SerializedName("avatar_color") val avatarColor: String? = null,
+    @SerializedName("avatar_image_url") val avatarImageUrl: String? = null,
+    @SerializedName("address_line1") val addressLine1: String? = null,
+    @SerializedName("address_line2") val addressLine2: String? = null,
+    val city: String? = null,
+    val state: String? = null,
+    @SerializedName("zip_code") val zipCode: String? = null,
+    val country: String? = null
+)
+
+/**
+ * Clerk user data sub-object (camelCase JSON, matches Kotlin property names).
+ */
+data class ClerkUserData(
+    val id: String = "",
+    val email: String = "",
+    val firstName: String? = null,
+    val lastName: String? = null,
+    val username: String? = null,
+    val imageUrl: String? = null,
+    val fullName: String? = null
+)
+
+/**
+ * Domain model for user data consumed by ViewModels and UI.
+ * Merged from Clerk + Supabase profile in UserRepository.
  */
 data class User(
     val id: String = "",
@@ -74,35 +123,46 @@ data class User(
     val firstName: String? = null,
     val lastName: String? = null,
     val displayName: String? = null,
+    val legalFirstName: String? = null,
+    val legalLastName: String? = null,
     val phoneNumber: String? = null,
     val dateOfBirth: String? = null,
-    val address: String? = null,
+    val addressLine1: String? = null,
+    val addressLine2: String? = null,
     val city: String? = null,
+    val state: String? = null,
     val country: String? = null,
-    val postalCode: String? = null
+    val postalCode: String? = null,
+    val avatarEmoji: String? = null,
+    val avatarColor: String? = null
 )
 
 /**
- * Request body for updating user profile.
- * Only include fields that are being updated.
+ * Request body for PATCH /api/auth/mobile-profile.
+ * Backend expects snake_case field names.
  */
 data class UpdateProfileRequest(
-    val firstName: String? = null,
-    val lastName: String? = null,
-    val displayName: String? = null,
-    val phoneNumber: String? = null,
-    val dateOfBirth: String? = null,
-    val address: String? = null,
+    @SerializedName("first_name") val firstName: String? = null,
+    @SerializedName("last_name") val lastName: String? = null,
+    @SerializedName("display_name") val displayName: String? = null,
+    @SerializedName("legal_first_name") val legalFirstName: String? = null,
+    @SerializedName("legal_last_name") val legalLastName: String? = null,
+    @SerializedName("phone_number") val phoneNumber: String? = null,
+    @SerializedName("date_of_birth") val dateOfBirth: String? = null,
+    @SerializedName("address_line1") val addressLine1: String? = null,
+    @SerializedName("address_line2") val addressLine2: String? = null,
     val city: String? = null,
+    val state: String? = null,
     val country: String? = null,
-    val postalCode: String? = null
+    @SerializedName("zip_code") val postalCode: String? = null,
+    @SerializedName("avatar_emoji") val avatarEmoji: String? = null
 )
 
 /**
- * Response from profile update API.
+ * PATCH /api/auth/mobile-profile response.
+ * Returns the updated Supabase profile row.
  */
 data class UpdateProfileResponse(
-    val success: Boolean,
-    val message: String? = null,
-    val user: User? = null
+    val success: Boolean = false,
+    val profile: UserProfile? = null
 )

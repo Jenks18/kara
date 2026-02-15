@@ -13,44 +13,46 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.mafutapass.app.auth.TokenRepository
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.mafutapass.app.data.network.NetworkResult
 import com.mafutapass.app.ui.theme.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONObject
-import java.util.concurrent.TimeUnit
+import com.mafutapass.app.viewmodel.ProfileViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditLegalNameScreen(onBack: () -> Unit) {
+fun EditLegalNameScreen(
+    onBack: () -> Unit,
+    viewModel: ProfileViewModel = hiltViewModel()
+) {
     val context = LocalContext.current
-    val prefs = context.getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
+    val profileState by viewModel.profileState.collectAsState()
+    val updateState by viewModel.updateState.collectAsState()
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
-    var isLoading by remember { mutableStateOf(true) }
-    var isSaving by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
+    var initialized by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        val token = TokenRepository.getInstance(context).getValidTokenAsync()
-        if (token != null) {
-            try {
-                val r = withContext(Dispatchers.IO) { fetchProfileData(token) }
-                if (r != null) {
-                    fun JSONObject.s(k: String): String { val v = optString(k, ""); return if (v == "null" || v.isBlank()) "" else v }
-                    val profile = r.optJSONObject("profile")
-                    val clerk = r.optJSONObject("clerk")
-                    firstName = profile?.s("legal_first_name")?.ifEmpty { null } ?: clerk?.s("firstName") ?: ""
-                    lastName = profile?.s("legal_last_name")?.ifEmpty { null } ?: clerk?.s("lastName") ?: ""
-                }
-            } catch (_: Exception) {}
-            isLoading = false
-        } else isLoading = false
+    // Pre-populate from profile when loaded
+    LaunchedEffect(profileState) {
+        if (!initialized && profileState is NetworkResult.Success) {
+            val user = (profileState as NetworkResult.Success).data
+            firstName = user.legalFirstName ?: user.firstName ?: ""
+            lastName = user.legalLastName ?: user.lastName ?: ""
+            initialized = true
+        }
+    }
+
+    val isLoading = profileState is NetworkResult.Loading
+    val isSaving = updateState is ProfileViewModel.UpdateState.Loading
+
+    // Handle update result
+    LaunchedEffect(updateState) {
+        when (updateState) {
+            is ProfileViewModel.UpdateState.Error -> {
+                Toast.makeText(context, (updateState as ProfileViewModel.UpdateState.Error).message, Toast.LENGTH_SHORT).show()
+                viewModel.resetUpdateState()
+            }
+            else -> {}
+        }
     }
 
     Column(modifier = Modifier.fillMaxSize().background(AppTheme.colors.backgroundGradient)) {
@@ -77,22 +79,7 @@ fun EditLegalNameScreen(onBack: () -> Unit) {
                     }
                 }
                 Button(onClick = {
-                    isSaving = true
-                    scope.launch {
-                        try {
-                            val token = TokenRepository.getInstance(context).getValidTokenAsync()
-                            if (token == null) { Toast.makeText(context, "Session expired. Please sign in again.", Toast.LENGTH_SHORT).show(); isSaving = false; return@launch }
-                            val ok = withContext(Dispatchers.IO) {
-                                val json = JSONObject().apply { put("legal_first_name", firstName.trim()); put("legal_last_name", lastName.trim()) }
-                                val body = json.toString().toRequestBody("application/json".toMediaType())
-                                val req = Request.Builder().url("https://www.mafutapass.com/api/auth/mobile-profile").patch(body).addHeader("Authorization", "Bearer $token").build()
-                                OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS).readTimeout(15, TimeUnit.SECONDS).build().newCall(req).execute().isSuccessful
-                            }
-                            if (ok) { prefs.edit().putString("cached_legal_name", "${firstName.trim()} ${lastName.trim()}".trim()).apply(); onBack() }
-                            else Toast.makeText(context, "Save failed. Please try again.", Toast.LENGTH_SHORT).show()
-                        } catch (e: Exception) { Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show() }
-                        isSaving = false
-                    }
+                    viewModel.updateLegalName(firstName.trim(), lastName.trim()) { onBack() }
                 }, enabled = !isSaving, modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp).height(56.dp),
                     shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, disabledContainerColor = MaterialTheme.colorScheme.outline)) {
                     if (isSaving) CircularProgressIndicator(Modifier.size(20.dp), MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)

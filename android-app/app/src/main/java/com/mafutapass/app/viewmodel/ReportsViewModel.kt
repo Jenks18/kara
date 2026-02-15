@@ -4,14 +4,19 @@ package com.mafutapass.app.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.mafutapass.app.data.ApiClient
+import com.mafutapass.app.data.ApiService
 import com.mafutapass.app.data.ExpenseItem
 import com.mafutapass.app.data.ExpenseReport
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class ReportsViewModel : ViewModel() {
+@HiltViewModel
+class ReportsViewModel @Inject constructor(
+    private val apiService: ApiService
+) : ViewModel() {
     private val TAG = "ReportsViewModel"
 
     private val _expenseItems = MutableStateFlow<List<ExpenseItem>>(emptyList())
@@ -47,7 +52,7 @@ class ReportsViewModel : ViewModel() {
             try {
                 // Fetch expense reports from API
                 val reports = try {
-                    ApiClient.apiService.getExpenseReports()
+                    apiService.getExpenseReports()
                 } catch (e: Exception) {
                     Log.e(TAG, "⚠️ Failed to fetch reports: ${e.message}")
                     emptyList()
@@ -57,7 +62,7 @@ class ReportsViewModel : ViewModel() {
                 
                 // Fetch receipts/expense items from API
                 val items = try {
-                    ApiClient.apiService.getReceipts()
+                    apiService.getReceipts()
                 } catch (e: Exception) {
                     Log.e(TAG, "⚠️ Failed to fetch receipts: ${e.message}")
                     emptyList()

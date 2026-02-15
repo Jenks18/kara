@@ -3,7 +3,9 @@ package com.mafutapass.app.ui.screens
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
@@ -13,28 +15,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.mafutapass.app.auth.TokenRepository
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.mafutapass.app.data.network.NetworkResult
 import com.mafutapass.app.ui.theme.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONObject
-import java.util.concurrent.TimeUnit
-
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import com.mafutapass.app.viewmodel.ProfileViewModel
 
 private val COUNTRIES = listOf("Kenya", "United States", "United Kingdom", "Canada", "Tanzania", "Uganda")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditAddressScreen(onBack: () -> Unit) {
+fun EditAddressScreen(
+    onBack: () -> Unit,
+    viewModel: ProfileViewModel = hiltViewModel()
+) {
     val context = LocalContext.current
-    val prefs = context.getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
+    val profileState by viewModel.profileState.collectAsState()
+    val updateState by viewModel.updateState.collectAsState()
     var addressLine1 by remember { mutableStateOf("") }
     var addressLine2 by remember { mutableStateOf("") }
     var country by remember { mutableStateOf("Kenya") }
@@ -42,24 +38,32 @@ fun EditAddressScreen(onBack: () -> Unit) {
     var city by remember { mutableStateOf("") }
     var zipCode by remember { mutableStateOf("") }
     var countryExpanded by remember { mutableStateOf(false) }
-    var isLoading by remember { mutableStateOf(true) }
-    var isSaving by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
+    var initialized by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        val token = TokenRepository.getInstance(context).getValidTokenAsync()
-        if (token != null) {
-            try {
-                val r = withContext(Dispatchers.IO) { fetchProfileData(token) }
-                r?.optJSONObject("profile")?.let { p ->
-                    fun JSONObject.s(k: String): String { val v = optString(k, ""); return if (v == "null" || v.isBlank()) "" else v }
-                    addressLine1 = p.s("address_line1"); addressLine2 = p.s("address_line2")
-                    city = p.s("city"); state = p.s("state"); zipCode = p.s("zip_code")
-                    val c = p.s("country"); country = c.ifEmpty { "Kenya" }
-                }
-            } catch (_: Exception) {}
-            isLoading = false
-        } else isLoading = false
+    LaunchedEffect(profileState) {
+        if (!initialized && profileState is NetworkResult.Success) {
+            val user = (profileState as NetworkResult.Success).data
+            addressLine1 = user.addressLine1 ?: ""
+            addressLine2 = user.addressLine2 ?: ""
+            city = user.city ?: ""
+            state = user.state ?: ""
+            zipCode = user.postalCode ?: ""
+            country = user.country?.ifEmpty { "Kenya" } ?: "Kenya"
+            initialized = true
+        }
+    }
+
+    val isLoading = profileState is NetworkResult.Loading
+    val isSaving = updateState is ProfileViewModel.UpdateState.Loading
+
+    LaunchedEffect(updateState) {
+        when (updateState) {
+            is ProfileViewModel.UpdateState.Error -> {
+                Toast.makeText(context, (updateState as ProfileViewModel.UpdateState.Error).message, Toast.LENGTH_SHORT).show()
+                viewModel.resetUpdateState()
+            }
+            else -> {}
+        }
     }
 
     Column(modifier = Modifier.fillMaxSize().background(AppTheme.colors.backgroundGradient)) {
@@ -103,24 +107,14 @@ fun EditAddressScreen(onBack: () -> Unit) {
                     Spacer(Modifier.height(8.dp))
                 }
                 Button(onClick = {
-                    isSaving = true
-                    scope.launch {
-                        try {
-                            val token = TokenRepository.getInstance(context).getValidTokenAsync()
-                            if (token == null) { Toast.makeText(context, "Session expired. Please sign in again.", Toast.LENGTH_SHORT).show(); isSaving = false; return@launch }
-                            val ok = withContext(Dispatchers.IO) {
-                                val json = JSONObject().apply { put("address_line1", addressLine1.trim()); put("address_line2", addressLine2.trim()); put("city", city.trim()); put("state", state.trim()); put("zip_code", zipCode.trim()); put("country", country.trim()) }
-                                val body = json.toString().toRequestBody("application/json".toMediaType())
-                                val req = Request.Builder().url("https://www.mafutapass.com/api/auth/mobile-profile").patch(body).addHeader("Authorization", "Bearer $token").build()
-                                OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS).readTimeout(15, TimeUnit.SECONDS).build().newCall(req).execute().isSuccessful
-                            }
-                            if (ok) {
-                                val addr = listOfNotNull(addressLine1.trim().ifEmpty { null }, city.trim().ifEmpty { null }, state.trim().ifEmpty { null }, zipCode.trim().ifEmpty { null }).joinToString(", ")
-                                prefs.edit().putString("cached_address", addr).apply(); onBack()
-                            } else Toast.makeText(context, "Save failed. Please try again.", Toast.LENGTH_SHORT).show()
-                        } catch (e: Exception) { Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show() }
-                        isSaving = false
-                    }
+                    viewModel.updateAddress(
+                        addressLine1 = addressLine1.trim(),
+                        addressLine2 = addressLine2.trim().ifEmpty { null },
+                        city = city.trim().ifEmpty { null },
+                        state = state.trim().ifEmpty { null },
+                        country = country.trim(),
+                        postalCode = zipCode.trim().ifEmpty { null }
+                    ) { onBack() }
                 }, enabled = !isSaving, modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp).height(56.dp),
                     shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, disabledContainerColor = MaterialTheme.colorScheme.outline)) {
                     if (isSaving) CircularProgressIndicator(Modifier.size(20.dp), MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)

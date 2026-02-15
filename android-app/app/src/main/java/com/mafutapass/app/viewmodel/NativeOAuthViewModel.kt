@@ -1,7 +1,5 @@
 package com.mafutapass.app.viewmodel
 
-import android.app.Activity
-import android.app.Application
 import android.content.Context
 import android.util.Log
 import androidx.credentials.CredentialManager
@@ -9,10 +7,12 @@ import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialException
 import androidx.credentials.exceptions.NoCredentialException
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit
 import okhttp3.Dns
 import java.net.InetAddress
 import java.net.UnknownHostException
+import javax.inject.Inject
 
 /**
  * NATIVE Google OAuth ViewModel
@@ -42,21 +43,22 @@ import java.net.UnknownHostException
  * 4. Backend returns Clerk session JWT
  * 5. Store JWT and mark as authenticated
  */
-class NativeOAuthViewModel(application: Application) : AndroidViewModel(application) {
+@HiltViewModel
+class NativeOAuthViewModel @Inject constructor(
+    @ApplicationContext private val appContext: Context
+) : ViewModel() {
     
     companion object {
         private const val TAG = "NativeOAuthViewModel"
-        // Use production domain (always points to latest deployment)
         private const val API_URL = "https://www.mafutapass.com/api/auth/google-native"
         private const val COMPLETE_SIGNUP_URL = "https://www.mafutapass.com/api/auth/complete-google-signup"
-        private const val MOBILE_AUTH_URL = "https://www.mafutapass.com/api/mobile/auth"
         private const val GOOGLE_CLIENT_ID = "509785450495-ltsejjolpsl130pvs179lnqtms0g2uj8.apps.googleusercontent.com"
     }
 
     private val _oauthState = MutableStateFlow<NativeOAuthState>(NativeOAuthState.Idle)
     val oauthState: StateFlow<NativeOAuthState> = _oauthState.asStateFlow()
 
-    private val credentialManager = CredentialManager.create(application)
+    private val credentialManager = CredentialManager.create(appContext)
     
     // Custom DNS resolver with better error messages and IPv4 preference
     private val customDns = object : Dns {
@@ -238,22 +240,11 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
             val lastName = userObj.optString("lastName", null)
 
             Log.d(TAG, "✅ Authentication successful!")
-            Log.d(TAG, "Is new user: $isNewUser")
-
-            // Exchange Clerk token for Supabase token
-            val supabaseToken = exchangeForSupabaseToken(token, userId, email)
-            
-            if (supabaseToken == null) {
-                Log.w(TAG, "⚠️ Failed to get Supabase token, continuing with Clerk token only")
-            } else {
-                Log.d(TAG, "✅ Got Supabase token")
-            }
 
             _oauthState.value = NativeOAuthState.Success(
                 token = token,
                 userId = userId,
                 email = email,
-                supabaseToken = supabaseToken,
                 isNewUser = isNewUser,
                 firstName = firstName,
                 lastName = lastName
@@ -265,58 +256,6 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
-    /**
-     * Exchange Clerk sign-in token for Supabase JWT
-     */
-    private suspend fun exchangeForSupabaseToken(
-        clerkToken: String,
-        userId: String,
-        email: String
-    ): String? {
-        return withContext(Dispatchers.IO) {
-            try {
-                Log.d(TAG, "🔄 Exchanging for Supabase token...")
-                
-                val json = JSONObject().apply {
-                    put("userId", userId)
-                    put("email", email)
-                }
-                
-                val requestBody = json.toString()
-                    .toRequestBody("application/json; charset=utf-8".toMediaType())
-                
-                val request = Request.Builder()
-                    .url(MOBILE_AUTH_URL)
-                    .addHeader("Authorization", "Bearer $clerkToken")
-                    .post(requestBody)
-                    .build()
-                
-                val response = httpClient.newCall(request).execute()
-                val responseBody = response.body.string()
-                
-                Log.d(TAG, "📥 Supabase auth response: ${response.code}")
-                
-                if (!response.isSuccessful) {
-                    Log.e(TAG, "❌ Supabase auth failed: $responseBody")
-                    return@withContext null
-                }
-                
-                val jsonResponse = JSONObject(responseBody)
-                if (!jsonResponse.getBoolean("success")) {
-                    Log.e(TAG, "❌ Supabase auth unsuccessful")
-                    return@withContext null
-                }
-                
-                val token = jsonResponse.getString("supabase_token")
-                Log.d(TAG, "✅ Got Supabase token")
-                token
-            } catch (e: Exception) {
-                Log.e(TAG, "❌ Supabase token exchange error: ${e.message}", e)
-                null
-            }
-        }
-    }
-    
     /**
      * Complete Google sign-up by submitting chosen username.
      * Called after user selects their username on the username setup screen.
@@ -349,13 +288,11 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
                 Log.d(TAG, "📥 Complete signup response: ${response.code}")
                 
                 if (!response.isSuccessful) {
-                    // Try to parse error as JSON, but handle HTML responses
                     val error = try {
                         val errorJson = JSONObject(responseBody)
                         errorJson.optString("error", "Failed to complete signup")
                     } catch (e: Exception) {
-                        Log.e(TAG, "❌ Non-JSON error response")
-                        "Server error (${response.code}): ${if (responseBody.contains("<!DOCTYPE")) "HTML error page" else "Unknown error"}"
+                        "Server error (${response.code})"
                     }
                     Log.e(TAG, "❌ Complete signup failed: $error")
                     _oauthState.value = NativeOAuthState.Error(error)
@@ -365,15 +302,12 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
                 val jsonResponse = try {
                     JSONObject(responseBody)
                 } catch (e: Exception) {
-                    Log.e(TAG, "❌ Invalid JSON response")
                     _oauthState.value = NativeOAuthState.Error("Invalid server response")
                     return@launch
                 }
                 
-                // Use optBoolean to avoid JSONException if field is missing
                 if (!jsonResponse.optBoolean("success", false)) {
                     val error = jsonResponse.optString("error", "Unknown error")
-                    Log.e(TAG, "❌ Signup unsuccessful: $error")
                     _oauthState.value = NativeOAuthState.Error(error)
                     return@launch
                 }
@@ -387,14 +321,10 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
                 
                 Log.d(TAG, "✅ Signup completed successfully!")
                 
-                // Exchange for Supabase token
-                val supabaseToken = exchangeForSupabaseToken(token, userId, email)
-                
                 _oauthState.value = NativeOAuthState.Success(
                     token = token,
                     userId = userId,
                     email = email,
-                    supabaseToken = supabaseToken,
                     isNewUser = true,
                     firstName = firstName,
                     lastName = lastName
@@ -407,16 +337,14 @@ class NativeOAuthViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
-    /**
-     * Reset the OAuth state to idle
-     */
     fun resetState() {
         _oauthState.value = NativeOAuthState.Idle
     }
 }
 
 /**
- * Represents the state of the native OAuth authentication flow
+ * Represents the state of the native OAuth authentication flow.
+ * No Supabase token — backend handles all database access.
  */
 sealed class NativeOAuthState {
     object Idle : NativeOAuthState()
@@ -431,7 +359,6 @@ sealed class NativeOAuthState {
         val token: String, 
         val userId: String, 
         val email: String,
-        val supabaseToken: String? = null,
         val isNewUser: Boolean = false,
         val firstName: String? = null,
         val lastName: String? = null

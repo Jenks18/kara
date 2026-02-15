@@ -12,7 +12,7 @@
  * - Signed with CLERK_SECRET_KEY (HS256) — available only on the server
  * - Contains standard JWT claims (sub, email, exp, iss, aud)
  * - Verified by mobile-auth.ts (verifyMobileSessionJwt) before granting access
- * - Short-lived (1 hour), refreshable via /api/auth/mobile-refresh
+ * - Short-lived (15 minutes), refreshable via /api/auth/mobile-refresh
  *
  * SCALE:
  * HS256 verification is CPU-local (no network calls), making this suitable
@@ -45,7 +45,7 @@ export function mintMobileSessionJwt(userId: string, email: string): string {
       role: 'authenticated',
       sid: `mob_${now}_${Math.random().toString(36).slice(2, 8)}`, // Session-like ID
       iat: now,
-      exp: now + 3600,         // 1 hour
+      exp: now + 900,          // 15 minutes — deleted users locked out within this window
     },
     mobileJwtSecret,
     { algorithm: 'HS256' }

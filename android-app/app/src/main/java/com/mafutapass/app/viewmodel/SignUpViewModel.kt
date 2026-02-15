@@ -1,9 +1,11 @@
 package com.mafutapass.app.viewmodel
 
-import android.app.Application
+import android.content.Context
 import android.util.Log
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,8 +18,13 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import com.mafutapass.app.auth.TokenRepository
 import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 
-class SignUpViewModel(application: Application) : AndroidViewModel(application) {
+@HiltViewModel
+class SignUpViewModel @Inject constructor(
+    private val tokenRepository: TokenRepository,
+    @ApplicationContext private val appContext: Context
+) : ViewModel() {
     private val _uiState = MutableStateFlow<SignUpUiState>(SignUpUiState.SignedOut)
     val uiState = _uiState.asStateFlow()
 
@@ -68,17 +75,7 @@ class SignUpViewModel(application: Application) : AndroidViewModel(application) 
                 createSupabaseProfile(jwt, email, cleanUsername, firstName, lastName)
 
                 // Step 3: Store session in TokenRepository (primary) - this triggers auth state change
-                TokenRepository.getInstance(getApplication()).storeToken(jwt, userId, email)
-
-                // Also store in legacy prefs for backward compatibility
-                val prefs = getApplication<Application>()
-                    .getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
-                prefs.edit().apply {
-                    putString("session_token", jwt)
-                    putString("user_id", userId)
-                    putString("user_email", email)
-                    putBoolean("is_new_user", false)
-                }.apply()
+                tokenRepository.storeToken(jwt, userId, email)
 
                 Log.d("SignUpViewModel", "🎉 Sign-up complete!")
                 _uiState.value = SignUpUiState.Success

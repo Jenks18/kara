@@ -13,46 +13,50 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.mafutapass.app.auth.TokenRepository
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.mafutapass.app.data.network.NetworkResult
 import com.mafutapass.app.ui.theme.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONObject
-import java.util.concurrent.TimeUnit
+import com.mafutapass.app.viewmodel.ProfileViewModel
 
 private val MONTHS = listOf("January","February","March","April","May","June","July","August","September","October","November","December")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditDateOfBirthScreen(onBack: () -> Unit) {
+fun EditDateOfBirthScreen(
+    onBack: () -> Unit,
+    viewModel: ProfileViewModel = hiltViewModel()
+) {
     val context = LocalContext.current
-    val prefs = context.getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
+    val profileState by viewModel.profileState.collectAsState()
+    val updateState by viewModel.updateState.collectAsState()
     var day by remember { mutableStateOf("") }
     var monthIndex by remember { mutableStateOf(-1) }
     var year by remember { mutableStateOf("") }
-    var isLoading by remember { mutableStateOf(true) }
-    var isSaving by remember { mutableStateOf(false) }
     var monthExpanded by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
+    var initialized by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        val token = TokenRepository.getInstance(context).getValidTokenAsync()
-        if (token != null) {
-            try {
-                val r = withContext(Dispatchers.IO) { fetchProfileData(token) }
-                r?.optJSONObject("profile")?.let { p ->
-                    fun JSONObject.s(k: String): String { val v = optString(k, ""); return if (v == "null" || v.isBlank()) "" else v }
-                    val dob = p.s("date_of_birth")
-                    if (dob.isNotEmpty()) { val parts = dob.split("-"); if (parts.size == 3) { year = parts[0]; monthIndex = (parts[1].toIntOrNull() ?: 1) - 1; day = parts[2].trimStart('0').ifEmpty { parts[2] } } }
-                }
-            } catch (_: Exception) {}
-            isLoading = false
-        } else isLoading = false
+    LaunchedEffect(profileState) {
+        if (!initialized && profileState is NetworkResult.Success) {
+            val dob = (profileState as NetworkResult.Success).data.dateOfBirth ?: ""
+            if (dob.isNotEmpty()) {
+                val parts = dob.split("-")
+                if (parts.size == 3) { year = parts[0]; monthIndex = (parts[1].toIntOrNull() ?: 1) - 1; day = parts[2].trimStart('0').ifEmpty { parts[2] } }
+            }
+            initialized = true
+        }
+    }
+
+    val isLoading = profileState is NetworkResult.Loading
+    val isSaving = updateState is ProfileViewModel.UpdateState.Loading
+
+    LaunchedEffect(updateState) {
+        when (updateState) {
+            is ProfileViewModel.UpdateState.Error -> {
+                Toast.makeText(context, (updateState as ProfileViewModel.UpdateState.Error).message, Toast.LENGTH_SHORT).show()
+                viewModel.resetUpdateState()
+            }
+            else -> {}
+        }
     }
 
     Column(modifier = Modifier.fillMaxSize().background(AppTheme.colors.backgroundGradient)) {
@@ -92,23 +96,8 @@ fun EditDateOfBirthScreen(onBack: () -> Unit) {
                     }
                 }
                 Button(onClick = {
-                    isSaving = true
-                    scope.launch {
-                        try {
-                            val token = TokenRepository.getInstance(context).getValidTokenAsync()
-                            if (token == null) { Toast.makeText(context, "Session expired. Please sign in again.", Toast.LENGTH_SHORT).show(); isSaving = false; return@launch }
-                            val d = day.padStart(2, '0'); val m = (monthIndex + 1).toString().padStart(2, '0'); val isoDate = "$year-$m-$d"
-                            val ok = withContext(Dispatchers.IO) {
-                                val json = JSONObject().apply { put("date_of_birth", isoDate) }
-                                val body = json.toString().toRequestBody("application/json".toMediaType())
-                                val req = Request.Builder().url("https://www.mafutapass.com/api/auth/mobile-profile").patch(body).addHeader("Authorization", "Bearer $token").build()
-                                OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS).readTimeout(15, TimeUnit.SECONDS).build().newCall(req).execute().isSuccessful
-                            }
-                            if (ok) { prefs.edit().putString("cached_dob", "$year-$m-$d").apply(); onBack() }
-                            else Toast.makeText(context, "Save failed. Please try again.", Toast.LENGTH_SHORT).show()
-                        } catch (e: Exception) { Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show() }
-                        isSaving = false
-                    }
+                    val d = day.padStart(2, '0'); val m = (monthIndex + 1).toString().padStart(2, '0')
+                    viewModel.updateDateOfBirth("$year-$m-$d") { onBack() }
                 }, enabled = !isSaving && day.isNotEmpty() && monthIndex >= 0 && year.length == 4, modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp).height(56.dp),
                     shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, disabledContainerColor = MaterialTheme.colorScheme.outline)) {
                     if (isSaving) CircularProgressIndicator(Modifier.size(20.dp), MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)

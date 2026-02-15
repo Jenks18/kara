@@ -27,7 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.mafutapass.app.data.ExpenseItem
@@ -37,7 +37,7 @@ import com.mafutapass.app.util.DateUtils
 import com.mafutapass.app.viewmodel.ReportsViewModel
 
 @Composable
-fun ReportsScreen(viewModel: ReportsViewModel = viewModel()) {
+fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
     var selectedTab by remember { mutableStateOf(0) }
     val tabs = listOf("Expenses", "Reports")
 

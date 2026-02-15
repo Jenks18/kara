@@ -6,7 +6,9 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import okhttp3.Authenticator
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okhttp3.Route
 import javax.inject.Inject
@@ -87,23 +89,44 @@ class AuthAuthenticator @Inject constructor(
     }
     
     /**
-     * Refresh the token by calling the refresh endpoint.
+     * Refresh the token by calling the backend refresh endpoint.
      * Returns the new token or null if refresh failed.
      */
     private suspend fun refreshToken(): String? {
         return try {
-            // TokenRepository.getValidTokenAsync already handles refresh
-            // But for 401, we need to force a refresh
-            val currentToken = tokenRepository.getValidTokenAsync() ?: return null
-            
-            // The token we got should be valid, but since we got a 401,
-            // let's try to get a fresh one by clearing and re-fetching
-            // Actually, TokenRepository handles this - if we have a token
-            // but got 401, the server rejected it for some reason
-            
-            // For now, return the current token and let the retry happen
-            // If it fails again, we'll hit max retries and clear tokens
-            currentToken
+            val oldToken = tokenRepository.getValidTokenAsync() ?: return null
+
+            // Call the refresh endpoint with the current (rejected) token
+            val client = okhttp3.OkHttpClient.Builder()
+                .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+                .readTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+                .build()
+
+            val request = okhttp3.Request.Builder()
+                .url("https://www.mafutapass.com/api/auth/mobile-refresh")
+                .post("{}".toRequestBody("application/json".toMediaType()))
+                .addHeader("Authorization", "Bearer $oldToken")
+                .build()
+
+            val response = client.newCall(request).execute()
+            val body = response.body.string()
+
+            if (response.isSuccessful) {
+                val json = org.json.JSONObject(body)
+                val newToken = json.optString("token", "")
+                val userId = json.optString("userId", "")
+                if (newToken.isNotEmpty() && userId.isNotEmpty()) {
+                    tokenRepository.storeToken(newToken, userId, "")
+                    Log.d(TAG, "✅ Token refreshed via /api/auth/mobile-refresh")
+                    newToken
+                } else {
+                    Log.e(TAG, "Refresh response missing token or userId")
+                    null
+                }
+            } else {
+                Log.e(TAG, "Refresh endpoint returned ${response.code}")
+                null
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Token refresh error: ${e.message}")
             null

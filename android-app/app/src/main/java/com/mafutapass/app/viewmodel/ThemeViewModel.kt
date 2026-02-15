@@ -1,11 +1,13 @@
 package com.mafutapass.app.viewmodel
 
-import android.app.Application
 import android.content.Context
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
+import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import javax.inject.Inject
 
 /**
  * Manages the app's theme preference (Light / Dark / System).
@@ -14,11 +16,14 @@ import kotlinx.coroutines.flow.asStateFlow
  * "app_preferences" → "theme".  The three valid values mirror the
  * strings used in PreferencesScreen's picker: "Light", "Dark", "System".
  */
-class ThemeViewModel(application: Application) : AndroidViewModel(application) {
+@HiltViewModel
+class ThemeViewModel @Inject constructor(
+    @ApplicationContext context: Context
+) : ViewModel() {
 
     enum class ThemeMode { Light, Dark, System }
 
-    private val prefs = application.getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
+    private val prefs = context.getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
 
     private val _themeMode = MutableStateFlow(loadThemeMode())
     val themeMode: StateFlow<ThemeMode> = _themeMode.asStateFlow()

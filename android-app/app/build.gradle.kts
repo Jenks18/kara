@@ -9,14 +9,14 @@ plugins {
 
 android {
     namespace = "com.mafutapass.app"
-    compileSdk = 36
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.mafutapass.app"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
 
         vectorDrawables {
             useSupportLibrary = true
@@ -111,18 +111,6 @@ dependencies {
     // Clerk Authentication
     implementation("com.clerk:clerk-android-api:1.0.1")
     implementation("com.clerk:clerk-android-ui:1.0.1")
-
-    // Supabase (for stable OAuth) - using BOM for version management
-    implementation(platform("io.github.jan-tennert.supabase:bom:2.0.0"))
-    implementation("io.github.jan-tennert.supabase:postgrest-kt")
-    implementation("io.github.jan-tennert.supabase:gotrue-kt")
-    
-    // Ktor dependencies for Supabase
-    implementation("io.ktor:ktor-client-android:2.3.7")
-    implementation("io.ktor:ktor-client-core:2.3.7")
-    implementation("io.ktor:ktor-client-content-negotiation:2.3.7")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.7")
-    implementation("io.ktor:ktor-utils:2.3.7")
 
     // Google Sign-In (Credentials API)
     implementation("androidx.credentials:credentials:1.2.2")

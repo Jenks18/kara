@@ -18,14 +18,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.mafutapass.app.auth.TokenRepository
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.mafutapass.app.data.network.NetworkResult
 import com.mafutapass.app.ui.theme.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import org.json.JSONObject
-import java.util.concurrent.TimeUnit
+import com.mafutapass.app.viewmodel.ProfileViewModel
 
 @Composable
 fun AccountScreen(
@@ -34,49 +30,22 @@ fun AccountScreen(
     onNavigateToPreferences: () -> Unit = {},
     onNavigateToSecurity: () -> Unit = {},
     onNavigateToAbout: () -> Unit = {},
-    onSignOut: () -> Unit = {}
+    onSignOut: () -> Unit = {},
+    viewModel: ProfileViewModel = hiltViewModel()
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val prefs = context.getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
-    val userEmail = prefs.getString("user_email", null) ?: "User"
+    val profileState by viewModel.profileState.collectAsState()
 
-    // Instant display from cache — no flash
-    var displayName by remember { mutableStateOf(prefs.getString("cached_display_name", null) ?: userEmail.substringBefore("@")) }
-    var displayEmail by remember { mutableStateOf(userEmail) }
-    var avatarEmoji by remember { mutableStateOf(prefs.getString("avatar_emoji", null) ?: "\uD83D\uDC3B") }
+    val user = (profileState as? NetworkResult.Success)?.data
+    val displayName = user?.displayName?.ifEmpty { null }
+        ?: user?.firstName?.ifEmpty { null }
+        ?: user?.email?.substringBefore("@")
+        ?: "User"
+    val displayEmail = user?.email ?: ""
+    val avatarEmoji = user?.avatarEmoji?.ifEmpty { null } ?: "\uD83D\uDC3B"
 
-    // Fetch from API in background — keyed on refreshTrigger from parent
+    // Re-fetch when navigating back from edit screens
     LaunchedEffect(refreshTrigger) {
-        // Always read latest cache first (instant)
-        prefs.getString("cached_display_name", null)?.let { displayName = it }
-        prefs.getString("avatar_emoji", null)?.let { avatarEmoji = it }
-
-        val validToken = TokenRepository.getInstance(context).getValidTokenAsync()
-        if (validToken != null) {
-            try {
-                val result = withContext(Dispatchers.IO) { fetchAccountProfile(validToken) }
-                if (result != null) {
-                    fun JSONObject.s(key: String): String {
-                        val v = optString(key, "")
-                        return if (v == "null" || v.isBlank()) "" else v
-                    }
-                    val name = result.optJSONObject("profile")?.s("display_name")?.ifEmpty { null }
-                        ?: result.optJSONObject("clerk")?.s("fullName")?.ifEmpty { null }
-                        ?: result.optJSONObject("clerk")?.s("firstName")?.ifEmpty { null }
-                        ?: userEmail.substringBefore("@")
-                    displayName = name
-                    displayEmail = result.optJSONObject("clerk")?.s("email")?.ifEmpty { null } ?: userEmail
-                    val emoji = result.optJSONObject("profile")?.s("avatar_emoji")?.ifEmpty { null }
-                    if (emoji != null) avatarEmoji = emoji
-                    prefs.edit()
-                        .putString("cached_display_name", name)
-                        .putString("avatar_emoji", emoji ?: avatarEmoji)
-                        .apply()
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("AccountScreen", "Fetch error: ${e.message}")
-            }
-        }
+        if (refreshTrigger > 0) viewModel.loadProfile()
     }
 
     Column(
@@ -189,15 +158,4 @@ private fun MenuRow(icon: ImageVector, label: String, onClick: () -> Unit) {
             Text(label, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
         }
     }
-}
-
-private fun fetchAccountProfile(token: String): JSONObject? {
-    val client = OkHttpClient.Builder().connectTimeout(10, TimeUnit.SECONDS).readTimeout(10, TimeUnit.SECONDS).build()
-    val request = Request.Builder()
-        .url("https://www.mafutapass.com/api/auth/mobile-profile")
-        .get().addHeader("Authorization", "Bearer $token").build()
-    val response = client.newCall(request).execute()
-    val body = response.body.string()
-    if (!response.isSuccessful) return null
-    return JSONObject(body)
 }

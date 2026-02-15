@@ -23,18 +23,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import com.mafutapass.app.auth.TokenRepository
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.mafutapass.app.data.network.NetworkResult
 import com.mafutapass.app.ui.theme.*
 import com.mafutapass.app.util.DateUtils
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONObject
-import java.util.concurrent.TimeUnit
+import com.mafutapass.app.viewmodel.ProfileViewModel
 
 data class AvatarOption(val emoji: String, val gradient: List<Color>, val label: String)
 
@@ -78,71 +71,42 @@ fun ProfileScreen(
     onNavigateToEditLegalName: () -> Unit = {},
     onNavigateToEditPhoneNumber: () -> Unit = {},
     onNavigateToEditDateOfBirth: () -> Unit = {},
-    onNavigateToEditAddress: () -> Unit = {}
+    onNavigateToEditAddress: () -> Unit = {},
+    viewModel: ProfileViewModel = hiltViewModel()
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val prefs = context.getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
-
     var showAvatarPicker by remember { mutableStateOf(false) }
     var selectedAvatar by remember { mutableStateOf(AVATAR_OPTIONS[0]) }
-    val coroutineScope = rememberCoroutineScope()
 
-    // Instant display from cached SharedPreferences — no loading spinner
-    var displayName by remember { mutableStateOf(prefs.getString("cached_display_name", null) ?: "") }
-    var userEmail by remember { mutableStateOf(prefs.getString("user_email", null) ?: "") }
-    var phoneNumber by remember { mutableStateOf(prefs.getString("cached_phone", null) ?: "") }
-    var dateOfBirth by remember { mutableStateOf(prefs.getString("cached_dob", null) ?: "") }
-    var legalName by remember { mutableStateOf(prefs.getString("cached_legal_name", null) ?: "") }
-    var address by remember { mutableStateOf(prefs.getString("cached_address", null) ?: "") }
+    val profileState by viewModel.profileState.collectAsState()
 
-    // Restore cached avatar
-    LaunchedEffect(Unit) {
-        val cachedEmoji = prefs.getString("avatar_emoji", null)
-        if (cachedEmoji != null) {
-            AVATAR_OPTIONS.find { it.emoji == cachedEmoji }?.let { selectedAvatar = it }
+    // Derived display values from ViewModel state
+    val user = (profileState as? NetworkResult.Success)?.data
+    val displayName = user?.displayName ?: ""
+    val userEmail = user?.email ?: ""
+    val phoneNumber = user?.phoneNumber ?: ""
+    val dateOfBirth = user?.dateOfBirth ?: ""
+    val legalName = listOfNotNull(
+        user?.legalFirstName?.ifEmpty { null },
+        user?.legalLastName?.ifEmpty { null }
+    ).joinToString(" ")
+    val address = listOfNotNull(
+        user?.addressLine1?.ifEmpty { null },
+        user?.city?.ifEmpty { null },
+        user?.state?.ifEmpty { null },
+        user?.postalCode?.ifEmpty { null }
+    ).joinToString(", ")
+
+    // Restore avatar from profile data
+    LaunchedEffect(user?.avatarEmoji) {
+        val emoji = user?.avatarEmoji
+        if (!emoji.isNullOrEmpty()) {
+            AVATAR_OPTIONS.find { it.emoji == emoji }?.let { selectedAvatar = it }
         }
     }
 
-    // Fetch from API in background — keyed on refreshTrigger
+    // Re-fetch when navigating back from edit screens
     LaunchedEffect(refreshTrigger) {
-        val validToken = TokenRepository.getInstance(context).getValidTokenAsync()
-        if (validToken != null) {
-            try {
-                val result = withContext(Dispatchers.IO) { fetchProfileData(validToken) }
-                if (result != null) {
-                    val clerk = result.optJSONObject("clerk")
-                    val profile = result.optJSONObject("profile")
-                    fun JSONObject.s(k: String): String { val v = optString(k, ""); return if (v == "null" || v.isBlank()) "" else v }
-
-                    displayName = profile?.s("display_name")?.ifEmpty { null } ?: clerk?.s("fullName")?.ifEmpty { null } ?: ""
-                    userEmail = clerk?.s("email") ?: ""
-                    phoneNumber = profile?.s("phone_number") ?: ""
-                    dateOfBirth = profile?.s("date_of_birth") ?: ""
-                    val lf = profile?.s("legal_first_name") ?: ""; val ll = profile?.s("legal_last_name") ?: ""
-                    legalName = listOf(lf, ll).filter { it.isNotEmpty() }.joinToString(" ")
-                    address = listOfNotNull(
-                        profile?.s("address_line1")?.ifEmpty { null },
-                        profile?.s("city")?.ifEmpty { null },
-                        profile?.s("state")?.ifEmpty { null },
-                        profile?.s("zip_code")?.ifEmpty { null }
-                    ).joinToString(", ")
-                    val emoji = profile?.s("avatar_emoji")?.ifEmpty { null }
-                    if (emoji != null) AVATAR_OPTIONS.find { it.emoji == emoji }?.let { selectedAvatar = it }
-
-                    // Cache everything for instant display next time
-                    prefs.edit()
-                        .putString("cached_display_name", displayName)
-                        .putString("avatar_emoji", emoji ?: selectedAvatar.emoji)
-                        .putString("cached_phone", phoneNumber)
-                        .putString("cached_dob", dateOfBirth)
-                        .putString("cached_legal_name", legalName)
-                        .putString("cached_address", address)
-                        .apply()
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("ProfileScreen", "Fetch error: ${e.message}")
-            }
-        }
+        if (refreshTrigger > 0) viewModel.loadProfile()
     }
 
     Column(
@@ -230,8 +194,7 @@ fun ProfileScreen(
                                     .then(if (selectedAvatar.emoji == option.emoji) Modifier.padding(3.dp) else Modifier)
                                     .clickable {
                                         selectedAvatar = option; showAvatarPicker = false
-                                        coroutineScope.launch { val t = TokenRepository.getInstance(context).getValidTokenAsync(); if (t != null) withContext(Dispatchers.IO) { saveAvatarToBackend(t, option.emoji) } }
-                                        prefs.edit().putString("avatar_emoji", option.emoji).apply()
+                                        viewModel.updateAvatar(option.emoji)
                                     },
                                 contentAlignment = Alignment.Center
                             ) { Text(option.emoji, fontSize = 28.sp) }
@@ -254,25 +217,4 @@ fun ProfileField(label: String, value: String, onClick: () -> Unit) {
                 color = if (value == "Not set") MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface)
         }
     }
-}
-
-internal fun fetchProfileData(token: String): JSONObject? {
-    val client = OkHttpClient.Builder().connectTimeout(10, TimeUnit.SECONDS).readTimeout(10, TimeUnit.SECONDS).build()
-    val request = Request.Builder().url("https://www.mafutapass.com/api/auth/mobile-profile")
-        .get().addHeader("Authorization", "Bearer $token").build()
-    val response = client.newCall(request).execute()
-    val body = response.body.string()
-    if (!response.isSuccessful) return null
-    return JSONObject(body)
-}
-
-internal fun saveAvatarToBackend(token: String, emoji: String) {
-    try {
-        val client = OkHttpClient.Builder().connectTimeout(10, TimeUnit.SECONDS).readTimeout(10, TimeUnit.SECONDS).build()
-        val json = JSONObject().apply { put("avatar_emoji", emoji) }
-        val rb = json.toString().toRequestBody("application/json".toMediaType())
-        val request = Request.Builder().url("https://www.mafutapass.com/api/auth/mobile-profile")
-            .patch(rb).addHeader("Authorization", "Bearer $token").build()
-        client.newCall(request).execute()
-    } catch (e: Exception) { android.util.Log.e("ProfileScreen", "Avatar save error: ${e.message}") }
 }

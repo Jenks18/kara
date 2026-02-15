@@ -52,16 +52,14 @@ class AccountHelper private constructor(private val context: Context) {
      * Create or update an account with the given credentials.
      * 
      * @param email User's email (used as account name)
-     * @param userId Clerk/Supabase user ID
+     * @param userId Clerk user ID
      * @param clerkToken Clerk session token
-     * @param supabaseToken Supabase access token
      * @param expiresAt Token expiry timestamp in milliseconds
      */
     suspend fun signIn(
         email: String,
         userId: String,
         clerkToken: String,
-        supabaseToken: String? = null,
         expiresAt: Long
     ): Boolean = withContext(Dispatchers.IO) {
         try {
@@ -88,20 +86,12 @@ class AccountHelper private constructor(private val context: Context) {
             )
             
             if (success) {
-                // Store auth tokens
+                // Store auth token
                 accountManager.setAuthToken(
                     account, 
                     MafutaAccountAuthenticator.AUTH_TOKEN_TYPE_CLERK, 
                     clerkToken
                 )
-                
-                supabaseToken?.let {
-                    accountManager.setAuthToken(
-                        account,
-                        MafutaAccountAuthenticator.AUTH_TOKEN_TYPE_SUPABASE,
-                        it
-                    )
-                }
                 
                 Log.d(TAG, "Account created successfully for $email")
             } else {
@@ -128,14 +118,6 @@ class AccountHelper private constructor(private val context: Context) {
     fun getClerkToken(): String? {
         val account = getCurrentAccount() ?: return null
         return accountManager.peekAuthToken(account, MafutaAccountAuthenticator.AUTH_TOKEN_TYPE_CLERK)
-    }
-    
-    /**
-     * Get the Supabase access token for the current account.
-     */
-    fun getSupabaseToken(): String? {
-        val account = getCurrentAccount() ?: return null
-        return accountManager.peekAuthToken(account, MafutaAccountAuthenticator.AUTH_TOKEN_TYPE_SUPABASE)
     }
     
     /**
@@ -175,7 +157,6 @@ class AccountHelper private constructor(private val context: Context) {
      */
     suspend fun updateTokens(
         clerkToken: String,
-        supabaseToken: String? = null,
         expiresAt: Long
     ): Boolean = withContext(Dispatchers.IO) {
         try {
@@ -186,20 +167,12 @@ class AccountHelper private constructor(private val context: Context) {
                 accountManager.invalidateAuthToken(MafutaAccountAuthenticator.ACCOUNT_TYPE, it)
             }
             
-            // Set new tokens
+            // Set new token
             accountManager.setAuthToken(
                 account,
                 MafutaAccountAuthenticator.AUTH_TOKEN_TYPE_CLERK,
                 clerkToken
             )
-            
-            supabaseToken?.let {
-                accountManager.setAuthToken(
-                    account,
-                    MafutaAccountAuthenticator.AUTH_TOKEN_TYPE_SUPABASE,
-                    it
-                )
-            }
             
             // Update expiry
             accountManager.setUserData(

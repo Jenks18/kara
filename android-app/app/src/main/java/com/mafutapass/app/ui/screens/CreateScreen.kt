@@ -15,20 +15,20 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.mafutapass.app.ui.theme.*
+import com.mafutapass.app.viewmodel.CreateReportViewModel
 
 @Composable
-fun CreateScreen() {
+fun CreateScreen(
+    viewModel: CreateReportViewModel = hiltViewModel()
+) {
     var showCreateReportDialog by remember { mutableStateOf(false) }
     var showComingSoonDialog by remember { mutableStateOf<String?>(null) }
     var reportTitle by remember { mutableStateOf("") }
-    var isCreating by remember { mutableStateOf(false) }
-    var snackMessage by remember { mutableStateOf<String?>(null) }
+    val isCreating by viewModel.isCreating.collectAsState()
+    val result by viewModel.result.collectAsState()
     val context = androidx.compose.ui.platform.LocalContext.current
-    val scope = rememberCoroutineScope()
 
     val options = listOf(
         CreateOption(
@@ -65,7 +65,7 @@ fun CreateScreen() {
         }
         
         // Show success/error message
-        snackMessage?.let { msg ->
+        result?.let { msg ->
             Spacer(modifier = Modifier.height(16.dp))
             Surface(
                 shape = RoundedCornerShape(8.dp),
@@ -101,22 +101,9 @@ fun CreateScreen() {
                 TextButton(
                     onClick = {
                         if (reportTitle.isNotBlank()) {
-                            isCreating = true
-                            scope.launch {
-                                try {
-                                    withContext(Dispatchers.IO) {
-                                        com.mafutapass.app.data.ApiClient.apiService.createExpenseReport(
-                                            mapOf("title" to reportTitle.trim())
-                                        )
-                                    }
-                                    snackMessage = "✅ Report \"${reportTitle.trim()}\" created"
-                                    reportTitle = ""
-                                    showCreateReportDialog = false
-                                } catch (e: Exception) {
-                                    snackMessage = "❌ Failed: ${e.message}"
-                                } finally {
-                                    isCreating = false
-                                }
+                            viewModel.createReport(reportTitle) {
+                                reportTitle = ""
+                                showCreateReportDialog = false
                             }
                         }
                     },

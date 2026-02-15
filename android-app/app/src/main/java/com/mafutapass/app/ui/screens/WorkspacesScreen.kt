@@ -18,43 +18,24 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.mafutapass.app.data.ApiClient
 import com.mafutapass.app.data.Workspace
 import com.mafutapass.app.ui.theme.*
 import com.mafutapass.app.util.DateUtils
-import kotlinx.coroutines.Dispatchers
+import com.mafutapass.app.viewmodel.WorkspacesViewModel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 @Composable
 fun WorkspacesScreen(
     onNavigateToNewWorkspace: () -> Unit = {},
-    onNavigateToWorkspaceDetail: (String) -> Unit = {}
+    onNavigateToWorkspaceDetail: (String) -> Unit = {},
+    viewModel: WorkspacesViewModel = hiltViewModel()
 ) {
-    var workspaces by remember { mutableStateOf<List<Workspace>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
-    var error by remember { mutableStateOf<String?>(null) }
-    var refreshKey by remember { mutableStateOf(0) }
-
-    // Fetch workspaces from API
-    LaunchedEffect(refreshKey) {
-        isLoading = true
-        error = null
-        try {
-            val response = withContext(Dispatchers.IO) {
-                ApiClient.apiService.getWorkspaces()
-            }
-            workspaces = response.workspaces
-        } catch (e: Exception) {
-            android.util.Log.e("WorkspacesScreen", "Failed to fetch workspaces: ${e.message}", e)
-            error = e.message
-            workspaces = emptyList()
-        } finally {
-            isLoading = false
-        }
-    }
+    val workspaces by viewModel.workspaces.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
     
     Column(
         modifier = Modifier
@@ -132,7 +113,7 @@ fun WorkspacesScreen(
                 WorkspaceCard(
                     workspace = workspace,
                     onClick = { onNavigateToWorkspaceDetail(workspace.id) },
-                    onDeleted = { refreshKey++ }
+                    onDelete = { viewModel.deleteWorkspace(workspace.id) }
                 )
             }
             
@@ -167,11 +148,9 @@ fun WorkspacesScreen(
 }
 
 @Composable
-fun WorkspaceCard(workspace: Workspace, onClick: () -> Unit = {}, onDeleted: () -> Unit = {}) {
+fun WorkspaceCard(workspace: Workspace, onClick: () -> Unit = {}, onDelete: () -> Unit = {}) {
     var showMenu by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
-    var isDeleting by remember { mutableStateOf(false) }
-    val coroutineScope = rememberCoroutineScope()
     
     Surface(
         shape = RoundedCornerShape(12.dp),
@@ -276,34 +255,16 @@ fun WorkspaceCard(workspace: Workspace, onClick: () -> Unit = {}, onDeleted: () 
             confirmButton = {
                 TextButton(
                     onClick = {
-                        isDeleting = true
-                        coroutineScope.launch {
-                            try {
-                                withContext(Dispatchers.IO) {
-                                    ApiClient.apiService.deleteWorkspace(workspace.id)
-                                }
-                                showDeleteConfirm = false
-                                onDeleted()
-                            } catch (e: Exception) {
-                                android.util.Log.e("WorkspaceCard", "Delete failed: ${e.message}")
-                            } finally {
-                                isDeleting = false
-                            }
-                        }
-                    },
-                    enabled = !isDeleting
-                ) {
-                    if (isDeleting) {
-                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                    } else {
-                        Text("Delete", color = MaterialTheme.colorScheme.error)
+                        showDeleteConfirm = false
+                        onDelete()
                     }
+                ) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(
-                    onClick = { showDeleteConfirm = false },
-                    enabled = !isDeleting
+                    onClick = { showDeleteConfirm = false }
                 ) { Text("Cancel") }
             }
         )

@@ -1,6 +1,7 @@
 package com.mafutapass.app.ui.screens
 
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -13,52 +14,51 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.mafutapass.app.auth.TokenRepository
-import com.mafutapass.app.ui.theme.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONObject
-import java.util.concurrent.TimeUnit
-
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.mafutapass.app.data.network.NetworkResult
+import com.mafutapass.app.ui.theme.*
+import com.mafutapass.app.viewmodel.ProfileViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditPhoneNumberScreen(onBack: () -> Unit) {
+fun EditPhoneNumberScreen(
+    onBack: () -> Unit,
+    viewModel: ProfileViewModel = hiltViewModel()
+) {
     val context = LocalContext.current
-    val prefs = context.getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
+    val profileState by viewModel.profileState.collectAsState()
+    val updateState by viewModel.updateState.collectAsState()
     var phoneDigits by remember { mutableStateOf("") }
-    var isLoading by remember { mutableStateOf(true) }
-    var isSaving by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
+    var initialized by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        val token = TokenRepository.getInstance(context).getValidTokenAsync()
-        if (token != null) {
-            try {
-                val r = withContext(Dispatchers.IO) { fetchProfileData(token) }
-                r?.optJSONObject("profile")?.let { p ->
-                    fun JSONObject.s(k: String): String { val v = optString(k, ""); return if (v == "null" || v.isBlank()) "" else v }
-                    val num = p.s("phone_number").replace(Regex("[\\s\\-]"), "")
-                    phoneDigits = when {
-                        num.startsWith("+254") -> num.substring(4)
-                        num.startsWith("254") -> num.substring(3)
-                        num.startsWith("0") -> num.substring(1)
-                        else -> num
-                    }
-                }
-            } catch (_: Exception) {}
-            isLoading = false
-        } else isLoading = false
+    LaunchedEffect(profileState) {
+        if (!initialized && profileState is NetworkResult.Success) {
+            val user = (profileState as NetworkResult.Success).data
+            val num = (user.phoneNumber ?: "").replace(Regex("[\\s\\-]"), "")
+            phoneDigits = when {
+                num.startsWith("+254") -> num.substring(4)
+                num.startsWith("254") -> num.substring(3)
+                num.startsWith("0") -> num.substring(1)
+                else -> num
+            }
+            initialized = true
+        }
     }
 
+    val isLoading = profileState is NetworkResult.Loading
+    val isSaving = updateState is ProfileViewModel.UpdateState.Loading
     val isValid = phoneDigits.length == 9 && (phoneDigits.startsWith("7") || phoneDigits.startsWith("1"))
+
+    LaunchedEffect(updateState) {
+        when (updateState) {
+            is ProfileViewModel.UpdateState.Error -> {
+                Toast.makeText(context, (updateState as ProfileViewModel.UpdateState.Error).message, Toast.LENGTH_SHORT).show()
+                viewModel.resetUpdateState()
+            }
+            else -> {}
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize().background(AppTheme.colors.backgroundGradient)) {
         TopAppBar(title = { Text("Phone number", fontWeight = FontWeight.Bold) },
@@ -92,23 +92,8 @@ fun EditPhoneNumberScreen(onBack: () -> Unit) {
                     }
                 }
                 Button(onClick = {
-                    isSaving = true
-                    scope.launch {
-                        try {
-                            val token = TokenRepository.getInstance(context).getValidTokenAsync()
-                            if (token == null) { Toast.makeText(context, "Session expired. Please sign in again.", Toast.LENGTH_SHORT).show(); isSaving = false; return@launch }
-                            val fullNum = if (phoneDigits.isNotBlank()) "+254${phoneDigits.trim()}" else ""
-                            val ok = withContext(Dispatchers.IO) {
-                                val json = JSONObject().apply { put("phone_number", fullNum) }
-                                val body = json.toString().toRequestBody("application/json".toMediaType())
-                                val req = Request.Builder().url("https://www.mafutapass.com/api/auth/mobile-profile").patch(body).addHeader("Authorization", "Bearer $token").build()
-                                OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS).readTimeout(15, TimeUnit.SECONDS).build().newCall(req).execute().isSuccessful
-                            }
-                            if (ok) { prefs.edit().putString("cached_phone", fullNum).apply(); onBack() }
-                            else Toast.makeText(context, "Save failed. Please try again.", Toast.LENGTH_SHORT).show()
-                        } catch (e: Exception) { Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show() }
-                        isSaving = false
-                    }
+                    val fullNum = if (phoneDigits.isNotBlank()) "+254${phoneDigits.trim()}" else ""
+                    viewModel.updatePhoneNumber(fullNum) { onBack() }
                 }, enabled = !isSaving && (isValid || phoneDigits.isEmpty()), modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp).height(56.dp),
                     shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, disabledContainerColor = MaterialTheme.colorScheme.outline)) {
                     if (isSaving) CircularProgressIndicator(Modifier.size(20.dp), MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)

@@ -22,9 +22,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.mafutapass.app.auth.TokenRepository
 import com.mafutapass.app.ui.theme.*
 import com.mafutapass.app.ui.theme.AppTheme
@@ -40,9 +38,10 @@ fun SignInOrUpScreen() {
     var isSignUp by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
-    val oAuthViewModel: NativeOAuthViewModel = viewModel()
+    val oAuthViewModel: NativeOAuthViewModel = hiltViewModel()
     val oauthState by oAuthViewModel.oauthState.collectAsState()
-    val authViewModel: com.mafutapass.app.viewmodel.AuthViewModel = viewModel()
+    val authViewModel: com.mafutapass.app.viewmodel.AuthViewModel = hiltViewModel()
+    val tokenRepository = remember { TokenRepository.getInstance(context) }
 
     // Reset OAuth state when screen is first shown
     LaunchedEffect(Unit) {
@@ -70,33 +69,14 @@ fun SignInOrUpScreen() {
     // Handle OAuth success - Store the token and trigger sign-in
     LaunchedEffect(oauthState) {
         if (oauthState is com.mafutapass.app.viewmodel.NativeOAuthState.Success) {
-            android.util.Log.d("SignInScreen", "✅ OAuth Success - storing tokens")
-            
             val successState = oauthState as com.mafutapass.app.viewmodel.NativeOAuthState.Success
-            val token = successState.token
-            val userId = successState.userId
-            val email = successState.email
-            val supabaseToken = successState.supabaseToken
-            val isNewUser = successState.isNewUser
-            val firstName = successState.firstName
-            val lastName = successState.lastName
             
-            // Store in AccountManager (primary) + EncryptedSharedPreferences (fallback)
-            TokenRepository.getInstance(context).storeToken(token, userId, email)
+            // Store JWT in production token repository (AccountManager + EncryptedSharedPreferences)
+            tokenRepository.storeToken(
+                successState.token, successState.userId, successState.email
+            )
             
-            // Store in legacy prefs for backward compatibility
-            val prefs = context.getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
-            prefs.edit().apply {
-                putString("session_token", token)
-                putString("user_id", userId)
-                putString("user_email", email)
-                putBoolean("is_new_user", isNewUser)
-                if (firstName != null) putString("first_name", firstName)
-                if (lastName != null) putString("last_name", lastName)
-                if (supabaseToken != null) putString("supabase_token", supabaseToken)
-            }.apply()
-            
-            android.util.Log.d("SignInScreen", "✅ Tokens stored, refreshing auth state")
+            android.util.Log.d("SignInScreen", "✅ Token stored, refreshing auth state")
             
             // Refresh auth state to navigate to main app (or profile setup if new user)
             authViewModel.refreshAuthState()
@@ -276,15 +256,8 @@ fun SignInOrUpScreen() {
 @Composable
 fun SignInView() {
     val context = LocalContext.current
-    val viewModel: SignInViewModel = viewModel(
-        factory = object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                @Suppress("UNCHECKED_CAST")
-                return SignInViewModel(context.applicationContext as android.app.Application) as T
-            }
-        }
-    )
-    val authViewModel: com.mafutapass.app.viewmodel.AuthViewModel = viewModel()
+    val viewModel: SignInViewModel = hiltViewModel()
+    val authViewModel: com.mafutapass.app.viewmodel.AuthViewModel = hiltViewModel()
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -399,15 +372,8 @@ fun SignInView() {
 @Composable
 fun SignUpView(onSwitchToSignIn: () -> Unit = {}) {
     val context = LocalContext.current
-    val viewModel: SignUpViewModel = viewModel(
-        factory = object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                @Suppress("UNCHECKED_CAST")
-                return SignUpViewModel(context.applicationContext as android.app.Application) as T
-            }
-        }
-    )
-    val authViewModel: com.mafutapass.app.viewmodel.AuthViewModel = viewModel()
+    val viewModel: SignUpViewModel = hiltViewModel()
+    val authViewModel: com.mafutapass.app.viewmodel.AuthViewModel = hiltViewModel()
     
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }

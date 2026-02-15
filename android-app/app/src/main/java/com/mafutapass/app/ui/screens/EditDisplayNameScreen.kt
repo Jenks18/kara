@@ -13,47 +13,48 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.mafutapass.app.auth.TokenRepository
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.mafutapass.app.data.network.NetworkResult
 import com.mafutapass.app.ui.theme.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONObject
-import java.util.concurrent.TimeUnit
+import com.mafutapass.app.viewmodel.ProfileViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditDisplayNameScreen(onBack: () -> Unit) {
+fun EditDisplayNameScreen(
+    onBack: () -> Unit,
+    viewModel: ProfileViewModel = hiltViewModel()
+) {
     val context = LocalContext.current
-    val prefs = context.getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
+    val profileState by viewModel.profileState.collectAsState()
+    val updateState by viewModel.updateState.collectAsState()
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
-    var isLoading by remember { mutableStateOf(true) }
-    var isSaving by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
+    var initialized by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        val token = TokenRepository.getInstance(context).getValidTokenAsync()
-        if (token != null) {
-            try {
-                val r = withContext(Dispatchers.IO) { fetchProfileData(token) }
-                r?.optJSONObject("profile")?.let { p ->
-                    fun JSONObject.s(k: String): String { val v = optString(k, ""); return if (v == "null" || v.isBlank()) "" else v }
-                    val fn = p.s("first_name"); val ln = p.s("last_name")
-                    if (fn.isNotEmpty() || ln.isNotEmpty()) { firstName = fn; lastName = ln }
-                    else { 
-                        val dn = p.s("display_name").trim()
-                        val parts = dn.split(" ", limit = 2)
-                        if (parts.isNotEmpty()) { firstName = parts[0]; if (parts.size >= 2) lastName = parts[1] }
-                    }
-                }
-            } catch (_: Exception) {}
-            isLoading = false
-        } else isLoading = false
+    LaunchedEffect(profileState) {
+        if (!initialized && profileState is NetworkResult.Success) {
+            val user = (profileState as NetworkResult.Success).data
+            val fn = user.firstName ?: ""; val ln = user.lastName ?: ""
+            if (fn.isNotEmpty() || ln.isNotEmpty()) { firstName = fn; lastName = ln }
+            else {
+                val parts = (user.displayName ?: "").trim().split(" ", limit = 2)
+                if (parts.isNotEmpty()) { firstName = parts[0]; if (parts.size >= 2) lastName = parts[1] }
+            }
+            initialized = true
+        }
+    }
+
+    val isLoading = profileState is NetworkResult.Loading
+    val isSaving = updateState is ProfileViewModel.UpdateState.Loading
+
+    LaunchedEffect(updateState) {
+        when (updateState) {
+            is ProfileViewModel.UpdateState.Error -> {
+                Toast.makeText(context, (updateState as ProfileViewModel.UpdateState.Error).message, Toast.LENGTH_SHORT).show()
+                viewModel.resetUpdateState()
+            }
+            else -> {}
+        }
     }
 
     Column(modifier = Modifier.fillMaxSize().background(AppTheme.colors.backgroundGradient)) {
@@ -81,25 +82,8 @@ fun EditDisplayNameScreen(onBack: () -> Unit) {
                     }
                 }
                 Button(onClick = {
-                    isSaving = true
-                    scope.launch {
-                        try {
-                            val token = TokenRepository.getInstance(context).getValidTokenAsync()
-                            if (token == null) { Toast.makeText(context, "Session expired. Please sign in again.", Toast.LENGTH_SHORT).show(); isSaving = false; return@launch }
-                            val ok = withContext(Dispatchers.IO) {
-                                val json = JSONObject().apply { put("first_name", firstName.trim()); put("last_name", lastName.trim()); put("display_name", "${firstName.trim()} ${lastName.trim()}".trim()) }
-                                val body = json.toString().toRequestBody("application/json".toMediaType())
-                                val req = Request.Builder().url("https://www.mafutapass.com/api/auth/mobile-profile").patch(body).addHeader("Authorization", "Bearer $token").build()
-                                val resp = OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS).readTimeout(15, TimeUnit.SECONDS).build().newCall(req).execute()
-                                resp.isSuccessful
-                            }
-                            if (ok) {
-                                prefs.edit().putString("cached_display_name", "${firstName.trim()} ${lastName.trim()}".trim()).apply()
-                                onBack()
-                            } else { Toast.makeText(context, "Save failed. Please try again.", Toast.LENGTH_SHORT).show() }
-                        } catch (e: Exception) { Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show() }
-                        isSaving = false
-                    }
+                    val fn = firstName.trim(); val ln = lastName.trim()
+                    viewModel.updateDisplayName(fn, ln, "$fn $ln".trim()) { onBack() }
                 }, enabled = !isSaving, modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp).height(56.dp),
                     shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, disabledContainerColor = MaterialTheme.colorScheme.outline)) {
                     if (isSaving) CircularProgressIndicator(Modifier.size(20.dp), MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)

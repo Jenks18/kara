@@ -82,11 +82,16 @@ class ProfileViewModel @Inject constructor(
     /**
      * Update display name.
      */
-    fun updateDisplayName(displayName: String, onSuccess: () -> Unit = {}) {
+    fun updateDisplayName(
+        firstName: String,
+        lastName: String,
+        displayName: String,
+        onSuccess: () -> Unit = {}
+    ) {
         viewModelScope.launch {
             _updateState.value = UpdateState.Loading
             
-            when (val result = userRepository.updateDisplayName(displayName)) {
+            when (val result = userRepository.updateDisplayName(firstName, lastName, displayName)) {
                 is NetworkResult.Success -> {
                     _updateState.value = UpdateState.Success("Display name updated")
                     _profileState.value = NetworkResult.Success(result.data)
@@ -146,8 +151,10 @@ class ProfileViewModel @Inject constructor(
      * Update address.
      */
     fun updateAddress(
-        address: String,
+        addressLine1: String,
+        addressLine2: String? = null,
         city: String? = null,
+        state: String? = null,
         country: String? = null,
         postalCode: String? = null,
         onSuccess: () -> Unit = {}
@@ -155,7 +162,7 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             _updateState.value = UpdateState.Loading
             
-            when (val result = userRepository.updateAddress(address, city, country, postalCode)) {
+            when (val result = userRepository.updateAddress(addressLine1, addressLine2, city, state, country, postalCode)) {
                 is NetworkResult.Success -> {
                     _updateState.value = UpdateState.Success("Address updated")
                     _profileState.value = NetworkResult.Success(result.data)
@@ -179,6 +186,27 @@ class ProfileViewModel @Inject constructor(
             when (val result = userRepository.updateProfile(request)) {
                 is NetworkResult.Success -> {
                     _updateState.value = UpdateState.Success("Profile updated")
+                    _profileState.value = NetworkResult.Success(result.data)
+                    onSuccess()
+                }
+                is NetworkResult.Error -> {
+                    _updateState.value = UpdateState.Error(result.message)
+                }
+                is NetworkResult.Loading -> {}
+            }
+        }
+    }
+    
+    /**
+     * Update avatar emoji.
+     */
+    fun updateAvatar(emoji: String, onSuccess: () -> Unit = {}) {
+        viewModelScope.launch {
+            _updateState.value = UpdateState.Loading
+            
+            when (val result = userRepository.updateProfile(UpdateProfileRequest(avatarEmoji = emoji))) {
+                is NetworkResult.Success -> {
+                    _updateState.value = UpdateState.Success("Avatar updated")
                     _profileState.value = NetworkResult.Success(result.data)
                     onSuccess()
                 }

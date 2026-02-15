@@ -1,9 +1,11 @@
 package com.mafutapass.app.viewmodel
 
-import android.app.Application
+import android.content.Context
 import android.util.Log
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,8 +18,13 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import com.mafutapass.app.auth.TokenRepository
 import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 
-class SignInViewModel(application: Application) : AndroidViewModel(application) {
+@HiltViewModel
+class SignInViewModel @Inject constructor(
+    private val tokenRepository: TokenRepository,
+    @ApplicationContext private val appContext: Context
+) : ViewModel() {
     private val _uiState = MutableStateFlow<SignInUiState>(SignInUiState.Idle)
     val uiState = _uiState.asStateFlow()
 
@@ -36,16 +43,7 @@ class SignInViewModel(application: Application) : AndroidViewModel(application) 
 
                 if (result.token != null && result.userId != null) {
                     // Backend always returns a valid session JWT — store it
-                    TokenRepository.getInstance(getApplication()).storeToken(result.token, result.userId, email)
-
-                    // Legacy prefs for backward compat
-                    val prefs = getApplication<Application>()
-                        .getSharedPreferences("clerk_session", android.content.Context.MODE_PRIVATE)
-                    prefs.edit().apply {
-                        putString("session_token", result.token)
-                        putString("user_id", result.userId)
-                        putString("user_email", email)
-                    }.apply()
+                    tokenRepository.storeToken(result.token, result.userId, email)
 
                     Log.d("SignInViewModel", "✅ Sign-in successful")
                     _uiState.value = SignInUiState.Success

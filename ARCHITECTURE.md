@@ -1,6 +1,6 @@
 # MafutaPass — Architecture & Single Source of Truth
 
-> **Last updated:** 2025-07-13  
+> **Last updated:** 2026-02-15  
 > **Audience:** Production-grade Play Store / App Store app targeting 1,000+ users  
 > **Maintainer rule:** Every code change MUST be reflected here. This file is the single source of truth.
 
@@ -255,7 +255,6 @@ Exception: `raw_receipts` uses `auth.jwt()->>'email'` because receipts are uploa
 | `/api/mobile/workspaces` | POST | Bearer JWT | Create workspace |
 | `/api/mobile/workspaces/[id]` | GET | Bearer JWT | Get single workspace |
 | `/api/mobile/workspaces/[id]` | DELETE | Bearer JWT | Soft-delete workspace |
-| `/api/mobile/auth` | POST | Bearer JWT | Exchange JWT for Supabase session |
 
 ### 5.3 Web Endpoints (`/api/`)
 
@@ -280,6 +279,7 @@ Exception: `raw_receipts` uses `auth.jwt()->>'email'` because receipts are uploa
 | `/api/auth/verify-email` | **410 Gone** | Backend SDK auto-verifies emails |
 | `/api/auth/google-mobile` | Legacy | Older Google flow, no JWT minting — superseded by google-native |
 | `/api/auth/mobile-verify` | Legacy | Should be deprecated |
+| `/api/mobile/auth` | **Deleted 2025-07-15** | Was: Supabase session exchange. Dead code after Hilt migration |
 
 ---
 
@@ -330,11 +330,30 @@ Exception: `raw_receipts` uses `auth.jwt()->>'email'` because receipts are uploa
 
 ### 6.3 Dependency Injection (Hilt)
 
+Every ViewModel is `@HiltViewModel` with `@Inject constructor`. Screens obtain ViewModels via `hiltViewModel()`. No manual instantiation. No `AndroidViewModel` subclasses remain. No `ViewModelProvider.Factory` patterns remain.
+
 | Module | Provides |
 |--------|----------|
-| `NetworkModule` | OkHttpClient (with AuthInterceptor + logging), Retrofit, ApiService |
-| `AuthModule` | TokenRepository, ClerkAuthManager |
-| Application | `@HiltAndroidApp MafutaPassApplication` (also initializes legacy `ApiClient`) |
+| `NetworkModule` | OkHttpClient (with AuthInterceptor + AuthAuthenticator + logging), Retrofit, Gson, ApiService |
+| `AppModule` | TokenRepository, AccountHelper |
+| Application | `@HiltAndroidApp MafutaPassApplication` |
+
+#### ViewModels
+
+| ViewModel | Screen(s) | Repository |
+|-----------|-----------|------------|
+| `AuthViewModel` | Auth gating (MainActivity) | TokenRepository (injected) |
+| `ProfileViewModel` | ProfileScreen, AccountScreen, Edit*Screen (5 screens) | UserRepository |
+| `ReportsViewModel` | ReportsScreen | ApiService |
+| `WorkspacesViewModel` | WorkspacesScreen | ApiService |
+| `WorkspaceDetailViewModel` | WorkspaceDetailScreen, WorkspaceOverviewScreen | ApiService |
+| `WorkspaceMembersViewModel` | WorkspaceMembersScreen | ApiService |
+| `NewWorkspaceViewModel` | NewWorkspaceScreen | ApiService |
+| `CreateReportViewModel` | CreateScreen | ApiService |
+| `SignInViewModel` | SignInScreen | TokenRepository (injected) + raw OkHttp for auth endpoint |
+| `SignUpViewModel` | SignUpScreen | TokenRepository (injected) + raw OkHttp for auth endpoint |
+| `NativeOAuthViewModel` | SignInScreen (Google) | Raw OkHttp for auth endpoint |
+| `ThemeViewModel` | Theme toggle | SharedPreferences (injected via @ApplicationContext) |
 
 ### 6.4 Navigation
 
@@ -356,32 +375,38 @@ Exception: `raw_receipts` uses `auth.jwt()->>'email'` because receipts are uploa
 | `workspaces/{id}/overview` | WorkspaceOverviewScreen | Stats and summary |
 | `workspaces/{id}/members` | WorkspaceMembersScreen | Team members |
 
-### 6.5 Dual API System
+### 6.5 Networking Stack
 
-> **Technical debt:** Two parallel networking systems exist.
+All networking flows through a single Hilt-provided Retrofit `ApiService` instance. Raw OkHttp calls have been fully eliminated from UI and ViewModel layers **except** for authentication endpoints (sign-in, sign-up, Google OAuth) which call unauthenticated public routes and thus cannot use the Retrofit pipeline (which adds Bearer token via AuthInterceptor).
 
-| System | Implementation | Used By |
-|--------|---------------|---------|
-| **Hilt-injected** (preferred) | `ApiService` interface + `AuthInterceptor` | New ViewModels |
-| **Legacy ApiClient** (deprecated) | `ApiClient` object + own OkHttp interceptor | ReportsViewModel, WorkspacesScreen, CreateScreen, older screens |
+| Component | Purpose |
+|-----------|--------|
+| `ApiService` (Retrofit) | All API calls — profile, workspaces, reports, receipts |
+| `AuthInterceptor` | Injects `Bearer <token>` header on every request |
+| `AuthAuthenticator` | Handles 401 → refreshes token via `/api/auth/mobile-refresh` → retries |
+| `UserRepository` | Maps `MobileProfileResponse` → `User` domain model |
+| `TokenRepository` | Token storage (AccountManager + EncryptedSharedPreferences), refresh scheduling |
 
-Both read tokens from `TokenRepository`. The legacy `ApiClient` requires `ApiClient.initialize(applicationContext)` in `MafutaPassApplication.onCreate()`.
-
-**Migration plan:** Gradually move all screens from `ApiClient` to Hilt-injected `ApiService`.
+> **Migration completed 2025-07-15, extended 2026-02-15:** Legacy `ApiClient` bridge object, `Repository.kt`, `TokenManager.kt`, `OAuthViewModel.kt`, and all raw OkHttp calls in screens/ViewModels have been deleted. All ViewModels converted from `AndroidViewModel` to `@HiltViewModel`. Legacy SharedPreferences writes removed from sign-in/sign-up flows. `TokenRepository` is the single source of truth for token storage.
 
 ### 6.6 Key Files
 
 | File | Purpose |
 |------|---------|
-| `MafutaPassApplication.kt` | Hilt app entry + legacy ApiClient init |
+| `MafutaPassApplication.kt` | `@HiltAndroidApp` entry point |
 | `MainActivity.kt` | Theme setup, auth gating, NavHost |
 | `auth/TokenRepository.kt` | Token storage, refresh, WorkManager scheduling |
 | `auth/ClerkAuthManager.kt` | Minimal: just signOut() + config |
+| `auth/AccountHelper.kt` | Android AccountManager integration for token persistence |
+| `data/network/NetworkModule.kt` | Hilt module: OkHttpClient, Retrofit, Gson, ApiService |
+| `di/AppModule.kt` | Hilt module: TokenRepository, AccountHelper |
 | `data/network/AuthInterceptor.kt` | OkHttp interceptor, injects Bearer token |
-| `data/ApiService.kt` | Retrofit interface + legacy ApiClient object |
+| `data/network/AuthAuthenticator.kt` | 401 handler, refreshes expired tokens |
+| `data/ApiService.kt` | Retrofit interface + request/response DTOs |
+| `data/Models.kt` | Domain models (User, MobileProfileResponse, UserProfile, etc.) |
+| `data/repository/UserRepository.kt` | Profile CRUD, maps API responses → User domain model |
 | `ui/theme/Theme.kt` | Material3 theme definition |
 | `ui/theme/AppColors.kt` | Extended app color system |
-| `ui/theme/Color.kt` | Raw color constants |
 
 ---
 
@@ -612,11 +637,11 @@ All platforms support Light, Dark, and System (follow OS setting).
 **Decision:** Mint fresh Supabase JWT on every mobile API request.  
 **Rationale:** Stateless design. No cache invalidation complexity. JWT minting is sub-millisecond. RLS always has fresh claims.
 
-### Why dual API system on Android?
-**Context:** Legacy `ApiClient` object predates Hilt DI setup.  
-**Decision:** Keep both temporarily, migrate incrementally.  
-**Rationale:** Minimizes risk of breaking existing screens. Both systems share `TokenRepository` for auth.  
-**Plan:** Migrate all screens to Hilt-injected `ApiService`, then delete `ApiClient`.
+### Android Hilt migration completed
+**Context:** Legacy `ApiClient` bridge object + raw OkHttp calls in 10+ screens predated Hilt DI. Auth ViewModels (`AuthViewModel`, `SignInViewModel`, `SignUpViewModel`, `NativeOAuthViewModel`, `ThemeViewModel`) used `AndroidViewModel` with manual `ViewModelProvider.Factory` instantiation.  
+**Decision:** Full Hilt migration — every ViewModel is `@HiltViewModel`, every screen uses `hiltViewModel()`.  
+**Result:** `ApiClient`, `Repository.kt`, `TokenManager.kt`, `OAuthViewModel.kt` deleted. All profile screens use `ProfileViewModel` → `UserRepository` → `ApiService`. All workspace/report screens use dedicated `@HiltViewModel` classes. Auth ViewModels receive `TokenRepository` via `@Inject constructor`. Legacy SharedPreferences writes removed from sign-in/sign-up flows. Zero `AndroidViewModel` subclasses or `ViewModelProvider.Factory` patterns remain.  
+**Completed:** 2025-07-15 (data layer), 2026-02-15 (auth layer + full cleanup)
 
 ### Why Clerk + Supabase (not just one)?
 **Context:** Clerk for auth identity, Supabase for data + storage.  
@@ -628,6 +653,12 @@ All platforms support Light, Dark, and System (follow OS setting).
 **Decision:** Mobile-first design with `430px` max width.  
 **Rationale:** Consistent with native app experience. Desktop users get a centered mobile layout.
 
+### Why @SerializedName on all models?
+**Context:** Supabase returns snake_case JSON (`display_name`, `avatar_emoji`). Kotlin convention is camelCase.  
+**Decision:** Every model field that maps to a JSON key uses `@SerializedName("snake_case")` with a camelCase Kotlin property name.  
+**Rationale:** Without this, Gson silently maps nothing (fields stay null). This was causing the entire profile data chain to be silently broken. Fixed by adding `MobileProfileResponse`, `UserProfile`, `ClerkUserData` wrapper types with explicit `@SerializedName` annotations.  
+**Completed:** 2025-07-15
+
 ### Why emoji avatars?
 **Context:** Users need profile avatars but photo uploads add complexity.  
 **Decision:** Emoji avatar system with customizable background colors.  
@@ -635,4 +666,4 @@ All platforms support Light, Dark, and System (follow OS setting).
 
 ---
 
-*Last modified: 2025-07-13 — After production auth cleanup, bug fixes (401s, email_exists, excessive logging), middleware audit.*
+*Last modified: 2026-02-15 — Full Android Hilt migration complete. All ViewModels are @HiltViewModel (including auth: AuthViewModel, SignInViewModel, SignUpViewModel, NativeOAuthViewModel, ThemeViewModel). Deleted ApiClient, Repository.kt, TokenManager.kt, OAuthViewModel.kt, /api/mobile/auth. All screens use hiltViewModel(). Legacy SharedPreferences writes removed from auth flows. Profile data chain fixed with @SerializedName for snake_case↔camelCase mapping.*

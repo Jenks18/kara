@@ -25,24 +25,24 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.mafutapass.app.data.ApiClient
 import com.mafutapass.app.data.Workspace
 import com.mafutapass.app.ui.theme.*
-import kotlinx.coroutines.Dispatchers
+import com.mafutapass.app.viewmodel.WorkspaceDetailViewModel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkspaceOverviewScreen(
     workspaceId: String,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    viewModel: WorkspaceDetailViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
-    var workspace by remember { mutableStateOf<Workspace?>(null) }
-    var isLoading by remember { mutableStateOf(true) }
+    val workspace by viewModel.workspace.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
     var showInviteDialog by remember { mutableStateOf(false) }
     var showMoreMenu by remember { mutableStateOf(false) }
     var showShareDialog by remember { mutableStateOf(false) }
@@ -52,16 +52,7 @@ fun WorkspaceOverviewScreen(
     val shareUrl = "https://www.mafutapass.com/workspaces/$workspaceId/join"
 
     LaunchedEffect(workspaceId) {
-        isLoading = true
-        try {
-            val fetched = withContext(Dispatchers.IO) {
-                ApiClient.apiService.getWorkspace(workspaceId)
-            }
-            workspace = fetched
-        } catch (e: Exception) {
-            android.util.Log.e("WorkspaceOverview", "Failed to fetch: ${e.message}", e)
-        }
-        isLoading = false
+        viewModel.fetchWorkspace(workspaceId)
     }
 
     val ws = workspace
@@ -328,13 +319,8 @@ fun WorkspaceOverviewScreen(
                         }
                         Button(
                             onClick = {
-                                coroutineScope.launch {
-                                    try {
-                                        withContext(Dispatchers.IO) { ApiClient.apiService.deleteWorkspace(workspaceId) }
-                                        showDeleteDialog = false; onBack()
-                                    } catch (e: Exception) {
-                                        Toast.makeText(context, "Failed to delete workspace", Toast.LENGTH_SHORT).show()
-                                    }
+                                viewModel.deleteWorkspace(workspaceId) {
+                                    showDeleteDialog = false; onBack()
                                 }
                             },
                             modifier = Modifier.weight(1f),

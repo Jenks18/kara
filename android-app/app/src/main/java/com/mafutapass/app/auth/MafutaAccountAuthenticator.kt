@@ -26,7 +26,6 @@ class MafutaAccountAuthenticator(
     companion object {
         const val ACCOUNT_TYPE = "com.mafutapass.app"
         const val AUTH_TOKEN_TYPE_CLERK = "clerk_session"
-        const val AUTH_TOKEN_TYPE_SUPABASE = "supabase_access"
         const val KEY_USER_EMAIL = "user_email"
         const val KEY_USER_ID = "user_id"
         const val KEY_TOKEN_EXPIRY = "token_expiry"
@@ -112,7 +111,6 @@ class MafutaAccountAuthenticator(
     override fun getAuthTokenLabel(authTokenType: String?): String {
         return when (authTokenType) {
             AUTH_TOKEN_TYPE_CLERK -> "Clerk Session"
-            AUTH_TOKEN_TYPE_SUPABASE -> "Supabase Access"
             else -> "Session Token"
         }
     }
