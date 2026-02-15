@@ -125,6 +125,16 @@ fun ProfileScreen(
             windowInsets = WindowInsets(0, 0, 0, 0)
         )
 
+        // Show loading indicator while profile data is being fetched
+        if (profileState is NetworkResult.Loading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            }
+        } else {
+
         LazyColumn(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -172,6 +182,7 @@ fun ProfileScreen(
             item { ProfileField("Address", address.ifEmpty { "Not set" }) { onNavigateToEditAddress() } }
             item { Spacer(Modifier.height(16.dp)) }
         }
+        } // end else (not loading)
     }
 
     // Avatar picker dialog

@@ -37,7 +37,11 @@ import com.mafutapass.app.util.DateUtils
 import com.mafutapass.app.viewmodel.ReportsViewModel
 
 @Composable
-fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
+fun ReportsScreen(
+    onNavigateToExpenseDetail: (String) -> Unit = {},
+    onNavigateToReportDetail: (String) -> Unit = {},
+    viewModel: ReportsViewModel = hiltViewModel()
+) {
     var selectedTab by remember { mutableStateOf(0) }
     val tabs = listOf("Expenses", "Reports")
 
@@ -120,15 +124,15 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
         } else if (selectedTab == 0) {
-            ExpensesTab(expenses)
+            ExpensesTab(expenses, onNavigateToExpenseDetail)
         } else {
-            ReportsTab(reports)
+            ReportsTab(reports, onNavigateToReportDetail)
         }
     }
 }
 
 @Composable
-fun ExpensesTab(expenses: List<ExpenseItem>) {
+fun ExpensesTab(expenses: List<ExpenseItem>, onNavigateToDetail: (String) -> Unit = {}) {
     if (expenses.isEmpty()) {
         EmptyState(
             message = "No expenses yet",
@@ -140,14 +144,14 @@ fun ExpensesTab(expenses: List<ExpenseItem>) {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(expenses) { expense ->
-                ExpenseCard(expense)
+                ExpenseCard(expense, onNavigateToDetail)
             }
         }
     }
 }
 
 @Composable
-fun ReportsTab(reports: List<ExpenseReport>) {
+fun ReportsTab(reports: List<ExpenseReport>, onNavigateToDetail: (String) -> Unit = {}) {
     if (reports.isEmpty()) {
         EmptyState(
             message = "No reports yet",
@@ -159,14 +163,14 @@ fun ReportsTab(reports: List<ExpenseReport>) {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(reports) { report ->
-                ReportCard(report)
+                ReportCard(report, onNavigateToDetail)
             }
         }
     }
 }
 
 @Composable
-fun ExpenseCard(expense: ExpenseItem) {
+fun ExpenseCard(expense: ExpenseItem, onNavigateToDetail: (String) -> Unit = {}) {
     val context = LocalContext.current
     val displayDate = DateUtils.formatShort(expense.transactionDate ?: expense.createdAt)
 
@@ -184,7 +188,7 @@ fun ExpenseCard(expense: ExpenseItem) {
         shadowElevation = 2.dp,
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { Toast.makeText(context, "${expense.merchantName ?: "Receipt"} - ${expense.category}", Toast.LENGTH_SHORT).show() }
+            .clickable { onNavigateToDetail(expense.id) }
     ) {
         Row(
             modifier = Modifier
@@ -300,7 +304,7 @@ fun ExpenseCard(expense: ExpenseItem) {
 }
 
 @Composable
-fun ReportCard(report: ExpenseReport) {
+fun ReportCard(report: ExpenseReport, onNavigateToDetail: (String) -> Unit = {}) {
     val context = LocalContext.current
     val displayDate = DateUtils.formatShort(report.createdAt)
 
@@ -310,7 +314,7 @@ fun ReportCard(report: ExpenseReport) {
         shadowElevation = 2.dp,
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { Toast.makeText(context, "${report.title} - ${report.itemsCount} items", Toast.LENGTH_SHORT).show() }
+            .clickable { onNavigateToDetail(report.id) }
     ) {
         Column(
             modifier = Modifier

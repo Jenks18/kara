@@ -39,7 +39,7 @@ export async function POST() {
       .maybeSingle() // Don't throw error if no rows
 
     if (fetchError) {
-      console.error('Error checking for existing profile:', fetchError)
+      console.error('Error checking for existing profile:', fetchError?.message || fetchError)
     }
 
     if (existingProfile) {
@@ -70,13 +70,13 @@ export async function POST() {
       .single()
 
     if (error) {
-      console.error('Error creating user profile:', error)
+      console.error('Error creating user profile:', error?.message || error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
     return NextResponse.json({ profile: newProfile })
   } catch (error) {
-    console.error('Error in user profile init:', error)
+    console.error('Error in user profile init:', error?.message || error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

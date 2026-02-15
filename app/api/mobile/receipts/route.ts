@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
       .limit(limit);
 
     if (error) {
-      console.error('Error fetching receipts:', error);
+      console.error('Error fetching receipts:', error?.message || error);
       return NextResponse.json(
         { error: 'Failed to fetch receipts', detail: error.message },
         { status: 500, headers: corsHeaders }
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(flattenItems(data || []), { headers: corsHeaders });
   } catch (error: any) {
-    console.error('Error in mobile receipts:', error);
+    console.error('Error in mobile receipts:', error?.message || error);
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500, headers: corsHeaders }

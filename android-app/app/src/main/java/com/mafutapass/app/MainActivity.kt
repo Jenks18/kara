@@ -80,8 +80,17 @@ fun MafutaPassApp(themeViewModel: ThemeViewModel) {
                 NavHost(navController = navController, startDestination = Screen.Reports.route,
                     modifier = Modifier.padding(paddingValues)) {
 
-                    composable(Screen.Reports.route) { ReportsScreen() }
-                    composable(Screen.Create.route) { CreateScreen() }
+                    composable(Screen.Reports.route) {
+                        ReportsScreen(
+                            onNavigateToExpenseDetail = { id -> navController.navigate("expenses/$id") },
+                            onNavigateToReportDetail = { id -> navController.navigate("reports/$id") }
+                        )
+                    }
+                    composable(Screen.Create.route) {
+                        CreateScreen(
+                            onNavigateToScanReceipt = { navController.navigate("scan-receipt") }
+                        )
+                    }
                     composable(Screen.Workspaces.route) {
                         WorkspacesScreen(
                             onNavigateToNewWorkspace = { navController.navigate("workspaces/new") },
@@ -159,6 +168,24 @@ fun MafutaPassApp(themeViewModel: ThemeViewModel) {
                     composable("workspaces/{workspaceId}/members") { entry ->
                         val wid = entry.arguments?.getString("workspaceId") ?: return@composable
                         WorkspaceMembersScreen(workspaceId = wid, onBack = { navController.popBackStack() })
+                    }
+                    composable("scan-receipt") {
+                        ScanReceiptScreen(
+                            onBack = { navController.popBackStack() },
+                            onNavigateToReport = { reportId -> navController.navigate("reports/$reportId") }
+                        )
+                    }
+                    composable("expenses/{expenseId}") { entry ->
+                        val eid = entry.arguments?.getString("expenseId") ?: return@composable
+                        ExpenseDetailScreen(expenseId = eid, onBack = { navController.popBackStack() })
+                    }
+                    composable("reports/{reportId}") { entry ->
+                        val rid = entry.arguments?.getString("reportId") ?: return@composable
+                        ReportDetailScreen(
+                            reportId = rid,
+                            onBack = { navController.popBackStack() },
+                            onNavigateToExpense = { id -> navController.navigate("expenses/$id") }
+                        )
                     }
                 }
             }

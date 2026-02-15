@@ -166,3 +166,34 @@ data class UpdateProfileResponse(
     val success: Boolean = false,
     val profile: UserProfile? = null
 )
+
+/**
+ * POST /api/mobile/receipts/upload response.
+ * API returns camelCase JSON, which matches Kotlin property names.
+ */
+data class ReceiptUploadResponse(
+    val success: Boolean = false,
+    val reportId: String? = null,
+    val imageUrl: String? = null,
+    val merchant: String? = null,
+    val amount: Double = 0.0,
+    val date: String? = null,
+    val kraVerified: Boolean = false,
+    val processingTimeMs: Long = 0,
+    val error: String? = null
+)
+
+/**
+ * GET /api/mobile/expense-reports/:id response.
+ * A report with its nested expense items.
+ */
+data class ExpenseReportDetail(
+    val id: String = "",
+    val title: String = "",
+    val status: String = "draft",
+    @SerializedName("workspace_name") val workspaceName: String = "",
+    @SerializedName("total_amount") val totalAmount: Double = 0.0,
+    @SerializedName("items_count") val itemsCount: Int = 0,
+    @SerializedName("created_at") val createdAt: String = "",
+    val items: List<ExpenseItem> = emptyList()
+)

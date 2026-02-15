@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
       data: invoiceData,
     });
   } catch (error) {
-    console.error('KRA scraping error:', error);
+    console.error('KRA scraping error:', error?.message || error);
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Unknown error',

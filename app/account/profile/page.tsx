@@ -62,12 +62,13 @@ export default function ProfilePage() {
   const [legalName, setLegalName] = useState('')
   const [address, setAddress] = useState('')
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [profileLoading, setProfileLoading] = useState(true)
   
   // Load profile data from database
   useEffect(() => {
     async function loadProfile() {
       if (!user?.id) return
-      
+      setProfileLoading(true)
       try {
         const profile = await getUserProfile(user.id)
         if (profile) {
@@ -95,6 +96,8 @@ export default function ProfilePage() {
         }
       } catch (error) {
         console.error('Error loading profile:', error)
+      } finally {
+        setProfileLoading(false)
       }
     }
     
@@ -178,6 +181,11 @@ export default function ProfilePage() {
       </div>
       
       {/* Content */}
+      {profileLoading ? (
+        <div className="flex items-center justify-center py-24">
+          <div className="w-8 h-8 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
+        </div>
+      ) : (
       <div className="px-4 py-6 max-w-md mx-auto space-y-6 pb-24">
         {/* Public Section */}
         <div className="space-y-4">
@@ -292,6 +300,7 @@ export default function ProfilePage() {
           </button>
         </div>
       </div>
+      )}
 
       {/* Avatar Picker Modal */}
       {showAvatarPicker && (

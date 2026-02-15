@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
       .limit(limit);
 
     if (error) {
-      console.error('Error fetching reports:', error);
+      console.error('Error fetching reports:', error?.message || error);
       return NextResponse.json(
         { error: 'Failed to fetch reports', detail: error.message },
         { status: 500, headers: corsHeaders }
@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
     const reportsWithDetails = await enrichReports(supabase, reports);
     return NextResponse.json(reportsWithDetails, { headers: corsHeaders });
   } catch (error: any) {
-    console.error('Error in mobile expense-reports:', error);
+    console.error('Error in mobile expense-reports:', error?.message || error);
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500, headers: corsHeaders }
@@ -104,12 +104,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { supabase, userId } = mobileClient;
+    const { supabase, userId, email: userEmail } = mobileClient;
 
     const { data: report, error } = await supabase
       .from('expense_reports')
       .insert({
         user_id: userId,
+        user_email: userEmail,
         workspace_name: body.workspaceName || body.workspace_name || '',
         title: body.title || 'Untitled Report',
         status: 'draft',
@@ -119,7 +120,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('Error creating report:', error);
+      console.error('Error creating report:', error?.message || error);
       return NextResponse.json(
         { error: 'Failed to create report', detail: error.message },
         { status: 500, headers: corsHeaders }
@@ -128,7 +129,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ reportId: report.id, ...report }, { status: 201, headers: corsHeaders });
   } catch (error: any) {
-    console.error('Error in mobile create report:', error);
+    console.error('Error in mobile create report:', error?.message || error);
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500, headers: corsHeaders }

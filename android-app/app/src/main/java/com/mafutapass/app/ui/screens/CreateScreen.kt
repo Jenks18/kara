@@ -21,6 +21,7 @@ import com.mafutapass.app.viewmodel.CreateReportViewModel
 
 @Composable
 fun CreateScreen(
+    onNavigateToScanReceipt: () -> Unit = {},
     viewModel: CreateReportViewModel = hiltViewModel()
 ) {
     var showCreateReportDialog by remember { mutableStateOf(false) }
@@ -35,7 +36,7 @@ fun CreateScreen(
             icon = Icons.Filled.Receipt,
             label = "Scan Receipt",
             description = "Capture fuel receipt with camera",
-            onClick = { showComingSoonDialog = "Receipt scanning" }
+            onClick = onNavigateToScanReceipt
         ),
         CreateOption(
             icon = Icons.Filled.ChatBubble,

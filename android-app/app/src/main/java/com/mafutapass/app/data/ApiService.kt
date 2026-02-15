@@ -43,6 +43,21 @@ interface ApiService {
     @GET("api/mobile/receipts")
     suspend fun getReceipts(@Query("workspaceId") workspaceId: String? = null): List<ExpenseItem>
     
+    @GET("api/mobile/receipts/{id}")
+    suspend fun getReceipt(@Path("id") id: String): ExpenseItem
+    
+    @GET("api/mobile/expense-reports/{id}")
+    suspend fun getExpenseReport(@Path("id") id: String): ExpenseReportDetail
+    
+    @Multipart
+    @POST("api/mobile/receipts/upload")
+    suspend fun uploadReceipt(
+        @Part image: okhttp3.MultipartBody.Part,
+        @Part("reportId") reportId: okhttp3.RequestBody? = null,
+        @Part("latitude") latitude: okhttp3.RequestBody? = null,
+        @Part("longitude") longitude: okhttp3.RequestBody? = null
+    ): ReceiptUploadResponse
+    
     // ============= Workspace Members =============
     
     @GET("api/mobile/workspaces/{id}/members")

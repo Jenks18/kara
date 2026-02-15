@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     );
 
     if (stderr) {
-      console.error('Python stderr:', stderr);
+      // Python stderr captured but not logged in production
     }
 
     const result = JSON.parse(stdout);
@@ -46,11 +46,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error('Python processor error:', error);
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Unknown error',
-        details: error instanceof Error ? error.stack : undefined,
       },
       { status: 500 }
     );

@@ -159,18 +159,12 @@ export async function POST(request: NextRequest) {
             .single();
 
           if (reportError) {
-            console.error('❌ FAILED TO CREATE REPORT:', JSON.stringify(reportError, null, 2));
-            console.error('❌ Report error code:', reportError.code);
-            console.error('❌ Report error message:', reportError.message);
-            console.error('❌ Report error details:', reportError.details);
-            console.error('❌ Report error hint:', reportError.hint);
             result.warnings.push(`Could not create expense report: ${reportError.message}`);
             
             // Don't proceed if we can't create a report
             return NextResponse.json({
               success: false,
               error: `Failed to create expense report: ${reportError.message}`,
-              details: reportError
             }, { status: 500 });
           }
           
@@ -245,7 +239,6 @@ export async function POST(request: NextRequest) {
             .single();
 
           if (itemError) {
-            console.error('Failed to create expense item:', itemError);
             result.warnings.push('Receipt saved but not added to reports view');
           } else {
             
@@ -267,7 +260,6 @@ export async function POST(request: NextRequest) {
           }
         }
       } catch (error: any) {
-        console.error('Error creating expense item:', error);
         result.warnings.push('Receipt saved but not added to reports view');
       }
     }
@@ -313,14 +305,12 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error: any) {
-    console.error('❌ API error:', error);
-    console.error('Stack trace:', error.stack);
+    console.error('Upload error:', error.message);
     
     return NextResponse.json({
       success: false,
       error: 'Processing failed',
       message: error.message || 'An unexpected error occurred',
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
     }, {
       status: 500,
     });

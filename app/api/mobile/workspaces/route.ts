@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching workspaces:', error);
+      console.error('Error fetching workspaces:', error?.message || error);
       return NextResponse.json(
         { error: 'Failed to fetch workspaces', detail: error.message },
         { status: 500, headers: corsHeaders }
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ workspaces: data || [] }, { headers: corsHeaders });
   } catch (error: any) {
-    console.error('Error in mobile workspaces:', error);
+    console.error('Error in mobile workspaces:', error?.message || error);
     return NextResponse.json(
       { error: error.message || 'Failed to fetch workspaces' },
       { status: 500, headers: corsHeaders }
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('Error creating workspace:', error);
+      console.error('Error creating workspace:', error?.message || error);
       return NextResponse.json(
         { error: 'Failed to create workspace', detail: error.message },
         { status: 500, headers: corsHeaders }
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ workspace }, { status: 201, headers: corsHeaders });
   } catch (error: any) {
-    console.error('Error in mobile create workspace:', error);
+    console.error('Error in mobile create workspace:', error?.message || error);
     return NextResponse.json(
       { error: error.message || 'Failed to create workspace' },
       { status: 500, headers: corsHeaders }

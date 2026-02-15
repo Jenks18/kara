@@ -92,7 +92,6 @@ export async function POST(req: NextRequest) {
 
     if (!visionResponse.ok) {
       const error = await visionResponse.text();
-      console.error('Google Vision API error:', error);
       
       // Return helpful error message with setup instructions
       return NextResponse.json({
@@ -172,19 +171,16 @@ export async function POST(req: NextRequest) {
           response.processing_notes.push('KRA invoice data scraped successfully');
         }
       } catch (error) {
-        console.error('KRA scraping error:', error);
         response.processing_notes.push('KRA scraping failed');
       }
     }
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error('Processing error:', error);
     return NextResponse.json(
       {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
-        details: error instanceof Error ? error.stack : undefined,
       },
       { status: 500 }
     );

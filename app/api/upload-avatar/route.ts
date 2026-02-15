@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       })
 
     if (uploadError) {
-      console.error('Upload error:', uploadError)
+      console.error('Upload error:', uploadError?.message || uploadError)
       return NextResponse.json({ error: uploadError.message }, { status: 500 })
     }
 
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       url: urlData.publicUrl 
     })
   } catch (error) {
-    console.error('Error uploading avatar:', error)
+    console.error('Error uploading avatar:', error?.message || error)
     return NextResponse.json({ error: 'Upload failed' }, { status: 500 })
   }
 }
