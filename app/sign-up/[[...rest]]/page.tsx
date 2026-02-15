@@ -5,7 +5,7 @@ export default function SignUpPage() {
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 p-4">
       <div className="w-full max-w-md">
         <SignUp 
-          forceRedirectUrl="/reports"
+          fallbackRedirectUrl="/reports"
           appearance={{
             variables: {
               colorText: '#111827',
@@ -18,12 +18,9 @@ export default function SignUpPage() {
               card: 'bg-white shadow-none border-0',
               headerTitle: 'text-gray-900',
               headerSubtitle: 'text-gray-600',
-              socialButtonsBlockButton: 'border-gray-200 hover:bg-gray-50 text-gray-900',
+              socialButtonsBlockButton: 'border-gray-200 hover:bg-gray-50',
               formButtonPrimary: 'bg-emerald-600 hover:bg-emerald-700',
-              formFieldInput: 'border-gray-200 focus:border-emerald-500 focus:ring-emerald-500 text-gray-900 bg-white',
-              formFieldLabel: 'text-gray-700',
-              identityPreviewText: 'text-gray-900',
-              identityPreviewEditButton: 'text-emerald-600',
+              formFieldInput: 'border-gray-200 focus:border-emerald-500 focus:ring-emerald-500',
               footerActionLink: 'text-emerald-600 hover:text-emerald-700'
             }
           }}
