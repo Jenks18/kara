@@ -242,7 +242,7 @@ private fun ReportDetailContent(
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            item.merchantName?.ifEmpty { null } ?: "Unknown Merchant",
+                            item.cleanMerchantName() ?: "Unknown Merchant",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurface

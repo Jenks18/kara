@@ -21,7 +21,17 @@ data class ExpenseItem(
     @SerializedName("processing_status")
     val processingStatus: String = "processed",
     val description: String? = null
-)
+) {
+    /** Filter garbage merchant names returned by AI extraction */
+    fun cleanMerchantName(): String? {
+        val raw = merchantName?.trim() ?: return null
+        val garbageNames = setOf(
+            "processing...", "unknown", "unknown merchant", "n/a", "null",
+            "< receipt", "<receipt", "receipt", "merchant"
+        )
+        return if (raw.isBlank() || raw.lowercase() in garbageNames) null else raw
+    }
+}
 
 data class ExpenseReport(
     val id: String = "",
@@ -181,7 +191,17 @@ data class ReceiptUploadResponse(
     val kraVerified: Boolean = false,
     val processingTimeMs: Long = 0,
     val error: String? = null
-)
+) {
+    /** Filter garbage merchant names from AI extraction */
+    fun cleanMerchant(): String {
+        val raw = merchant?.trim() ?: return "Unknown Merchant"
+        val garbageNames = setOf(
+            "processing...", "unknown", "unknown merchant", "n/a", "null",
+            "< receipt", "<receipt", "receipt", "merchant"
+        )
+        return if (raw.isBlank() || raw.lowercase() in garbageNames) "Unknown Merchant" else raw
+    }
+}
 
 /**
  * GET /api/mobile/expense-reports/:id response.

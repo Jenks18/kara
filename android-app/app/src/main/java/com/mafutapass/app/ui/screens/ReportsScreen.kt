@@ -242,7 +242,7 @@ fun ExpenseCard(expense: ExpenseItem, onNavigateToDetail: (String) -> Unit = {})
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = expense.merchantName?.ifEmpty { null } ?: "Unknown Merchant",
+                    text = expense.cleanMerchantName() ?: "Unknown Merchant",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,

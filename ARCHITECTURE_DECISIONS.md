@@ -2,7 +2,7 @@
 
 > **Purpose:** Persistent record of every architecture/engineering decision and the reasoning behind it.  
 > **Rule:** Before changing ANY config, dependency, or pattern — CHECK this file first.  
-> **Last updated:** 2026-02-16
+> **Last updated:** 2026-02-17
 
 ---
 
@@ -16,8 +16,9 @@
 6. [Serialization Rules](#6-serialization-rules)
 7. [Networking Rules](#7-networking-rules)
 8. [Security Rules](#8-security-rules)
-9. [Dead Code & Removed Items](#9-dead-code--removed-items)
-10. [Version Pinning Log](#10-version-pinning-log)
+9. [Camera & Receipt Processing](#9-camera--receipt-processing)
+10. [Dead Code & Removed Items](#10-dead-code--removed-items)
+11. [Version Pinning Log](#11-version-pinning-log)
 
 ---
 
@@ -62,6 +63,8 @@
 | Google ID | `googleid` | 1.1.1 | Latest stable |
 | CameraX | `camera-*` | 1.4.1 | Latest stable for compileSdk 35 |
 | ML Kit | `text-recognition` | 16.0.1 | Latest stable |
+| ML Kit | `barcode-scanning` | 17.3.0 | Real-time QR/eTIMS detection on camera frames |
+| ML Kit | `play-services-mlkit-document-scanner` | 16.0.0 | Smart Scan: boundary detection, auto-crop, perspective correction |
 | Hilt | `hilt-android` | 2.56.2 | Latest stable |
 | Hilt Nav | `hilt-navigation-compose` | 1.2.0 | Latest stable |
 | Hilt Work | `hilt-work` | 1.2.0 | Latest stable |
@@ -137,6 +140,8 @@ These are the auth infrastructure itself. They cannot use the Retrofit pipeline 
 | `ClerkUserData` | DTO for Clerk user sub-object (camelCase naturally) | Models.kt |
 | `UpdateProfileRequest` | Request body for PATCH /mobile-profile (snake_case via @SerializedName) | Models.kt |
 | `UpdateProfileResponse` | Response for PATCH /mobile-profile | Models.kt |
+| `UpdateReceiptRequest` | Request body for PATCH /mobile/receipts/:id (merchant_name, amount, category, transaction_date, description) | Models.kt |
+| `UpdateReceiptResponse` | Response for PATCH /mobile/receipts/:id (success, id, error) | Models.kt |
 | `ReceiptUploadResponse` | Response for POST /mobile/receipts/upload (camelCase, NO @SerializedName) | Models.kt |
 | `ExpenseReportDetail` | Report with nested items for detail screen (snake_case via @SerializedName) | Models.kt |
 
@@ -149,7 +154,8 @@ Backend mints a Supabase JWT so RLS auto-filters data by user.
 |----------|--------|---------|
 | `/api/mobile/receipts` | GET | List expense items |
 | `/api/mobile/receipts/:id` | GET | Single expense item detail |
-| `/api/mobile/receipts/upload` | POST | Upload receipt image (multipart, 10MB max, type-validated) |
+| `/api/mobile/receipts/:id` | PATCH | Update expense item fields (merchant, amount, category, date, description). Auto-sets `processing_status = 'processed'`, recalculates report total if amount changed. |
+| `/api/mobile/receipts/upload` | POST | Upload receipt image (multipart, 10MB max, type-validated). Accepts optional `qrUrl` text field for mobile-detected QR. Returns field-level confidence scores. |
 | `/api/mobile/expense-reports` | GET | List expense reports |
 | `/api/mobile/expense-reports` | POST | Create expense report |
 | `/api/mobile/expense-reports/:id` | GET | Single report with nested items |
@@ -281,7 +287,70 @@ adds them again by default. Without this, the top of every screen has ~48dp of d
 
 ---
 
-## 9. Dead Code & Removed Items
+## 9. Camera & Receipt Processing
+
+### Rules
+
+1. **Post-capture QR scanning on all images.** After capture (Document Scanner or Gallery), each image is scanned for QR codes via `scanImageForQrCode()`. No dependency on real-time camera-frame scanning for the primary flow.
+2. **Two separate data channels.** Receipt image and QR URL travel independently. QR URL is sent as a `qrUrl` text field alongside the image upload — not re-extracted from the image server-side.
+3. **Two capture methods.** Scan Receipt (ML Kit Document Scanner with boundary detection + multi-page) and Choose from Gallery. Fallback CameraX multi-capture camera if Document Scanner fails.
+4. **QR URL filters.** Only URLs containing `etims`, `kra.go.ke`, or `itax` are accepted as eTIMS QR codes. Other QR codes are ignored.
+5. **Confidence-based triage.** Receipts with AI confidence ≥0.7 are `processed`. Below 0.7 are `needs_review` and auto-tagged for user attention.
+6. **Date format is `dd/MM/yyyy` (en-GB).** All dates throughout the system use Kenyan locale. Never `MM/dd/yyyy`.
+7. **Editable receipts save via PATCH.** ExpenseDetailScreen edit mode → PATCH `/api/mobile/receipts/{id}`. Backend auto-sets `processing_status = 'processed'` and recalculates report total if amount changed.
+
+### Camera Architecture
+
+| Method | SDK | Use Case |
+|--------|-----|----------|
+| Scan Receipt | `GmsDocumentScanning` (ML Kit Document Scanner) | Primary method. Auto boundary detection, perspective correction, crop, multi-page (up to 5). |
+| Choose from Gallery | System photo picker | Existing photos from device. |
+| Fallback Camera | CameraX `ImageCapture` + ML Kit `BarcodeScanner` via `ImageAnalysis` | Only if Document Scanner fails to start. Multi-capture + real-time QR. |
+
+### QR Detection Flow
+
+```
+Captured Image (bytes)
+    │
+    ├── scanImageForQrCode(context, bytes)
+    │       │
+    │       ├── BitmapFactory.decodeByteArray → InputImage
+    │       ├── ML Kit BarcodeScanner.process(inputImage)
+    │       │       │
+    │       │       ├── No barcodes → skip
+    │       │       └── Barcodes found → filter for eTIMS/KRA/iTax URLs
+    │       │               │
+    │       │               ├── No match → skip
+    │       │               └── Match → viewModel.setDetectedQrUrl(url)
+    │       │
+    │       └── Works on images from Document Scanner AND Gallery
+    │
+    └── On upload: qrUrl sent as text field, separate from image
+```
+
+### AI Pipeline (Gemini 2.5 Flash)
+
+| Stage | Input | Output |
+|-------|-------|--------|
+| OCR + Vision | Receipt image | Raw extracted text |
+| Structured extraction | Raw text + enhanced prompt | Merchant, amount, date, fuel_type, litres, items |
+| Category detection | Merchant name + receipt content | One of 8 categories (Fuel, Food & Drink, etc.) |
+| Confidence scoring | All fields | Per-field confidence (0.0–1.0) + overall weighted average |
+
+**Kenyan receipt patterns in prompt:** Shell, TotalEnergies, Rubis, Naivas, Carrefour, M-Pesa, Java House, KFC Kenya, etc.
+
+### Receipt Editing
+
+| Component | Role |
+|-----------|------|
+| `ExpenseDetailScreen` | Read mode + Edit mode. Edit shows `OutlinedTextField` per field, category dropdown, Save/Cancel. |
+| `ExpenseDetailViewModel` | `updateExpense()` → PATCH API. Manages `_isSaving`, `_saveSuccess` states. |
+| `ApiService.updateReceipt()` | `@PATCH("api/mobile/receipts/{id}")` with `UpdateReceiptRequest` body. |
+| Backend PATCH handler | Validates allowed fields, auto-sets `processing_status = 'processed'`, recalculates report total. |
+
+---
+
+## 10. Dead Code & Removed Items
 
 These have been intentionally deleted. Do NOT recreate them.
 
@@ -306,7 +375,7 @@ These have been intentionally deleted. Do NOT recreate them.
 
 ---
 
-## 10. Version Pinning Log
+## 11. Version Pinning Log
 
 Record of every version change with reasoning.
 
@@ -330,3 +399,5 @@ Record of every version change with reasoning.
 | 2026-02-15 | Removed browser | 1.8.0 | — | Zero imports |
 | 2026-02-15 | Removed accompanist-permissions | 0.32.0 | — | Zero imports |
 | 2026-02-15 | Removed datastore-preferences | 1.0.0 | — | Zero imports |
+| 2026-02-17 | Added barcode-scanning | — | 17.3.0 | Real-time eTIMS QR detection on camera frames |
+| 2026-02-17 | Added play-services-mlkit-document-scanner | — | 16.0.0 | Smart Scan: boundary detection, auto-crop, perspective correction |

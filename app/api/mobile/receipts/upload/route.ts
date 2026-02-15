@@ -111,10 +111,15 @@ export async function POST(request: NextRequest) {
         }
 
         if (finalReportId) {
-          const merchantName = result.kraData?.merchantName ||
+          // Build merchant name from best available source, filtering out garbage values
+          const rawMerchant = result.kraData?.merchantName ||
             result.parsedData?.merchantName ||
             result.store?.name ||
-            'Processing...';
+            null;
+          const garbageNames = ['processing...', 'unknown', 'unknown merchant', 'n/a', 'null', '', '< receipt'];
+          const merchantName = (rawMerchant && !garbageNames.includes(rawMerchant.toLowerCase().trim()))
+            ? rawMerchant.trim()
+            : 'Unknown Merchant';
 
           const amount = result.kraData?.totalAmount ||
             result.parsedData?.totalAmount ||
@@ -133,11 +138,11 @@ export async function POST(request: NextRequest) {
             transactionDate = new Date().toISOString().split('T')[0];
           }
 
-          const hasExtractedData = amount > 0 && merchantName !== 'Processing...';
+          const hasExtractedData = amount > 0 && merchantName !== 'Unknown Merchant';
           const needsReview = result.fieldConfidence?.merchantName?.needsReview ||
             result.fieldConfidence?.amount?.needsReview ||
             result.fieldConfidence?.date?.needsReview;
-          const initialStatus = hasExtractedData ? (needsReview ? 'needs_review' : 'processed') : 'error';
+          const initialStatus = hasExtractedData ? (needsReview ? 'needs_review' : 'processed') : 'needs_review';
 
           // Use AI-detected category, fall back to 'Fuel' for KRA-verified receipts
           const category = result.parsedData?.category || (result.kraData?.invoiceNumber ? 'Fuel' : 'Other');
@@ -164,8 +169,8 @@ export async function POST(request: NextRequest) {
               transaction_date: transactionDate,
               kra_invoice_number: result.kraData?.invoiceNumber || null,
               kra_verified: !!result.kraData?.invoiceNumber,
-              description: confidenceScore < 70 
-                ? `AI confidence: ${confidenceScore}% — please verify` 
+              description: initialStatus === 'needs_review'
+                ? 'Some details could not be verified — please review and update'
                 : null,
             });
 
@@ -190,7 +195,11 @@ export async function POST(request: NextRequest) {
       success: uploadSucceeded,
       reportId: finalReportId,
       imageUrl: result.imageUrl,
-      merchant: result.kraData?.merchantName || result.parsedData?.merchantName || null,
+      merchant: (() => {
+        const raw = result.kraData?.merchantName || result.parsedData?.merchantName || null;
+        const bad = ['processing...', 'unknown', 'unknown merchant', 'n/a', 'null', '', '< receipt'];
+        return (raw && !bad.includes(raw.toLowerCase().trim())) ? raw.trim() : null;
+      })(),
       amount: result.kraData?.totalAmount || result.parsedData?.totalAmount || 0,
       date: result.kraData?.invoiceDate || result.parsedData?.transactionDate || null,
       category: result.parsedData?.category || 'Other',

@@ -1,19 +1,32 @@
-# Kara - Fuel Expense Tracker 🚗⛽
+# MafutaPass — AI-Powered Fuel Expense Tracker 🚗⛽
 
-A mobile-first web application for tracking fuel expenses in Kenya, inspired by Expensify with a focus on fuel receipts and mileage tracking.
+A multi-platform expense tracking app for businesses in Kenya. Photograph fuel receipts, auto-extract data via AI + eTIMS QR scanning, group expenses into reports, and manage multi-tenant workspaces.
 
-![Kara App](https://img.shields.io/badge/Next.js-14-black?style=flat&logo=next.js)
+![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat&logo=next.js)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=flat&logo=typescript)
+![Kotlin](https://img.shields.io/badge/Kotlin-2.2-purple?style=flat&logo=kotlin)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-3-38bdf8?style=flat&logo=tailwind-css)
+
+## Platforms
+
+| Platform | Stack | Status |
+|----------|-------|--------|
+| Web | Next.js 15 + Tailwind + Clerk | Production (mafutapass.com) |
+| Android | Kotlin + Jetpack Compose + Material3 + Hilt | In Development |
+| iOS | SwiftUI + Clerk SDK | In Development |
 
 ## ✨ Features
 
-- 📱 **Mobile-First Design** - Optimized for smartphones with thumb-friendly navigation
-- 📸 **Quick Receipt Capture** - Floating action button for instant photo capture
-- 💰 **Expense Tracking** - Track fuel expenses with amounts, dates, and locations
-- 📊 **Reports Dashboard** - View and filter your expense reports
-- 🎨 **Beautiful Dark Theme** - Modern dark green aesthetic with smooth animations
-- 🚀 **PWA Ready** - Install as a mobile app for native-like experience
+- 📱 **Mobile-First Design** — Optimized for smartphones, emerald brand palette, Light/Dark/System theme
+- 📸 **Smart Receipt Capture** — 3 methods: Smart Scan (ML Kit boundary detection), Quick Camera (multi-capture + real-time QR), Gallery
+- 🔍 **eTIMS QR Scanning** — Real-time ML Kit Barcode Scanner detects KRA/eTIMS QR codes on camera frames
+- 🤖 **AI Extraction** — Gemini 2.5 Flash with Kenyan receipt patterns, auto-detects merchant, amount, date, fuel type, litres, category
+- 📊 **Confidence Scoring** — Field-level confidence (0.0–1.0), low-confidence receipts auto-tagged "Needs Review"
+- ✏️ **Editable Receipts** — Inline edit mode to correct AI-extracted data, with category dropdown and save
+- 💰 **Expense Reports** — Group receipts, draft/submit/approve workflow
+- 🏢 **Workspaces** — Multi-tenant isolation (personal + business)
+- 👤 **User Profiles** — Emoji avatar system with customizable backgrounds
+- 🔒 **Backend-Only Auth** — JWT minted server-side only, no Clerk/Supabase SDK in mobile apps
 
 ## 🚀 Getting Started
 
@@ -81,11 +94,27 @@ yarn dev
 
 ## 🛠️ Tech Stack
 
-- **Framework**: [Next.js 14](https://nextjs.org/) with App Router
-- **Language**: [TypeScript](https://www.typescriptlang.org/)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
-- **Icons**: [Lucide React](https://lucide.dev/)
-- **Deployment**: [Vercel](https://vercel.com)
+### Web / Backend
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| Next.js | 15.1.3 | Framework (App Router) |
+| TypeScript | 5 | Language |
+| Clerk | 6.36.6 | Web authentication |
+| Supabase | 2.89.0 | Database (Postgres + RLS) + Storage |
+| Tailwind CSS | 3.3.0 | Styling |
+| Gemini AI | 2.5 Flash | Receipt vision + extraction |
+| Sharp | 0.33.5 | Image processing |
+
+### Android
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| Kotlin | 2.2.0 | Language |
+| Jetpack Compose | BOM 2024.12.01 | UI framework |
+| Hilt | 2.56.2 | Dependency injection |
+| CameraX | 1.4.1 | Camera capture |
+| ML Kit Barcode | 17.3.0 | Real-time QR detection |
+| ML Kit Doc Scanner | 16.0.0 | Smart Scan boundary detection |
+| Retrofit | 2.11.0 | Networking |
 
 ## 🎨 Design System
 
@@ -102,31 +131,31 @@ See the full design system in the project documentation.
 ## 📦 Project Structure
 
 ```
-kara/
-├── app/                    # Next.js app directory
-│   ├── page.tsx           # Home/Inbox page
-│   ├── reports/           # Reports page
-│   ├── create/            # Create page
-│   ├── workspaces/        # Workspaces page
-│   ├── account/           # Account settings page
-│   ├── layout.tsx         # Root layout
-│   └── globals.css        # Global styles
-├── components/
-│   ├── ui/                # Reusable UI components
-│   │   ├── Button.tsx
-│   │   ├── Card.tsx
-│   │   ├── Badge.tsx
-│   │   ├── CategoryPill.tsx
-│   │   ├── FAB.tsx
-│   │   └── EmptyState.tsx
-│   ├── expense/           # Expense-specific components
-│   │   ├── ExpenseCard.tsx
-│   │   └── StatsCard.tsx
-│   └── navigation/        # Navigation components
-│       ├── BottomNav.tsx
-│       └── Header.tsx
-├── public/                # Static assets
-└── tailwind.config.ts     # Tailwind configuration
+├── app/                       Next.js App Router
+│   ├── page.tsx               Landing → redirects to /reports
+│   ├── reports/               Expense reports list + [id] detail
+│   ├── create/                Create new expense
+│   ├── workspaces/            Workspaces list + [id] + new
+│   ├── account/               Profile, preferences, security, wallet, about
+│   ├── api/
+│   │   ├── auth/              Mobile auth endpoints (JWT minting)
+│   │   ├── mobile/            Mobile data endpoints (Bearer JWT)
+│   │   └── receipts/          Web receipt upload + processing
+│   └── sign-in/, sign-up/     Clerk auth pages
+├── android-app/               Kotlin + Compose + Hilt
+│   └── app/src/main/java/com/mafutapass/app/
+│       ├── ui/screens/        AddReceiptScreen, ExpenseDetailScreen, etc.
+│       ├── viewmodel/         ScanReceiptVM, ExpenseDetailVM, etc.
+│       └── data/              ApiService, Models, network modules
+├── ios-app/                   SwiftUI (in development)
+├── lib/
+│   ├── receipt-processing/
+│   │   ├── orchestrator.ts    7-stage receipt pipeline
+│   │   └── ocr-ai.ts         Gemini 2.5 Flash extraction + confidence
+│   ├── auth/                  JWT minting + verification
+│   └── supabase/              DB clients (browser, server, mobile)
+├── components/                React UI components
+└── migrations/                Supabase SQL migrations
 ```
 
 ## 🚀 Deployment to Vercel
@@ -151,19 +180,24 @@ vercel
 
 ### Environment Variables
 
-No environment variables are required for the initial deployment. The app works out of the box!
+See `ARCHITECTURE.md` section 10.2 for the full list. Key variables: `CLERK_SECRET_KEY`, `SUPABASE_JWT_SECRET`, `GEMINI_API_KEY`.
 
 ## 🗺️ Roadmap
 
-- [ ] OCR receipt scanning with AI
-- [ ] Real-time expense sync
+- [x] AI receipt scanning with Gemini 2.5 Flash
+- [x] eTIMS QR code scanning (ML Kit Barcode)
+- [x] Smart Scan with boundary detection (ML Kit Document Scanner)
+- [x] Multi-capture camera for long receipts
+- [x] Field-level confidence scoring
+- [x] Editable receipt details
+- [x] Backend-only JWT authentication
+- [x] Kenyan date format (dd/MM/yyyy)
 - [ ] Multi-currency support
 - [ ] Export to PDF/CSV
-- [ ] Team collaboration features
-- [ ] Integration with accounting software
-- [ ] Offline support with service workers
+- [ ] Team collaboration features (workspaces v2)
+- [ ] Offline support with background sync
 - [ ] Push notifications
-- [ ] Biometric authentication
+- [ ] Play Store / App Store release
 
 ## 🤝 Contributing
 
@@ -175,16 +209,16 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
+## 📄 Documentation
+
+- [ARCHITECTURE.md](ARCHITECTURE.md) — Single source of truth: system design, API reference, database schema
+- [ARCHITECTURE_DECISIONS.md](ARCHITECTURE_DECISIONS.md) — ADR log: every engineering decision with rationale
+- [android-app/README.md](android-app/README.md) — Android build, setup, project structure
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 👏 Acknowledgments
 
-- Design inspired by [Expensify](https://www.expensify.com/)
-- UI patterns from modern fintech apps
-- Built with love for Kenya 🇰🇪
-
----
-
-**Built with ❤️ for fuel expense tracking in Kenya**
+**Built with ❤️ for fuel expense tracking in Kenya 🇰🇪**

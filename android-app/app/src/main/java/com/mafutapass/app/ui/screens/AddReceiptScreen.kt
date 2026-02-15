@@ -62,12 +62,14 @@ private const val TAG = "AddReceiptScreen"
 /**
  * AddReceiptScreen — the "Create" / middle tab in the bottom navigation.
  *
- * Three capture methods:
- *  1. ML Kit Document Scanner — detects receipt edges, crops, perspective-corrects
- *  2. Quick Camera — multi-capture mode (keep camera open, add pages for long receipts)
- *  3. Gallery — pick from existing images
+ * Two capture methods:
+ *  1. Scan Receipt — ML Kit Document Scanner (detects receipt edges, crops,
+ *     perspective-corrects, supports multi-page). Falls back to CameraX
+ *     multi-capture if Document Scanner fails to initialise.
+ *  2. Gallery — pick from existing images
  *
- * QR codes (eTIMS) are detected automatically during Quick Camera via ML Kit Barcode.
+ * After capture (either method), captured images are scanned for eTIMS QR codes
+ * via ML Kit Barcode Scanner before upload.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,11 +84,25 @@ fun AddReceiptScreen(
     val uploadResults by viewModel.uploadResults.collectAsState()
     val currentUploadIndex by viewModel.currentUploadIndex.collectAsState()
 
-    // Gallery picker
+    // Gallery picker — also scans each image for eTIMS QR codes
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetMultipleContents()
     ) { uris: List<Uri> ->
-        uris.forEach { uri -> viewModel.addImageFromUri(uri) }
+        uris.forEach { uri ->
+            viewModel.addImageFromUri(uri)
+            // Scan gallery image for QR code
+            try {
+                val inputStream = context.contentResolver.openInputStream(uri)
+                inputStream?.use { stream ->
+                    val bytes = stream.readBytes()
+                    scanImageForQrCode(context, bytes) { qrUrl ->
+                        viewModel.setDetectedQrUrl(qrUrl)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to scan gallery image for QR: ${e.message}")
+            }
+        }
     }
 
     // === ML Kit Document Scanner ===
@@ -109,7 +125,12 @@ fun AddReceiptScreen(
                 try {
                     val inputStream = context.contentResolver.openInputStream(page.imageUri)
                     inputStream?.use { stream ->
-                        viewModel.addImageBytes(stream.readBytes())
+                        val bytes = stream.readBytes()
+                        viewModel.addImageBytes(bytes)
+                        // Scan each captured image for eTIMS QR codes
+                        scanImageForQrCode(context, bytes) { qrUrl ->
+                            viewModel.setDetectedQrUrl(qrUrl)
+                        }
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to read scanned page: ${e.message}")
@@ -118,7 +139,7 @@ fun AddReceiptScreen(
         }
     }
 
-    // Camera permission + state
+    // Camera permission + state (for fallback multi-capture camera)
     var showCamera by remember { mutableStateOf(false) }
     var hasCameraPermission by remember { mutableStateOf(false) }
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -129,7 +150,7 @@ fun AddReceiptScreen(
         else Toast.makeText(context, "Camera permission required to scan receipts", Toast.LENGTH_SHORT).show()
     }
 
-    // Full-screen camera overlay — multi-capture mode
+    // Full-screen fallback camera — used only if Document Scanner fails to start
     if (showCamera && hasCameraPermission) {
         MultiCaptureCamera(
             onImageCaptured = { bytes -> viewModel.addImageBytes(bytes) },
@@ -168,7 +189,7 @@ fun AddReceiptScreen(
 
         when (val state = uiState) {
             is ScanState.ChooseMethod -> ChooseMethodSection(
-                onSmartScan = {
+                onScanReceipt = {
                     if (activity != null) {
                         scanner.getStartScanIntent(activity)
                             .addOnSuccessListener { intentSender ->
@@ -176,12 +197,11 @@ fun AddReceiptScreen(
                             }
                             .addOnFailureListener { e ->
                                 Log.e(TAG, "Document scanner failed to start: ${e.message}")
-                                // Fall back to regular camera
+                                // Fall back to multi-capture camera
                                 permissionLauncher.launch(Manifest.permission.CAMERA)
                             }
                     }
                 },
-                onQuickCamera = { permissionLauncher.launch(Manifest.permission.CAMERA) },
                 onChooseFromGallery = { galleryLauncher.launch("image/*") }
             )
             is ScanState.ReviewImages -> ReviewImagesSection(
@@ -209,8 +229,7 @@ fun AddReceiptScreen(
 
 @Composable
 private fun ChooseMethodSection(
-    onSmartScan: () -> Unit,
-    onQuickCamera: () -> Unit,
+    onScanReceipt: () -> Unit,
     onChooseFromGallery: () -> Unit
 ) {
     Column(
@@ -236,27 +255,27 @@ private fun ChooseMethodSection(
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            "Smart Scan auto-detects receipt edges",
+            "Auto-detects receipt edges and supports multi-page capture",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
         Spacer(Modifier.height(32.dp))
 
-        // Primary: Smart Scan (ML Kit Document Scanner)
+        // Primary: Scan Receipt (ML Kit Document Scanner)
         Button(
-            onClick = onSmartScan,
+            onClick = onScanReceipt,
             modifier = Modifier.fillMaxWidth().height(56.dp),
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
         ) {
             Icon(Icons.Filled.DocumentScanner, null, modifier = Modifier.size(22.dp))
             Spacer(Modifier.width(12.dp))
-            Text("Smart Scan", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text("Scan Receipt", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
         }
         Spacer(Modifier.height(4.dp))
         Text(
-            "Auto-detects edges & crops receipt",
+            "Auto-detects edges, crops & corrects perspective",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -264,28 +283,7 @@ private fun ChooseMethodSection(
 
         Spacer(Modifier.height(16.dp))
 
-        // Secondary: Quick Camera (multi-capture + QR detection)
-        OutlinedButton(
-            onClick = onQuickCamera,
-            modifier = Modifier.fillMaxWidth().height(56.dp),
-            shape = RoundedCornerShape(16.dp),
-            border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary)
-        ) {
-            Icon(Icons.Filled.CameraAlt, null, modifier = Modifier.size(22.dp), tint = MaterialTheme.colorScheme.primary)
-            Spacer(Modifier.width(12.dp))
-            Text("Quick Camera", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
-        }
-        Spacer(Modifier.height(4.dp))
-        Text(
-            "Multi-page capture with QR detection",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(Modifier.height(16.dp))
-
-        // Gallery
+        // Secondary: Gallery
         OutlinedButton(
             onClick = onChooseFromGallery,
             modifier = Modifier.fillMaxWidth().height(56.dp),
@@ -533,7 +531,7 @@ private fun ReceiptResultCard(index: Int, result: ReceiptUploadResponse) {
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    result.merchant ?: "Unknown Merchant",
+                    result.cleanMerchant(),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -873,4 +871,44 @@ private fun processQrFrame(
         .addOnCompleteListener {
             imageProxy.close()
         }
+}
+
+/**
+ * Scan a captured image (byte array) for eTIMS/KRA QR codes.
+ * Used after Document Scanner or Gallery capture to detect QR URLs
+ * without needing real-time camera-frame scanning.
+ */
+private fun scanImageForQrCode(
+    context: android.content.Context,
+    imageBytes: ByteArray,
+    onQrDetected: (String) -> Unit
+) {
+    try {
+        val bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size) ?: return
+        val inputImage = InputImage.fromBitmap(bitmap, 0)
+        val scanner = BarcodeScanning.getClient()
+
+        scanner.process(inputImage)
+            .addOnSuccessListener { barcodes ->
+                for (barcode in barcodes) {
+                    val url = when (barcode.valueType) {
+                        Barcode.TYPE_URL -> barcode.url?.url
+                        Barcode.TYPE_TEXT -> barcode.rawValue?.takeIf { it.startsWith("http") }
+                        else -> null
+                    }
+                    if (url != null &&
+                        (url.contains("etims", ignoreCase = true) ||
+                         url.contains("kra.go.ke", ignoreCase = true) ||
+                         url.contains("itax", ignoreCase = true))) {
+                        onQrDetected(url)
+                        return@addOnSuccessListener
+                    }
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e(TAG, "QR scan on image failed: ${e.message}")
+            }
+    } catch (e: Exception) {
+        Log.e(TAG, "Failed to decode image for QR scan: ${e.message}")
+    }
 }

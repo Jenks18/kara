@@ -148,7 +148,7 @@ fun ExpenseDetailScreen(
             TopAppBar(
                 title = {
                     Text(
-                        expense?.merchantName?.ifEmpty { null } ?: "Receipt Detail",
+                        expense?.cleanMerchantName() ?: "Receipt Detail",
                         fontWeight = FontWeight.Bold
                     )
                 },
@@ -311,7 +311,7 @@ private fun ExpenseDetailContent(expense: ExpenseItem, onEditClick: () -> Unit) 
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                DetailRow(Icons.Filled.Store, "Merchant", expense.merchantName?.ifEmpty { null } ?: "Unknown")
+                DetailRow(Icons.Filled.Store, "Merchant", expense.cleanMerchantName() ?: "Unknown")
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 DetailRow(Icons.Filled.Category, "Category", expense.category)
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -368,7 +368,7 @@ private fun ExpenseDetailContent(expense: ExpenseItem, onEditClick: () -> Unit) 
                     }
                 }
 
-                if (!expense.description.isNullOrBlank()) {
+                if (!expense.description.isNullOrBlank() && !expense.description.startsWith("AI confidence")) {
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     @Suppress("DEPRECATION")
                     DetailRow(Icons.Filled.Notes, "Notes", expense.description!!)
@@ -399,11 +399,14 @@ private fun EditExpenseContent(
     onSave: (merchant: String, amount: Double, category: String, date: String, description: String) -> Unit,
     onCancel: () -> Unit
 ) {
-    var merchant by remember { mutableStateOf(expense.merchantName ?: "") }
+    var merchant by remember { mutableStateOf(expense.cleanMerchantName() ?: "") }
     var amountText by remember { mutableStateOf(if (expense.amount > 0) expense.amount.toString() else "") }
     var category by remember { mutableStateOf(expense.category) }
     var dateText by remember { mutableStateOf(DateUtils.formatYMD(expense.transactionDate ?: expense.createdAt)) }
-    var description by remember { mutableStateOf(expense.description ?: "") }
+    var description by remember {
+        val raw = expense.description ?: ""
+        mutableStateOf(if (raw.startsWith("AI confidence")) "" else raw)
+    }
     var showCategoryMenu by remember { mutableStateOf(false) }
 
     val categories = listOf("Fuel", "Food", "Transport", "Accommodation", "Office Supplies", "Communication", "Maintenance", "Other")
