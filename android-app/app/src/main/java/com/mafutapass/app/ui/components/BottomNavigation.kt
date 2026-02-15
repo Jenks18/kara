@@ -1,6 +1,5 @@
 package com.mafutapass.app.ui.components
 
-import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
@@ -19,19 +18,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.mafutapass.app.data.AvatarManager
 import com.mafutapass.app.ui.Screen
-import com.mafutapass.app.ui.theme.*
 import com.mafutapass.app.ui.theme.AppTheme
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 data class BottomNavItem(
     val route: String,
@@ -41,7 +35,7 @@ data class BottomNavItem(
 )
 
 @Composable
-fun BottomNavBar(navController: NavController) {
+fun BottomNavBar(navController: NavController, avatarManager: AvatarManager) {
     val items = listOf(
         BottomNavItem(Screen.Reports.route, "Reports", Icons.Filled.Assessment),
         BottomNavItem(Screen.Create.route, "Create", Icons.Filled.AddCircle),
@@ -49,17 +43,7 @@ fun BottomNavBar(navController: NavController) {
     )
 
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
-
-    // Load avatar emoji from SharedPreferences (cached from profile API)
-    val context = LocalContext.current
-    val prefs = context.getSharedPreferences("clerk_session", Context.MODE_PRIVATE)
-    var avatarEmoji by remember { mutableStateOf(prefs.getString("avatar_emoji", null) ?: "\uD83D\uDC3B") }
-
-    // Listen for changes when navigating back to account tab
-    LaunchedEffect(currentRoute) {
-        val cached = prefs.getString("avatar_emoji", null)
-        if (cached != null) avatarEmoji = cached
-    }
+    val avatarEmoji by avatarManager.emoji.collectAsState()
 
     NavigationBar(
         containerColor = MaterialTheme.colorScheme.surface,

@@ -26,6 +26,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.mafutapass.app.ui.components.BottomNavBar
+import com.mafutapass.app.data.AvatarManager
 import com.mafutapass.app.ui.Screen
 import com.mafutapass.app.ui.screens.*
 import com.mafutapass.app.ui.theme.MafutaPassTheme
@@ -33,9 +34,13 @@ import com.mafutapass.app.viewmodel.AuthViewModel
 import com.mafutapass.app.viewmodel.AuthState
 import com.mafutapass.app.viewmodel.ThemeViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject lateinit var avatarManager: AvatarManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.d("MainActivity", "MainActivity created")
@@ -51,7 +56,7 @@ class MainActivity : ComponentActivity() {
 
             MafutaPassTheme(darkTheme = isDark) {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    MafutaPassApp(themeViewModel = themeViewModel)
+                    MafutaPassApp(themeViewModel = themeViewModel, avatarManager = avatarManager)
                 }
             }
         }
@@ -59,7 +64,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun MafutaPassApp(themeViewModel: ThemeViewModel) {
+fun MafutaPassApp(themeViewModel: ThemeViewModel, avatarManager: AvatarManager) {
     val authViewModel: AuthViewModel = hiltViewModel()
     val authState by authViewModel.authState.collectAsState()
     val navController = rememberNavController()
@@ -76,7 +81,7 @@ fun MafutaPassApp(themeViewModel: ThemeViewModel) {
             key(authState) { SignInOrUpScreen() }
         }
         AuthState.SignedIn -> {
-            Scaffold(bottomBar = { BottomNavBar(navController) }) { paddingValues ->
+            Scaffold(bottomBar = { BottomNavBar(navController, avatarManager) }) { paddingValues ->
                 NavHost(navController = navController, startDestination = Screen.Reports.route,
                     modifier = Modifier.padding(paddingValues)) {
 
@@ -94,6 +99,7 @@ fun MafutaPassApp(themeViewModel: ThemeViewModel) {
                     composable(Screen.Account.route) {
                         AccountScreen(
                             refreshTrigger = accountRefreshKey,
+                            avatarManager = avatarManager,
                             onNavigateToProfile = { navController.navigate("profile") },
                             onNavigateToPreferences = { navController.navigate("preferences") },
                             onNavigateToSecurity = { navController.navigate("security") },

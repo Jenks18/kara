@@ -37,7 +37,6 @@ fun EditAddressScreen(
     var country by remember { mutableStateOf("Kenya") }
     var state by remember { mutableStateOf("") }
     var city by remember { mutableStateOf("") }
-    @Suppress("UNUSED_VALUE")
     var zipCode by remember { mutableStateOf("") }
     var countryExpanded by remember { mutableStateOf(false) }
     var initialized by remember { mutableStateOf(false) }

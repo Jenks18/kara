@@ -2,7 +2,7 @@
 
 > **Purpose:** Persistent record of every architecture/engineering decision and the reasoning behind it.  
 > **Rule:** Before changing ANY config, dependency, or pattern — CHECK this file first.  
-> **Last updated:** 2026-02-15
+> **Last updated:** 2026-02-16
 
 ---
 
@@ -188,6 +188,24 @@ The v1 Android app uses **3 bottom-navigation tabs**:
 
 AddReceiptScreen state machine: `ChooseMethod → ReviewImages → Uploading → Results`
 
+### Avatar State Management
+
+**Pattern:** `AvatarManager` is a `@Singleton` Hilt-scoped class with a `StateFlow<String>` — the single source of truth for the user's avatar emoji across all screens.
+
+| Component | Role |
+|-----------|------|
+| `AvatarManager` | `@Singleton`, holds `MutableStateFlow(DEFAULT_AVATAR)`, exposes `emoji: StateFlow<String>` and `update(emoji)` |
+| `ProfileViewModel` | Writes to `AvatarManager` on `loadProfile()` success and `updateAvatar()` (optimistic + server confirm) |
+| `BottomNavigation` | Reads `avatarManager.emoji.collectAsState()` — recomposes instantly on change |
+| `AccountScreen` | Reads `avatarManager.emoji.collectAsState()` — header avatar always in sync |
+| `MainActivity` | `@Inject lateinit var avatarManager`, passes to `BottomNavBar` and `AccountScreen` |
+
+**RULES:**
+1. **No SharedPreferences for avatar.** SharedPreferences is fire-and-forget with no reactivity — polling it with `LaunchedEffect` + delay is a hack, not architecture.
+2. **No polling.** `StateFlow` + `collectAsState()` gives instant recomposition via Compose's snapshot system.
+3. **One writer, many readers.** Only `ProfileViewModel` writes to `AvatarManager`. All UI consumers collect the same flow.
+4. **Optimistic updates.** `updateAvatar()` writes to `AvatarManager` before the API call returns. If the API fails, the flow reverts to the server-confirmed value on next `loadProfile()`.
+
 **Parked for v2/v3** (see `/parked-v2/README.md`):
 - Multi-user workspaces (WorkspacesScreen, detail, members, overview)
 - Create screen with chat + report options
@@ -217,6 +235,12 @@ adds them again by default. Without this, the top of every screen has ~48dp of d
 |--------|----------|
 | `AppModule` | TokenRepository, AccountHelper |
 | `NetworkModule` | OkHttpClient (with AuthInterceptor + AuthAuthenticator), Retrofit, Gson, ApiService |
+
+### Hilt Singletons (no module needed)
+
+| Class | Scope | Purpose |
+|-------|-------|---------|
+| `AvatarManager` | `@Singleton` | Reactive avatar emoji state via `StateFlow`. Constructor-injected wherever needed — Hilt auto-provides because `@Inject constructor()` + `@Singleton`. |
 
 ---
 
@@ -273,6 +297,12 @@ These have been intentionally deleted. Do NOT recreate them.
 | `ApiClient` object | Code | 2025-07-15 | Bridge pattern deleted during Hilt migration |
 | `/api/mobile/auth` | Endpoint | 2025-07-15 | Was Supabase session exchange. Dead after backend-only JWT. |
 | `debug-avatar.js` | File | 2025-07-15 | Debug tool, no longer needed |
+| `/api/auth/exchange-token` | Endpoint | 2026-02-16 | Zero callers. Superseded by `mintMobileSessionJwt`. |
+| `lib/auth/clerk-exchange.ts` | File | 2026-02-16 | Zero callers. Was the implementation behind exchange-token. |
+| `CreateScreen.kt` | File | 2026-02-16 | Replaced by `AddReceiptScreen.kt`. Parked in `/parked-v2/`. |
+| `ScanReceiptScreen.kt` | File | 2026-02-16 | Dual-purpose `isTab` flag was a hack. Replaced by `AddReceiptScreen.kt`. Parked in `/parked-v2/`. |
+| Workspace screens (6) | Files | 2026-02-16 | v2/v3 feature. Parked in `/parked-v2/`. |
+| Workspace ViewModels (5) | Files | 2026-02-16 | v2/v3 feature. Parked in `/parked-v2/`. |
 
 ---
 

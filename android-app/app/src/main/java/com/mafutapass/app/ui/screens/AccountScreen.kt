@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.mafutapass.app.data.AvatarManager
 import com.mafutapass.app.data.network.NetworkResult
 import com.mafutapass.app.ui.theme.*
 import com.mafutapass.app.viewmodel.ProfileViewModel
@@ -26,6 +27,7 @@ import com.mafutapass.app.viewmodel.ProfileViewModel
 @Composable
 fun AccountScreen(
     refreshTrigger: Int = 0,
+    avatarManager: AvatarManager,
     onNavigateToProfile: () -> Unit = {},
     onNavigateToPreferences: () -> Unit = {},
     onNavigateToSecurity: () -> Unit = {},
@@ -41,7 +43,7 @@ fun AccountScreen(
         ?: user?.email?.substringBefore("@")
         ?: "User"
     val displayEmail = user?.email ?: ""
-    val avatarEmoji = user?.avatarEmoji?.ifEmpty { null } ?: "\uD83D\uDC3B"
+    val avatarEmoji by avatarManager.emoji.collectAsState()
 
     // Re-fetch when navigating back from edit screens
     LaunchedEffect(refreshTrigger) {

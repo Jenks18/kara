@@ -2,6 +2,7 @@ package com.mafutapass.app.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mafutapass.app.data.AvatarManager
 import com.mafutapass.app.data.UpdateProfileRequest
 import com.mafutapass.app.data.User
 import com.mafutapass.app.data.network.NetworkResult
@@ -23,7 +24,8 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val avatarManager: AvatarManager
 ) : ViewModel() {
     
     // Profile state
@@ -52,6 +54,10 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             userRepository.getUserProfile().collect { result ->
                 _profileState.value = result
+                // Keep avatar cache in sync for navbar + account screen
+                if (result is NetworkResult.Success) {
+                    result.data.avatarEmoji?.let { avatarManager.update(it) }
+                }
             }
         }
     }
@@ -201,6 +207,8 @@ class ProfileViewModel @Inject constructor(
      * Update avatar emoji.
      */
     fun updateAvatar(emoji: String, onSuccess: () -> Unit = {}) {
+        // Optimistic: update cache immediately so navbar reflects change
+        avatarManager.update(emoji)
         viewModelScope.launch {
             _updateState.value = UpdateState.Loading
             
@@ -208,6 +216,8 @@ class ProfileViewModel @Inject constructor(
                 is NetworkResult.Success -> {
                     _updateState.value = UpdateState.Success("Avatar updated")
                     _profileState.value = NetworkResult.Success(result.data)
+                    // Confirm from server response
+                    result.data.avatarEmoji?.let { avatarManager.update(it) }
                     onSuccess()
                 }
                 is NetworkResult.Error -> {
