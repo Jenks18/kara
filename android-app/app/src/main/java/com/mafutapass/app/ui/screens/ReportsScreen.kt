@@ -49,6 +49,11 @@ fun ReportsScreen(
     val reports by viewModel.expenseReports.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
+    // Auto-refresh when this tab re-enters composition (e.g. after scanning)
+    LaunchedEffect(Unit) {
+        viewModel.refresh()
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -174,13 +179,19 @@ fun ExpenseCard(expense: ExpenseItem, onNavigateToDetail: (String) -> Unit = {})
     val context = LocalContext.current
     val displayDate = DateUtils.formatShort(expense.transactionDate ?: expense.createdAt)
 
+    // Badge logic: Needs Review (error/scanning), Verified (processed, no KRA), KRA Verified (processed + KRA)
     val statusColor = when (expense.processingStatus) {
         "processed" -> MaterialTheme.colorScheme.primary
         "scanning" -> AppTheme.colors.statusPending
-        "error" -> MaterialTheme.colorScheme.error
+        "error" -> Color(0xFFE6A817) // amber warning
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
-    val statusLabel = expense.processingStatus.replaceFirstChar { it.uppercase() }
+    val statusLabel = when (expense.processingStatus) {
+        "processed" -> if (expense.kraVerified == true) "KRA Verified" else "Verified"
+        "scanning" -> "Processing"
+        "error" -> "Needs Review"
+        else -> expense.processingStatus.replaceFirstChar { it.uppercase() }
+    }
 
     Surface(
         shape = RoundedCornerShape(12.dp),
@@ -231,7 +242,7 @@ fun ExpenseCard(expense: ExpenseItem, onNavigateToDetail: (String) -> Unit = {})
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = expense.merchantName ?: "Receipt",
+                    text = expense.merchantName?.ifEmpty { null } ?: "Unknown Merchant",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
@@ -269,8 +280,8 @@ fun ExpenseCard(expense: ExpenseItem, onNavigateToDetail: (String) -> Unit = {})
                         )
                     }
                 }
-                // KRA verified badge
-                if (expense.kraVerified == true) {
+                // KRA verified badge — only show as separate row when status badge doesn't already say KRA
+                if (expense.kraVerified == true && expense.processingStatus != "processed") {
                     Spacer(modifier = Modifier.height(4.dp))
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -382,14 +393,18 @@ fun ReportCard(report: ExpenseReport, onNavigateToDetail: (String) -> Unit = {})
                     "approved" -> MaterialTheme.colorScheme.primary
                     "submitted" -> Color(0xFF2563EB) // blue
                     "rejected" -> MaterialTheme.colorScheme.error
-                    else -> MaterialTheme.colorScheme.onSurfaceVariant // gray for draft
+                    else -> Color(0xFFE6A817) // amber for draft / needs review
+                }
+                val statusLabel = when (report.status) {
+                    "draft" -> "Needs Review"
+                    else -> report.status.replaceFirstChar { it.uppercase() }
                 }
                 Surface(
                     shape = RoundedCornerShape(12.dp),
                     color = statusColor.copy(alpha = 0.12f)
                 ) {
                     Text(
-                        text = report.status.replaceFirstChar { it.uppercase() },
+                        text = statusLabel,
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.Medium,
                         color = statusColor,
@@ -411,16 +426,6 @@ fun ReportCard(report: ExpenseReport, onNavigateToDetail: (String) -> Unit = {})
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-            }
-
-            // Workspace name footer
-            if (report.workspaceName.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = report.workspaceName,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
         }
     }

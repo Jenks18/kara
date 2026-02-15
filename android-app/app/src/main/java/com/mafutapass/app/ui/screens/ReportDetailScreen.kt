@@ -146,26 +146,23 @@ private fun ReportDetailContent(
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
-                            if (report.workspaceName.isNotBlank()) {
-                                Text(
-                                    report.workspaceName,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
                         }
                         val statusColor = when (report.status) {
                             "approved" -> MaterialTheme.colorScheme.primary
                             "submitted" -> Color(0xFF2563EB)
                             "rejected" -> MaterialTheme.colorScheme.error
-                            else -> MaterialTheme.colorScheme.onSurfaceVariant
+                            else -> Color(0xFFE6A817) // amber for draft / needs review
+                        }
+                        val statusLabel = when (report.status) {
+                            "draft" -> "Needs Review"
+                            else -> report.status.replaceFirstChar { it.uppercase() }
                         }
                         Surface(
                             shape = RoundedCornerShape(12.dp),
                             color = statusColor.copy(alpha = 0.12f)
                         ) {
                             Text(
-                                report.status.replaceFirstChar { it.uppercase() },
+                                statusLabel,
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.SemiBold,
                                 color = statusColor,
@@ -245,7 +242,7 @@ private fun ReportDetailContent(
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            item.merchantName ?: "Receipt",
+                            item.merchantName?.ifEmpty { null } ?: "Unknown Merchant",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurface
@@ -264,6 +261,16 @@ private fun ReportDetailContent(
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                 Icon(Icons.Filled.CheckCircle, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(12.dp))
                                 Text("KRA Verified", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                            }
+                        } else if (item.processingStatus == "processed") {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Icon(Icons.Filled.CheckCircle, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(12.dp))
+                                Text("Verified", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                            }
+                        } else if (item.processingStatus == "error") {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Icon(Icons.Filled.Warning, null, tint = Color(0xFFE6A817), modifier = Modifier.size(12.dp))
+                                Text("Needs Review", style = MaterialTheme.typography.labelSmall, color = Color(0xFFE6A817))
                             }
                         }
                     }

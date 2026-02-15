@@ -22,7 +22,7 @@ object DateUtils {
     )
 
     private val displayFull = SimpleDateFormat("dd/MM/yyyy", Locale.UK)
-    private val displayShort = SimpleDateFormat("d MMM", Locale.UK)
+    private val displayShort = SimpleDateFormat("dd MMM yyyy", Locale.UK)
     private val displayDate = SimpleDateFormat("yyyy-MM-dd", Locale.US)
 
     /**

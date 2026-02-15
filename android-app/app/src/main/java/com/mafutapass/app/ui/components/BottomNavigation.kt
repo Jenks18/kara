@@ -87,14 +87,12 @@ fun BottomNavBar(navController: NavController, avatarManager: AvatarManager) {
                 },
                 selected = isSelected,
                 onClick = {
-                    if (currentRoute != screen.route) {
-                        navController.navigate(screen.route) {
-                            popUpTo(navController.graph.startDestinationId) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
+                    navController.navigate(screen.route) {
+                        popUpTo(navController.graph.startDestinationId) {
+                            saveState = false
                         }
+                        launchSingleTop = true
+                        restoreState = false
                     }
                 },
                 colors = NavigationBarItemDefaults.colors(

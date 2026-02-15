@@ -45,7 +45,10 @@ class ReportsViewModel @Inject constructor(
 
     private fun fetchExpenseData() {
         Log.d(TAG, "🔄 Fetching expense data...")
-        _isLoading.value = true
+        // Only show loading spinner on initial fetch (no existing data)
+        if (_expenseItems.value.isEmpty() && _expenseReports.value.isEmpty()) {
+            _isLoading.value = true
+        }
         _error.value = null
         
         viewModelScope.launch {

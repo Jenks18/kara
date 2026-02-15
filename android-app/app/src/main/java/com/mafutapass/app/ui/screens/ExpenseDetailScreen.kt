@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -82,7 +83,12 @@ fun ExpenseDetailScreen(
             .background(AppTheme.colors.backgroundGradient)
     ) {
         TopAppBar(
-            title = { Text("Receipt Detail", fontWeight = FontWeight.Bold) },
+            title = {
+                Text(
+                    expense?.merchantName?.ifEmpty { null } ?: "Receipt Detail",
+                    fontWeight = FontWeight.Bold
+                )
+            },
             navigationIcon = {
                 IconButton(onClick = onBack) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
@@ -122,6 +128,40 @@ private fun ExpenseDetailContent(expense: ExpenseItem) {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Needs Review banner — shown when AI couldn't fully process the receipt
+        if (expense.processingStatus == "error") {
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = Color(0xFFE6A817).copy(alpha = 0.12f),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Filled.Warning, null,
+                        tint = Color(0xFFE6A817),
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            "Needs Review",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFFE6A817)
+                        )
+                        Text(
+                            "Some details could not be extracted. Please verify the information below.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        }
+
         // Receipt image
         if (expense.imageUrl.isNotBlank() && expense.imageUrl.startsWith("http")) {
             Surface(
@@ -174,17 +214,27 @@ private fun ExpenseDetailContent(expense: ExpenseItem) {
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                DetailRow(Icons.Filled.Store, "Merchant", expense.merchantName ?: "Unknown")
+                DetailRow(Icons.Filled.Store, "Merchant", expense.merchantName?.ifEmpty { null } ?: "Unknown")
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 DetailRow(Icons.Filled.Category, "Category", expense.category)
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 DetailRow(Icons.Filled.CalendarToday, "Date", displayDate.ifEmpty { "Not set" })
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
+                // Status row with improved badge logic
                 val statusColor = when (expense.processingStatus) {
                     "processed" -> MaterialTheme.colorScheme.primary
                     "scanning" -> AppTheme.colors.statusPending
-                    "error" -> MaterialTheme.colorScheme.error
+                    "error" -> Color(0xFFE6A817) // amber warning
                     else -> MaterialTheme.colorScheme.onSurfaceVariant
+                }
+                val statusLabel = when (expense.processingStatus) {
+                    "processed" -> if (expense.kraVerified == true) "KRA Verified" else "Verified"
+                    "scanning" -> "Processing"
+                    "error" -> "Needs Review"
+                    else -> expense.processingStatus.replaceFirstChar { it.uppercase() }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Filled.Info, null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -193,7 +243,7 @@ private fun ExpenseDetailContent(expense: ExpenseItem) {
                         Text("Status", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Surface(shape = RoundedCornerShape(8.dp), color = statusColor.copy(alpha = 0.12f)) {
                             Text(
-                                expense.processingStatus.replaceFirstChar { it.uppercase() },
+                                statusLabel,
                                 style = MaterialTheme.typography.labelMedium,
                                 color = statusColor,
                                 fontWeight = FontWeight.Medium,
@@ -212,10 +262,20 @@ private fun ExpenseDetailContent(expense: ExpenseItem) {
                         Icon(Icons.Filled.CheckCircle, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                         Text("KRA Verified", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
                     }
+                } else if (expense.processingStatus == "processed") {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(Icons.Filled.CheckCircle, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                        Text("Verified", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+                    }
                 }
 
                 if (!expense.description.isNullOrBlank()) {
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    @Suppress("DEPRECATION")
                     DetailRow(Icons.Filled.Notes, "Notes", expense.description!!)
                 }
             }

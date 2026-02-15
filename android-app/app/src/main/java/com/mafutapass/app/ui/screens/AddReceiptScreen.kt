@@ -343,7 +343,7 @@ private fun UploadingSection(currentIndex: Int, totalCount: Int) {
         )
         Spacer(Modifier.height(4.dp))
         Text(
-            "AI is extracting merchant, amount, and date",
+            "Extracting receipt details...",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -446,7 +446,7 @@ private fun ReceiptResultCard(index: Int, result: ReceiptUploadResponse) {
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    result.merchant ?: "Receipt ${index + 1}",
+                    result.merchant ?: "Unknown Merchant",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface
