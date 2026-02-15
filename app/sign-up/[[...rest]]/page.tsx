@@ -7,17 +7,28 @@ export default function SignUpPage() {
         <SignUp 
           forceRedirectUrl="/reports"
           appearance={{
+            variables: {
+              colorText: '#111827',
+              colorTextSecondary: '#4b5563',
+              colorInputText: '#111827',
+              colorInputBackground: '#ffffff',
+            },
             elements: {
               rootBox: 'w-full',
               card: 'bg-white shadow-none border-0',
               headerTitle: 'text-gray-900',
               headerSubtitle: 'text-gray-600',
-              socialButtonsBlockButton: 'border-gray-200 hover:bg-gray-50',
+              socialButtonsBlockButton: 'border-gray-200 hover:bg-gray-50 text-gray-900',
               formButtonPrimary: 'bg-emerald-600 hover:bg-emerald-700',
-              formFieldInput: 'border-gray-200 focus:border-emerald-500 focus:ring-emerald-500',
+              formFieldInput: 'border-gray-200 focus:border-emerald-500 focus:ring-emerald-500 text-gray-900 bg-white',
+              formFieldLabel: 'text-gray-700',
+              identityPreviewText: 'text-gray-900',
+              identityPreviewEditButton: 'text-emerald-600',
               footerActionLink: 'text-emerald-600 hover:text-emerald-700'
             }
           }}
+          signInUrl="/sign-in"
+          routing="hash"
         />
       </div>
     </div>

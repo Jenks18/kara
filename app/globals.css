@@ -82,6 +82,20 @@
     font-size: 16px !important;
   }
   
+  /* Ensure Clerk inputs have visible text */
+  .cl-formFieldInput,
+  .cl-input,
+  [class*="cl-formFieldInput"],
+  [class*="cl-input"] {
+    color: #111827 !important;
+    background-color: #ffffff !important;
+  }
+  
+  .cl-formFieldInput::placeholder,
+  .cl-input::placeholder {
+    color: #9ca3af !important;
+  }
+  
   /* Better button touch */
   button {
     @apply touch-manipulation;
