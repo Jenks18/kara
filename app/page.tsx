@@ -1,9 +1,16 @@
 import { redirect } from 'next/navigation'
+import { auth } from '@clerk/nextjs/server'
 
-// Inbox/chat feature not implemented yet
-// Middleware redirects logged-in users to /reports
-// This page only shows for non-authenticated users
-export default function HomePage() {
-  // Non-authenticated users see sign-in
-  redirect('/sign-in')
+// Landing page for non-authenticated users
+// Authenticated users get redirected to reports
+export default async function HomePage() {
+  const { userId } = await auth()
+  
+  if (userId) {
+    // Logged in users go to reports
+    redirect('/reports')
+  }
+  
+  // Non-authenticated users see the public landing page
+  redirect('/welcome')
 }

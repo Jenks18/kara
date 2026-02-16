@@ -2,6 +2,10 @@ import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 
 const isPublicRoute = createRouteMatcher([
+  '/',
+  '/welcome(.*)',
+  '/privacy-policy(.*)',
+  '/terms-of-service(.*)',
   '/sign-in(.*)',
   '/sign-up(.*)',
   '/api/auth/google-native(.*)',

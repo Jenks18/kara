@@ -1,6 +1,6 @@
 'use client'
 
-import { useUser } from '@clerk/nextjs'
+import { useUser, useClerk } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { ArrowLeft, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react'
@@ -9,6 +9,7 @@ export const dynamic = 'force-dynamic'
 
 export default function DeleteAccountPage() {
   const { user, isLoaded } = useUser()
+  const { signOut } = useClerk()
   const router = useRouter()
   const [reason, setReason] = useState('')
   const [confirmText, setConfirmText] = useState('')
@@ -43,6 +44,11 @@ export default function DeleteAccountPage() {
       }
 
       setIsSubmitted(true)
+      
+      // Sign out user after 2 seconds to show success message
+      setTimeout(() => {
+        signOut({ redirectUrl: '/sign-in' })
+      }, 2000)
     } catch (err) {
       setError('Failed to submit request. Please try again or contact support@mafutapass.com')
     } finally {
@@ -82,13 +88,13 @@ export default function DeleteAccountPage() {
               Request Submitted
             </h1>
             <p className="text-gray-600 mb-6">
-              Your account deletion request has been received. We'll process your request within 30 days and send a confirmation email to:
+              Your account deletion has been processed. All your data has been permanently deleted.
             </p>
             <p className="font-semibold text-emerald-600 mb-6">
               {user?.emailAddresses?.[0]?.emailAddress}
             </p>
             <p className="text-sm text-gray-500">
-              If you have any questions, please contact us at support@mafutapass.com
+              You have been signed out. If you have any questions, please contact us at support@mafutapass.com
             </p>
             <button
               onClick={() => router.push('/account')}
@@ -174,19 +180,19 @@ export default function DeleteAccountPage() {
           <ul className="space-y-2 text-gray-600">
             <li className="flex items-start gap-2">
               <span className="text-emerald-600 mt-1">•</span>
-              <span>Your account will be deactivated immediately</span>
+              <span>Your account and all data will be <strong>permanently deleted immediately</strong></span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-emerald-600 mt-1">•</span>
-              <span>All personal data will be permanently deleted within <strong>30 days</strong></span>
+              <span>You will be signed out automatically</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-emerald-600 mt-1">•</span>
-              <span>We may retain anonymized data for analytics and legal compliance</span>
+              <span>This action <strong>cannot be undone</strong> - all receipts, reports, and data will be lost</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-emerald-600 mt-1">•</span>
-              <span>Transaction records may be kept for <strong>7 years</strong> for tax and legal purposes</span>
+              <span>Anonymized analytics data may be retained for service improvement</span>
             </li>
           </ul>
         </div>

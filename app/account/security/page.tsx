@@ -73,7 +73,10 @@ export default function SecurityPage() {
           </button>
 
           {/* Close account */}
-          <button className="w-full bg-white rounded-xl border border-gray-200 p-4 hover:border-red-300 active:bg-gray-50 transition-colors relative shadow-sm">
+          <button 
+            onClick={() => router.push('/account/delete')}
+            className="w-full bg-white rounded-xl border border-gray-200 p-4 hover:border-red-300 active:bg-gray-50 transition-colors relative shadow-sm"
+          >
             <div className="flex items-center gap-3">
               <svg className="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />

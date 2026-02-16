@@ -16,7 +16,6 @@ import {
   Info,
   LogOut,
   ChevronRight,
-  Trash2,
 } from 'lucide-react'
 
 // Force dynamic rendering to avoid Clerk prerender issues
@@ -77,7 +76,6 @@ export default function AccountPage() {
         // { icon: Wallet, label: 'Wallet', href: '/account/wallet' },
         { icon: Settings, label: 'Preferences', href: '/account/preferences' },
         { icon: Shield, label: 'Security', href: '/account/security' },
-        { icon: Trash2, label: 'Delete Account', href: '/account/delete' },
       ],
     },
     {
@@ -146,8 +144,8 @@ export default function AccountPage() {
                     "
                   >
                     <div className="flex items-center gap-3">
-                      <Icon size={24} className={item.label === 'Sign Out' || item.label === 'Delete Account' ? 'text-red-500' : 'text-gray-600 group-hover:text-emerald-600'} />
-                      <span className={`font-medium ${item.label === 'Sign Out' || item.label === 'Delete Account' ? 'text-red-500' : 'text-gray-900'}`}>{item.label}</span>
+                      <Icon size={24} className={item.label === 'Sign Out' ? 'text-red-500' : 'text-gray-600 group-hover:text-emerald-600'} />
+                      <span className={`font-medium ${item.label === 'Sign Out' ? 'text-red-500' : 'text-gray-900'}`}>{item.label}</span>
                     </div>
                     
                     <div className="flex items-center gap-2">
