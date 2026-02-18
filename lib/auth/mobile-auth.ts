@@ -57,6 +57,15 @@ export async function verifyAndExtractUser(
 }
 
 /**
+ * Validate mobile token and return userId.
+ * Wrapper around verifyAndExtractUser for simpler userId-only validation.
+ */
+export async function validateMobileToken(request: NextRequest): Promise<string | null> {
+  const result = await verifyAndExtractUser(request);
+  return result?.userId || null;
+}
+
+/**
  * Extract userId from JWT (simple decode for backward compatibility).
  * DEPRECATED: Use verifyAndExtractUser() for secure verification.
  */
