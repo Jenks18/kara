@@ -56,6 +56,19 @@ BEGIN
   END IF;
 END $$;
 
+-- Add full text content (bag of words for search and analysis)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'raw_receipts' AND column_name = 'receipt_full_text'
+  ) THEN
+    ALTER TABLE raw_receipts ADD COLUMN receipt_full_text TEXT;
+    COMMENT ON COLUMN raw_receipts.receipt_full_text IS 'Complete OCR text from receipt - bag of words for full-text search and analysis';
+    CREATE INDEX IF NOT EXISTS idx_raw_receipts_full_text ON raw_receipts USING gin(to_tsvector('english', receipt_full_text));
+  END IF;
+END $$;
+
 -- ========================================
 -- 2. EXPENSE_ITEMS: Add eTIMS flag for UI
 -- ========================================
@@ -82,6 +95,19 @@ BEGIN
   ) THEN
     ALTER TABLE expense_items ADD COLUMN receipt_details JSONB;
     COMMENT ON COLUMN expense_items.receipt_details IS 'User-facing receipt details: items bought, fuel type/litres, transport details, etc.';
+  END IF;
+END $$;
+
+-- Add full text content for expense items too
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'expense_items' AND column_name = 'receipt_full_text'
+  ) THEN
+    ALTER TABLE expense_items ADD COLUMN receipt_full_text TEXT;
+    COMMENT ON COLUMN expense_items.receipt_full_text IS 'Complete OCR text from receipt - enables full-text search across expenses';
+    CREATE INDEX IF NOT EXISTS idx_expense_items_full_text ON expense_items USING gin(to_tsvector('english', receipt_full_text));
   END IF;
 END $$;
 

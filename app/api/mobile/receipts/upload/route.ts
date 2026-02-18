@@ -187,6 +187,7 @@ export async function POST(request: NextRequest) {
               kra_verified: !!result.kraData?.invoiceNumber,
               has_etims_qr: hasEtimsQR, // NEW: Flag for KRA Verified badge
               receipt_details: Object.keys(receiptDetails).length > 0 ? receiptDetails : null, // NEW: Store items and metadata
+              receipt_full_text: result.ocrData?.rawText || '', // NEW: Full OCR text for search
               description: initialStatus === 'needs_review'
                 ? 'Some details could not be verified — please review and update'
                 : null,

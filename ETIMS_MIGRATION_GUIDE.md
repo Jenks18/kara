@@ -14,13 +14,16 @@
   - `etims_qr_url` (text) - The eTIMS/KRA URL from QR code
   - `ai_etims_detected` (boolean) - AI vision detected QR in image
   - `receipt_metadata` (jsonb) - Flexible storage for ALL receipt details
+  - `receipt_full_text` (text) - Complete OCR text (bag of words for search)
 
 - ✅ Adds eTIMS fields to `expense_items`:
   - `has_etims_qr` (boolean) - Quick flag for UI "KRA Verified" badge
   - `receipt_details` (jsonb) - User-facing receipt details (items, fuel data, etc.)
+  - `receipt_full_text` (text) - Complete OCR text for full-text search
 
 - ✅ Backfills existing KRA-verified receipts with `has_etims_qr = TRUE`
 - ✅ Creates indexes for fast filtering by eTIMS status
+- ✅ Creates full-text search indexes (GIN) on both `receipt_full_text` columns
 
 ### 2. AI Model Updates
 
@@ -72,6 +75,7 @@
   etims_qr_detected: boolean,        // QR scanner found eTIMS
   etims_qr_url: string,              // The KRA verification URL
   ai_etims_detected: boolean,        // AI vision detected QR
+  receipt_full_text: string,         // Complete OCR text (bag of words)
   receipt_metadata: {
     gemini: {
       litres: 37.5,                  // Fuel-specific
@@ -126,15 +130,15 @@ Check tables were updated:
 SELECT column_name, data_type 
 FROM information_schema.columns 
 WHERE table_name = 'raw_receipts' 
-AND column_name IN ('etims_qr_detected', 'etims_qr_url', 'receipt_metadata');
+AND column_name IN ('etims_qr_detected', 'etims_qr_url', 'receipt_metadata', 'receipt_full_text');
 
 -- Check expense_items has new columns
 SELECT column_name, data_type 
 FROM information_schema.columns 
 WHERE table_name = 'expense_items' 
-AND column_name IN ('has_etims_qr', 'receipt_details');
+AND column_name IN ('has_etims_qr', 'receipt_details', 'receipt_full_text');
 
--- Should return 5 rows total (3 + 2)
+-- Should return 7 rows total (4 + 3)
 ```
 
 ### Step 3: Test eTIMS Detection
@@ -149,7 +153,8 @@ SELECT
   etims_qr_detected,
   etims_qr_url,
   ai_etims_detected,
-  receipt_metadata
+  receipt_metadata,
+  receipt_full_text
 FROM raw_receipts
 ORDER BY created_at DESC
 LIMIT 1;
@@ -160,7 +165,8 @@ SELECT
   amount,
   has_etims_qr,
   kra_verified,
-  receipt_details
+  receipt_details,
+  receipt_full_text
 FROM expense_items
 ORDER BY created_at DESC
 LIMIT 1;
@@ -210,12 +216,15 @@ WHERE (raw_qr_data->>'url' LIKE '%itax.kra.go.ke%'
 - ✅ **Detailed receipt view** - see items, fuel details, transport info
 - ✅ **Better categorization** - AI understands all business types
 - ✅ **Rich data** for expense reports and analytics
+- ✅ **Full-text search** - find receipts by any text (merchant, items, locations)
 
 ### For Analytics/Intelligence
 - ✅ **Full receipt data** stored in `receipt_metadata` for ML training
+- ✅ **Bag of words** in `receipt_full_text` for text mining and pattern analysis
 - ✅ **Flexible schema** - capture ANY detail without table changes
 - ✅ **Reprocessing capability** - raw data preserved for future improvements
 - ✅ **Pattern detection** - correlate fuel prices, restaurant spending, routes
+- ✅ **Search indexing** - GIN indexes enable fast full-text queries
 
 ### For Compliance
 - ✅ **eTIMS verification** - track KRA-compliant receipts
@@ -273,8 +282,10 @@ app/api/
 **After:** 
 - ✅ All receipt types treated equally (food, transport, shopping, etc.)
 - ✅ Captures EVERY detail (items, fuel data, restaurant info, transport routes)
+- ✅ Stores complete OCR text for search and analysis
 - ✅ Tracks eTIMS QR codes for KRA compliance
 - ✅ Shows "KRA Verified" badges in UI
 - ✅ Flexible data storage for future AI/ML features
+- ✅ Full-text search ready with PostgreSQL GIN indexes
 
 **Next up:** Apply migrations in Supabase, then test with various receipt types! 🚀

@@ -26,6 +26,7 @@ export interface RawReceiptData {
   rawOcrText?: string;
   rawKraData?: any;
   rawGeminiData?: any;
+  receiptFullText?: string; // NEW: Complete OCR text (bag of words)
   
   // Image metadata
   fileSizeBytes?: number;
@@ -126,6 +127,11 @@ export class SupabaseRawReceiptStorage implements RawReceiptStorage {
     }
     if (Object.keys(receiptMetadata).length > 0) {
       insertData.receipt_metadata = receiptMetadata;
+    }
+    
+    // Add full text for search
+    if (data.receiptFullText) {
+      insertData.receipt_full_text = data.receiptFullText;
     }
     
     const { data: result, error } = await supabase

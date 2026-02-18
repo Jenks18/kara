@@ -255,6 +255,7 @@ export async function POST(request: NextRequest) {
               kra_verified: !!result.kraData?.invoiceNumber,
               has_etims_qr: hasEtimsQR, // NEW: Flag for KRA Verified badge in UI
               receipt_details: Object.keys(receiptDetails).length > 0 ? receiptDetails : null, // NEW: Store items and metadata
+              receipt_full_text: result.ocrData?.rawText || '', // NEW: Full OCR text for search
               // Note: needs_review_fields column not in schema yet, skipping for now
             })
             .select('id')

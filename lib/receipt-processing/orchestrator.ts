@@ -244,6 +244,7 @@ export class ReceiptProcessor {
           etimsQRUrl: hasEtimsQR ? (effectiveQrData?.url || effectiveQrData?.rawValue) : undefined, // NEW: Store eTIMS URL
           rawOcrText: ocrData?.rawText,
           rawKraData: kraData,
+          receiptFullText: ocrData?.rawText || '', // NEW: Bag of words for search
           fileSizeBytes: imageBuffer.length,
           mimeType: imageFile.type,
           latitude: options.latitude,
