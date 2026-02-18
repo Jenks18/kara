@@ -24,7 +24,14 @@ export async function GET(
     }
 
     const { id: workspaceId } = await context.params
-    const supabase = await createMobileClient(request)
+    const client = await createMobileClient(request)
+    if (!client) {
+      return NextResponse.json({ error: 'Unauthorized' }, { 
+        status: 401,
+        headers: corsHeaders 
+      })
+    }
+    const { supabase } = client
 
     // Check if user is a member of this workspace
     const { data: membership, error: membershipError } = await supabase
@@ -137,7 +144,14 @@ export async function POST(
       })
     }
 
-    const supabase = await createMobileClient(request)
+    const client = await createMobileClient(request)
+    if (!client) {
+      return NextResponse.json({ error: 'Unauthorized' }, { 
+        status: 401,
+        headers: corsHeaders 
+      })
+    }
+    const { supabase } = client
 
     // Check if current user is an admin of this workspace
     const { data: membership, error: membershipError } = await supabase
