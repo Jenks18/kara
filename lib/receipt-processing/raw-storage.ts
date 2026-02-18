@@ -112,6 +112,21 @@ export class SupabaseRawReceiptStorage implements RawReceiptStorage {
     if (data.etimsQRUrl) {
       insertData.etims_qr_url = data.etimsQRUrl;
     }
+    if (data.rawGeminiData?.hasEtimsQR !== undefined) {
+      insertData.ai_etims_detected = data.rawGeminiData.hasEtimsQR;
+    }
+    
+    // Build receipt_metadata from captured data (items, fuel details, etc.)
+    const receiptMetadata: any = {};
+    if (data.rawGeminiData?.metadata) {
+      receiptMetadata.gemini = data.rawGeminiData.metadata;
+    }
+    if (data.rawGeminiData?.items) {
+      receiptMetadata.items = data.rawGeminiData.items;
+    }
+    if (Object.keys(receiptMetadata).length > 0) {
+      insertData.receipt_metadata = receiptMetadata;
+    }
     
     const { data: result, error } = await supabase
       .from('raw_receipts')

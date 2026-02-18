@@ -258,6 +258,18 @@ ALTER TABLE workspace_activity ENABLE ROW LEVEL SECURITY;
 -- 9. RLS POLICIES
 -- ========================================
 
+-- Drop existing policies if they exist (for re-running migration)
+DROP POLICY IF EXISTS "Users can view workspace members if they are members" ON workspace_members;
+DROP POLICY IF EXISTS "Admins can add workspace members" ON workspace_members;
+DROP POLICY IF EXISTS "Admins can update workspace members" ON workspace_members;
+DROP POLICY IF EXISTS "Admins can remove workspace members" ON workspace_members;
+
+DROP POLICY IF EXISTS "Members can view workspace invites" ON workspace_invites;
+DROP POLICY IF EXISTS "Admins can create invites" ON workspace_invites;
+DROP POLICY IF EXISTS "Admins can update invites" ON workspace_invites;
+
+DROP POLICY IF EXISTS "Members can view workspace activity" ON workspace_activity;
+
 -- Workspace Members: Users see members of workspaces they belong to
 CREATE POLICY "Users can view workspace members if they are members"
 ON workspace_members FOR SELECT

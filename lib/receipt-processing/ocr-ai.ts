@@ -23,6 +23,28 @@ export interface GeminiReceiptData {
   };
   hasEtimsQR?: boolean;
   etimsQRContent?: string;
+  // Flexible metadata for ALL receipt types (fuel, restaurant, transport, etc.)
+  metadata?: {
+    // Fuel receipts
+    litres?: number;
+    fuelType?: string; // PETROL, DIESEL, SUPER, GAS
+    pricePerLitre?: number;
+    pumpNumber?: string;
+    vehicleNumber?: string;
+    // Restaurant receipts
+    tableNumber?: string;
+    serverName?: string;
+    covers?: number; // number of people
+    // Transport receipts
+    routeFrom?: string;
+    routeTo?: string;
+    tripId?: string;
+    vehicleReg?: string;
+    // General
+    paymentMethod?: string;
+    tillNumber?: string;
+    [key: string]: any; // Allow any additional fields
+  };
 }
 
 // Deprecated: Use GeminiReceiptData instead
@@ -161,6 +183,21 @@ Return ONLY this JSON (no markdown, no explanation, no code fences):
   ],
   "hasEtimsQR": <true if QR code present, false otherwise>,
   "etimsQRContent": "<visible text near QR if any, or null>",
+  "metadata": {
+    "litres": <fuel volume or null>,
+    "fuelType": "<PETROL|DIESEL|SUPER|GAS or null>",
+    "pricePerLitre": <price per litre or null>,
+    "pumpNumber": "<pump number or null>",
+    "vehicleNumber": "<vehicle reg or null>",
+    "tableNumber": "<table number for restaurants or null>",
+    "serverName": "<server name or null>",
+    "covers": <number of people or null>,
+    "routeFrom": "<origin for transport or null>",
+    "routeTo": "<destination or null>",
+    "tripId": "<trip/booking ID or null>",
+    "paymentMethod": "<cash|mpesa|card or null>",
+    "tillNumber": "<till/paybill number or null>"
+  },
   "confidence": <0-100 overall>,
   "fieldConfidence": {
     "merchantName": <0-100>,
@@ -168,6 +205,14 @@ Return ONLY this JSON (no markdown, no explanation, no code fences):
     "invoiceDate": <0-100>
   }
 }
+
+FIELD EXTRACTION RULES:
+- Extract ALL visible details, even if not standard fields
+- For FUEL receipts: litres, fuel type (PMS=PETROL, AGO=DIESEL), pump number, vehicle plate
+- For RESTAURANTS: table number, server name, number of covers/people
+- For TRANSPORT: origin, destination, trip ID, vehicle registration
+- For ALL: payment method (M-PESA, Cash, Card), till number, paybill
+- Store extra details in metadata - we want EVERYTHING for building intelligence
 
 KENYAN RECEIPT PATTERNS (treat all equally):
 

@@ -156,6 +156,22 @@ export async function POST(request: NextRequest) {
               )
             : (result.kraData?.invoiceNumber ? 95 : 50);
 
+          // Check for eTIMS QR code
+          const hasEtimsQR = !!(result.qrData?.url && (
+            result.qrData.url.includes('itax.kra.go.ke') || 
+            result.qrData.url.includes('etims.kra.go.ke') ||
+            result.qrData.url.includes('kra.go.ke')
+          )) || result.parsedData?.hasEtimsQR || result.aiEnhanced?.hasEtimsQR;
+
+          // Build receipt_details for UI display
+          const receiptDetails: any = {};
+          if (result.parsedData?.items && result.parsedData.items.length > 0) {
+            receiptDetails.items = result.parsedData.items;
+          }
+          if (result.parsedData?.metadata || result.aiEnhanced?.metadata) {
+            receiptDetails.metadata = result.parsedData?.metadata || result.aiEnhanced?.metadata;
+          }
+
           const { error: itemError } = await supabase
             .from('expense_items')
             .insert({
@@ -169,6 +185,8 @@ export async function POST(request: NextRequest) {
               transaction_date: transactionDate,
               kra_invoice_number: result.kraData?.invoiceNumber || null,
               kra_verified: !!result.kraData?.invoiceNumber,
+              has_etims_qr: hasEtimsQR, // NEW: Flag for KRA Verified badge
+              receipt_details: Object.keys(receiptDetails).length > 0 ? receiptDetails : null, // NEW: Store items and metadata
               description: initialStatus === 'needs_review'
                 ? 'Some details could not be verified — please review and update'
                 : null,

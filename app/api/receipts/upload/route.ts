@@ -222,6 +222,22 @@ export async function POST(request: NextRequest) {
           // error = processing failed
           const initialStatus = hasExtractedData ? (needsReview ? 'needs_review' : 'processed') : 'error';
           
+          // Check for eTIMS QR code
+          const hasEtimsQR = !!(result.qrData?.url && (
+            result.qrData.url.includes('itax.kra.go.ke') || 
+            result.qrData.url.includes('etims.kra.go.ke') ||
+            result.qrData.url.includes('kra.go.ke')
+          )) || result.parsedData?.hasEtimsQR || result.aiEnhanced?.hasEtimsQR;
+          
+          // Build receipt_details for UI display
+          const receiptDetails: any = {};
+          if (result.parsedData?.items && result.parsedData.items.length > 0) {
+            receiptDetails.items = result.parsedData.items;
+          }
+          if (result.parsedData?.metadata || result.aiEnhanced?.metadata) {
+            receiptDetails.metadata = result.parsedData?.metadata || result.aiEnhanced?.metadata;
+          }
+          
           // Create expense item WITH LINK to raw_receipts table
           // Use extracted data immediately if available, otherwise set to scanning
           const { error: itemError, data: createdItem } = await supabase
@@ -237,6 +253,8 @@ export async function POST(request: NextRequest) {
               transaction_date: transactionDate,
               kra_invoice_number: result.kraData?.invoiceNumber || null,
               kra_verified: !!result.kraData?.invoiceNumber,
+              has_etims_qr: hasEtimsQR, // NEW: Flag for KRA Verified badge in UI
+              receipt_details: Object.keys(receiptDetails).length > 0 ? receiptDetails : null, // NEW: Store items and metadata
               // Note: needs_review_fields column not in schema yet, skipping for now
             })
             .select('id')
