@@ -230,7 +230,7 @@ export async function POST(request: NextRequest) {
               report_id: finalReportId,
               raw_receipt_id: result.rawReceiptId, // 🔗 Link to raw_receipts table!
               image_url: result.imageUrl,
-              category: 'Fuel', // Default category
+              category: result.aiEnhanced?.category || result.parsedData?.category || 'Other', // Use AI/parsed category or default to Other
               amount: amount,
               processing_status: initialStatus,
               merchant_name: merchantName,
@@ -281,24 +281,27 @@ export async function POST(request: NextRequest) {
       // Store information
       store: result.store,
       
-      // Extracted data
-      data: {
-        qr: result.qrData,
-        kra: result.kraData,
-        ocr: result.ocrData,
-        parsed: result.parsedData,
-        enhanced: result.aiEnhanced,
+      // CLEANED DATA FOR VIEWER - Only essential fields
+      receipt: {
+        merchant: result.kraData?.merchantName || result.parsedData?.merchantName || result.store?.name || null,
+        amount: result.kraData?.totalAmount || result.parsedData?.totalAmount || 0,
+        date: result.kraData?.invoiceDate || result.parsedData?.transactionDate || new Date().toISOString().split('T')[0],
+        invoiceNumber: result.kraData?.invoiceNumber || null,
+        category: result.aiEnhanced?.category || result.parsedData?.category || 'Other',
+        hasEtimsQR: !!(result.qrData?.url && (
+          result.qrData.url.includes('itax.kra.go.ke') || 
+          result.qrData.url.includes('etims.kra.go.ke')
+        )),
+        kraVerified: !!result.kraData?.invoiceNumber,
       },
       
       // Field-level confidence for user review UI
       fieldConfidence: result.fieldConfidence,
       
-      // Processing metadata
+      // Processing metadata (minimal)
       processing: {
-        template: result.templateUsed,
         confidence: result.confidence,
         timeMs: result.processingTimeMs,
-        costUSD: result.costUSD,
       },
       
       // Issues

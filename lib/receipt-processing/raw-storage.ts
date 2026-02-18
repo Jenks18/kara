@@ -21,6 +21,8 @@ export interface RawReceiptData {
   
   // Raw extracted data (stored as JSON)
   rawQrData?: any;
+  etimsQRDetected?: boolean; // NEW: Flag if eTIMS QR code was found
+  etimsQRUrl?: string; // NEW: eTIMS QR code URL
   rawOcrText?: string;
   rawKraData?: any;
   rawGeminiData?: any;
@@ -78,30 +80,42 @@ export interface RawReceiptStorage {
  */
 export class SupabaseRawReceiptStorage implements RawReceiptStorage {
   async save(data: RawReceiptData, supabase: SupabaseClient): Promise<string> {
+    // Build insert object with all fields (Supabase will ignore undefined)
+    const insertData: any = {
+      user_email: data.userEmail,
+      workspace_id: data.workspaceId,
+      image_url: data.imageUrl,
+      image_hash: data.imageHash,
+      raw_qr_data: data.rawQrData,
+      raw_ocr_text: data.rawOcrText,
+      raw_kra_data: data.rawKraData,
+      raw_gemini_data: data.rawGeminiData,
+      file_size_bytes: data.fileSizeBytes,
+      image_width: data.imageWidth,
+      image_height: data.imageHeight,
+      mime_type: data.mimeType,
+      latitude: data.latitude,
+      longitude: data.longitude,
+      location_accuracy_meters: data.locationAccuracyMeters,
+      captured_at: data.capturedAt?.toISOString(),
+      processing_status: data.processingStatus || 'raw',
+      processing_attempts: data.processingAttempts || 0,
+      recognized_store_id: data.recognizedStoreId,
+      recognition_confidence: data.recognitionConfidence,
+    };
+    
+    // Add eTIMS fields if migration 012 has been applied
+    // (Supabase will gracefully ignore fields that don't exist)
+    if (data.etimsQRDetected !== undefined) {
+      insertData.etims_qr_detected = data.etimsQRDetected;
+    }
+    if (data.etimsQRUrl) {
+      insertData.etims_qr_url = data.etimsQRUrl;
+    }
+    
     const { data: result, error } = await supabase
       .from('raw_receipts')
-      .insert({
-        user_email: data.userEmail,
-        workspace_id: data.workspaceId,
-        image_url: data.imageUrl,
-        image_hash: data.imageHash,
-        raw_qr_data: data.rawQrData,
-        raw_ocr_text: data.rawOcrText,
-        raw_kra_data: data.rawKraData,
-        raw_gemini_data: data.rawGeminiData,
-        file_size_bytes: data.fileSizeBytes,
-        image_width: data.imageWidth,
-        image_height: data.imageHeight,
-        mime_type: data.mimeType,
-        latitude: data.latitude,
-        longitude: data.longitude,
-        location_accuracy_meters: data.locationAccuracyMeters,
-        captured_at: data.capturedAt?.toISOString(),
-        processing_status: data.processingStatus || 'raw',
-        processing_attempts: data.processingAttempts || 0,
-        recognized_store_id: data.recognizedStoreId,
-        recognition_confidence: data.recognitionConfidence,
-      })
+      .insert(insertData)
       .select('id')
       .single();
     

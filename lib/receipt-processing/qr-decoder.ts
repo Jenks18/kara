@@ -3,6 +3,7 @@ import { BrowserQRCodeReader } from '@zxing/library';
 export interface QRCodeData {
   rawText: string;
   url: string | null;
+  isEtimsQR: boolean; // NEW: Flag for eTIMS/KRA QR codes
   // Parsed KRA QR data (if structured)
   invoiceNumber?: string;
   merchantPIN?: string;
@@ -28,11 +29,16 @@ export async function decodeQRFromImage(imageBuffer: Buffer): Promise<QRCodeData
     const qrText = result.getText();
 
 
-    // Check if it's a KRA URL or structured data
-    if (qrText.includes('itax.kra.go.ke')) {
+    // Check if it's a KRA/eTIMS QR code (itax or etims URLs)
+    const isEtimsQR = qrText.includes('itax.kra.go.ke') || 
+                      qrText.includes('etims.kra.go.ke') ||
+                      qrText.includes('kra.go.ke/verify');
+
+    if (isEtimsQR) {
       return {
         rawText: qrText,
         url: qrText,
+        isEtimsQR: true,
         source: 'qr_code',
         confidence: 100,
       };
@@ -44,6 +50,7 @@ export async function decodeQRFromImage(imageBuffer: Buffer): Promise<QRCodeData
     return {
       rawText: qrText,
       url: null,
+      isEtimsQR: false,
       ...parsed,
       source: 'qr_code',
       confidence: 100,

@@ -227,12 +227,21 @@ export class ReceiptProcessor {
       // ==========================================
       if (options.storeRaw !== false) {
         
+        // Check if QR code is eTIMS/KRA
+        const hasEtimsQR = effectiveQrData?.url?.includes('itax.kra.go.ke') || 
+                          effectiveQrData?.url?.includes('etims.kra.go.ke') ||
+                          effectiveQrData?.rawText?.includes('kra.go.ke') ||
+                          serverQrData?.isEtimsQR ||
+                          false;
+        
         const rawData: RawReceiptData = {
           userEmail: options.userEmail,
           workspaceId: options.workspaceId,
           imageUrl,
           imageHash,
           rawQrData: effectiveQrData,
+          etimsQRDetected: hasEtimsQR, // NEW: Flag eTIMS QR detection
+          etimsQRUrl: hasEtimsQR ? (effectiveQrData?.url || effectiveQrData?.rawValue) : undefined, // NEW: Store eTIMS URL
           rawOcrText: ocrData?.rawText,
           rawKraData: kraData,
           fileSizeBytes: imageBuffer.length,
@@ -328,7 +337,7 @@ export class ReceiptProcessor {
         
         // Set default values immediately so we don't block the response
         result.aiEnhanced = {
-          category: 'Fuel',
+          category: 'Other', // Default category for general receipts
           confidence: 50,
         };
       } else if (!process.env.GEMINI_API_KEY) {

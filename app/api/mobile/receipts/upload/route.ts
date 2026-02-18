@@ -144,8 +144,8 @@ export async function POST(request: NextRequest) {
             result.fieldConfidence?.date?.needsReview;
           const initialStatus = hasExtractedData ? (needsReview ? 'needs_review' : 'processed') : 'needs_review';
 
-          // Use AI-detected category, fall back to 'Fuel' for KRA-verified receipts
-          const category = result.parsedData?.category || (result.kraData?.invoiceNumber ? 'Fuel' : 'Other');
+          // Use AI-detected category, or fall back to 'Other' (no fuel-specific bias)
+          const category = result.aiEnhanced?.category || result.parsedData?.category || 'Other';
 
           // Compute overall confidence score (0-100)
           const confidenceScore = result.fieldConfidence
@@ -204,6 +204,10 @@ export async function POST(request: NextRequest) {
       date: result.kraData?.invoiceDate || result.parsedData?.transactionDate || null,
       category: result.parsedData?.category || 'Other',
       kraVerified: !!result.kraData?.invoiceNumber,
+      hasEtimsQR: !!(result.qrData?.url && (
+        result.qrData.url.includes('itax.kra.go.ke') || 
+        result.qrData.url.includes('etims.kra.go.ke')
+      )),
       processingTimeMs: result.processingTimeMs,
       confidence: result.fieldConfidence ? {
         merchantName: result.fieldConfidence.merchantName?.confidence || 0,

@@ -5,20 +5,28 @@ export interface GeminiReceiptData {
   merchantName: string | null;
   merchantAddress?: string | null;
   totalAmount: number | null;
+  vatAmount?: number | null;
   invoiceDate: string | null;
   invoiceNumber: string | null;
-  litres: number | null;
-  fuelType: 'PETROL' | 'DIESEL' | 'SUPER' | 'GAS' | null;
-  pricePerLitre: number | null;
   category: string | null;
+  items?: Array<{
+    description: string;
+    quantity?: number;
+    unitPrice?: number;
+    totalPrice: number;
+  }>;
   confidence: number;
   fieldConfidence?: {
     merchantName: number;
     totalAmount: number;
     invoiceDate: number;
   };
+  hasEtimsQR?: boolean;
+  etimsQRContent?: string;
 }
 
+// Deprecated: Use GeminiReceiptData instead
+// Kept for backward compatibility only
 export interface GeminiFuelResult {
   litres: number | null;
   fuelType: 'PETROL' | 'DIESEL' | 'SUPER' | 'GAS' | null;
@@ -123,28 +131,36 @@ export async function extractReceiptWithGemini(
 
   const imageBase64 = imageBuffer.toString('base64');
 
-  const prompt = `You are an expert Kenyan receipt data extractor. Analyze this receipt image carefully.
+  const prompt = `You are an expert receipt data extractor for Kenyan businesses. Analyze this receipt image and extract ALL relevant information.
 
-⚠️ CRITICAL READING ORDER:
-1. START AT THE TOP - The store name and address are almost ALWAYS at the top of the receipt
-2. Read the HEADER section first (top 20% of receipt) for:
-   - Business/Store name (usually largest text at top)
-   - Store address (street, building, city)
-   - Store contacts (phone, email)
-3. Then scan the MIDDLE for transaction details
-4. Finally check the BOTTOM for totals
+🔍 IMPORTANT - SCAN FOR eTIMS QR CODE:
+Kenya Revenue Authority (KRA) requires businesses to use eTIMS. Look for:
+- QR codes (usually at top or bottom of receipt)
+- Text like "eTIMS", "iTax", "KRA", or "Scan to verify"
+- URLs starting with "https://itax.kra.go.ke" or "https://etims.kra.go.ke"
+If you see a QR code, set hasEtimsQR=true
+
+⚠️ READING ORDER:
+1. START AT THE TOP - Business name and address
+2. SCAN for QR codes (any position on receipt)
+3. Read HEADER: Store name, address, KRA PIN, contacts
+4. Read BODY: Transaction details, items, quantities
+5. Read FOOTER: Subtotal, VAT, Total, payment method
 
 Return ONLY this JSON (no markdown, no explanation, no code fences):
 {
   "merchantName": "<business name from TOP of receipt>",
   "merchantAddress": "<full address from header if visible>",
-  "totalAmount": <final total in KES as a number>,
+  "totalAmount": <final total in KES as number>,
+  "vatAmount": <VAT/tax amount or null>,
   "invoiceDate": "YYYY-MM-DD",
   "invoiceNumber": "<receipt/invoice/TRX number>",
-  "litres": <fuel volume number or null>,
-  "fuelType": "PETROL" | "DIESEL" | "SUPER" | "GAS" | null,
-  "pricePerLitre": <number or null>,
-  "category": "<one of: Fuel, Food, Transport, Accommodation, Office Supplies, Communication, Maintenance, Other>",
+  "category": "<one of: Food, Transport, Shopping, Fuel, Entertainment, Utilities, Health, Other>",
+  "items": [
+    {"description": "<item name>", "quantity": <number or null>, "unitPrice": <number or null>, "totalPrice": <number>}
+  ],
+  "hasEtimsQR": <true if QR code present, false otherwise>,
+  "etimsQRContent": "<visible text near QR if any, or null>",
   "confidence": <0-100 overall>,
   "fieldConfidence": {
     "merchantName": <0-100>,
@@ -153,35 +169,33 @@ Return ONLY this JSON (no markdown, no explanation, no code fences):
   }
 }
 
-KENYAN RECEIPT PATTERNS:
-1. FUEL STATIONS:
-   - Shell, TotalEnergies, Rubis, Vivo, National Oil, Gulf, Hass, Kobil
-   - Header: Station name at top, then address, then "TAX INVOICE" or "CUSTOMER RECEIPT"
-   - Body: Look for LITRES, PMS (Petrol), AGO (Diesel), DPK (Kerosene), DAK (Diesel)
-   - Volume formats: "37.62 L", "25.5 Ltrs", "Vol: 30.0", "QTY: 40"
+KENYAN RECEIPT PATTERNS (treat all equally):
+
+1. FOOD & RESTAURANTS:
+   - Supermarkets: Naivas, Carrefour, Quickmart, Chandarana
+   - Restaurants: Java House, Artcaffe, KFC, Galitos, Steers
+   - Fast food: Pizza Inn, Domino's, Big Square
+   - Cafes: Dormans, Artcaffe, Urban Burger
    
-2. SUPERMARKETS:
-   - Naivas, Carrefour, Quickmart, Chandarana, Tuskys, Tumaini
-   - Header: Store name + branch (e.g., "NAIVAS KAREN"), then address
-   - Body: Item lines with prices
-   - Footer: Subtotal, VAT, Total
+2. RETAIL & SHOPPING:
+   - Clothing: Bata, Woolworths, Mr Price, Zara
+   - Electronics: Safaricom shops, Masoko, Jumia
+   - General: Game, Nakumatt (if still around), Tuskys
    
-3. RESTAURANTS & CAFES:
-   - Java House, Artcaffe, KFC, Galitos, Big Square, Wok Wok
-   - Header: Restaurant name, branch, "BILL" or "RECEIPT"
-   - Body: Look for Table #, Covers (number of people), Server name
-   - Items with quantities
+3. TRANSPORT:
+   - Ride-hail: Uber, Bolt, Little Cab
+   - Public: SGR, Matatu SACCO receipts, bus tickets
+   - Fuel: Shell, Total Energies, Rubis, Vivo, Hass
    
-4. M-PESA RECEIPTS:
-   - Header: "M-PESA", "SAFARICOM" or operator logo
-   - Transaction ID (10 alphanumeric chars)
-   - Sender/Recipient details
-   - Amount and Balance
+4. SERVICES:
+   - Utilities: KPLC, Nairobi Water, internet/TV providers
+   - Communication: Safaricom, Airtel, Telkom airtime
+   - Health: Hospital/clinic receipts, pharmacy
+   - Professional: Barber, salon, dry cleaning
    
-5. TRANSPORT:
-   - Uber/Bolt: App-generated, clean layout, trip details
-   - SGR: "STANDARD GAUGE RAILWAY", ticket number, route
-   - Matatu: handwritten or simple printed receipts
+5. MOBILE MONEY:
+   - M-PESA: Transaction messages, agent receipts
+   - Banking: KCB, Equity, Co-op Bank ATM slips
    
 6. GENERAL KENYAN RECEIPT STRUCTURE:
    ┌─────────────────────────────┐
@@ -210,15 +224,25 @@ KENYAN RECEIPT PATTERNS:
 9. CURRENCY: KES, KSH, Ksh, /= (shillings symbol)
 10. PHONE: +254..., 07..., 01... (Kenyan formats)
 
-CATEGORY RULES:
-- Has litres/fuel type → "Fuel"
-- Branded food/restaurant/café → "Food"
-- Uber/Bolt/SGR/taxi → "Transport"
-- Hotel/lodge/airbnb → "Accommodation"
-- Safaricom/Airtel/Telkom → "Communication"
-- Stationery/printer/paper → "Office Supplies"
-- Car service/repair/parts → "Maintenance"
-- Everything else → "Other"
+CATEGORY CLASSIFICATION (choose the BEST fit):
+- Food: Supermarkets, restaurants, cafes, groceries, meals
+- Transport: Uber, Bolt, matatu, fuel, parking, SGR, flights
+- Shopping: Clothing, electronics, household items, gifts
+- Fuel: Specifically fuel/petrol stations (Shell, Total, etc.)
+- Entertainment: Movies, concerts, games, sports events
+- Utilities: Electricity, water, internet, phone, TV subscription
+- Health: Hospitals, clinics, pharmacies, medical supplies
+- Other: Anything that doesn't fit above categories
+
+CATEGORY DECISION TREE:
+1. If merchant is fuel station → "Fuel"
+2. If merchant is restaurant/supermarket/food → "Food"
+3. If receipt shows transport service → "Transport"
+4. If items are clothes/electronics/goods → "Shopping"
+5. If service is utilities/bills → "Utilities"
+6. If medical/pharmacy → "Health"
+7. If entertainment venue → "Entertainment"
+8. Otherwise → "Other"
 
 FIELD CONFIDENCE: Rate each field 0-100 independently. If text is blurry or partially cut off, lower confidence.`;
 
@@ -243,9 +267,9 @@ FIELD CONFIDENCE: Rate each field 0-100 independently. If text is blurry or part
     const extracted: GeminiReceiptData = JSON.parse(jsonMatch[0]);
 
     // Ensure category is one of the valid options
-    const validCategories = ['Fuel', 'Food', 'Transport', 'Accommodation', 'Office Supplies', 'Communication', 'Maintenance', 'Other'];
+    const validCategories = ['Food', 'Transport', 'Shopping', 'Fuel', 'Entertainment', 'Utilities', 'Health', 'Other'];
     if (!extracted.category || !validCategories.includes(extracted.category)) {
-      extracted.category = extracted.litres ? 'Fuel' : 'Other';
+      extracted.category = 'Other';
     }
 
     return extracted;
