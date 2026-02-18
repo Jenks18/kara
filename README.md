@@ -1,6 +1,8 @@
-# MafutaPass — AI-Powered Fuel Expense Tracker 🚗⛽
+# Kacha — AI-Powered Receipt Capture & Expense Tracking 📸💰
 
-A multi-platform expense tracking app for businesses in Kenya. Photograph fuel receipts, auto-extract data via AI + eTIMS QR scanning, group expenses into reports, and manage multi-tenant workspaces.
+A multi-platform expense tracking app for businesses. Photograph any receipt, auto-extract data via AI + eTIMS QR scanning, group expenses into reports, and manage multi-tenant workspaces.
+
+**"Kacha"** is Swahili for "take a picture" — snap any receipt, and our AI extracts all the details instantly.
 
 ![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat&logo=next.js)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=flat&logo=typescript)

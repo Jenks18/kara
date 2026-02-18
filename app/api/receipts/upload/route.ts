@@ -102,6 +102,9 @@ export async function POST(request: NextRequest) {
     const skipAI = formData.get('skipAI') === 'true';
     const forceAI = formData.get('forceAI') === 'true';
     const templateId = formData.get('templateId') as string;
+    
+    // Mobile QR URL detection (from ML Kit barcode scanner)
+    const mobileQrUrl = formData.get('qrUrl') as string;
 
     if (!imageFile) {
       return NextResponse.json(
@@ -125,6 +128,7 @@ export async function POST(request: NextRequest) {
       skipAI,
       forceAI,
       templateId,
+      mobileQrUrl: mobileQrUrl || undefined, // Pass QR URL from mobile
     });
 
 

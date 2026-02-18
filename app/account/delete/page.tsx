@@ -134,7 +134,7 @@ export default function DeleteAccountPage() {
                 This action cannot be undone
               </h2>
               <p className="text-red-800 text-sm">
-                Deleting your account will permanently remove all your data from MafutaPass. This includes your profile, receipts, expense reports, and workspace memberships.
+                Deleting your account will permanently remove all your data from Kacha. This includes your profile, receipts, expense reports, and workspace memberships.
               </p>
             </div>
           </div>

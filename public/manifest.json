@@ -1,7 +1,7 @@
 {
-  "name": "MafutaPass",
-  "short_name": "MafutaPass",
-  "description": "AI-powered fuel expense tracking for Kenya",
+  "name": "Kacha",
+  "short_name": "Kacha",
+  "description": "AI-powered receipt capture & expense tracking",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0c1710",

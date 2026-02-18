@@ -10,7 +10,7 @@ export default function PrivacyPolicyPage() {
           <div className="flex justify-between items-center h-16">
             <Link href="/" className="flex items-center gap-2">
               <Receipt className="w-8 h-8 text-emerald-600" />
-              <span className="text-2xl font-bold text-gray-900">MafutaPass</span>
+              <span className="text-2xl font-bold text-gray-900">Kacha</span>
             </Link>
             <Link
               href="/"
@@ -33,7 +33,7 @@ export default function PrivacyPolicyPage() {
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-gray-900 mb-4">1. Introduction</h2>
               <p className="text-gray-600 mb-4">
-                Welcome to MafutaPass. We respect your privacy and are committed to protecting your personal data. 
+                Welcome to Kacha. We respect your privacy and are committed to protecting your personal data. 
                 This privacy policy explains how we collect, use, and safeguard your information when you use our expense management service.
               </p>
             </section>
@@ -129,7 +129,7 @@ export default function PrivacyPolicyPage() {
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-gray-900 mb-4">8. Children's Privacy</h2>
               <p className="text-gray-600 mb-4">
-                MafutaPass is not intended for users under 18 years of age. We do not knowingly collect data from children.
+                Kacha is not intended for users under 18 years of age. We do not knowingly collect data from children.
               </p>
             </section>
 
@@ -166,7 +166,7 @@ export default function PrivacyPolicyPage() {
       {/* Footer */}
       <footer className="bg-white border-t border-gray-200 py-8 mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-600">
-          <p>© 2026 MafutaPass. All rights reserved.</p>
+          <p>© 2026 Kacha. All rights reserved.</p>
           <div className="mt-4 flex justify-center gap-6">
             <Link href="/" className="hover:text-emerald-600">Home</Link>
             <Link href="/privacy-policy" className="hover:text-emerald-600">Privacy</Link>

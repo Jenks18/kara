@@ -15,6 +15,13 @@ export async function GET() {
     return NextResponse.json({ workspaces })
   } catch (error: any) {
     console.error('Error fetching workspaces:', error instanceof Error ? error.message : String(error))
+    
+    // If it's a RLS policy error mentioning workspace_members, return empty array
+    if (error.message?.includes('workspace_members') || error.code === 'PGRST116' || error.code === '42P01') {
+      console.warn('workspace_members table not found - migration 011 needs to be applied. Returning empty workspaces.')
+      return NextResponse.json({ workspaces: [], warning: 'Workspace collaboration migration pending' })
+    }
+    
     return NextResponse.json(
       { error: error.message || 'Failed to fetch workspaces' },
       { status: 500 }

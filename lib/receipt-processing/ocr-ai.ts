@@ -3,6 +3,7 @@ import type { KRAInvoiceData } from './kra-scraper';
 
 export interface GeminiReceiptData {
   merchantName: string | null;
+  merchantAddress?: string | null;
   totalAmount: number | null;
   invoiceDate: string | null;
   invoiceNumber: string | null;
@@ -124,9 +125,19 @@ export async function extractReceiptWithGemini(
 
   const prompt = `You are an expert Kenyan receipt data extractor. Analyze this receipt image carefully.
 
+⚠️ CRITICAL READING ORDER:
+1. START AT THE TOP - The store name and address are almost ALWAYS at the top of the receipt
+2. Read the HEADER section first (top 20% of receipt) for:
+   - Business/Store name (usually largest text at top)
+   - Store address (street, building, city)
+   - Store contacts (phone, email)
+3. Then scan the MIDDLE for transaction details
+4. Finally check the BOTTOM for totals
+
 Return ONLY this JSON (no markdown, no explanation, no code fences):
 {
-  "merchantName": "<business name exactly as printed>",
+  "merchantName": "<business name from TOP of receipt>",
+  "merchantAddress": "<full address from header if visible>",
   "totalAmount": <final total in KES as a number>,
   "invoiceDate": "YYYY-MM-DD",
   "invoiceNumber": "<receipt/invoice/TRX number>",
@@ -143,14 +154,61 @@ Return ONLY this JSON (no markdown, no explanation, no code fences):
 }
 
 KENYAN RECEIPT PATTERNS:
-1. FUEL: Shell, TotalEnergies, Rubis, Vivo, National Oil, Gulf, Hass — look for LITRES, PMS, AGO, DPK, DAK
-2. SUPERMARKET: Naivas, Carrefour, Quickmart, Chandarana, Tuskys — look for item lines
-3. M-PESA: Safaricom receipts — look for Transaction ID, MPESA
-4. RESTAURANTS: Java House, Artcaffe, KFC — look for Table, Covers, VAT
-5. TRANSPORT: Uber, Bolt, SGR — look for Trip, Ride
-6. Look for KRA PIN format: A/P + 9 digits + letter (e.g., P051234567A)
-7. Date formats: DD/MM/YYYY (most common in Kenya), DD-MMM-YY, YYYY-MM-DD
-8. Currency: KES, KSH, Ksh, /= often follows amounts
+1. FUEL STATIONS:
+   - Shell, TotalEnergies, Rubis, Vivo, National Oil, Gulf, Hass, Kobil
+   - Header: Station name at top, then address, then "TAX INVOICE" or "CUSTOMER RECEIPT"
+   - Body: Look for LITRES, PMS (Petrol), AGO (Diesel), DPK (Kerosene), DAK (Diesel)
+   - Volume formats: "37.62 L", "25.5 Ltrs", "Vol: 30.0", "QTY: 40"
+   
+2. SUPERMARKETS:
+   - Naivas, Carrefour, Quickmart, Chandarana, Tuskys, Tumaini
+   - Header: Store name + branch (e.g., "NAIVAS KAREN"), then address
+   - Body: Item lines with prices
+   - Footer: Subtotal, VAT, Total
+   
+3. RESTAURANTS & CAFES:
+   - Java House, Artcaffe, KFC, Galitos, Big Square, Wok Wok
+   - Header: Restaurant name, branch, "BILL" or "RECEIPT"
+   - Body: Look for Table #, Covers (number of people), Server name
+   - Items with quantities
+   
+4. M-PESA RECEIPTS:
+   - Header: "M-PESA", "SAFARICOM" or operator logo
+   - Transaction ID (10 alphanumeric chars)
+   - Sender/Recipient details
+   - Amount and Balance
+   
+5. TRANSPORT:
+   - Uber/Bolt: App-generated, clean layout, trip details
+   - SGR: "STANDARD GAUGE RAILWAY", ticket number, route
+   - Matatu: handwritten or simple printed receipts
+   
+6. GENERAL KENYAN RECEIPT STRUCTURE:
+   ┌─────────────────────────────┐
+   │   STORE NAME (Largest)      │ ← START HERE!
+   │   Store Address Line 1      │
+   │   Store Address Line 2      │
+   │   Tel: +254... KRA PIN: P..│
+   ├─────────────────────────────┤
+   │   TAX INVOICE / RECEIPT     │
+   │   Date: DD/MM/YYYY Time:... │
+   │   Receipt #: ABC123         │
+   ├─────────────────────────────┤
+   │   Items/Services            │
+   │   ...                       │
+   ├─────────────────────────────┤
+   │   Subtotal:     1,234.00    │
+   │   VAT 16%:        197.44    │
+   │   TOTAL:        1,431.44    │
+   └─────────────────────────────┘
+
+7. KRA PIN FORMAT: A/P + 9 digits + letter (e.g., P051234567A, A001234567B)
+8. DATE FORMATS: 
+   - DD/MM/YYYY (most common in Kenya)
+   - DD-MMM-YY (e.g., 15-FEB-26)
+   - YYYY-MM-DD (ISO format, less common)
+9. CURRENCY: KES, KSH, Ksh, /= (shillings symbol)
+10. PHONE: +254..., 07..., 01... (Kenyan formats)
 
 CATEGORY RULES:
 - Has litres/fuel type → "Fuel"

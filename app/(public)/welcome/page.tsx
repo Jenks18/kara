@@ -10,7 +10,7 @@ export default function LandingPage() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-2">
               <Receipt className="w-8 h-8 text-emerald-600" />
-              <span className="text-2xl font-bold text-gray-900">MafutaPass</span>
+              <span className="text-2xl font-bold text-gray-900">Kacha</span>
             </div>
             <div className="hidden md:flex items-center gap-8">
               <Link href="#features" className="text-gray-600 hover:text-emerald-600 transition-colors">
@@ -176,7 +176,7 @@ export default function LandingPage() {
             Ready to simplify your expenses?
           </h2>
           <p className="text-xl text-gray-600 mb-8">
-            Join thousands of users who save hours every month with MafutaPass
+            Join thousands of users who save hours every month with Kacha
           </p>
           <Link
             href="/sign-up"
@@ -194,13 +194,13 @@ export default function LandingPage() {
             <div className="col-span-2">
               <div className="flex items-center gap-2 mb-4">
                 <Receipt className="w-6 h-6 text-emerald-600" />
-                <span className="text-xl font-bold text-gray-900">MafutaPass</span>
+                <span className="text-xl font-bold text-gray-900">Kacha</span>
               </div>
               <p className="text-gray-600 mb-4">
                 Modern expense management for individuals and teams.
               </p>
               <p className="text-sm text-gray-500">
-                © 2026 MafutaPass. All rights reserved.
+                © 2026 Kacha. All rights reserved.
               </p>
             </div>
 

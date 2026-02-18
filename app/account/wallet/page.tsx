@@ -79,10 +79,10 @@ export default function WalletPage() {
           </button>
         </div>
 
-        {/* MafutaPass Wallet Section */}
+        {/* Kacha Wallet Section */}
         <div className="space-y-4 pt-4">
           <div>
-            <h2 className="text-gray-900 text-lg font-semibold mb-1">MafutaPass Wallet (Beta)</h2>
+            <h2 className="text-gray-900 text-lg font-semibold mb-1">Kacha Wallet (Beta)</h2>
             <p className="text-gray-500 text-sm">
               Send and receive money with friends. Kenyan bank accounts only.
             </p>

@@ -10,7 +10,7 @@ export default function TermsOfServicePage() {
           <div className="flex justify-between items-center h-16">
             <Link href="/" className="flex items-center gap-2">
               <Receipt className="w-8 h-8 text-emerald-600" />
-              <span className="text-2xl font-bold text-gray-900">MafutaPass</span>
+              <span className="text-2xl font-bold text-gray-900">Kacha</span>
             </Link>
             <Link
               href="/"
@@ -33,7 +33,7 @@ export default function TermsOfServicePage() {
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-gray-900 mb-4">1. Acceptance of Terms</h2>
               <p className="text-gray-600 mb-4">
-                By accessing or using MafutaPass ("the Service"), you agree to be bound by these Terms of Service. 
+                By accessing or using Kacha ("the Service"), you agree to be bound by these Terms of Service. 
                 If you do not agree to these terms, please do not use the Service.
               </p>
             </section>
@@ -41,7 +41,7 @@ export default function TermsOfServicePage() {
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-gray-900 mb-4">2. Description of Service</h2>
               <p className="text-gray-600 mb-4">
-                MafutaPass provides an expense management platform that allows you to:
+                Kacha provides an expense management platform that allows you to:
               </p>
               <ul className="list-disc pl-6 text-gray-600 space-y-2 mb-4">
                 <li>Capture and store receipt images</li>
@@ -121,7 +121,7 @@ export default function TermsOfServicePage() {
               <h2 className="text-2xl font-semibold text-gray-900 mb-4">6. Billing and Payments</h2>
               <h3 className="text-xl font-semibold text-gray-900 mb-3">6.1 Free Service</h3>
               <p className="text-gray-600 mb-4">
-                MafutaPass currently offers its core features free of charge. We reserve the right to introduce 
+                Kacha currently offers its core features free of charge. We reserve the right to introduce 
                 paid features or subscription plans in the future with advance notice.
               </p>
 
@@ -139,7 +139,7 @@ export default function TermsOfServicePage() {
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-gray-900 mb-4">7. Intellectual Property</h2>
               <p className="text-gray-600 mb-4">
-                The Service, including all content, features, and functionality, is owned by MafutaPass and protected by 
+                The Service, including all content, features, and functionality, is owned by Kacha and protected by 
                 international copyright, trademark, and other intellectual property laws.
               </p>
               <p className="text-gray-600 mb-4">
@@ -177,7 +177,7 @@ export default function TermsOfServicePage() {
 
               <h3 className="text-xl font-semibold text-gray-900 mb-3">9.3 Limitation of Liability</h3>
               <p className="text-gray-600 mb-4">
-                To the maximum extent permitted by law, MafutaPass shall not be liable for any indirect, incidental, 
+                To the maximum extent permitted by law, Kacha shall not be liable for any indirect, incidental, 
                 special, consequential, or punitive damages arising from your use of the Service.
               </p>
             </section>
@@ -185,7 +185,7 @@ export default function TermsOfServicePage() {
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-gray-900 mb-4">10. Indemnification</h2>
               <p className="text-gray-600 mb-4">
-                You agree to indemnify and hold harmless MafutaPass from any claims, damages, or expenses arising from 
+                You agree to indemnify and hold harmless Kacha from any claims, damages, or expenses arising from 
                 your use of the Service or violation of these terms.
               </p>
             </section>
@@ -238,7 +238,7 @@ export default function TermsOfServicePage() {
       {/* Footer */}
       <footer className="bg-white border-t border-gray-200 py-8 mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-600">
-          <p>© 2026 MafutaPass. All rights reserved.</p>
+          <p>© 2026 Kacha. All rights reserved.</p>
           <div className="mt-4 flex justify-center gap-6">
             <Link href="/" className="hover:text-emerald-600">Home</Link>
             <Link href="/privacy-policy" className="hover:text-emerald-600">Privacy</Link>

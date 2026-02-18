@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Returning to MafutaPass...</title>
+  <title>Returning to Kacha...</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     body {

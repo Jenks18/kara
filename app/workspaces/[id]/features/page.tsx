@@ -23,7 +23,7 @@ const features: FeatureToggle[] = [
   // Spend
   { id: 'distance', name: 'Distance rates', description: 'Add, update, and enforce rates.', icon: '🚗', enabled: false, category: 'spend' },
   { id: 'travel', name: 'Travel', description: 'Book, manage, and reconcile all your business travel.', icon: '🎒', enabled: false, category: 'spend' },
-  { id: 'mafutapass-card', name: 'MafutaPass Card', description: 'Gain insights and control over fuel spend.', icon: '💳', enabled: false, category: 'spend' },
+  { id: 'kacha-card', name: 'Kacha Card', description: 'Gain insights and control over spending.', icon: '💳', enabled: false, category: 'spend' },
   { id: 'company-cards', name: 'Company cards', description: 'Connect the cards you already have.', icon: '💳', enabled: true, category: 'spend' },
   { id: 'per-diem', name: 'Per diem', description: 'Set per diem rates to control daily employee spend.', icon: '📅', enabled: false, category: 'spend' },
   

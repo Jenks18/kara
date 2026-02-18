@@ -31,11 +31,11 @@ export default function AboutPage() {
           v1.0.0
         </div>
 
-        {/* About MafutaPass */}
+        {/* About Kacha */}
         <div className="space-y-4 bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-          <h2 className="text-gray-900 text-lg font-semibold">About MafutaPass</h2>
+          <h2 className="text-gray-900 text-lg font-semibold">About Kacha</h2>
           <p className="text-gray-600 text-sm leading-relaxed">
-            MafutaPass is a fuel expense tracking app built for Kenyan businesses and drivers. Track your fuel expenses, receipts, and mileage all in one place.
+            Kacha (Swahili for "take a picture") is a receipt capture and expense tracking app. Snap any receipt, and our AI extracts all the details. Track expenses, mileage, and generate reports all in one place.
           </p>
         </div>
 

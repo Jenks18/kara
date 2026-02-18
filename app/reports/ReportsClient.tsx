@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import BottomNav from '@/components/navigation/BottomNav'
 import ExpenseItemCard from '@/components/expense/ExpenseItemCard'
 import CategoryPill from '@/components/ui/CategoryPill'
-import { Search, SlidersHorizontal, FileText } from 'lucide-react'
+import { Search, SlidersHorizontal, FileText, Calendar, TrendingUp } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import Image from 'next/image'
 
@@ -41,6 +41,18 @@ export default function ReportsClient({ initialItems, initialReports }: ReportsC
   const [selectedType, setSelectedType] = useState('expense')
   const [expenseItems, setExpenseItems] = useState<ExpenseItem[]>(initialItems)
   const [reports, setReports] = useState<ExpenseReport[]>(initialReports)
+  
+  // Calculate spending stats
+  const now = new Date()
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  
+  const thisMonthItems = expenseItems.filter(item => {
+    const itemDate = new Date(item.created_at)
+    return itemDate >= startOfMonth
+  })
+  
+  const thisMonthTotal = thisMonthItems.reduce((sum, item) => sum + item.amount, 0)
+  const allTimeTotal = expenseItems.reduce((sum, item) => sum + item.amount, 0)
   
   // Set up Supabase real-time subscription for expense_items updates
   useEffect(() => {
@@ -107,6 +119,37 @@ export default function ReportsClient({ initialItems, initialReports }: ReportsC
 
       {/* Content */}
       <div className="px-4 py-6 max-w-md mx-auto space-y-6">
+        {/* Spending Summary Cards */}
+        <div className="grid grid-cols-2 gap-3">
+          {/* This Month Card */}
+          <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-5 shadow-lg">
+            <div className="flex items-center gap-2 mb-2">
+              <Calendar size={20} className="text-white/80" />
+              <span className="text-white/90 text-sm font-medium">This Month</span>
+            </div>
+            <div className="text-3xl font-bold text-white mb-1">
+              ${thisMonthTotal.toFixed(2)}
+            </div>
+            <div className="text-emerald-100 text-sm">
+              {thisMonthItems.length} receipt{thisMonthItems.length !== 1 ? 's' : ''}
+            </div>
+          </div>
+
+          {/* All Time Card */}
+          <div className="bg-white rounded-2xl p-5 shadow-md border border-gray-200">
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp size={20} className="text-gray-600" />
+              <span className="text-gray-600 text-sm font-medium">All Time</span>
+            </div>
+            <div className="text-3xl font-bold text-gray-900 mb-1">
+              ${allTimeTotal.toFixed(2)}
+            </div>
+            <div className="text-gray-600 text-sm">
+              {expenseItems.length} receipt{expenseItems.length !== 1 ? 's' : ''}
+            </div>
+          </div>
+        </div>
+
         {/* Type Filter Tabs */}
         <div className="flex gap-2">
           <button

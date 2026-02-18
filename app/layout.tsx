@@ -4,14 +4,14 @@ import { Providers } from '@/components/Providers'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'MafutaPass - Premium Fuel Expense Tracker',
-  description: 'AI-powered fuel expense tracking for businesses in Kenya',
+  title: 'Kacha - AI Receipt Capture & Expense Tracking',
+  description: 'Snap any receipt with AI-powered expense tracking for businesses',
   manifest: '/manifest.json',
   metadataBase: new URL('https://www.mafutapass.com'),
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'MafutaPass',
+    title: 'Kacha',
   },
   formatDetection: {
     telephone: false,

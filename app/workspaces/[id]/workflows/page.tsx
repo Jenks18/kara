@@ -141,7 +141,7 @@ export default function WorkflowsPage({ params }: { params: Promise<{ id: string
           <div className="flex items-start justify-between bg-white rounded-xl border border-emerald-200 p-4 shadow-sm">
             <div className="flex-1 pr-4">
               <div className="text-gray-900 font-medium mb-1">
-                Add an authorized payer for payments made in MafutaPass or track payments made elsewhere.
+                Add an authorized payer for payments made in Kacha or track payments made elsewhere.
               </div>
             </div>
             <button
