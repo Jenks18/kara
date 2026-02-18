@@ -1,7 +1,7 @@
 import SwiftUI
 
-// Main app with tab navigation matching web app
-// Default to Reports (Inbox hidden as chat not implemented)
+// Main app with 3-tab navigation matching Android app
+// Tabs: Reports, Create, Account
 struct MainAppView: View {
     var body: some View {
         TabView {
@@ -13,11 +13,6 @@ struct MainAppView: View {
             CreateExpensePage()
                 .tabItem {
                     Label("Create", systemImage: "plus.circle.fill")
-                }
-            
-            WorkspacesPage()
-                .tabItem {
-                    Label("Workspaces", systemImage: "briefcase.fill")
                 }
             
             AccountPage()

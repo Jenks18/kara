@@ -1,8 +1,8 @@
 # MafutaPass iOS App
 
-## 🎉 Complete - Ready to Build!
+## 🎉 Complete - Now Matches Android App!
 
-The iOS app is now **100% feature-complete** with 1:1 parity to the web app. All core functionality is implemented and ready to test.
+The iOS app has **feature parity with Android**, sharing the same core functionality and user experience.
 
 ## 📱 Quick Start
 
@@ -14,18 +14,21 @@ The iOS app is now **100% feature-complete** with 1:1 parity to the web app. All
 
 ### Core Features (100% Complete)
 - ✅ **Authentication** - Clerk integration with email verification
-- ✅ **Bottom Navigation** - 4 tabs (Reports, Create, Workspaces, Account)
+- ✅ **3-Tab Navigation** - Reports, Create, Account (matches Android)
 - ✅ **Receipt Capture** - Camera + gallery multi-select
+- ✅ **QR Code Scanning** - Auto-detect eTIMS/KRA QR codes (VisionKit)
+- ✅ **Receipt Editing** - Inline edit with "Needs Review" handling  
 - ✅ **Confirm Expenses** - Multi-image review with chevron navigation
-- ✅ **Receipt Upload** - Full API integration to backend
+- ✅ **Receipt Upload** - Full API integration with QR data
 - ✅ **Reports Page** - Expenses & Reports tabs with search
-- ✅ **Workspaces** - CRUD operations with API
+- ✅ **Expense Details** - View and edit individual receipts
+- ✅ **Workspaces** - CRUD operations with API (accessible via Account)
 - ✅ **Account Page** - Profile display and sign out
-- ✅ **API Service** - Complete backend integration
+- ✅ **API Service** - Complete backend integration (PATCH support)
 - ✅ **Permissions** - Camera, photo library, location
 
 ### Design Match (100%)
-- ✅ Emerald theme colors
+- ✅ Emerald theme colors (#10B981)
 - ✅ Background gradients
 - ✅ Card styles
 - ✅ Typography
@@ -33,30 +36,59 @@ The iOS app is now **100% feature-complete** with 1:1 parity to the web app. All
 - ✅ Animations
 - ✅ Empty states
 - ✅ Loading states
+- ✅ KRA Verified badges
+
+## 🆕 Recent Updates (Android Parity)
+
+### 1. QR Code Scanning (`QRScannerService.swift`)
+- Post-capture QR scanning using VisionKit
+- Detects eTIMS URLs: itax.kra.go.ke, etims.kra.go.ke
+- Auto-scans all captured images
+- Visual badge when QR detected
+- QR URL sent to backend automatically
+
+### 2. Receipt Detail & Editing (`ExpenseDetailView.swift`)
+- Full-screen receipt view with image
+- Inline editing (merchant, amount, category, date, notes)
+- Auto-edit mode for "Needs Review" receipts  
+- PATCH API integration
+- Save success feedback
+- KRA Verified badge display
+
+### 3. Simplified Navigation
+- **3 tabs** matching Android: Reports | Create | Account
+- Removed standalone Workspaces tab
+- Workspaces accessible via Account menu
+
+### 4. Enhanced Categories
+- 8 categories: Fuel, Food, Transport, Shopping, Entertainment, Utilities, Health, Other
+- Matches Android category list exactly
 
 ## 📂 Structure
 ```
 ios-app/
 ├── Views/
-│   ├── CreateExpensePage.swift         ✅ NEW - Receipt scanning
-│   ├── ReceiptCaptureView.swift        ✅ NEW - Camera/gallery
-│   ├── ConfirmExpensesView.swift       ✅ NEW - Multi-image review
-│   ├── ReportsPage.swift               ✅ UPDATED - Expenses/Reports tabs
-│   ├── WorkspacesPage.swift            ✅ NEW - Workspace management
-│   ├── MainAppView.swift               ✅ UPDATED - Tab routing
-│   └── PlaceholderPages.swift          ✅ UPDATED - Account page
-├── Components/
-│   └── BottomNavView.swift             ✅ UPDATED - 4 tabs, no Inbox
+│   ├── CreateExpensePage.swift         ✅ Receipt scanning
+│   ├── ReceiptCaptureView.swift        ✅ Camera/gallery
+│   ├── ConfirmExpensesView.swift       ✅ Multi-image review + QR scan
+│   ├── ExpenseDetailView.swift         ✅ NEW - View & edit receipts
+│   ├── ReportsPage.swift               ✅ Expenses/Reports tabs
+│   ├── WorkspacesPage.swift            ✅ Workspace management
+│   ├── MainAppView.swift               ✅ 3-tab navigation
+│   └── PlaceholderPages.swift          ✅ Account page
 ├── Services/
-│   └── APIService.swift                ✅ NEW - Backend integration
-├── Models/                              (existing)
+│   ├── API.swift                       ✅ Backend integration + PATCH
+│   ├── QRScannerService.swift          ✅ NEW - VisionKit QR scanner
+│   └── ClerkAuthManager.swift          ✅ Auth management
+├── Components/
+│   └── BottomNavView.swift             (removed - using TabView)
+├── Models/
+│   └── Models.swift                    ✅ Data models
 ├── OfficialClerkApp.swift              ✅ Main app entry
-├── BUILD_READY.md                      ✅ Complete build guide
-├── QUICK_START.md                      ✅ 5-minute test guide
-├── INTEGRATION_CHECKLIST.md            ✅ Feature checklist
-├── INFO_PLIST_KEYS.md                  ✅ Required permissions
-├── sync-to-xcode.sh                    Build script
-└── build-and-install.sh                Install script
+├── BUILD_READY.md                      ✅ Build instructions
+├── QUICK_START.md                      ✅ Quick setup guide
+├── IOS_ANDROID_PARITY.md               ✅ NEW - Feature comparison
+└── README.md                           ✅ This file
 ```
 
 ## 🚀 Build Instructions

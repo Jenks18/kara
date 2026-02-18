@@ -13,9 +13,11 @@ struct ConfirmExpensesView: View {
     @State private var isSubmitting = false
     @State private var showSuccess = false
     @State private var locationPermissionGranted = false
+    @State private var detectedQRUrl: String? = nil // NEW: Detected eTIMS QR code
+    @State private var scanningQR = false // NEW: QR scan progress
     @StateObject private var locationManager = LocationManager()
     
-    let categories = ["fuel", "parking", "maintenance", "tolls", "other"]
+    let categories = ["fuel", "food", "transport", "shopping", "entertainment", "utilities", "health", "other"]
     
     var body: some View {
         NavigationStack {
@@ -129,13 +131,41 @@ struct ConfirmExpensesView: View {
                                         .padding(.trailing, 20)
                                     }
                                 }
-                            }
-                            .padding(.horizontal)
-                            
-                            // Form section
-                            VStack(spacing: 16) {
-                                // Workspace selector
-                                VStack(alignment: .leading, spacing: 8) {
+                
+                // QR Scan Badge (if detected)
+                if let qrUrl = detectedQRUrl {
+                    VStack {
+                        Spacer()
+                        HStack {
+                            Image(systemName: "qrcode")
+                                .font(.system(size: 14))
+                            Text("eTIMS QR Detected")
+                                .font(.system(size: 14, weight: .medium))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.green.opacity(0.9))
+                        .cornerRadius(16)
+                        .padding(.bottom, 8)
+                    }
+                } else if scanningQR {
+                    VStack {
+                        Spacer()
+                        HStack {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            Text("Scanning for QR...")
+                                .font(.system(size: 14, weight: .medium))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.gray.opacity(0.8))
+                        .cornerRadius(16)
+                        .padding(.bottom, 8)
+                    }
+                }
                                     Text("Workspace")
                                         .font(.system(size: 14, weight: .medium))
                                         .foregroundColor(.secondary)
@@ -248,6 +278,8 @@ struct ConfirmExpensesView: View {
                 }
             }
             .onAppear {
+                // Auto-scan for QR codes when view appears (like Android)
+                scanForQRCodes()
                 checkLocationPermission()
             }
             .alert("Success", isPresented: $showSuccess) {
@@ -301,7 +333,8 @@ struct ConfirmExpensesView: View {
                     description: description.isEmpty ? nil : description,
                     category: selectedCategory,
                     latitude: lat,
-                    longitude: lon
+                    longitude: lon,
+                    qrUrl: detectedQRUrl // NEW: Pass detected QR URL
                 )
                 
                 await MainActor.run {
@@ -315,6 +348,33 @@ struct ConfirmExpensesView: View {
                     isSubmitting = false
                     print("Upload error: \(error)")
                     // TODO: Show error alert
+                }
+            }
+        }
+    }
+    
+    /// Scan all images for eTIMS QR codes (post-capture like Android)
+    func scanForQRCodes() {
+        scanningQR = true
+        Task {
+            do {
+                // Scan all images for QR codes
+                if let qrUrl = try await QRScannerService.shared.scanImagesForQR(images: images) {
+                    await MainActor.run {
+                        detectedQRUrl = qrUrl
+                        scanningQR = false
+                        print("✅ eTIMS QR detected: \(qrUrl)")
+                    }
+                } else {
+                    await MainActor.run {
+                        scanningQR = false
+                        print("ℹ️ No eTIMS QR found")
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    scanningQR = false
+                    print("⚠️ QR scan failed: \(error)")
                 }
             }
         }

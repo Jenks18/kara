@@ -82,6 +82,21 @@ class API {
         return try JSONDecoder().decode(ExpenseItem.self, from: data)
     }
     
+    /// Update expense item (PATCH endpoint like Android)
+    func updateExpense(id: String, updates: [String: Any]) async throws -> ExpenseItem {
+        let url = URL(string: "\(baseURL)/mobile/receipts/\(id)")!
+        let body = try JSONSerialization.data(withJSONObject: updates)
+        let data = try await makeAuthenticatedRequest(url: url, method: "PATCH", body: body)
+        
+        struct UpdateResponse: Codable {
+            let success: Bool
+            let receipt: ExpenseItem
+        }
+        
+        let response = try JSONDecoder().decode(UpdateResponse.self, from: data)
+        return response.receipt
+    }
+    
     // MARK: - Receipt Upload
     
     func uploadReceipts(
@@ -90,13 +105,86 @@ class API {
         description: String?,
         category: String?,
         latitude: Double?,
-        longitude: Double?
+        longitude: Double?,
+        qrUrl: String? = nil // NEW: eTIMS QR URL from scanner
     ) async throws -> UploadReceiptsResponse {
         let url = URL(string: "\(baseURL)/receipts/upload")!
         
         // Create multipart form data
         let boundary = UUID().uuidString
         var body = Data()
+        
+        // Add images
+        for (index, imageData) in images.enumerated() {
+            body.append("--\(boundary)\r\n".data(using: .utf8)!)
+            body.append("Content-Disposition: form-data; name=\"images\"; filename=\"receipt\(index).jpg\"\r\n".data(using: .utf8)!)
+            body.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
+            body.append(imageData)
+            body.append("\r\n".data(using: .utf8)!)
+        }
+        
+        // Add workspaceId
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"workspaceId\"\r\n\r\n".data(using: .utf8)!)
+        body.append(workspaceId.data(using: .utf8)!)
+        body.append("\r\n".data(using: .utf8)!)
+        
+        // Add optional fields
+        if let description = description {
+            body.append("--\(boundary)\r\n".data(using: .utf8)!)
+            body.append("Content-Disposition: form-data; name=\"description\"\r\n\r\n".data(using: .utf8)!)
+            body.append(description.data(using: .utf8)!)
+            body.append("\r\n".data(using: .utf8)!)
+        }
+        
+        if let category = category {
+            body.append(" --\(boundary)\r\n".data(using: .utf8)!)
+            body.append("Content-Disposition: form-data; name=\"category\"\r\n\r\n".data(using: .utf8)!)
+            body.append(category.data(using: .utf8)!)
+            body.append("\r\n".data(using: .utf8)!)
+        }
+        
+        if let latitude = latitude {
+            body.append("--\(boundary)\r\n".data(using: .utf8)!)
+            body.append("Content-Disposition: form-data; name=\"latitude\"\r\n\r\n".data(using: .utf8)!)
+            body.append("\(latitude)".data(using: .utf8)!)
+            body.append("\r\n".data(using: .utf8)!)
+        }
+        
+        if let longitude = longitude {
+            body.append("--\(boundary)\r\n".data(using: .utf8)!)
+            body.append("Content-Disposition: form-data; name=\"longitude\"\r\n\r\n".data(using: .utf8)!)
+            body.append("\(longitude)".data(using: .utf8)!)
+            body.append("\r\n".data(using: .utf8)!)
+        }
+        
+        // NEW: Add QR URL if detected
+        if let qrUrl = qrUrl {
+            body.append("--\(boundary)\r\n".data(using: .utf8)!)
+            body.append("Content-Disposition: form-data; name=\"qrUrl\"\r\n\r\n".data(using: .utf8)!)
+            body.append(qrUrl.data(using: .utf8)!)
+            body.append("\r\n".data(using: .utf8)!)
+        }
+        
+        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        
+        let token = try await getClerkToken()
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.httpBody = body
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            throw APIError.uploadFailed
+        }
+        
+        return try JSONDecoder().decode(UploadReceiptsResponse.self, from: data)
+    }
         
         // Add images
         for (index, imageData) in images.enumerated() {

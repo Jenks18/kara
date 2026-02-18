@@ -127,7 +127,10 @@ struct ExpensesListView: View {
         ScrollView {
             LazyVStack(spacing: 12) {
                 ForEach(expenses) { expense in
-                    ExpenseCardView(expense: expense)
+                    NavigationLink(destination: ExpenseDetailView(expense: expense)) {
+                        ExpenseCardView(expense: expense)
+                    }
+                    .buttonStyle(.plain) // Prevents default link styling
                 }
             }
             .padding(16)
