@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight, Building, Share2, Trash2, Camera, Image as ImageIcon, FileText, X, UserPlus, Download } from 'lucide-react'
 import QRCode from 'react-qr-code'
 import { getSupabaseClient } from '@/lib/supabase/client'
+import { useToast } from '@/components/ui/Toast'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,6 +36,7 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const galleryInputRef = useRef<HTMLInputElement>(null)
+  const { showToast } = useToast()
 
   useEffect(() => {
     params.then(p => setWorkspaceId(p.id))
@@ -82,11 +84,11 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
       if (response.ok) {
         router.push('/workspaces')
       } else {
-        alert('Failed to delete workspace')
+        showToast('Failed to delete workspace', 'error')
       }
     } catch (error) {
       console.error('Error deleting workspace:', error)
-      alert('Failed to delete workspace')
+      showToast('Failed to delete workspace', 'error')
     }
   }
 
@@ -116,13 +118,13 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
       if (response.ok) {
         const data = await response.json()
         setWorkspace(data.workspace)
-        alert('Image removed successfully!')
+        showToast('Image removed', 'success')
       } else {
-        alert('Failed to remove image')
+        showToast('Failed to remove image', 'error')
       }
     } catch (error) {
       console.error('Error removing workspace image:', error)
-      alert('Failed to remove image')
+      showToast('Failed to remove image', 'error')
     } finally {
       setUploadingAvatar(false)
     }
@@ -134,13 +136,13 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file')
+      showToast('Please select an image file', 'warning')
       return
     }
 
     // Validate file size (5MB limit)
     if (file.size > 5 * 1024 * 1024) {
-      alert('Image size must be less than 5MB')
+      showToast('Image size must be less than 5MB', 'warning')
       return
     }
 
@@ -164,7 +166,7 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
 
       if (uploadError) {
         console.error('Upload error:', uploadError)
-        alert('Failed to upload image')
+        showToast('Failed to upload image', 'error')
         return
       }
 
@@ -183,13 +185,13 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
       if (response.ok) {
         const data = await response.json()
         setWorkspace(data.workspace)
-        alert('Image updated successfully!')
+        showToast('Image updated!', 'success')
       } else {
-        alert('Failed to update image')
+        showToast('Failed to update image', 'error')
       }
     } catch (error) {
       console.error('Error uploading workspace image:', error)
-      alert('Failed to upload image')
+      showToast('Failed to upload image', 'error')
     } finally {
       setUploadingAvatar(false)
       // Reset input
@@ -453,7 +455,7 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
             <button
               onClick={() => {
                 if (inviteInput.trim()) {
-                  alert(`Invite sent to: ${inviteInput}`)
+                  showToast(`Invite sent to: ${inviteInput}`, 'success')
                   setInviteInput('')
                   setShowInviteModal(false)
                 }
@@ -486,7 +488,7 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
                   size={200}
                   style={{ height: "auto", maxWidth: "100%", width: "100%" }}
                   viewBox={`0 0 200 200`}
-                  fgColor="#059669"
+                  fgColor="#0066FF"
                   bgColor="#ffffff"
                 />
               </div>
@@ -503,7 +505,7 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(shareUrl)
-                  alert('Link copied to clipboard!')
+                  showToast('Link copied to clipboard!', 'success')
                 }}
                 className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2"
               >

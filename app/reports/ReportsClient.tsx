@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation'
 import BottomNav from '@/components/navigation/BottomNav'
 import ExpenseItemCard from '@/components/expense/ExpenseItemCard'
 import CategoryPill from '@/components/ui/CategoryPill'
-import { Search, SlidersHorizontal, FileText, Calendar, TrendingUp } from 'lucide-react'
+import { FileText } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
+import { formatCurrency } from '@/lib/currency'
 import Image from 'next/image'
 
 interface ExpenseItem {
@@ -33,26 +34,14 @@ interface ExpenseReport {
 interface ReportsClientProps {
   initialItems: ExpenseItem[]
   initialReports: ExpenseReport[]
+  currency: string
 }
 
-export default function ReportsClient({ initialItems, initialReports }: ReportsClientProps) {
+export default function ReportsClient({ initialItems, initialReports, currency }: ReportsClientProps) {
   const router = useRouter()
-  const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedType, setSelectedType] = useState('expense')
   const [expenseItems, setExpenseItems] = useState<ExpenseItem[]>(initialItems)
   const [reports, setReports] = useState<ExpenseReport[]>(initialReports)
-  
-  // Calculate spending stats
-  const now = new Date()
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-  
-  const thisMonthItems = expenseItems.filter(item => {
-    const itemDate = new Date(item.created_at)
-    return itemDate >= startOfMonth
-  })
-  
-  const thisMonthTotal = thisMonthItems.reduce((sum, item) => sum + item.amount, 0)
-  const allTimeTotal = expenseItems.reduce((sum, item) => sum + item.amount, 0)
   
   // Set up Supabase real-time subscription for expense_items updates
   useEffect(() => {
@@ -85,71 +74,17 @@ export default function ReportsClient({ initialItems, initialReports }: ReportsC
     }
   }, [])
   
-  const categories = [
-    { id: 'all', label: 'All' },
-    { id: 'fuel', label: 'Fuel' },
-    { id: 'paid', label: 'Paid' },
-    { id: 'pending', label: 'Pending' },
-  ]
-  
   return (
     <div className="min-h-screen pb-20 bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
       {/* Header */}
       <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-lg border-b border-blue-200">
         <div className="px-4 py-4 max-w-md mx-auto">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
-            {/* Filter button hidden for now */}
-            {/* <button className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center active:bg-blue-100 rounded-full transition-colors touch-manipulation">
-              <SlidersHorizontal size={24} className="text-gray-600" />
-            </button> */}
-          </div>
-          
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={20} />
-            <input
-              type="text"
-              placeholder="Search receipts..."
-              className="w-full bg-white text-gray-900 pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-blue-400 transition-colors shadow-sm"
-            />
-          </div>
+          <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
         </div>
       </div>
 
       {/* Content */}
       <div className="px-4 py-6 max-w-md mx-auto space-y-6">
-        {/* Spending Summary Cards */}
-        <div className="grid grid-cols-2 gap-3">
-          {/* This Month Card */}
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-5 shadow-lg">
-            <div className="flex items-center gap-2 mb-2">
-              <Calendar size={20} className="text-white/80" />
-              <span className="text-white/90 text-sm font-medium">This Month</span>
-            </div>
-            <div className="text-3xl font-bold text-white mb-1">
-              ${thisMonthTotal.toFixed(2)}
-            </div>
-            <div className="text-blue-100 text-sm">
-              {thisMonthItems.length} receipt{thisMonthItems.length !== 1 ? 's' : ''}
-            </div>
-          </div>
-
-          {/* All Time Card */}
-          <div className="bg-white rounded-2xl p-5 shadow-md border border-gray-200">
-            <div className="flex items-center gap-2 mb-2">
-              <TrendingUp size={20} className="text-gray-600" />
-              <span className="text-gray-600 text-sm font-medium">All Time</span>
-            </div>
-            <div className="text-3xl font-bold text-gray-900 mb-1">
-              ${allTimeTotal.toFixed(2)}
-            </div>
-            <div className="text-gray-600 text-sm">
-              {expenseItems.length} receipt{expenseItems.length !== 1 ? 's' : ''}
-            </div>
-          </div>
-        </div>
-
         {/* Type Filter Tabs */}
         <div className="flex gap-2">
           <button
@@ -173,18 +108,6 @@ export default function ReportsClient({ initialItems, initialReports }: ReportsC
             Reports
           </button>
         </div>
-
-        {/* Category Pills - Hidden for now */}
-        {/* <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
-          {categories.map((category) => (
-            <CategoryPill
-              key={category.id}
-              label={category.label}
-              selected={selectedCategory === category.id}
-              onClick={() => setSelectedCategory(category.id)}
-            />
-          ))}
-        </div> */}
 
         {/* Expense Items */}
         <div className="space-y-3">
@@ -238,7 +161,7 @@ export default function ReportsClient({ initialItems, initialReports }: ReportsC
                         })}
                       </span>
                       <span className="text-lg font-bold text-gray-900">
-                        KES {item.amount.toFixed(2)}
+                        {formatCurrency(item.amount, currency)}
                       </span>
                     </div>
                     
@@ -320,7 +243,7 @@ export default function ReportsClient({ initialItems, initialReports }: ReportsC
                         {report.workspace_name}
                       </div>
                       <div className="text-gray-900 font-semibold font-mono">
-                        KES {totalAmount.toFixed(2)}
+                        {formatCurrency(totalAmount, currency)}
                       </div>
                     </div>
                   </div>

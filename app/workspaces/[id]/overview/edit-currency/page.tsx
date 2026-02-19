@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, Search, Check } from 'lucide-react'
+import { useToast } from '@/components/ui/Toast'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,6 +27,7 @@ const currencies = [
 
 export default function EditCurrencyPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
+  const { showToast } = useToast()
   const [workspaceId, setWorkspaceId] = useState<string>('')
   const [selectedCurrency, setSelectedCurrency] = useState<typeof currencies[0] | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -73,11 +75,11 @@ export default function EditCurrencyPage({ params }: { params: Promise<{ id: str
       if (response.ok) {
         router.back()
       } else {
-        alert('Failed to update currency')
+        showToast('Failed to update currency', 'error')
       }
     } catch (error) {
       console.error('Error updating workspace:', error)
-      alert('Failed to update currency')
+      showToast('Failed to update currency', 'error')
     } finally {
       setSaving(false)
     }

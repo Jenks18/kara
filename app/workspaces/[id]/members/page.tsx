@@ -6,6 +6,7 @@ import { useUser } from '@clerk/nextjs'
 import { ChevronLeft, UserPlus, Users, Share2, Trash2, X, Download } from 'lucide-react'
 import QRCode from 'react-qr-code'
 import { getUserProfile } from '@/lib/api/user-profiles'
+import { useToast } from '@/components/ui/Toast'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,6 +33,7 @@ interface Workspace {
 export default function MembersPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
   const { user } = useUser()
+  const { showToast } = useToast()
   const [members, setMembers] = useState<WorkspaceMember[]>([])
   const [workspace, setWorkspace] = useState<Workspace | null>(null)
   const [loading, setLoading] = useState(true)
@@ -142,11 +144,11 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
       if (response.ok) {
         router.push('/workspaces')
       } else {
-        alert('Failed to delete workspace')
+        showToast('Failed to delete workspace', 'error')
       }
     } catch (error) {
       console.error('Error deleting workspace:', error)
-      alert('Failed to delete workspace')
+      showToast('Failed to delete workspace', 'error')
     }
   }
 
@@ -337,7 +339,7 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
             <button
               onClick={() => {
                 if (inviteInput.trim()) {
-                  alert(`Invite sent to: ${inviteInput}`)
+                  showToast(`Invite sent to: ${inviteInput}`, 'success')
                   setInviteInput('')
                   setShowInviteModal(false)
                 }
@@ -373,7 +375,7 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
                   size={200}
                   style={{ height: "auto", maxWidth: "100%", width: "100%" }}
                   viewBox={`0 0 200 200`}
-                  fgColor="#059669"
+                  fgColor="#0066FF"
                   bgColor="#ffffff"
                 />
               </div>
@@ -390,7 +392,7 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(shareUrl)
-                  alert('Link copied to clipboard!')
+                  showToast('Link copied to clipboard!', 'success')
                 }}
                 className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2"
               >

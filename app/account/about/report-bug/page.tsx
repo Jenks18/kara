@@ -74,7 +74,7 @@ export default function ReportBugPage() {
 
       setIsSubmitted(true)
     } catch (err) {
-      setError('Failed to submit report. Please try again or email support@kachalabs.com')
+      setError('Failed to submit report. Please try again or email masomonews19@gmail.com')
     } finally {
       setIsSubmitting(false)
     }
@@ -102,7 +102,7 @@ export default function ReportBugPage() {
             Your bug report has been received. Our team will investigate and work on a fix.
           </p>
           <p className="text-gray-500 text-sm mb-8">
-            Our team will follow up at <span className="font-medium text-gray-700">support@kachalabs.com</span>
+            Our team will follow up at <span className="font-medium text-gray-700">masomonews19@gmail.com</span>
           </p>
           <button
             onClick={() => router.replace('/account/about')}

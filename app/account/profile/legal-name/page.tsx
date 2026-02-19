@@ -5,12 +5,14 @@ import { useRouter } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
 import { ChevronLeft } from 'lucide-react'
 import { getUserProfile, updateUserProfile } from '@/lib/api/user-profiles'
+import { useToast } from '@/components/ui/Toast'
 
 export const dynamic = 'force-dynamic'
 
 export default function LegalNamePage() {
   const router = useRouter()
   const { user } = useUser()
+  const { showToast } = useToast()
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [saving, setSaving] = useState(false)
@@ -48,7 +50,7 @@ export default function LegalNamePage() {
       })
       router.back()
     } catch (error) {
-      alert('Failed to save. Please try again.')
+      showToast('Failed to save. Please try again.', 'error')
     } finally {
       setSaving(false)
     }

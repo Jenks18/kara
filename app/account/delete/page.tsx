@@ -50,7 +50,7 @@ export default function DeleteAccountPage() {
         signOut({ redirectUrl: '/sign-in' })
       }, 2000)
     } catch (err) {
-      setError('Failed to submit request. Please try again or contact support@kachalabs.com')
+      setError('Failed to submit request. Please try again or contact masomonews19@gmail.com')
     } finally {
       setIsSubmitting(false)
     }
@@ -94,7 +94,7 @@ export default function DeleteAccountPage() {
               {user?.emailAddresses?.[0]?.emailAddress}
             </p>
             <p className="text-sm text-gray-500">
-              You have been signed out. If you have any questions, please contact us at support@kachalabs.com
+              You have been signed out. If you have any questions, please contact us at masomonews19@gmail.com
             </p>
             <button
               onClick={() => router.push('/account')}
@@ -265,8 +265,8 @@ export default function DeleteAccountPage() {
         {/* Support Contact */}
         <div className="text-center text-sm text-gray-600">
           <p>Need help? Contact us at{' '}
-            <a href="mailto:support@kachalabs.com" className="text-blue-600 hover:text-blue-700 font-medium">
-              support@kachalabs.com
+            <a href="mailto:masomonews19@gmail.com" className="text-blue-600 hover:text-blue-700 font-medium">
+              masomonews19@gmail.com
             </a>
           </p>
         </div>

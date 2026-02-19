@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
 import { ChevronLeft, Camera, Search, X } from 'lucide-react'
+import { useToast } from '@/components/ui/Toast'
 
 // Force dynamic rendering to avoid Clerk prerender issues
 export const dynamic = 'force-dynamic'
@@ -35,6 +36,7 @@ export default function NewWorkspacePage() {
   const [isCreating, setIsCreating] = useState(false)
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false)
   const [currencySearch, setCurrencySearch] = useState('')
+  const { showToast } = useToast()
 
   // Set default avatar to first letter of workspace name
   const displayAvatar = avatar || workspaceName.charAt(0).toUpperCase() || 'W'
@@ -62,11 +64,11 @@ export default function NewWorkspacePage() {
       if (response.ok) {
         router.push('/workspaces')
       } else {
-        alert(`Failed to create workspace: ${result.error}`)
+        showToast(`Failed to create workspace: ${result.error}`, 'error')
       }
     } catch (error) {
       console.error('Error creating workspace:', error)
-      alert('Failed to create workspace')
+      showToast('Failed to create workspace', 'error')
     } finally {
       setIsCreating(false)
     }

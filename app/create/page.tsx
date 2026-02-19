@@ -4,7 +4,7 @@ import { useState } from 'react'
 import BottomNav from '@/components/navigation/BottomNav'
 import Card from '@/components/ui/Card'
 import ReceiptCapture from '@/components/receipt/ReceiptCapture'
-import { Receipt, MessageSquare, FileText } from 'lucide-react'
+import { Receipt } from 'lucide-react'
 
 // Force dynamic rendering to avoid Clerk prerender issues
 export const dynamic = 'force-dynamic'
@@ -22,18 +22,6 @@ export default function CreatePage() {
       label: 'Scan Receipt',
       description: 'Capture fuel receipt with camera',
       action: () => setShowCapture(true),
-    },
-    {
-      id: 'chat',
-      icon: MessageSquare,
-      label: 'Start chat',
-      description: 'Message your manager or team',
-    },
-    {
-      id: 'report',
-      icon: FileText,
-      label: 'Create report',
-      description: 'Create a new expense report',
     },
   ]
   

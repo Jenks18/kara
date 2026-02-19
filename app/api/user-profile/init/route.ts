@@ -87,6 +87,7 @@ export async function POST() {
           .from('workspaces')
           .insert({
             user_id: userId,
+            owner_id: userId,
             name: 'Personal',
             avatar: '💼',
             currency: 'USD',

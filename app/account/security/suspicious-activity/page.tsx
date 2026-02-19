@@ -62,7 +62,7 @@ export default function SuspiciousActivityPage() {
 
       setIsSubmitted(true)
     } catch (err) {
-      setError('Failed to submit report. Please try again or contact support@kachalabs.com')
+      setError('Failed to submit report. Please try again or contact masomonews19@gmail.com')
     } finally {
       setIsSubmitting(false)
     }
@@ -90,7 +90,7 @@ export default function SuspiciousActivityPage() {
             Our security team will review your report and take appropriate action.
           </p>
           <p className="text-gray-500 text-sm mb-8">
-            Our team will follow up at <span className="font-medium text-gray-700">support@kachalabs.com</span>
+            Our team will follow up at <span className="font-medium text-gray-700">masomonews19@gmail.com</span>
           </p>
           <button
             onClick={() => router.replace('/account/security')}

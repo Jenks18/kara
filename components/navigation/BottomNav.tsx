@@ -58,22 +58,32 @@ export default function BottomNav() {
           })}
         </div>
 
-        {/* Center Scan Button - Elevated */}
+        {/* Center Scan Button - Elevated FAB */}
         <Link
           href="/create"
           className="
             flex items-center justify-center
-            w-14 h-14 -mt-8
-            bg-gradient-to-br from-blue-500 to-blue-600
-            rounded-full shadow-lg
+            w-16 h-16 -mt-10
+            bg-[#0066FF]
+            rounded-full shadow-xl shadow-blue-500/30
             active:scale-95 touch-manipulation
             transition-transform duration-200
+            ring-4 ring-white
           "
           aria-label="Scan receipt"
         >
+          {/* QR Code Icon */}
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 5C10.9 5 10 5.9 10 7C10 8.1 10.9 9 12 9C13.1 9 14 8.1 14 7C14 5.9 13.1 5 12 5Z" fill="white"/>
-            <path d="M20 4H16.83L15.59 2.65C15.22 2.24 14.68 2 14.12 2H9.88C9.32 2 8.78 2.24 8.4 2.65L7.17 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4ZM12 17C8.69 17 6 14.31 6 11C6 7.69 8.69 5 12 5C15.31 5 18 7.69 18 11C18 14.31 15.31 17 12 17Z" fill="white"/>
+            <rect x="3" y="3" width="8" height="8" rx="1" stroke="white" strokeWidth="2"/>
+            <rect x="5" y="5" width="4" height="4" fill="white"/>
+            <rect x="13" y="3" width="8" height="8" rx="1" stroke="white" strokeWidth="2"/>
+            <rect x="15" y="5" width="4" height="4" fill="white"/>
+            <rect x="3" y="13" width="8" height="8" rx="1" stroke="white" strokeWidth="2"/>
+            <rect x="5" y="15" width="4" height="4" fill="white"/>
+            <rect x="13" y="13" width="4" height="4" fill="white"/>
+            <rect x="19" y="13" width="2" height="2" fill="white"/>
+            <rect x="13" y="19" width="2" height="2" fill="white"/>
+            <rect x="17" y="17" width="4" height="4" fill="white"/>
           </svg>
         </Link>
 

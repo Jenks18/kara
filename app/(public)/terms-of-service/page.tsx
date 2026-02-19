@@ -220,7 +220,7 @@ export default function TermsOfServicePage() {
                 For questions about these Terms of Service, contact us:
               </p>
               <ul className="list-none text-gray-600 space-y-2">
-                <li><strong>Email:</strong> support@kachalabs.com</li>
+                <li><strong>Email:</strong> masomonews19@gmail.com</li>
                 <li><strong>Website:</strong> <Link href="/" className="text-blue-600 hover:text-blue-700 underline">https://kachalabs.com</Link></li>
               </ul>
             </section>

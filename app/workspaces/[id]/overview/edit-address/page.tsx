@@ -3,11 +3,13 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useToast } from '@/components/ui/Toast'
 
 export const dynamic = 'force-dynamic'
 
 export default function EditAddressPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
+  const { showToast } = useToast()
   const [workspaceId, setWorkspaceId] = useState<string>('')
   const [address, setAddress] = useState({
     line1: '',
@@ -61,11 +63,11 @@ export default function EditAddressPage({ params }: { params: Promise<{ id: stri
       if (response.ok) {
         router.back()
       } else {
-        alert('Failed to update address')
+        showToast('Failed to update address', 'error')
       }
     } catch (error) {
       console.error('Error updating workspace:', error)
-      alert('Failed to update address')
+      showToast('Failed to update address', 'error')
     } finally {
       setSaving(false)
     }
@@ -113,7 +115,7 @@ export default function EditAddressPage({ params }: { params: Promise<{ id: stri
         />
 
         <button
-          onClick={() => alert('Country selector coming soon')}
+          onClick={() => showToast('Country selector coming soon', 'info')}
           className="w-full flex items-center justify-between px-4 py-3 border-2 border-blue-200 rounded-xl text-left"
         >
           <span className="text-gray-500">Country</span>

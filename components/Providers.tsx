@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import { AvatarProvider } from '@/contexts/AvatarContext'
+import { ToastProvider } from '@/components/ui/Toast'
 import { UserProfileInit } from './UserProfileInit'
 import { AutoProfileSetup } from './AutoProfileSetup'
 
@@ -16,9 +17,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
   
   return (
     <AvatarProvider>
-      <AutoProfileSetup />
-      <UserProfileInit />
-      {children}
+      <ToastProvider>
+        <AutoProfileSetup />
+        <UserProfileInit />
+        {children}
+      </ToastProvider>
     </AvatarProvider>
   )
 }

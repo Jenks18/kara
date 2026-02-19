@@ -136,13 +136,13 @@ export default function DeleteAccountHelpPage() {
             contact our support team:
           </p>
           <a 
-            href="mailto:support@kachalabs.com" 
+            href="mailto:masomonews19@gmail.com" 
             className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
-            support@kachalabs.com
+            masomonews19@gmail.com
           </a>
         </section>
 

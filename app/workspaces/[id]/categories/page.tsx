@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight, Folder, Plus, Search } from 'lucide-react'
+import { useToast } from '@/components/ui/Toast'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,6 +28,7 @@ const defaultCategories: Category[] = [
 
 export default function CategoriesPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
+  const { showToast } = useToast()
   const [workspaceId, setWorkspaceId] = useState<string>('')
   const [categories, setCategories] = useState<Category[]>(defaultCategories)
   const [searchQuery, setSearchQuery] = useState('')
@@ -66,7 +68,7 @@ export default function CategoriesPage({ params }: { params: Promise<{ id: strin
         {/* Top Actions */}
         <div className="flex items-center gap-3">
           <button
-            onClick={() => alert('Add category functionality coming soon')}
+            onClick={() => showToast('Add category functionality coming soon', 'info')}
             className="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
           >
             <Plus size={20} />

@@ -1,6 +1,7 @@
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase/server-client'
+import { DEFAULT_CURRENCY } from '@/lib/currency'
 import ReportsClient from './ReportsClient'
 
 // Force dynamic rendering
@@ -75,5 +76,15 @@ export default async function ReportsPage() {
   }
 
 
-  return <ReportsClient initialItems={expenseItems || []} initialReports={reportsWithItems} />
+  // Get user's preferred currency from their primary workspace
+  const { data: workspaces } = await supabase
+    .from('workspaces')
+    .select('currency')
+    .eq('is_active', true)
+    .order('created_at', { ascending: true })
+    .limit(1)
+
+  const userCurrency = workspaces?.[0]?.currency || DEFAULT_CURRENCY
+
+  return <ReportsClient initialItems={expenseItems || []} initialReports={reportsWithItems} currency={userCurrency} />
 }

@@ -68,7 +68,7 @@ export default function AboutPage() {
 
         {/* Support email */}
         <div className="text-center text-gray-500 text-sm">
-          Questions? Contact <a href="mailto:support@kachalabs.com" className="text-blue-600 hover:underline">support@kachalabs.com</a>
+          Questions? Contact <a href="mailto:masomonews19@gmail.com" className="text-blue-600 hover:underline">masomonews19@gmail.com</a>
         </div>
       </div>
     </div>

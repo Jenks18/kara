@@ -3,11 +3,13 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft } from 'lucide-react'
+import { useToast } from '@/components/ui/Toast'
 
 export const dynamic = 'force-dynamic'
 
 export default function EditNamePage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
+  const { showToast } = useToast()
   const [workspaceId, setWorkspaceId] = useState<string>('')
   const [workspaceName, setWorkspaceName] = useState('')
   const [loading, setLoading] = useState(true)
@@ -50,11 +52,11 @@ export default function EditNamePage({ params }: { params: Promise<{ id: string 
       if (response.ok) {
         router.back()
       } else {
-        alert('Failed to update workspace name')
+        showToast('Failed to update workspace name', 'error')
       }
     } catch (error) {
       console.error('Error updating workspace:', error)
-      alert('Failed to update workspace name')
+      showToast('Failed to update workspace name', 'error')
     } finally {
       setSaving(false)
     }

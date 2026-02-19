@@ -35,6 +35,7 @@ export async function createWorkspace(
       .from('workspaces')
       .insert({
         user_id: data.userId,
+        owner_id: data.userId,
         name: data.name,
         avatar: data.avatar || data.name.charAt(0).toUpperCase(),
         currency: data.currency || 'USD',

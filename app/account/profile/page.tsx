@@ -6,6 +6,7 @@ import { useUser } from '@clerk/nextjs'
 import { ChevronLeft, User as UserIcon, ChevronRight, Camera, Upload, X } from 'lucide-react'
 import { useAvatar } from '@/contexts/AvatarContext'
 import { getUserProfile } from '@/lib/api/user-profiles'
+import { useToast } from '@/components/ui/Toast'
 
 export const dynamic = 'force-dynamic'
 
@@ -54,6 +55,7 @@ export default function ProfilePage() {
   const router = useRouter()
   const { user } = useUser()
   const { avatar, setAvatar, isLoading } = useAvatar()
+  const { showToast } = useToast()
   const [showAvatarPicker, setShowAvatarPicker] = useState(false)
   const [selectedTempAvatar, setSelectedTempAvatar] = useState(avatar)
   const [displayName, setDisplayName] = useState('')
@@ -155,9 +157,9 @@ export default function ProfilePage() {
       })
 
       setShowAvatarPicker(false)
-      alert('Profile picture updated successfully!')
+      showToast('Profile picture updated successfully!', 'success')
     } catch (error) {
-      alert('Failed to upload profile picture. Please try again.')
+      showToast('Failed to upload profile picture. Please try again.', 'error')
     } finally {
       setUploadingAvatar(false)
     }
