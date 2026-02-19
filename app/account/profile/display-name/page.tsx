@@ -57,9 +57,9 @@ export default function DisplayNamePage() {
     setSaving(true)
     try {
       const result = await updateUserProfile(user.id, {
-        first_name: firstName,
-        last_name: lastName,
-        display_name: `${firstName} ${lastName}`.trim(),
+        first_name: firstName || null,
+        last_name: lastName || null,
+        display_name: `${firstName} ${lastName}`.trim() || null,
         user_email: user.emailAddresses[0]?.emailAddress || '',
       })
       

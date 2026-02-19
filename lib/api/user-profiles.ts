@@ -49,13 +49,26 @@ export async function updateUserProfile(
   userId: string,
   updates: Partial<Omit<UserProfile, 'id' | 'created_at' | 'updated_at'>>
 ): Promise<UserProfile | null> {
+  // Sanitize: convert empty strings to null for nullable DB columns (especially date fields)
+  const sanitized = { ...updates } as Record<string, any>
+  const nullableFields = [
+    'date_of_birth', 'phone_number', 'legal_first_name', 'legal_last_name',
+    'address_line1', 'address_line2', 'city', 'state', 'zip_code',
+    'avatar_image_url', 'display_name', 'first_name', 'last_name',
+  ]
+  for (const field of nullableFields) {
+    if (field in sanitized && sanitized[field] === '') {
+      sanitized[field] = null
+    }
+  }
+
   const supabase = await getSupabaseClient()
   const { data, error } = await supabase
     .from('user_profiles')
     .upsert(
       {
         user_id: userId,
-        ...updates,
+        ...sanitized,
         updated_at: new Date().toISOString(),
       },
       { onConflict: 'user_id', ignoreDuplicates: false }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, Info, ChevronRight } from 'lucide-react'
+import { ChevronLeft, Info, ChevronRight, Bug } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,7 +15,7 @@ export default function AboutPage() {
         <div className="px-4 py-4 max-w-md mx-auto flex items-center gap-4">
           <button
             onClick={() => router.back()}
-            className="p-2 -ml-2 active:scale-95 transition-transform"
+            className="p-2 -ml-2 active:scale-95 transition-transform touch-manipulation"
           >
             <ChevronLeft size={24} className="text-gray-600" />
           </button>
@@ -35,53 +35,25 @@ export default function AboutPage() {
         <div className="space-y-4 bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <h2 className="text-gray-900 text-lg font-semibold">About Kacha</h2>
           <p className="text-gray-600 text-sm leading-relaxed">
-            Kacha (Swahili for "take a picture") is a receipt capture and expense tracking app. Snap any receipt, and our AI extracts all the details. Track expenses, mileage, and generate reports all in one place.
+            Kacha — derived from the Swahili word for &ldquo;capture&rdquo; — is a modern receipt management and expense tracking platform built for individuals and teams.
+          </p>
+          <p className="text-gray-600 text-sm leading-relaxed">
+            Photograph any receipt, and structured data is extracted automatically. Organise expenses, generate detailed reports, and collaborate with your team through shared workspaces — all from a single application.
+          </p>
+          <p className="text-gray-600 text-sm leading-relaxed">
+            Designed with simplicity and reliability in mind, Kacha streamlines financial record-keeping so you can focus on what matters most.
           </p>
         </div>
 
         {/* Links */}
         <div className="space-y-2">
-          {/* App download links */}
-          <button className="w-full bg-white rounded-xl border border-gray-200 p-4 active:bg-gray-50 transition-colors relative shadow-sm">
-            <div className="flex items-center gap-3">
-              <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-              </svg>
-              <span className="text-gray-900 font-medium">App download links</span>
-            </div>
-            <ChevronRight size={20} className="text-gray-400 absolute right-6 top-1/2 -translate-y-1/2" />
-          </button>
-
-          {/* View keyboard shortcuts */}
-          <button className="w-full bg-white rounded-xl border border-gray-200 p-4 active:bg-gray-50 transition-colors relative shadow-sm">
-            <div className="flex items-center gap-3">
-              <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-              </svg>
-              <span className="text-gray-900 font-medium">Keyboard shortcuts</span>
-            </div>
-            <ChevronRight size={20} className="text-gray-400 absolute right-6 top-1/2 -translate-y-1/2" />
-          </button>
-
-          {/* View open jobs */}
-          <button className="w-full bg-white rounded-xl border border-gray-200 p-4 active:bg-gray-50 transition-colors relative shadow-sm">
-            <div className="flex items-center gap-3">
-              <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-              <span className="text-gray-900 font-medium">View open jobs</span>
-            </div>
-            <svg className="w-5 h-5 text-gray-400 absolute right-6 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-          </button>
-
           {/* Report a bug */}
-          <button className="w-full bg-white rounded-xl border border-gray-200 p-4 active:bg-gray-50 transition-colors relative shadow-sm">
+          <button
+            onClick={() => router.push('/account/about/report-bug')}
+            className="w-full bg-white rounded-xl border border-gray-200 p-4 active:bg-gray-50 transition-colors relative shadow-sm touch-manipulation"
+          >
             <div className="flex items-center gap-3">
-              <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
+              <Bug size={24} className="text-blue-600" />
               <span className="text-gray-900 font-medium">Report a bug</span>
             </div>
             <ChevronRight size={20} className="text-gray-400 absolute right-6 top-1/2 -translate-y-1/2" />
@@ -89,8 +61,14 @@ export default function AboutPage() {
         </div>
 
         {/* Terms & Privacy */}
+        {/* TODO: Rewrite Terms of Service and Privacy Policy content */}
         <div className="text-center text-gray-500 text-sm pt-4">
-          Read the <span className="text-blue-600 underline">Terms of Service</span> and <span className="text-blue-600 underline">Privacy</span>.
+          Read the <span className="text-blue-600 underline">Terms of Service</span> and <span className="text-blue-600 underline">Privacy Policy</span>.
+        </div>
+
+        {/* Support email */}
+        <div className="text-center text-gray-500 text-sm">
+          Questions? Contact <a href="mailto:support@mafutapass.com" className="text-blue-600 hover:underline">support@mafutapass.com</a>
         </div>
       </div>
     </div>

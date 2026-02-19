@@ -136,7 +136,7 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
         <div className="h-full flex flex-col items-center justify-center p-6">
           <div className="max-w-[430px] w-full bg-white rounded-3xl p-8 text-center border border-gray-200 shadow-lg">
             {/* Icon */}
-            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-500/10 to-emerald-400/10 mx-auto mb-6 flex items-center justify-center ring-2 ring-blue-500/20">
+            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500/10 to-blue-400/10 mx-auto mb-6 flex items-center justify-center ring-2 ring-blue-500/20">
               <div className="relative">
                 <Globe size={40} className="text-blue-500" strokeWidth={2} />
                 <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-white rounded-full flex items-center justify-center border-2 border-blue-500">
@@ -155,7 +155,7 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
             <div className="space-y-3">
               <button
                 onClick={handleLocationContinue}
-                className="w-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-400 hover:from-emerald-700 hover:via-emerald-600 hover:to-emerald-500 active:scale-[0.98] text-white font-semibold py-4 rounded-full transition-all duration-300 shadow-blue-md hover:shadow-blue-lg"
+                className="w-full bg-gradient-to-r from-blue-600 via-blue-500 to-blue-400 hover:from-blue-700 hover:via-blue-600 hover:to-blue-500 active:scale-[0.98] text-white font-semibold py-4 rounded-full transition-all duration-300 shadow-blue-md hover:shadow-blue-lg"
               >
                 Continue
               </button>

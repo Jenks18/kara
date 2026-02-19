@@ -470,7 +470,7 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                 </div>
 
                 <button
-                  className="w-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-400 hover:from-emerald-700 hover:via-emerald-600 hover:to-emerald-500 active:scale-[0.98] text-white font-semibold py-4 rounded-full transition-all duration-300 mt-6 shadow-blue-md hover:shadow-blue-lg"
+                  className="w-full bg-gradient-to-r from-blue-600 via-blue-500 to-blue-400 hover:from-blue-700 hover:via-blue-600 hover:to-blue-500 active:scale-[0.98] text-white font-semibold py-4 rounded-full transition-all duration-300 mt-6 shadow-blue-md hover:shadow-blue-lg"
                 >
                   Create Expense
                 </button>
@@ -652,7 +652,7 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                   {/* Capture button - ALWAYS visible - Enhanced with gradient and strong borders */}
                   <button
                     onClick={capturePhoto}
-                    className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 active:from-emerald-700 active:to-green-800 transition-all duration-300 flex items-center justify-center active:scale-90 shadow-lg ring-4 ring-blue-200 hover:ring-blue-300"
+                    className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 active:from-blue-700 active:to-blue-800 transition-all duration-300 flex items-center justify-center active:scale-90 shadow-lg ring-4 ring-blue-200 hover:ring-blue-300"
                   >
                     <div className="w-[72px] h-[72px] rounded-full border-[6px] border-white shadow-inner" />
                   </button>
@@ -682,7 +682,7 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                     {continuousMode && selectedImages.length > 0 && (
                       <button
                         onClick={handleProcessMultiple}
-                        className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-600 via-emerald-500 to-emerald-400 hover:from-emerald-700 hover:via-emerald-600 hover:to-emerald-500 active:from-emerald-800 active:via-emerald-700 active:to-emerald-600 transition-all duration-300 flex items-center justify-center active:scale-90 shadow-blue-xl ring-4 ring-blue-500/30 hover:ring-blue-500/40"
+                        className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-600 via-blue-500 to-blue-400 hover:from-blue-700 hover:via-blue-600 hover:to-blue-500 active:from-blue-800 active:via-blue-700 active:to-blue-600 transition-all duration-300 flex items-center justify-center active:scale-90 shadow-blue-xl ring-4 ring-blue-500/30 hover:ring-blue-500/40"
                       >
                         <ChevronRight size={36} className="text-white" strokeWidth={4} />
                       </button>

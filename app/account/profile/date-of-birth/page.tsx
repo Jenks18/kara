@@ -72,7 +72,7 @@ export default function DateOfBirthPage() {
     
     const isoDate = (day && month && year) 
       ? `${year.padStart(4, '0')}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
-      : ''
+      : null
     
     setSaving(true)
     try {

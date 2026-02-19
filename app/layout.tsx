@@ -4,10 +4,17 @@ import { Providers } from '@/components/Providers'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Kacha - AI Receipt Capture & Expense Tracking',
-  description: 'Snap any receipt with AI-powered expense tracking for businesses',
+  title: 'Kacha - Receipt Capture & Expense Tracking',
+  description: 'Capture receipts, track expenses, and generate reports — for individuals and teams. Kacha simplifies financial record-keeping.',
   manifest: '/manifest.json',
   metadataBase: new URL('https://www.mafutapass.com'),
+  keywords: ['receipt scanner', 'expense tracker', 'receipt capture', 'expense management', 'business expenses', 'receipt management'],
+  openGraph: {
+    title: 'Kacha - Receipt Capture & Expense Tracking',
+    description: 'Capture receipts, track expenses, and generate reports — for individuals and teams.',
+    siteName: 'Kacha',
+    type: 'website',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',

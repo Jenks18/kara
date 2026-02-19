@@ -33,7 +33,7 @@ export default function CompanyCardsPage({ params }: { params: Promise<{ id: str
       {/* Content */}
       <div className="px-4 py-6 max-w-md mx-auto space-y-6">
         {/* Kacha Card Promotion */}
-        <div className="bg-gradient-to-br from-emerald-900/40 to-emerald-800/40 rounded-3xl border border-blue-700/30 p-6 space-y-4">
+        <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/40 rounded-3xl border border-blue-700/30 p-6 space-y-4">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center flex-shrink-0">
               <CreditCard size={32} className="text-white" />

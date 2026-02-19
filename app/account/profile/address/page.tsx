@@ -50,12 +50,12 @@ export default function AddressPage() {
     setSaving(true)
     try {
       await updateUserProfile(user.id, {
-        address_line1: addressLine1,
-        address_line2: addressLine2,
-        city,
-        state,
-        zip_code: zipCode,
-        country,
+        address_line1: addressLine1 || null,
+        address_line2: addressLine2 || null,
+        city: city || null,
+        state: state || null,
+        zip_code: zipCode || null,
+        country: country || 'Kenya',
         user_email: user.emailAddresses[0]?.emailAddress || '',
       })
       router.back()

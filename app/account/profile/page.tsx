@@ -183,7 +183,7 @@ export default function ProfilePage() {
       {/* Content */}
       {profileLoading ? (
         <div className="flex items-center justify-center py-24">
-          <div className="w-8 h-8 border-4 border-blue-200 border-t-emerald-600 rounded-full animate-spin" />
+          <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
         </div>
       ) : (
       <div className="px-4 py-6 max-w-md mx-auto space-y-6 pb-24">

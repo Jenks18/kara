@@ -60,7 +60,7 @@ export default function PhoneNumberPage() {
       }
     }
     
-    const fullNumber = localNumber.trim() ? `+254${localNumber.replace(/[\s\-]/g, '')}` : ''
+    const fullNumber = localNumber.trim() ? `+254${localNumber.replace(/[\s\-]/g, '')}` : null
     
     setSaving(true)
     try {

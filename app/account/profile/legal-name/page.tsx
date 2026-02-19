@@ -42,8 +42,8 @@ export default function LegalNamePage() {
     setSaving(true)
     try {
       await updateUserProfile(user.id, {
-        legal_first_name: firstName,
-        legal_last_name: lastName,
+        legal_first_name: firstName || null,
+        legal_last_name: lastName || null,
         user_email: user.emailAddresses[0]?.emailAddress || '',
       })
       router.back()
