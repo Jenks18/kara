@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Redirecting to MafutaPass...</title>
+  <title>Redirecting to Kacha...</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     body {
@@ -58,14 +58,14 @@ export async function GET(request: NextRequest) {
 <body>
   <div class="spinner"></div>
   <h1>✅ Sign In Successful!</h1>
-  <p>Returning to MafutaPass...</p>
+  <p>Returning to Kacha...</p>
   <script>
     // Redirect to app immediately
     window.location.href = "${deepLink}";
     
     // Fallback: show message if redirect fails after 2 seconds
     setTimeout(function() {
-      document.body.innerHTML = '<div style="text-align: center; padding: 20px;"><h1>⚠️ Unable to open app</h1><p>Please return to the MafutaPass app manually.</p><p style="margin-top: 20px;"><a href="${deepLink}" style="color: white; text-decoration: underline;">Tap here to try again</a></p></div>';
+      document.body.innerHTML = '<div style="text-align: center; padding: 20px;"><h1>⚠️ Unable to open app</h1><p>Please return to the Kacha app manually.</p><p style="margin-top: 20px;"><a href="${deepLink}" style="color: white; text-decoration: underline;">Tap here to try again</a></p></div>';
     }, 2000);
   </script>
 </body>

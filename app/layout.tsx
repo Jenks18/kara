@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   title: 'Kacha - Receipt Capture & Expense Tracking',
   description: 'Capture receipts, track expenses, and generate reports — for individuals and teams. Kacha simplifies financial record-keeping.',
   manifest: '/manifest.json',
-  metadataBase: new URL('https://www.mafutapass.com'),
+  metadataBase: new URL('https://www.kachalabs.com'),
   keywords: ['receipt scanner', 'expense tracker', 'receipt capture', 'expense management', 'business expenses', 'receipt management'],
   openGraph: {
     title: 'Kacha - Receipt Capture & Expense Tracking',

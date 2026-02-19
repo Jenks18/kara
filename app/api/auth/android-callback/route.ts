@@ -90,8 +90,8 @@ export async function GET(request: NextRequest) {
 <body>
   <div class="spinner" id="spinner"></div>
   <h1>✅ Sign In Successful!</h1>
-  <p id="status">Returning to MafutaPass app...</p>
-  <button onclick="openApp()" id="openBtn">Open MafutaPass App</button>
+  <p id="status">Returning to Kacha app...</p>
+  <button onclick="openApp()" id="openBtn">Open Kacha App</button>
   
   <script>
     const intentUri = "${intentUri}";

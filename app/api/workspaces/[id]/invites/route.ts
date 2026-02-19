@@ -141,7 +141,7 @@ export async function POST(
 
     if (existingInvite) {
       // Return existing invite
-      const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://mafutapass.com'}/invites/accept/${existingInvite.token}`
+      const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://kachalabs.com'}/invites/accept/${existingInvite.token}`
       return NextResponse.json({ 
         invite: existingInvite,
         inviteUrl,
@@ -171,7 +171,7 @@ export async function POST(
       return NextResponse.json({ error: 'Failed to create invite' }, { status: 500 })
     }
 
-    const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://mafutapass.com'}/invites/accept/${invite.token}`
+    const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://kachalabs.com'}/invites/accept/${invite.token}`
 
     // TODO: Send email notification (integrate with SendGrid, Resend, etc.)
     // await sendInviteEmail({ email, inviteUrl, workspaceName: workspace?.name, inviterName })

@@ -155,8 +155,8 @@ export default function PrivacyPolicyPage() {
                 If you have questions about this privacy policy or our data practices, please contact us:
               </p>
               <ul className="list-none text-gray-600 space-y-2">
-                <li><strong>Email:</strong> support@mafutapass.com</li>
-                <li><strong>Account Deletion:</strong> <Link href="/account/delete" className="text-blue-600 hover:text-blue-700 underline">https://mafutapass.com/account/delete</Link></li>
+                <li><strong>Email:</strong> support@kachalabs.com</li>
+                <li><strong>Account Deletion:</strong> <Link href="/account/delete" className="text-blue-600 hover:text-blue-700 underline">https://kachalabs.com/account/delete</Link></li>
               </ul>
             </section>
           </div>
