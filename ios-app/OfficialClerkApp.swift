@@ -52,17 +52,17 @@ struct WelcomeView: View {
                     .font(.system(size: 80))
                     .foregroundStyle(
                         LinearGradient(
-                            colors: [.green, .green.opacity(0.7)],
+                            colors: [Color(red: 0.0, green: 0.4, blue: 1.0), Color(red: 0.0, green: 0.322, blue: 0.8)],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
                 
                 VStack(spacing: 8) {
-                    Text("MafutaPass")
+                    Text("Kacha")
                         .font(.largeTitle.bold())
                     
-                    Text("Expense tracking made simple")
+                    Text("Smart Expense Tracker")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
@@ -78,7 +78,7 @@ struct WelcomeView: View {
                         .padding()
                         .background(
                             LinearGradient(
-                                colors: [.green, .green.opacity(0.8)],
+                                colors: [Color(red: 0.0, green: 0.4, blue: 1.0), Color(red: 0.0, green: 0.322, blue: 0.8)],
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )

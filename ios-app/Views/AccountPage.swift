@@ -14,9 +14,9 @@ struct AccountPage: View {
                 // Background gradient matching webapp
                 LinearGradient(
                     colors: [
-                        Color(red: 0.93, green: 0.98, blue: 0.95),
-                        Color(red: 0.88, green: 0.98, blue: 0.88),
-                        Color(red: 0.93, green: 0.98, blue: 0.95)
+                        Color(red: 0.937, green: 0.965, blue: 1.0),
+                        Color(red: 0.898, green: 0.941, blue: 0.996),
+                        Color(red: 0.937, green: 0.965, blue: 1.0)
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -31,7 +31,7 @@ struct AccountPage: View {
                             Circle()
                                 .fill(
                                     LinearGradient(
-                                        colors: [.green, .green.opacity(0.7)],
+                                        colors: [Color(red: 0.0, green: 0.4, blue: 1.0), Color(red: 0.0, green: 0.322, blue: 0.8)],
                                         startPoint: .topLeading,
                                         endPoint: .bottomTrailing
                                     )
@@ -152,7 +152,7 @@ struct AccountMenuRow: View {
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.system(size: 24))
-                .foregroundColor(isDestructive ? .red : Color(red: 0.05, green: 0.51, blue: 0.31))
+                .foregroundColor(isDestructive ? .red : Color(red: 0.0, green: 0.4, blue: 1.0))
                 .frame(width: 24)
             
             Text(label)
@@ -204,9 +204,9 @@ struct ProfilePage: View {
             // Background gradient
             LinearGradient(
                 colors: [
-                    Color(red: 0.93, green: 0.98, blue: 0.95),
-                    Color(red: 0.88, green: 0.98, blue: 0.88),
-                    Color(red: 0.93, green: 0.98, blue: 0.95)
+                    Color(red: 0.937, green: 0.965, blue: 1.0),
+                    Color(red: 0.898, green: 0.941, blue: 0.996),
+                    Color(red: 0.937, green: 0.965, blue: 1.0)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
@@ -261,7 +261,7 @@ struct ProfilePage: View {
                             Circle()
                                 .fill(
                                     LinearGradient(
-                                        colors: [.green, .green.opacity(0.7)],
+                                        colors: [Color(red: 0.0, green: 0.4, blue: 1.0), Color(red: 0.0, green: 0.322, blue: 0.8)],
                                         startPoint: .topLeading,
                                         endPoint: .bottomTrailing
                                     )
@@ -278,7 +278,7 @@ struct ProfilePage: View {
                                 showAvatarPicker = true
                             }) {
                                 Circle()
-                                    .fill(Color(red: 0.05, green: 0.51, blue: 0.31))
+                                    .fill(Color(red: 0.0, green: 0.4, blue: 1.0))
                                     .frame(width: 40, height: 40)
                                     .overlay(
                                         Image(systemName: "camera.fill")
@@ -457,9 +457,9 @@ struct PreferencesPage: View {
             // Background gradient
             LinearGradient(
                 colors: [
-                    Color(red: 0.93, green: 0.98, blue: 0.95),
-                    Color(red: 0.88, green: 0.98, blue: 0.88),
-                    Color(red: 0.93, green: 0.98, blue: 0.95)
+                    Color(red: 0.937, green: 0.965, blue: 1.0),
+                    Color(red: 0.898, green: 0.941, blue: 0.996),
+                    Color(red: 0.937, green: 0.965, blue: 1.0)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
@@ -616,9 +616,9 @@ struct SecurityPage: View {
             // Background gradient
             LinearGradient(
                 colors: [
-                    Color(red: 0.93, green: 0.98, blue: 0.95),
-                    Color(red: 0.88, green: 0.98, blue: 0.88),
-                    Color(red: 0.93, green: 0.98, blue: 0.95)
+                    Color(red: 0.937, green: 0.965, blue: 1.0),
+                    Color(red: 0.898, green: 0.941, blue: 0.996),
+                    Color(red: 0.937, green: 0.965, blue: 1.0)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
@@ -695,7 +695,7 @@ struct SecurityMenuRow: View {
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.system(size: 24))
-                .foregroundColor(isDestructive ? .red : Color(red: 0.05, green: 0.51, blue: 0.31))
+                .foregroundColor(isDestructive ? .red : Color(red: 0.0, green: 0.4, blue: 1.0))
                 .frame(width: 24)
             
             Text(label)
@@ -777,9 +777,9 @@ struct AboutPage: View {
             // Background gradient
             LinearGradient(
                 colors: [
-                    Color(red: 0.93, green: 0.98, blue: 0.95),
-                    Color(red: 0.88, green: 0.98, blue: 0.88),
-                    Color(red: 0.93, green: 0.98, blue: 0.95)
+                    Color(red: 0.937, green: 0.965, blue: 1.0),
+                    Color(red: 0.898, green: 0.941, blue: 0.996),
+                    Color(red: 0.937, green: 0.965, blue: 1.0)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
@@ -794,12 +794,12 @@ struct AboutPage: View {
                         .foregroundColor(.secondary)
                         .padding(.top, 8)
                     
-                    // About MafutaPass
+                    // About Kacha
                     VStack(alignment: .leading, spacing: 16) {
-                        Text("About MafutaPass")
+                        Text("About Kacha")
                             .font(.system(size: 18, weight: .semibold))
                         
-                        Text("MafutaPass is a fuel expense tracking app built for Kenyan businesses and drivers. Track your fuel expenses, receipts, and mileage all in one place.")
+                        Text("Kacha is an expense tracking app built for African businesses. Track your expenses, receipts, and reports all in one place.")
                             .font(.system(size: 14))
                             .foregroundColor(.secondary)
                             .lineSpacing(4)
@@ -847,7 +847,7 @@ struct AboutPage: View {
                             Button(action: {}) {
                                 Text("Terms of Service")
                                     .font(.system(size: 14))
-                                    .foregroundColor(Color(red: 0.05, green: 0.51, blue: 0.31))
+                                    .foregroundColor(Color(red: 0.0, green: 0.4, blue: 1.0))
                                     .underline()
                             }
                             Text("and")
@@ -856,7 +856,7 @@ struct AboutPage: View {
                             Button(action: {}) {
                                 Text("Privacy")
                                     .font(.system(size: 14))
-                                    .foregroundColor(Color(red: 0.05, green: 0.51, blue: 0.31))
+                                    .foregroundColor(Color(red: 0.0, green: 0.4, blue: 1.0))
                                     .underline()
                             }
                             Text(".")
@@ -884,7 +884,7 @@ struct AboutMenuRow: View {
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.system(size: 24))
-                .foregroundColor(Color(red: 0.05, green: 0.51, blue: 0.31))
+                .foregroundColor(Color(red: 0.0, green: 0.4, blue: 1.0))
                 .frame(width: 24)
             
             Text(label)

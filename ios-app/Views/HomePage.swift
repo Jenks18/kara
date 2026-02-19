@@ -84,7 +84,7 @@ struct HomePage: View {
                             // Reports Submitted Card
                             StatCardView(
                                 icon: "doc.text.fill",
-                                iconColor: Color(red: 0.063, green: 0.725, blue: 0.506),
+                                iconColor: Color(red: 0.0, green: 0.4, blue: 1.0),
                                 iconBackground: Color(red: 0.820, green: 0.980, blue: 0.898),
                                 value: "\(submittedReportsCount)",
                                 label: "Reports Submitted",
@@ -191,10 +191,7 @@ struct HomePage: View {
     }
     
     func formatCurrency(_ amount: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencyCode = "USD"
-        return formatter.string(from: NSNumber(value: amount)) ?? "$0.00"
+        return CurrencyFormatter.shared.formatSimple(amount)
     }
 }
 
@@ -239,10 +236,10 @@ struct StatCardView: View {
                 HStack(spacing: 4) {
                     Image(systemName: trendUp ? "arrow.up.right" : "arrow.down.right")
                         .font(.system(size: 12))
-                        .foregroundColor(trendUp ? Color(red: 0.063, green: 0.725, blue: 0.506) : Color(red: 0.937, green: 0.267, blue: 0.267))
+                        .foregroundColor(trendUp ? Color(red: 0.0, green: 0.4, blue: 1.0) : Color(red: 0.937, green: 0.267, blue: 0.267))
                     Text(trend)
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(trendUp ? Color(red: 0.063, green: 0.725, blue: 0.506) : Color(red: 0.937, green: 0.267, blue: 0.267))
+                        .foregroundColor(trendUp ? Color(red: 0.0, green: 0.4, blue: 1.0) : Color(red: 0.937, green: 0.267, blue: 0.267))
                 }
             }
         }

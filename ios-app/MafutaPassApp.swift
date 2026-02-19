@@ -23,31 +23,31 @@ struct MafutaPassApp: App {
     
     // MARK: - Production-Grade Global Appearance Configuration
     private func configureGlobalAppearance() {
-        // Brand Colors from web app (tailwind.config.ts)
-        let emeraldPrimary = UIColor(red: 0.063, green: 0.725, blue: 0.506, alpha: 1.0) // #10b981 emerald-500
-        let emeraldLight = UIColor(red: 0.925, green: 0.992, blue: 0.961, alpha: 1.0)   // #ecfdf5 emerald-50
-        let emeraldDark = UIColor(red: 0.022, green: 0.588, blue: 0.412, alpha: 1.0)    // #059669 emerald-600
+        // Brand Colors - Blue #0066FF (matches web app)
+        let bluePrimary = UIColor(red: 0.0, green: 0.4, blue: 1.0, alpha: 1.0)     // #0066FF blue-500
+        let blueLight = UIColor(red: 0.937, green: 0.965, blue: 1.0, alpha: 1.0)   // #eff6ff blue-50
+        let blueDark = UIColor(red: 0.0, green: 0.322, blue: 0.8, alpha: 1.0)      // #0052CC blue-600
         
         // Global Tint Color
-        UIView.appearance().tintColor = emeraldPrimary
+        UIView.appearance().tintColor = bluePrimary
         
         // Navigation Bar Appearance
         let navAppearance = UINavigationBarAppearance()
         navAppearance.configureWithTransparentBackground()
-        navAppearance.backgroundColor = emeraldLight.withAlphaComponent(0.8)
+        navAppearance.backgroundColor = blueLight.withAlphaComponent(0.8)
         navAppearance.titleTextAttributes = [
             .foregroundColor: UIColor.darkGray,
             .font: UIFont.systemFont(ofSize: 17, weight: .semibold)
         ]
         navAppearance.largeTitleTextAttributes = [
-            .foregroundColor: emeraldDark,
+            .foregroundColor: blueDark,
             .font: UIFont.systemFont(ofSize: 34, weight: .bold)
         ]
         
         UINavigationBar.appearance().standardAppearance = navAppearance
         UINavigationBar.appearance().scrollEdgeAppearance = navAppearance
         UINavigationBar.appearance().compactAppearance = navAppearance
-        UINavigationBar.appearance().tintColor = emeraldPrimary
+        UINavigationBar.appearance().tintColor = bluePrimary
         
         // Tab Bar Appearance
         let tabAppearance = UITabBarAppearance()
@@ -56,7 +56,7 @@ struct MafutaPassApp: App {
         
         UITabBar.appearance().standardAppearance = tabAppearance
         UITabBar.appearance().scrollEdgeAppearance = tabAppearance
-        UITabBar.appearance().tintColor = emeraldPrimary
+        UITabBar.appearance().tintColor = bluePrimary
         UITabBar.appearance().unselectedItemTintColor = UIColor.systemGray
     }
 }
@@ -68,7 +68,7 @@ struct ClerkContentView: View {
     
     var body: some View {
         ZStack {
-            // Emerald gradient background matching web app design system
+            // Blue gradient background matching web app design system
             BrandGradientBackground()
             
             if clerk.user != nil {
@@ -88,9 +88,9 @@ struct BrandGradientBackground: View {
     var body: some View {
         LinearGradient(
             colors: [
-                Color(red: 0.925, green: 0.992, blue: 0.961), // emerald-50: #ecfdf5
-                Color(red: 0.820, green: 0.984, blue: 0.898), // green-50 (via)
-                Color(red: 0.925, green: 0.992, blue: 0.961)  // emerald-100: #d1fae5
+                Color(red: 0.937, green: 0.965, blue: 1.0),   // blue-50: #eff6ff
+                Color(red: 0.898, green: 0.941, blue: 0.996),  // blue-100 (via)
+                Color(red: 0.859, green: 0.918, blue: 0.996)   // blue-100: #dbeafe
             ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
@@ -107,11 +107,11 @@ struct ClerkAuthSheet: View {
             Color.white
                 .ignoresSafeArea()
             
-            // Emerald accent overlay
+            // Blue accent overlay
             VStack {
                 LinearGradient(
                     colors: [
-                        Color(red: 0.925, green: 0.992, blue: 0.961).opacity(0.3),
+                        Color(red: 0.937, green: 0.965, blue: 1.0).opacity(0.3),
                         Color.white
                     ],
                     startPoint: .top,
@@ -123,7 +123,7 @@ struct ClerkAuthSheet: View {
             .ignoresSafeArea()
             
             AuthView()
-                .accentColor(Color(red: 0.063, green: 0.725, blue: 0.506))
+                .accentColor(Color(red: 0.0, green: 0.4, blue: 1.0))
         }
     }
 }
@@ -141,11 +141,11 @@ struct WelcomeView: View {
             
             // Title & Subtitle
             VStack(spacing: 12) {
-                Text("MafutaPass")
+                Text("Kacha")
                     .font(.system(size: 42, weight: .bold, design: .rounded))
-                    .foregroundColor(Color(red: 0.063, green: 0.725, blue: 0.506))
+                    .foregroundColor(Color(red: 0.0, green: 0.4, blue: 1.0))
                 
-                Text("Premium Fuel Expense Tracker")
+                Text("Smart Expense Tracker")
                     .font(.system(size: 17, weight: .medium))
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
@@ -174,8 +174,8 @@ struct BrandIcon: View {
                 .fill(
                     LinearGradient(
                         colors: [
-                            Color(red: 0.063, green: 0.725, blue: 0.506),   // emerald-500
-                            Color(red: 0.022, green: 0.588, blue: 0.412)    // emerald-600
+                            Color(red: 0.0, green: 0.4, blue: 1.0),       // blue-500
+                            Color(red: 0.0, green: 0.322, blue: 0.8)      // blue-600
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -183,7 +183,7 @@ struct BrandIcon: View {
                 )
                 .frame(width: 120, height: 120)
                 .shadow(
-                    color: Color(red: 0.063, green: 0.725, blue: 0.506).opacity(0.3),
+                    color: Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.3),
                     radius: 20,
                     x: 0,
                     y: 10
@@ -213,8 +213,8 @@ struct SignInButton: View {
             .background(
                 LinearGradient(
                     colors: [
-                        Color(red: 0.063, green: 0.725, blue: 0.506),   // emerald-500
-                        Color(red: 0.022, green: 0.588, blue: 0.412)    // emerald-600
+                        Color(red: 0.0, green: 0.4, blue: 1.0),       // blue-500
+                        Color(red: 0.0, green: 0.322, blue: 0.8)      // blue-600
                     ],
                     startPoint: .leading,
                     endPoint: .trailing
@@ -223,7 +223,7 @@ struct SignInButton: View {
             .foregroundColor(.white)
             .cornerRadius(16)
             .shadow(
-                color: Color(red: 0.063, green: 0.725, blue: 0.506).opacity(0.25),
+                color: Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.25),
                 radius: 12,
                 x: 0,
                 y: 6
@@ -257,7 +257,7 @@ struct AccountTab: View {
                                 .frame(width: 120, height: 120)
                                 .clipShape(Circle())
                                 .shadow(
-                                    color: Color(red: 0.063, green: 0.725, blue: 0.506).opacity(0.2),
+                                    color: Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.2),
                                     radius: 15,
                                     x: 0,
                                     y: 8
@@ -271,11 +271,11 @@ struct AccountTab: View {
                             if let firstName = user.firstName, let lastName = user.lastName {
                                 Text("\(firstName) \(lastName)")
                                     .font(.system(size: 28, weight: .bold))
-                                    .foregroundColor(Color(red: 0.063, green: 0.725, blue: 0.506))
+                                    .foregroundColor(Color(red: 0.0, green: 0.4, blue: 1.0))
                             } else if let email = user.emailAddresses.first?.emailAddress {
                                 Text(email)
                                     .font(.system(size: 24, weight: .bold))
-                                    .foregroundColor(Color(red: 0.063, green: 0.725, blue: 0.506))
+                                    .foregroundColor(Color(red: 0.0, green: 0.4, blue: 1.0))
                             }
                             
                             // Email
@@ -295,7 +295,7 @@ struct AccountTab: View {
             .navigationTitle("Account")
             .navigationBarTitleDisplayMode(.large)
         }
-        .accentColor(Color(red: 0.063, green: 0.725, blue: 0.506))
+        .accentColor(Color(red: 0.0, green: 0.4, blue: 1.0))
     }
 }
 
@@ -307,8 +307,8 @@ struct ProfileImagePlaceholder: View {
                 .fill(
                     LinearGradient(
                         colors: [
-                            Color(red: 0.063, green: 0.725, blue: 0.506),
-                            Color(red: 0.022, green: 0.588, blue: 0.412)
+                            Color(red: 0.0, green: 0.4, blue: 1.0),
+                            Color(red: 0.0, green: 0.322, blue: 0.8)
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -320,7 +320,7 @@ struct ProfileImagePlaceholder: View {
                 .foregroundColor(.white)
         }
         .shadow(
-            color: Color(red: 0.063, green: 0.725, blue: 0.506).opacity(0.2),
+            color: Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.2),
             radius: 15,
             x: 0,
             y: 8

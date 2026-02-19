@@ -47,7 +47,7 @@ struct AuthenticatedApp: View {
                     Label("Account", systemImage: "person.fill")
                 }
         }
-        .tint(.green)
+        .tint(Color(red: 0.0, green: 0.4, blue: 1.0))
     }
 }
 
@@ -67,7 +67,7 @@ struct ClerkAccountPage: View {
                             Circle()
                                 .fill(
                                     LinearGradient(
-                                        colors: [.green, .green.opacity(0.7)],
+                                        colors: [Color(red: 0.0, green: 0.4, blue: 1.0), Color(red: 0.0, green: 0.322, blue: 0.8)],
                                         startPoint: .topLeading,
                                         endPoint: .bottomTrailing
                                     )

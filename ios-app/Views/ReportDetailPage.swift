@@ -141,10 +141,7 @@ struct ReportDetailContent: View {
     }
     
     private func formatCurrency(_ amount: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencyCode = "USD"
-        return formatter.string(from: NSNumber(value: amount)) ?? "$\(amount)"
+        return CurrencyFormatter.shared.formatSimple(amount)
     }
 }
 
@@ -226,10 +223,7 @@ struct ExpenseItemRow: View {
     }
     
     private func formatCurrency(_ amount: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencyCode = "USD"
-        return formatter.string(from: NSNumber(value: amount)) ?? "$\(amount)"
+        return CurrencyFormatter.shared.formatSimple(amount)
     }
 }
 
@@ -290,10 +284,7 @@ struct ExpenseItemDetailView: View {
     }
     
     private func formatCurrency(_ amount: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencyCode = "USD"
-        return formatter.string(from: NSNumber(value: amount)) ?? "$\(amount)"
+        return CurrencyFormatter.shared.formatSimple(amount)
     }
 }
 

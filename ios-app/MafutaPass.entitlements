@@ -4,7 +4,7 @@
 <dict>
 	<key>com.apple.developer.associated-domains</key>
 	<array>
-		<string>webcredentials:clerk.mafutapass.com</string>
+		<string>webcredentials:clerk.kachalabs.com</string>
 	</array>
 </dict>
 </plist>

@@ -4,7 +4,7 @@ import Clerk
 // API Service to match web app endpoints with Clerk JWT authentication
 class API {
     static let shared = API()
-    private let baseURL = "https://www.mafutapass.com/api"
+    private let baseURL = "https://www.kachalabs.com/api"
     private let supabaseURL = "https://bkypfuyiknytkuhxtduc.supabase.co"
     private let supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJreXBmdXlpa255dGt1aHh0ZHVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0ODkxNjAsImV4cCI6MjA4MzA2NTE2MH0.7OqBp3VbfffoYt2xOYUuzYy_dOvDchvGftE4gqCfVKo"
     

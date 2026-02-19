@@ -18,7 +18,7 @@ struct ImprovedHomePage: View {
                     VStack(spacing: 16) {
                         ProgressView()
                             .scaleEffect(1.5)
-                            .tint(Color(red: 0.2, green: 0.7, blue: 0.4))
+                            .tint(Color(red: 0.0, green: 0.4, blue: 1.0))
                         
                         Text("Loading...")
                             .font(.system(size: 16, weight: .medium))
@@ -44,7 +44,7 @@ struct ImprovedHomePage: View {
                         .foregroundColor(.white)
                         .frame(height: 50)
                         .frame(maxWidth: 200)
-                        .background(Color(red: 0.2, green: 0.7, blue: 0.4))
+                        .background(Color(red: 0.0, green: 0.4, blue: 1.0))
                         .cornerRadius(12)
                     }
                 } else {
@@ -73,7 +73,7 @@ struct ImprovedHomePage: View {
                                         
                                         Button("View All") {}
                                             .font(.system(size: 15, weight: .semibold))
-                                            .foregroundColor(Color(red: 0.2, green: 0.7, blue: 0.4))
+                                            .foregroundColor(Color(red: 0.0, green: 0.4, blue: 1.0))
                                     }
                                     .padding(.horizontal, 16)
                                     
@@ -126,7 +126,7 @@ struct ImprovedHomePage: View {
             NavigationLink(destination: CameraView()) {
                 ZStack {
                     Circle()
-                        .fill(Color(red: 0.2, green: 0.7, blue: 0.4))
+                        .fill(Color(red: 0.0, green: 0.4, blue: 1.0))
                         .frame(width: 64, height: 64)
                         .shadow(color: .black.opacity(0.25), radius: 12, x: 0, y: 4)
                     
@@ -188,7 +188,7 @@ struct NativeStatsCard: View {
                 .textCase(.uppercase)
                 .tracking(0.5)
             
-            Text("KES \(amount.formatted())")
+            Text(CurrencyFormatter.shared.formatSimple(amount))
                 .font(.system(size: 38, weight: .bold, design: .rounded))
                 .foregroundColor(.white)
             
@@ -210,15 +210,15 @@ struct NativeStatsCard: View {
         .background(
             LinearGradient(
                 colors: [
-                    Color(red: 0.2, green: 0.7, blue: 0.4),
-                    Color(red: 0.15, green: 0.6, blue: 0.35)
+                    Color(red: 0.0, green: 0.4, blue: 1.0),
+                    Color(red: 0.0, green: 0.322, blue: 0.8)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
         )
         .cornerRadius(16)
-        .shadow(color: Color(red: 0.2, green: 0.7, blue: 0.4).opacity(0.3), radius: 12, x: 0, y: 6)
+        .shadow(color: Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.3), radius: 12, x: 0, y: 6)
     }
 }
 
@@ -232,7 +232,7 @@ struct NativeExpenseCard: View {
             HStack(spacing: 10) {
                 Image(systemName: "doc.text.fill")
                     .font(.system(size: 16))
-                    .foregroundColor(Color(red: 0.2, green: 0.7, blue: 0.4))
+                    .foregroundColor(Color(red: 0.0, green: 0.4, blue: 1.0))
                 
                 Text(report.title)
                     .font(.system(size: 17, weight: .semibold))
@@ -298,7 +298,7 @@ struct NativeExpenseCard: View {
                 
                 Spacer()
                 
-                Text("KES \(Int(report.total_amount).formatted())")
+                Text(CurrencyFormatter.shared.formatSimple(report.total_amount))
                     .font(.system(size: 18, weight: .bold, design: .rounded))
                     .foregroundColor(.primary)
             }

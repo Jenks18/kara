@@ -1,6 +1,6 @@
 import SwiftUI
 
-// Centralized theme for MafutaPass (Blue)
+// Centralized theme for Kacha (Blue)
 struct EmeraldTheme {
     // Core brand colors - Updated to blue
     static let primary = Color(red: 0.0, green: 0.4, blue: 1.0) // blue-500 #0066FF

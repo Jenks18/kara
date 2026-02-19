@@ -25,7 +25,7 @@ struct CreateExpensePage: View {
                         icon: "doc.text.fill",
                         title: "Scan Receipt",
                         description: "Capture fuel receipt with camera",
-                        iconColor: Color(red: 0.063, green: 0.725, blue: 0.506)
+                        iconColor: Color(red: 0.0, green: 0.4, blue: 1.0)
                     ) {
                         showReceiptCapture = true
                     }
@@ -35,7 +35,7 @@ struct CreateExpensePage: View {
                         icon: "bubble.left.fill",
                         title: "Start chat",
                         description: "Message your manager or team",
-                        iconColor: Color(red: 0.063, green: 0.725, blue: 0.506)
+                        iconColor: Color(red: 0.0, green: 0.4, blue: 1.0)
                     ) {
                         // TODO: Open chat
                     }
@@ -45,7 +45,7 @@ struct CreateExpensePage: View {
                         icon: "doc.text.fill",
                         title: "Create report",
                         description: "Create a new expense report",
-                        iconColor: Color(red: 0.063, green: 0.725, blue: 0.506)
+                        iconColor: Color(red: 0.0, green: 0.4, blue: 1.0)
                     ) {
                         // TODO: Open create report
                     }

@@ -20,8 +20,8 @@ struct ImprovedAccountPage: View {
                                     .fill(
                                         LinearGradient(
                                             colors: [
-                                                Color(red: 0.2, green: 0.7, blue: 0.4),
-                                                Color(red: 0.15, green: 0.6, blue: 0.35)
+                                                Color(red: 0.0, green: 0.4, blue: 1.0),
+                                                Color(red: 0.0, green: 0.322, blue: 0.8)
                                             ],
                                             startPoint: .topLeading,
                                             endPoint: .bottomTrailing
@@ -110,7 +110,7 @@ struct ImprovedAccountPage: View {
                             Label("About", systemImage: "info.circle")
                         }
                         
-                        Link(destination: URL(string: "https://www.mafutapass.com/privacy")!) {
+                        Link(destination: URL(string: "https://www.kachalabs.com/privacy")!) {
                             Label("Privacy Policy", systemImage: "hand.raised")
                         }
                     }

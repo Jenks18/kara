@@ -49,16 +49,16 @@ struct ClerkAuthView: View {
                     .font(.system(size: 70))
                     .foregroundStyle(
                         LinearGradient(
-                            colors: [.green, .green.opacity(0.7)],
+                            colors: [Color(red: 0.0, green: 0.4, blue: 1.0), Color(red: 0.0, green: 0.322, blue: 0.8)],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
                 
-                Text("MafutaPass")
+                Text("Kacha")
                     .font(.largeTitle.bold())
                 
-                Text("Expense tracking made simple")
+                Text("Smart Expense Tracker")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                 
@@ -94,7 +94,7 @@ struct SignInWithClerkButton: View {
                 .padding()
                 .background(
                     LinearGradient(
-                        colors: [.green, .green.opacity(0.8)],
+                        colors: [Color(red: 0.0, green: 0.4, blue: 1.0), Color(red: 0.0, green: 0.322, blue: 0.8)],
                         startPoint: .leading,
                         endPoint: .trailing
                     )
@@ -121,10 +121,10 @@ struct SignUpWithClerkButton: View {
                 .frame(maxWidth: .infinity)
                 .padding()
                 .background(Color(.systemBackground))
-                .foregroundColor(.green)
+                .foregroundColor(Color(red: 0.0, green: 0.4, blue: 1.0))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.green, lineWidth: 2)
+                        .stroke(Color(red: 0.0, green: 0.4, blue: 1.0), lineWidth: 2)
                 )
                 .cornerRadius(12)
         }
@@ -196,7 +196,7 @@ struct ClerkSignInView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color.green)
+                        .background(Color(red: 0.0, green: 0.4, blue: 1.0))
                         .foregroundColor(.white)
                         .cornerRadius(12)
                     }
@@ -319,7 +319,7 @@ struct ClerkSignUpView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color.green)
+                        .background(Color(red: 0.0, green: 0.4, blue: 1.0))
                         .foregroundColor(.white)
                         .cornerRadius(12)
                     }
@@ -387,7 +387,7 @@ struct AuthenticatedApp: View {
                     Label("Account", systemImage: "person.fill")
                 }
         }
-        .tint(.green)
+        .tint(Color(red: 0.0, green: 0.4, blue: 1.0))
     }
 }
 
@@ -405,7 +405,7 @@ struct ClerkAccountView: View {
                             Circle()
                                 .fill(
                                     LinearGradient(
-                                        colors: [.green, .green.opacity(0.7)],
+                                        colors: [Color(red: 0.0, green: 0.4, blue: 1.0), Color(red: 0.0, green: 0.322, blue: 0.8)],
                                         startPoint: .topLeading,
                                         endPoint: .bottomTrailing
                                     )

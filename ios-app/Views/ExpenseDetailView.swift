@@ -150,7 +150,7 @@ struct ExpenseDetailView: View {
                 } else if !needsReview {
                     Button(action: startEditing) {
                         Text("Edit")
-                            .foregroundColor(Color(red: 0.063, green: 0.725, blue: 0.506))
+                            .foregroundColor(Color(red: 0.0, green: 0.4, blue: 1.0))
                     }
                 }
             }
@@ -284,7 +284,7 @@ struct ExpenseDetailView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(Color(red: 0.063, green: 0.725, blue: 0.506))
+                .background(Color(red: 0.0, green: 0.4, blue: 1.0))
                 .foregroundColor(.white)
                 .cornerRadius(12)
             }

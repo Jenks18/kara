@@ -8,7 +8,7 @@ struct AccountPage: View {
     var body: some View {
         ZStack {
             // Very light mint background
-            Color(red: 0.96, green: 0.99, blue: 0.97)
+            Color(red: 0.937, green: 0.965, blue: 1.0)
                 .ignoresSafeArea()
             
             ScrollView {

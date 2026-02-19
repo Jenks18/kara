@@ -27,7 +27,7 @@ struct ClerkSignInView: View {
                                 .font(.system(size: 60))
                                 .foregroundStyle(
                                     LinearGradient(
-                                        colors: [.green, .green.opacity(0.7)],
+                                        colors: [Color(red: 0.0, green: 0.4, blue: 1.0), Color(red: 0.0, green: 0.322, blue: 0.8)],
                                         startPoint: .topLeading,
                                         endPoint: .bottomTrailing
                                     )
@@ -103,7 +103,7 @@ struct ClerkSignInView: View {
                             .padding()
                             .background(
                                 LinearGradient(
-                                    colors: [.green, .green.opacity(0.8)],
+                                    colors: [Color(red: 0.0, green: 0.4, blue: 1.0), Color(red: 0.0, green: 0.322, blue: 0.8)],
                                     startPoint: .leading,
                                     endPoint: .trailing
                                 )
@@ -120,7 +120,7 @@ struct ClerkSignInView: View {
                                 Text("Don't have an account?")
                                     .foregroundColor(.secondary)
                                 Text("Sign Up")
-                                    .foregroundColor(.green)
+                                    .foregroundColor(Color(red: 0.0, green: 0.4, blue: 1.0))
                                     .fontWeight(.semibold)
                             }
                             .font(.subheadline)
@@ -173,7 +173,7 @@ struct ClerkSignUpView: View {
                             .font(.system(size: 60))
                             .foregroundStyle(
                                 LinearGradient(
-                                    colors: [.green, .green.opacity(0.7)],
+                                    colors: [Color(red: 0.0, green: 0.4, blue: 1.0), Color(red: 0.0, green: 0.322, blue: 0.8)],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 )
@@ -182,7 +182,7 @@ struct ClerkSignUpView: View {
                         Text("Create Account")
                             .font(.largeTitle.bold())
                         
-                        Text("Join MafutaPass today")
+                        Text("Join Kacha today")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                     }
@@ -288,7 +288,7 @@ struct ClerkSignUpView: View {
                         .padding()
                         .background(
                             LinearGradient(
-                                colors: [.green, .green.opacity(0.8)],
+                                colors: [Color(red: 0.0, green: 0.4, blue: 1.0), Color(red: 0.0, green: 0.322, blue: 0.8)],
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )
@@ -307,7 +307,7 @@ struct ClerkSignUpView: View {
                             Text("Already have an account?")
                                 .foregroundColor(.secondary)
                             Text("Sign In")
-                                .foregroundColor(.green)
+                                .foregroundColor(Color(red: 0.0, green: 0.4, blue: 1.0))
                                 .fontWeight(.semibold)
                         }
                         .font(.subheadline)

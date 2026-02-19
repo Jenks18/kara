@@ -20,9 +20,9 @@ struct ReceiptCapture: View {
                 // Background gradient
                 LinearGradient(
                     colors: [
-                        Color(red: 0.93, green: 0.98, blue: 0.95),
-                        Color(red: 0.88, green: 0.98, blue: 0.88),
-                        Color(red: 0.93, green: 0.98, blue: 0.95)
+                        Color(red: 0.937, green: 0.965, blue: 1.0),
+                        Color(red: 0.898, green: 0.941, blue: 0.996),
+                        Color(red: 0.937, green: 0.965, blue: 1.0)
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -104,7 +104,7 @@ struct ReceiptCapture: View {
                                             .foregroundColor(.white)
                                             .frame(maxWidth: .infinity)
                                             .padding(.vertical, 16)
-                                            .background(Color(red: 0.05, green: 0.51, blue: 0.31))
+                                            .background(Color(red: 0.0, green: 0.4, blue: 1.0))
                                             .cornerRadius(16)
                                     }
                                     
@@ -263,7 +263,7 @@ struct CameraView: View {
                             .foregroundColor(.white)
                             .padding(.horizontal, 16)
                             .padding(.vertical, 8)
-                            .background(Color(red: 0.05, green: 0.51, blue: 0.31).opacity(0.9))
+                            .background(Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.9))
                             .cornerRadius(20)
                             .padding()
                     }
@@ -288,7 +288,7 @@ struct CameraView: View {
                                         .clipShape(RoundedRectangle(cornerRadius: 8))
                                         .overlay(
                                             RoundedRectangle(cornerRadius: 8)
-                                                .stroke(Color(red: 0.05, green: 0.51, blue: 0.31), lineWidth: 2)
+                                                .stroke(Color(red: 0.0, green: 0.4, blue: 1.0), lineWidth: 2)
                                         )
                                     
                                     Button(action: {
@@ -352,15 +352,15 @@ struct CameraView: View {
                                 .fill(
                                     LinearGradient(
                                         colors: [
-                                            Color(red: 0.05, green: 0.51, blue: 0.31),
-                                            Color(red: 0.05, green: 0.51, blue: 0.31).opacity(0.8)
+                                            Color(red: 0.0, green: 0.4, blue: 1.0),
+                                            Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.8)
                                         ],
                                         startPoint: .topLeading,
                                         endPoint: .bottomTrailing
                                     )
                                 )
                                 .frame(width: 96, height: 96)
-                                .shadow(color: Color(red: 0.05, green: 0.51, blue: 0.31).opacity(0.3), radius: 8)
+                                .shadow(color: Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.3), radius: 8)
                             
                             Circle()
                                 .strokeBorder(Color.white, lineWidth: 6)
@@ -381,8 +381,8 @@ struct CameraView: View {
                                     continuousMode ?
                                     LinearGradient(
                                         colors: [
-                                            Color(red: 0.05, green: 0.51, blue: 0.31),
-                                            Color(red: 0.05, green: 0.51, blue: 0.31).opacity(0.8)
+                                            Color(red: 0.0, green: 0.4, blue: 1.0),
+                                            Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.8)
                                         ],
                                         startPoint: .topLeading,
                                         endPoint: .bottomTrailing
@@ -402,15 +402,15 @@ struct CameraView: View {
                                     .background(
                                         LinearGradient(
                                             colors: [
-                                                Color(red: 0.05, green: 0.51, blue: 0.31),
-                                                Color(red: 0.05, green: 0.51, blue: 0.31).opacity(0.8)
+                                                Color(red: 0.0, green: 0.4, blue: 1.0),
+                                                Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.8)
                                             ],
                                             startPoint: .topLeading,
                                             endPoint: .bottomTrailing
                                         )
                                     )
                                     .clipShape(Circle())
-                                    .shadow(color: Color(red: 0.05, green: 0.51, blue: 0.31).opacity(0.4), radius: 8)
+                                    .shadow(color: Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.4), radius: 8)
                             }
                         }
                     }
@@ -543,9 +543,9 @@ struct ConfirmExpensesView: View {
             ZStack {
                 LinearGradient(
                     colors: [
-                        Color(red: 0.93, green: 0.98, blue: 0.95),
-                        Color(red: 0.88, green: 0.98, blue: 0.88),
-                        Color(red: 0.93, green: 0.98, blue: 0.95)
+                        Color(red: 0.937, green: 0.965, blue: 1.0),
+                        Color(red: 0.898, green: 0.941, blue: 0.996),
+                        Color(red: 0.937, green: 0.965, blue: 1.0)
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -568,7 +568,7 @@ struct ConfirmExpensesView: View {
                         HStack(spacing: 8) {
                             ForEach(images.indices, id: \.self) { index in
                                 Circle()
-                                    .fill(index == currentIndex ? Color(red: 0.05, green: 0.51, blue: 0.31) : Color.gray.opacity(0.3))
+                                    .fill(index == currentIndex ? Color(red: 0.0, green: 0.4, blue: 1.0) : Color.gray.opacity(0.3))
                                     .frame(width: 8, height: 8)
                             }
                         }
@@ -593,7 +593,7 @@ struct ConfirmExpensesView: View {
                                     .font(.system(size: 20, weight: .semibold))
                                     .foregroundColor(.white)
                                     .frame(width: 44, height: 44)
-                                    .background(Color(red: 0.05, green: 0.51, blue: 0.31))
+                                    .background(Color(red: 0.0, green: 0.4, blue: 1.0))
                                     .clipShape(Circle())
                             }
                         }
@@ -610,7 +610,7 @@ struct ConfirmExpensesView: View {
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 24)
                                 .padding(.vertical, 12)
-                                .background(Color(red: 0.05, green: 0.51, blue: 0.31))
+                                .background(Color(red: 0.0, green: 0.4, blue: 1.0))
                                 .cornerRadius(24)
                             }
                         } else {
@@ -620,7 +620,7 @@ struct ConfirmExpensesView: View {
                                     .foregroundColor(.white)
                                     .padding(.horizontal, 24)
                                     .padding(.vertical, 12)
-                                    .background(Color(red: 0.05, green: 0.51, blue: 0.31))
+                                    .background(Color(red: 0.0, green: 0.4, blue: 1.0))
                                     .cornerRadius(24)
                             }
                         }

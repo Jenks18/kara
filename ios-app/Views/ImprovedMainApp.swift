@@ -135,7 +135,7 @@ struct ImprovedReportsPage: View {
                         Spacer()
                         ProgressView()
                             .scaleEffect(1.2)
-                            .tint(Color(red: 0.2, green: 0.7, blue: 0.4))
+                            .tint(Color(red: 0.0, green: 0.4, blue: 1.0))
                         Spacer()
                     } else if let error = errorMessage {
                         Spacer()
@@ -263,7 +263,7 @@ struct NativeExpenseItemCard: View {
             Spacer()
             
             // Amount
-            Text("KES \(Int(expense.amount).formatted())")
+            Text(CurrencyFormatter.shared.formatSimple(expense.amount))
                 .font(.system(size: 18, weight: .bold, design: .rounded))
                 .foregroundColor(.primary)
         }

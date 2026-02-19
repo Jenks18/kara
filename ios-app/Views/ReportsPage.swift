@@ -84,7 +84,7 @@ struct SummaryCard: View {
                 Text("Total Spent")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.white.opacity(0.9))
-                Text("KES \(String(format: "%.2f", total))")
+                Text(CurrencyFormatter.shared.formatSimple(total))
                     .font(.system(size: 22, weight: .bold))
                     .foregroundColor(.white)
             }
@@ -170,7 +170,7 @@ struct ExpenseCardView: View {
             HStack(alignment: .top) {
                 Image(systemName: expense.processing_status == "scanning" ? "arrow.clockwise" : "doc.text")
                     .font(.system(size: 20))
-                    .foregroundColor(expense.processing_status == "scanning" ? .gray : Color(red: 0.063, green: 0.725, blue: 0.506))
+                    .foregroundColor(expense.processing_status == "scanning" ? .gray : Color(red: 0.0, green: 0.4, blue: 1.0))
                     .frame(width: 40, height: 40)
                     .rotationEffect(.degrees(isAnimating && expense.processing_status == "scanning" ? 360 : 0))
                     .animation(expense.processing_status == "scanning" ? Animation.linear(duration: 1.5).repeatForever(autoreverses: false) : .default, value: isAnimating)
@@ -211,9 +211,9 @@ struct ExpenseCardView: View {
                             .opacity(isAnimating ? 0.4 : 1.0)
                             .animation(Animation.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: isAnimating)
                     } else {
-                        Text("KES \(String(format: "%.2f", expense.amount))")
+                        Text(CurrencyFormatter.shared.formatSimple(expense.amount))
                             .font(.system(size: 17, weight: .bold))
-                            .foregroundColor(expense.processing_status == "needs_review" ? Color.orange : Color(red: 0.063, green: 0.725, blue: 0.506))
+                            .foregroundColor(expense.processing_status == "needs_review" ? Color.orange : Color(red: 0.0, green: 0.4, blue: 1.0))
                     }
                     
                     // KRA Verified Pill (keep this!)
@@ -224,7 +224,7 @@ struct ExpenseCardView: View {
                             Text("KRA")
                                 .font(.system(size: 11, weight: .medium))
                         }
-                        .foregroundColor(Color(red: 0.063, green: 0.725, blue: 0.506))
+                        .foregroundColor(Color(red: 0.0, green: 0.4, blue: 1.0))
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
                         .background(Color(red: 0.820, green: 0.980, blue: 0.898))
@@ -366,7 +366,7 @@ struct ReportCardView: View {
                 // Title row
                 HStack {
                     Image(systemName: "doc.text")
-                        .foregroundColor(Color(red: 0.063, green: 0.725, blue: 0.506))
+                        .foregroundColor(Color(red: 0.0, green: 0.4, blue: 1.0))
                     Text(report.title)
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(.black)
@@ -429,7 +429,7 @@ struct ReportCardView: View {
                     Text(report.workspace_name)
                         .font(.system(size: 13, weight: .medium))
                 }
-                .foregroundColor(Color(red: 0.063, green: 0.725, blue: 0.506))
+                .foregroundColor(Color(red: 0.0, green: 0.4, blue: 1.0))
                 .padding(.horizontal, 10)
                 .padding(.vertical, 5)
                 .background(Color(red: 0.820, green: 0.980, blue: 0.898))
@@ -437,7 +437,7 @@ struct ReportCardView: View {
                 
                 Spacer()
                 
-                Text("KES \(String(format: "%.2f", report.total_amount))")
+                Text(CurrencyFormatter.shared.formatSimple(report.total_amount))
                     .font(.system(size: 17, weight: .bold))
                     .foregroundColor(.black)
             }
@@ -454,9 +454,9 @@ struct ReportCardView: View {
         case "draft":
             return Color.gray
         case "submitted":
-            return Color(red: 0.063, green: 0.725, blue: 0.506)
+            return Color(red: 0.0, green: 0.4, blue: 1.0)
         case "approved":
-            return Color(red: 0.063, green: 0.725, blue: 0.506)
+            return Color(red: 0.0, green: 0.4, blue: 1.0)
         case "rejected":
             return Color.red
         default:

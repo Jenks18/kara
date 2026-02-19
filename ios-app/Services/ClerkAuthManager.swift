@@ -4,8 +4,8 @@ import Combine
 // MARK: - Configuration
 struct ClerkConfig {
     static let publishableKey = "pk_live_Y2xlcmsubWFmdXRhcGFzcy5jb20k"
-    static let frontendAPI = "https://clerk.mafutapass.com"
-    static let baseAPIURL = "https://www.mafutapass.com/api"
+    static let frontendAPI = "https://clerk.kachalabs.com"
+    static let baseAPIURL = "https://www.kachalabs.com/api"
 }
 
 // MARK: - User Profile Model

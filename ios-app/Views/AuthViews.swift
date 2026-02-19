@@ -28,16 +28,16 @@ struct SignInView: View {
                                 .foregroundStyle(
                                     LinearGradient(
                                         colors: [
-                                            Color(red: 0.2, green: 0.7, blue: 0.4),
-                                            Color(red: 0.15, green: 0.6, blue: 0.35)
+                                            Color(red: 0.0, green: 0.4, blue: 1.0),
+                                            Color(red: 0.0, green: 0.322, blue: 0.8)
                                         ],
                                         startPoint: .topLeading,
                                         endPoint: .bottomTrailing
                                     )
                                 )
-                                .shadow(color: Color(red: 0.2, green: 0.7, blue: 0.4).opacity(0.3), radius: 12)
+                                .shadow(color: Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.3), radius: 12)
                             
-                            Text("MafutaPass")
+                            Text("Kacha")
                                 .font(.system(size: 36, weight: .bold, design: .rounded))
                                 .foregroundColor(.primary)
                             
@@ -66,7 +66,7 @@ struct SignInView: View {
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 12)
                                             .stroke(focusedField == .email ? 
-                                                Color(red: 0.2, green: 0.7, blue: 0.4) : 
+                                                Color(red: 0.0, green: 0.4, blue: 1.0) : 
                                                 Color.clear, lineWidth: 2)
                                     )
                             }
@@ -86,7 +86,7 @@ struct SignInView: View {
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 12)
                                             .stroke(focusedField == .password ? 
-                                                Color(red: 0.2, green: 0.7, blue: 0.4) : 
+                                                Color(red: 0.0, green: 0.4, blue: 1.0) : 
                                                 Color.clear, lineWidth: 2)
                                     )
                             }
@@ -123,15 +123,15 @@ struct SignInView: View {
                             .background(
                                 LinearGradient(
                                     colors: [
-                                        Color(red: 0.2, green: 0.7, blue: 0.4),
-                                        Color(red: 0.15, green: 0.6, blue: 0.35)
+                                        Color(red: 0.0, green: 0.4, blue: 1.0),
+                                        Color(red: 0.0, green: 0.322, blue: 0.8)
                                     ],
                                     startPoint: .leading,
                                     endPoint: .trailing
                                 )
                             )
                             .cornerRadius(14)
-                            .shadow(color: Color(red: 0.2, green: 0.7, blue: 0.4).opacity(0.3), radius: 12, x: 0, y: 6)
+                            .shadow(color: Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.3), radius: 12, x: 0, y: 6)
                             .disabled(isLoading || email.isEmpty || password.isEmpty)
                             .opacity((isLoading || email.isEmpty || password.isEmpty) ? 0.6 : 1)
                             
@@ -140,7 +140,7 @@ struct SignInView: View {
                                 // TODO: Implement forgot password
                             }
                             .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(Color(red: 0.2, green: 0.7, blue: 0.4))
+                            .foregroundColor(Color(red: 0.0, green: 0.4, blue: 1.0))
                         }
                         .padding(.horizontal, 24)
                         
@@ -154,7 +154,7 @@ struct SignInView: View {
                                 SignUpView()
                             }
                             .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(Color(red: 0.2, green: 0.7, blue: 0.4))
+                            .foregroundColor(Color(red: 0.0, green: 0.4, blue: 1.0))
                         }
                         .padding(.top, 16)
                     }
@@ -211,7 +211,7 @@ struct SignUpView: View {
                             .font(.system(size: 32, weight: .bold))
                             .foregroundColor(.primary)
                         
-                        Text("Join MafutaPass to track your expenses")
+                        Text("Join Kacha to track your expenses")
                             .font(.system(size: 16))
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
@@ -236,7 +236,7 @@ struct SignUpView: View {
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 12)
                                         .stroke(focusedField == .name ? 
-                                            Color(red: 0.2, green: 0.7, blue: 0.4) : 
+                                            Color(red: 0.0, green: 0.4, blue: 1.0) : 
                                             Color.clear, lineWidth: 2)
                                 )
                         }
@@ -259,7 +259,7 @@ struct SignUpView: View {
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 12)
                                         .stroke(focusedField == .email ? 
-                                            Color(red: 0.2, green: 0.7, blue: 0.4) : 
+                                            Color(red: 0.0, green: 0.4, blue: 1.0) : 
                                             Color.clear, lineWidth: 2)
                                 )
                         }
@@ -280,7 +280,7 @@ struct SignUpView: View {
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 12)
                                         .stroke(focusedField == .password ? 
-                                            Color(red: 0.2, green: 0.7, blue: 0.4) : 
+                                            Color(red: 0.0, green: 0.4, blue: 1.0) : 
                                             Color.clear, lineWidth: 2)
                                 )
                         }
@@ -301,7 +301,7 @@ struct SignUpView: View {
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 12)
                                         .stroke(focusedField == .confirmPassword ? 
-                                            Color(red: 0.2, green: 0.7, blue: 0.4) : 
+                                            Color(red: 0.0, green: 0.4, blue: 1.0) : 
                                             Color.clear, lineWidth: 2)
                                 )
                         }
@@ -338,15 +338,15 @@ struct SignUpView: View {
                         .background(
                             LinearGradient(
                                 colors: [
-                                    Color(red: 0.2, green: 0.7, blue: 0.4),
-                                    Color(red: 0.15, green: 0.6, blue: 0.35)
+                                    Color(red: 0.0, green: 0.4, blue: 1.0),
+                                    Color(red: 0.0, green: 0.322, blue: 0.8)
                                 ],
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )
                         )
                         .cornerRadius(14)
-                        .shadow(color: Color(red: 0.2, green: 0.7, blue: 0.4).opacity(0.3), radius: 12, x: 0, y: 6)
+                        .shadow(color: Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.3), radius: 12, x: 0, y: 6)
                         .disabled(isLoading || !isFormValid)
                         .opacity((isLoading || !isFormValid) ? 0.6 : 1)
                         

@@ -10,7 +10,7 @@ struct WorkspacesPage: View {
         NavigationStack {
             ZStack {
                 // Background gradient matching webapp
-                Color(red: 0.93, green: 0.98, blue: 0.95)
+                Color(red: 0.937, green: 0.965, blue: 1.0)
                     .ignoresSafeArea()
                 
                 VStack(spacing: 0) {
@@ -36,7 +36,7 @@ struct WorkspacesPage: View {
                     .background(Color.white)
                     .overlay(
                         Rectangle()
-                            .fill(Color(red: 0.05, green: 0.51, blue: 0.31).opacity(0.1))
+                            .fill(Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.1))
                             .frame(height: 1),
                         alignment: .bottom
                     )
@@ -76,15 +76,15 @@ struct WorkspacesPage: View {
                                         .background(
                                             LinearGradient(
                                                 colors: [
-                                                    Color(red: 0.05, green: 0.51, blue: 0.31),
-                                                    Color(red: 0.05, green: 0.51, blue: 0.31)
+                                                    Color(red: 0.0, green: 0.4, blue: 1.0),
+                                                    Color(red: 0.0, green: 0.4, blue: 1.0)
                                                 ],
                                                 startPoint: .leading,
                                                 endPoint: .trailing
                                             )
                                         )
                                         .cornerRadius(16)
-                                        .shadow(color: Color(red: 0.05, green: 0.51, blue: 0.31).opacity(0.2), radius: 8, y: 4)
+                                        .shadow(color: Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.2), radius: 8, y: 4)
                                 }
                                 .padding(.horizontal, 16)
                             }
@@ -130,7 +130,7 @@ struct WorkspacesPage: View {
                                     .foregroundColor(.white)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 16)
-                                    .background(Color(red: 0.05, green: 0.51, blue: 0.31))
+                                    .background(Color(red: 0.0, green: 0.4, blue: 1.0))
                                     .cornerRadius(12)
                                 }
                                 .shadow(color: .black.opacity(0.03), radius: 2, y: 1)
@@ -219,7 +219,7 @@ struct WorkspaceRow: View {
                     // Avatar
                     ZStack {
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(Color(red: 0.05, green: 0.51, blue: 0.31))
+                            .fill(Color(red: 0.0, green: 0.4, blue: 1.0))
                             .frame(width: 56, height: 56)
                         
                         if let url = workspace.avatarURL {
@@ -376,9 +376,9 @@ struct NewWorkspaceView: View {
                 // Background gradient
                 LinearGradient(
                     colors: [
-                        Color(red: 0.93, green: 0.98, blue: 0.95),
-                        Color(red: 0.88, green: 0.98, blue: 0.88),
-                        Color(red: 0.93, green: 0.98, blue: 0.95)
+                        Color(red: 0.937, green: 0.965, blue: 1.0),
+                        Color(red: 0.898, green: 0.941, blue: 0.996),
+                        Color(red: 0.937, green: 0.965, blue: 1.0)
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -403,8 +403,8 @@ struct NewWorkspaceView: View {
                                         .fill(
                                             LinearGradient(
                                                 colors: [
-                                                    Color(red: 0.05, green: 0.51, blue: 0.31),
-                                                    Color(red: 0.05, green: 0.51, blue: 0.31).opacity(0.8)
+                                                    Color(red: 0.0, green: 0.4, blue: 1.0),
+                                                    Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.8)
                                                 ],
                                                 startPoint: .topLeading,
                                                 endPoint: .bottomTrailing
@@ -425,7 +425,7 @@ struct NewWorkspaceView: View {
                                             .frame(width: 48, height: 48)
                                             .overlay(
                                                 Circle()
-                                                    .stroke(Color(red: 0.93, green: 0.98, blue: 0.95), lineWidth: 4)
+                                                    .stroke(Color(red: 0.937, green: 0.965, blue: 1.0), lineWidth: 4)
                                             )
                                             .overlay(
                                                 Image(systemName: "camera.fill")
@@ -451,7 +451,7 @@ struct NewWorkspaceView: View {
                                     .cornerRadius(12)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color(red: 0.05, green: 0.51, blue: 0.31), lineWidth: 2)
+                                            .stroke(Color(red: 0.0, green: 0.4, blue: 1.0), lineWidth: 2)
                                     )
                                     .shadow(color: .black.opacity(0.03), radius: 2, y: 1)
                             }
@@ -482,7 +482,7 @@ struct NewWorkspaceView: View {
                                 .cornerRadius(12)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color(red: 0.05, green: 0.51, blue: 0.31).opacity(0.2), lineWidth: 1)
+                                        .stroke(Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.2), lineWidth: 1)
                                 )
                                 .shadow(color: .black.opacity(0.03), radius: 2, y: 1)
                             }
@@ -509,8 +509,8 @@ struct NewWorkspaceView: View {
                             .background(
                                 LinearGradient(
                                     colors: [
-                                        Color(red: 0.05, green: 0.51, blue: 0.31),
-                                        Color(red: 0.05, green: 0.51, blue: 0.31)
+                                        Color(red: 0.0, green: 0.4, blue: 1.0),
+                                        Color(red: 0.0, green: 0.4, blue: 1.0)
                                     ],
                                     startPoint: .leading,
                                     endPoint: .trailing
@@ -525,7 +525,7 @@ struct NewWorkspaceView: View {
                     .background(Color.white)
                     .overlay(
                         Rectangle()
-                            .fill(Color(red: 0.05, green: 0.51, blue: 0.31).opacity(0.2))
+                            .fill(Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.2))
                             .frame(height: 1),
                         alignment: .top
                     )
@@ -624,11 +624,11 @@ struct CurrencyPickerView: View {
                         .font(.system(size: 16))
                 }
                 .padding(12)
-                .background(Color(red: 0.93, green: 0.98, blue: 0.95))
+                .background(Color(red: 0.937, green: 0.965, blue: 1.0))
                 .cornerRadius(12)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color(red: 0.05, green: 0.51, blue: 0.31).opacity(0.2), lineWidth: 1)
+                        .stroke(Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.2), lineWidth: 1)
                 )
                 .padding(16)
                 
@@ -658,16 +658,16 @@ struct CurrencyPickerView: View {
                                     if isSelected {
                                         Image(systemName: "checkmark")
                                             .font(.system(size: 18, weight: .semibold))
-                                            .foregroundColor(Color(red: 0.05, green: 0.51, blue: 0.31))
+                                            .foregroundColor(Color(red: 0.0, green: 0.4, blue: 1.0))
                                     }
                                 }
                                 .padding(16)
-                                .background(isSelected ? Color(red: 0.93, green: 0.98, blue: 0.95) : Color.white)
+                                .background(isSelected ? Color(red: 0.937, green: 0.965, blue: 1.0) : Color.white)
                                 .cornerRadius(12)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 12)
                                         .stroke(
-                                            isSelected ? Color(red: 0.05, green: 0.51, blue: 0.31) : Color(red: 0.05, green: 0.51, blue: 0.31).opacity(0.2),
+                                            isSelected ? Color(red: 0.0, green: 0.4, blue: 1.0) : Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.2),
                                             lineWidth: isSelected ? 2 : 1
                                         )
                                 )

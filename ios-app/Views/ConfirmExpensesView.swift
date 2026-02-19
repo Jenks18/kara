@@ -35,7 +35,7 @@ struct ConfirmExpensesView: View {
                                     .font(.system(size: 17, weight: .semibold))
                                 Text("Back")
                             }
-                            .foregroundColor(Color(red: 0.2, green: 0.7, blue: 0.4))
+                            .foregroundColor(Color(red: 0.0, green: 0.4, blue: 1.0))
                         }
                         
                         Spacer()
@@ -94,7 +94,7 @@ struct ConfirmExpensesView: View {
                                                 .frame(width: 36, height: 36)
                                                 .background(currentImageIndex == 0 ?
                                                     Color.gray.opacity(0.3) :
-                                                    Color(red: 0.2, green: 0.7, blue: 0.4))
+                                                    Color(red: 0.0, green: 0.4, blue: 1.0))
                                                 .cornerRadius(18)
                                                 .overlay(
                                                     RoundedRectangle(cornerRadius: 18)
@@ -117,7 +117,7 @@ struct ConfirmExpensesView: View {
                                                 .frame(width: 36, height: 36)
                                                 .background(currentImageIndex == images.count - 1 ?
                                                     Color.gray.opacity(0.3) :
-                                                    Color(red: 0.2, green: 0.7, blue: 0.4))
+                                                    Color(red: 0.0, green: 0.4, blue: 1.0))
                                                 .cornerRadius(18)
                                                 .overlay(
                                                     RoundedRectangle(cornerRadius: 18)
@@ -145,7 +145,7 @@ struct ConfirmExpensesView: View {
                         .foregroundColor(.white)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(Color.green.opacity(0.9))
+                        .background(Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.9))
                         .cornerRadius(16)
                         .padding(.bottom, 8)
                     }
@@ -235,7 +235,7 @@ struct ConfirmExpensesView: View {
                                     HStack(spacing: 8) {
                                         Image(systemName: "location.fill")
                                             .font(.system(size: 14))
-                                            .foregroundColor(Color(red: 0.2, green: 0.7, blue: 0.4))
+                                            .foregroundColor(Color(red: 0.0, green: 0.4, blue: 1.0))
                                         
                                         Text("Location: \(String(format: "%.4f, %.4f", location.coordinate.latitude, location.coordinate.longitude))")
                                             .font(.system(size: 13))
@@ -265,7 +265,7 @@ struct ConfirmExpensesView: View {
                                 .background(
                                     selectedWorkspace.isEmpty || isSubmitting ?
                                         Color.gray :
-                                        Color(red: 0.2, green: 0.7, blue: 0.4)
+                                        Color(red: 0.0, green: 0.4, blue: 1.0)
                                 )
                                 .cornerRadius(12)
                             }
