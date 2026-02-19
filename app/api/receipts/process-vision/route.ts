@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
 import { scrapeKRAInvoice } from '@/lib/receipt-processing/kra-scraper';
 
 interface GoogleVisionTextAnnotation {
@@ -33,6 +34,12 @@ interface GoogleVisionResponse {
 
 export async function POST(req: NextRequest) {
   try {
+    // Defense-in-depth: verify auth even though middleware protects this route
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { imageData } = await req.json();
 
     if (!imageData) {

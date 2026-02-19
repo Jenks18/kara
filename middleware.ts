@@ -29,18 +29,6 @@ export default clerkMiddleware(
       return NextResponse.next()
     }
     
-    // Redirect root to reports
-    if (req.nextUrl.pathname === '/') {
-      const { userId } = await auth()
-      if (userId) {
-        // Logged in users go to reports
-        return NextResponse.redirect(new URL('/reports', req.url))
-      } else {
-        // Not logged in, allow access to sign in
-        return NextResponse.next()
-      }
-    }
-    
     // Protect all other routes
     await auth.protect()
   }
