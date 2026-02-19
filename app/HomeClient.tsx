@@ -25,9 +25,7 @@ interface ExpenseReport {
   status: string
   expense_items: any[]
   total_amount: number
-}expenses, setExpenses] = useState<RecentExpense[]>([])
-  const [reports, setReports] = useState<ExpenseReport[]>([])
-  const [
+}
 
 export default function HomeClient() {
   const [stats, setStats] = useState<ExpenseStats>({
@@ -36,6 +34,8 @@ export default function HomeClient() {
     submittedReportsCount: 0
   })
   const [recentExpenses, setRecentExpenses] = useState<RecentExpense[]>([])
+  const [expenses, setExpenses] = useState<RecentExpense[]>([])
+  const [reports, setReports] = useState<ExpenseReport[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -91,9 +91,7 @@ export default function HomeClient() {
         }))
         setRecentExpenses(recent)
         setExpenses(recent)
-        setReports(reports || []
-        }))
-        setRecentExpenses(recent)
+        setReports(reports || [])
       }
     } catch (error) {
       console.error('Error loading dashboard:', error)
