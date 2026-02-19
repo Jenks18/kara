@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useUser } from '@clerk/nextjs'
 import { DollarSign, Clock, FileText, TrendingUp, TrendingDown } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { getSupabaseClient } from '@/lib/supabase/client'
 
 interface ExpenseStats {
   totalExpenses: number
@@ -28,6 +29,7 @@ interface ExpenseReport {
 }
 
 export default function HomeClient() {
+  const { user } = useUser()
   const [stats, setStats] = useState<ExpenseStats>({
     totalExpenses: 0,
     pendingCount: 0,
@@ -39,26 +41,24 @@ export default function HomeClient() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    loadDashboardData()
-  }, [])
+    if (user) loadDashboardData()
+  }, [user])
 
   async function loadDashboardData() {
     try {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (!user) return
+      const supabase = await getSupabaseClient()
+      const userId = user?.id
+      if (!userId) return
 
       // Get expenses
       const { data: expenses } = await supabase
         .from('raw_receipts')
         .select('*')
-        .eq('clerk_user_id', user.id)
-      // Get reports
+        .eq('clerk_user_id', userId)
       const { data: reports } = await supabase
         .from('expense_reports')
         .select('*')
-        .eq('clerk_user_id', user.id)
+        .eq('clerk_user_id', userId)
         .order('created_at', { ascending: false })
 
       if (expenses) {
