@@ -74,6 +74,35 @@ export async function POST() {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
+    // Create a default "Personal" workspace for the new user
+    try {
+      const { data: existingWorkspaces } = await supabase
+        .from('workspaces')
+        .select('id')
+        .eq('user_id', userId)
+        .limit(1)
+
+      if (!existingWorkspaces || existingWorkspaces.length === 0) {
+        const { error: wsError } = await supabase
+          .from('workspaces')
+          .insert({
+            user_id: userId,
+            name: 'Personal',
+            avatar: '💼',
+            currency: 'USD',
+            currency_symbol: '$',
+            is_active: true,
+          })
+
+        if (wsError) {
+          // Non-fatal: log but don't fail the profile init
+          console.warn('Could not create default workspace:', wsError.message)
+        }
+      }
+    } catch (wsErr) {
+      console.warn('Default workspace creation failed:', wsErr)
+    }
+
     return NextResponse.json({ profile: newProfile })
   } catch (error) {
     console.error('Error in user profile init:', error instanceof Error ? error.message : String(error))

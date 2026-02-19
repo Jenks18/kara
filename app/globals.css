@@ -62,6 +62,57 @@
     position: relative;
   }
   
+  /* Dark mode base styles */
+  html.dark body {
+    @apply bg-gray-950 text-gray-100;
+    background-image: none;
+  }
+  
+  html.dark .bg-white {
+    @apply bg-gray-900;
+  }
+  
+  html.dark .bg-gradient-to-br {
+    background-image: none;
+    @apply bg-gray-950;
+  }
+  
+  html.dark .text-gray-900 {
+    @apply text-gray-100;
+  }
+  
+  html.dark .text-gray-700 {
+    @apply text-gray-300;
+  }
+  
+  html.dark .text-gray-600 {
+    @apply text-gray-400;
+  }
+  
+  html.dark .text-gray-500 {
+    @apply text-gray-400;
+  }
+  
+  html.dark .border-gray-200 {
+    @apply border-gray-700;
+  }
+  
+  html.dark .border-gray-100 {
+    @apply border-gray-800;
+  }
+  
+  html.dark .border-blue-100 {
+    @apply border-gray-800;
+  }
+  
+  html.dark .bg-gray-50 {
+    @apply bg-gray-800;
+  }
+  
+  html.dark .bg-blue-50 {
+    @apply bg-gray-900;
+  }
+  
   /* Desktop view - add border to mobile container */
   @media (min-width: 431px) {
     body {

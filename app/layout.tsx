@@ -46,6 +46,21 @@ export default function RootLayout({
           <meta name="mobile-web-app-capable" content="yes" />
           <meta name="apple-mobile-web-app-capable" content="yes" />
           <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+          {/* Theme initialization — runs before paint to prevent flash */}
+          <script dangerouslySetInnerHTML={{ __html: `
+            (function() {
+              try {
+                var t = localStorage.getItem('kacha_theme');
+                if (t === 'dark') {
+                  document.documentElement.classList.add('dark');
+                } else if (t === 'system') {
+                  if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    document.documentElement.classList.add('dark');
+                  }
+                }
+              } catch(e) {}
+            })();
+          `}} />
         </head>
         <body suppressHydrationWarning>
           <Providers>{children}</Providers>

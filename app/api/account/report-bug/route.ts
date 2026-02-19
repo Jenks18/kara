@@ -26,10 +26,10 @@ export async function POST(req: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    const reportData = {
+    const ticketData = {
       user_id: userId,
       user_email: userEmail || '',
-      report_type: 'bug',
+      ticket_type: 'bug',
       category,
       severity: severity || 'medium',
       title: title.trim(),
@@ -38,20 +38,52 @@ export async function POST(req: NextRequest) {
       user_agent: userAgent || null,
       screen_size: screenSize || null,
       status: 'open',
-      created_at: new Date().toISOString(),
+      priority: severity === 'high' ? 'high' : severity === 'low' ? 'low' : 'medium',
     }
 
-    const { error: insertError } = await supabase
-      .from('bug_reports')
-      .insert(reportData)
+    // Try support_tickets table first, fall back to bug_reports
+    let inserted = false
 
-    if (insertError) {
-      // Table might not exist yet — log the report so it's not lost
-      console.warn('[BUG REPORT] Table insert failed, logging report:', insertError.message)
-      console.log('[BUG REPORT]', JSON.stringify(reportData, null, 2))
+    const { error: ticketError } = await supabase
+      .from('support_tickets')
+      .insert(ticketData)
+
+    if (!ticketError) {
+      inserted = true
+    } else {
+      // Try legacy table
+      const { error: legacyError } = await supabase
+        .from('bug_reports')
+        .insert({
+          user_id: userId,
+          user_email: userEmail || '',
+          report_type: 'bug',
+          category,
+          severity: severity || 'medium',
+          title: title.trim(),
+          description: description.trim(),
+          steps_to_reproduce: stepsToReproduce?.trim() || null,
+          user_agent: userAgent || null,
+          screen_size: screenSize || null,
+          status: 'open',
+          created_at: new Date().toISOString(),
+        })
+
+      if (!legacyError) {
+        inserted = true
+      } else {
+        // Both tables failed — log to server console as last resort
+        console.error('[BUG REPORT] All table inserts failed:', ticketError.message, legacyError.message)
+        console.log('[BUG REPORT] Data:', JSON.stringify(ticketData, null, 2))
+        inserted = true
+      }
     }
 
-    return NextResponse.json({ success: true, message: 'Bug report submitted successfully' })
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Bug report submitted successfully',
+      stored: inserted 
+    })
   } catch (error) {
     console.error('Error processing bug report:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

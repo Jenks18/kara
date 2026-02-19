@@ -19,7 +19,7 @@ interface AvatarContextType {
 
 const defaultAvatar: Avatar = {
   emoji: '💼',
-  color: 'from-emerald-500 to-emerald-600',
+  color: 'from-blue-500 to-blue-600',
   label: 'Business'
 }
 
@@ -59,7 +59,7 @@ export function AvatarProvider({ children }: { children: ReactNode }) {
           if (profile) {
             const dbAvatar: Avatar = {
               emoji: profile.avatar_emoji || '💼',
-              color: profile.avatar_color || 'from-emerald-500 to-emerald-600',
+              color: profile.avatar_color || 'from-blue-500 to-blue-600',
               imageUrl: profile.avatar_image_url || undefined,
             }
             setAvatarState(dbAvatar)

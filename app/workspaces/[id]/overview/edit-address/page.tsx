@@ -146,7 +146,7 @@ export default function EditAddressPage({ params }: { params: Promise<{ id: stri
       </div>
 
       {/* Save Button */}
-      <div className="sticky bottom-0 p-4 bg-gradient-to-t from-emerald-50 to-transparent">
+      <div className="sticky bottom-0 p-4 bg-gradient-to-t from-blue-50 to-transparent">
         <button
           onClick={handleSave}
           disabled={saving}

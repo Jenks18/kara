@@ -6,7 +6,7 @@ import { useUser } from '@clerk/nextjs'
 import BottomNav from '@/components/navigation/BottomNav'
 import Button from '@/components/ui/Button'
 import EmptyState from '@/components/ui/EmptyState'
-import { Briefcase, Search, Shield } from 'lucide-react'
+import { Briefcase, Shield } from 'lucide-react'
 
 // Force dynamic rendering to avoid Clerk prerender issues
 export const dynamic = 'force-dynamic'
@@ -112,9 +112,6 @@ export default function WorkspacesPage() {
       <div className="sticky top-0 z-30 bg-white border-b border-blue-100">
         <div className="px-4 py-3 max-w-md mx-auto flex items-center justify-between">
           <h1 className="text-3xl font-bold text-gray-900">Workspaces</h1>
-          <button className="p-2 active:scale-95 transition-transform">
-            <Search size={24} className="text-gray-600" />
-          </button>
         </div>
       </div>
       

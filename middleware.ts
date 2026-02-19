@@ -6,6 +6,7 @@ const isPublicRoute = createRouteMatcher([
   '/welcome(.*)',
   '/privacy-policy(.*)',
   '/terms-of-service(.*)',
+  '/help(.*)',
   '/sign-in(.*)',
   '/sign-up(.*)',
   '/api/auth/google-native(.*)',

@@ -12,19 +12,30 @@ export default function PreferencesPage() {
   const router = useRouter()
   const [theme, setTheme] = useState<ThemeMode>('light')
 
-  // Load saved theme on mount
+  // Load saved theme on mount and apply it
   useEffect(() => {
     const saved = localStorage.getItem('kacha_theme') as ThemeMode | null
     if (saved && ['light', 'dark', 'system'].includes(saved)) {
       setTheme(saved)
+      applyTheme(saved)
+    } else {
+      applyTheme('light')
     }
   }, [])
 
-  const handleThemeChange = (mode: ThemeMode) => {
-    setTheme(mode)
-    localStorage.setItem('kacha_theme', mode)
-    
-    // Apply theme
+  // Listen for system preference changes when in system mode
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    const handler = () => {
+      if (theme === 'system') {
+        applyTheme('system')
+      }
+    }
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [theme])
+
+  const applyTheme = (mode: ThemeMode) => {
     const root = document.documentElement
     if (mode === 'system') {
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -32,6 +43,12 @@ export default function PreferencesPage() {
     } else {
       root.classList.toggle('dark', mode === 'dark')
     }
+  }
+
+  const handleThemeChange = (mode: ThemeMode) => {
+    setTheme(mode)
+    localStorage.setItem('kacha_theme', mode)
+    applyTheme(mode)
   }
 
   const themeOptions: { mode: ThemeMode; label: string; icon: typeof Sun; description: string }[] = [

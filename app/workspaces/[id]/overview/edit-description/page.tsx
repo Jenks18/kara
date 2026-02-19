@@ -96,7 +96,7 @@ export default function EditDescriptionPage({ params }: { params: Promise<{ id: 
       </div>
 
       {/* Save Button */}
-      <div className="sticky bottom-0 p-4 bg-gradient-to-t from-emerald-50 to-transparent">
+      <div className="sticky bottom-0 p-4 bg-gradient-to-t from-blue-50 to-transparent">
         <button
           onClick={handleSave}
           disabled={saving}

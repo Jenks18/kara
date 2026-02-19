@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, Shield, ChevronRight, UserPlus, Clock } from 'lucide-react'
+import { ChevronLeft, Shield, ChevronRight } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -65,39 +65,7 @@ export default function SecurityPage() {
           </button>
         </div>
 
-        {/* Coming Soon Section */}
-        <div className="space-y-4 pt-4">
-          <div>
-            <h2 className="text-gray-900 text-lg font-semibold mb-1">Coming soon</h2>
-            <p className="text-gray-600 text-sm">
-              These features are planned for future releases.
-            </p>
-          </div>
 
-          <div className="space-y-2">
-            {[
-              { label: 'Two-factor authentication', icon: Shield },
-              { label: 'Merge accounts', icon: UserPlus },
-              { label: 'Help center', icon: Clock },
-              { label: "What's new", icon: Clock },
-              { label: 'Troubleshoot', icon: Clock },
-            ].map((item, idx) => {
-              const Icon = item.icon
-              return (
-                <div
-                  key={idx}
-                  className="w-full bg-gray-50 rounded-xl border border-gray-200 p-4 shadow-sm opacity-60"
-                >
-                  <div className="flex items-center gap-3">
-                    <Icon size={20} className="text-gray-400" />
-                    <span className="text-gray-500 font-medium">{item.label}</span>
-                    <span className="ml-auto text-xs bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full font-medium">Soon</span>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
       </div>
     </div>
   )

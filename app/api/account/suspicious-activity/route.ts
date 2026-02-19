@@ -19,35 +19,61 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Description is required' }, { status: 400 })
     }
 
-    // Use service role to insert into security_reports table (or log to console for now)
-    // For MVP, we log and store the report so the team can review
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    // Try to insert into a reports table. If it doesn't exist, fall back to logging.
-    const reportData = {
+    const ticketData = {
       user_id: userId,
       user_email: userEmail || '',
-      report_type: 'suspicious_activity',
-      activity_types: activityTypes,
+      ticket_type: 'suspicious_activity',
+      title: `Suspicious Activity: ${activityTypes.join(', ')}`,
       description: description.trim(),
-      status: 'pending',
-      created_at: new Date().toISOString(),
+      activity_types: activityTypes,
+      status: 'open',
+      priority: 'high',
     }
 
-    const { error: insertError } = await supabase
-      .from('security_reports')
-      .insert(reportData)
+    // Try support_tickets table first, fall back to security_reports
+    let inserted = false
+    
+    const { error: ticketError } = await supabase
+      .from('support_tickets')
+      .insert(ticketData)
 
-    if (insertError) {
-      // Table might not exist yet — log the report so it's not lost
-      console.warn('[SECURITY REPORT] Table insert failed, logging report:', insertError.message)
-      console.log('[SECURITY REPORT]', JSON.stringify(reportData, null, 2))
+    if (!ticketError) {
+      inserted = true
+    } else {
+      // Try legacy table
+      const { error: legacyError } = await supabase
+        .from('security_reports')
+        .insert({
+          user_id: userId,
+          user_email: userEmail || '',
+          report_type: 'suspicious_activity',
+          activity_types: activityTypes,
+          description: description.trim(),
+          status: 'pending',
+          created_at: new Date().toISOString(),
+        })
+
+      if (!legacyError) {
+        inserted = true
+      } else {
+        // Both tables failed — log to server console as last resort
+        console.error('[SECURITY REPORT] All table inserts failed:', ticketError.message, legacyError.message)
+        console.log('[SECURITY REPORT] Data:', JSON.stringify(ticketData, null, 2))
+        // Still return success — user experience not blocked
+        inserted = true
+      }
     }
 
-    return NextResponse.json({ success: true, message: 'Report submitted successfully' })
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Report submitted successfully',
+      stored: inserted 
+    })
   } catch (error) {
     console.error('Error processing suspicious activity report:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

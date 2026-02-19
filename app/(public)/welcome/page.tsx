@@ -70,20 +70,20 @@ export default function LandingPage() {
 
         {/* App Preview */}
         <div className="mt-16 relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-green-400 rounded-3xl blur-3xl opacity-20"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-blue-300 rounded-3xl blur-3xl opacity-20"></div>
           <div className="relative bg-white rounded-2xl shadow-2xl p-8 border border-gray-200">
             <div className="grid md:grid-cols-3 gap-6">
-              <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl p-6 text-center">
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 text-center">
                 <Receipt className="w-12 h-12 text-blue-600 mx-auto mb-4" />
                 <h3 className="font-semibold text-gray-900 mb-2">Scan Receipts</h3>
                 <p className="text-gray-600 text-sm">AI-powered receipt scanning with QR code support</p>
               </div>
-              <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl p-6 text-center">
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 text-center">
                 <TrendingUp className="w-12 h-12 text-blue-600 mx-auto mb-4" />
                 <h3 className="font-semibold text-gray-900 mb-2">Track Expenses</h3>
                 <p className="text-gray-600 text-sm">Organize expenses by category and workspace</p>
               </div>
-              <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl p-6 text-center">
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 text-center">
                 <Zap className="w-12 h-12 text-blue-600 mx-auto mb-4" />
                 <h3 className="font-semibold text-gray-900 mb-2">Generate Reports</h3>
                 <p className="text-gray-600 text-sm">Instant expense reports for accounting</p>

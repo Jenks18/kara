@@ -62,7 +62,7 @@ export default function SuspiciousActivityPage() {
 
       setIsSubmitted(true)
     } catch (err) {
-      setError('Failed to submit report. Please try again or contact support@mafutapass.com')
+      setError('Failed to submit report. Please try again or contact support@kachalabs.com')
     } finally {
       setIsSubmitting(false)
     }
@@ -73,7 +73,7 @@ export default function SuspiciousActivityPage() {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100">
         <div className="sticky top-0 z-30 bg-white border-b border-gray-200">
           <div className="px-4 py-4 max-w-md mx-auto flex items-center gap-4">
-            <button onClick={() => router.push('/account/security')} className="p-2 -ml-2 active:scale-95 transition-transform touch-manipulation">
+            <button onClick={() => router.replace('/account/security')} className="p-2 -ml-2 active:scale-95 transition-transform touch-manipulation">
               <ChevronLeft size={24} className="text-gray-700" />
             </button>
             <AlertTriangle size={24} className="text-blue-600" />
@@ -90,10 +90,10 @@ export default function SuspiciousActivityPage() {
             Our security team will review your report and take appropriate action.
           </p>
           <p className="text-gray-500 text-sm mb-8">
-            You will receive an update at <span className="font-medium text-gray-700">{user?.emailAddresses?.[0]?.emailAddress}</span>
+            Our team will follow up at <span className="font-medium text-gray-700">support@kachalabs.com</span>
           </p>
           <button
-            onClick={() => router.push('/account/security')}
+            onClick={() => router.replace('/account/security')}
             className="w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-2xl text-white font-semibold text-lg active:scale-[0.98] transition-all touch-manipulation"
           >
             Back to Security
