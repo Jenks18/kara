@@ -31,6 +31,8 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showAvatarMenu, setShowAvatarMenu] = useState(false)
   const [inviteInput, setInviteInput] = useState('')
+  const [inviteSending, setInviteSending] = useState(false)
+  const [inviteLink, setInviteLink] = useState('')
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [shareUrl, setShareUrl] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -439,31 +441,67 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
           <div className="w-full max-w-md bg-white rounded-3xl p-6 space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">Invite new members</h2>
-              <button onClick={() => setShowInviteModal(false)} className="p-2 hover:bg-gray-100 rounded-full">
+              <h2 className="text-xl font-bold text-gray-900">Invite via SMS</h2>
+              <button onClick={() => { setShowInviteModal(false); setInviteLink(''); setInviteInput('') }} className="p-2 hover:bg-gray-100 rounded-full">
                 <X size={20} className="text-gray-600" />
               </button>
             </div>
-            <p className="text-sm text-gray-600">{workspace.name}</p>
-            <input
-              type="text"
-              value={inviteInput}
-              onChange={(e) => setInviteInput(e.target.value)}
-              placeholder="Name, email, or phone number"
-              className="w-full px-4 py-3 border-2 border-blue-500 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-600"
-            />
-            <button
-              onClick={() => {
-                if (inviteInput.trim()) {
-                  showToast(`Invite sent to: ${inviteInput}`, 'success')
-                  setInviteInput('')
-                  setShowInviteModal(false)
-                }
-              }}
-              className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-2xl active:scale-[0.98] transition-all"
-            >
-              Next
-            </button>
+            <p className="text-sm text-gray-600">Enter a phone number — we&apos;ll open your messaging app with the invite link.</p>
+
+            {!inviteLink ? (
+              <>
+                <input
+                  type="tel"
+                  value={inviteInput}
+                  onChange={(e) => setInviteInput(e.target.value)}
+                  placeholder="+254 712 345 678"
+                  className="w-full px-4 py-3 border-2 border-blue-500 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-600"
+                />
+                <button
+                  disabled={inviteSending || !inviteInput.trim()}
+                  onClick={async () => {
+                    setInviteSending(true)
+                    try {
+                      const res = await fetch(`/api/workspaces/${workspaceId}/invites`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contact: inviteInput.trim() }),
+                      })
+                      const data = await res.json()
+                      if (!res.ok) { showToast(data.error || 'Failed to create invite', 'error'); return }
+                      const url = data.inviteUrl as string
+                      setInviteLink(url)
+                      const smsBody = encodeURIComponent(`Join my workspace "${data.workspaceName || workspace?.name || 'Kacha'}" on Kacha:\n${url}`)
+                      const phone = inviteInput.trim().replace(/\s+/g, '')
+                      window.open(`sms:${phone}?&body=${smsBody}`, '_self')
+                      showToast('SMS composer opened', 'success')
+                    } catch {
+                      showToast('Something went wrong', 'error')
+                    } finally {
+                      setInviteSending(false)
+                    }
+                  }}
+                  className="w-full py-4 bg-[#0066FF] disabled:opacity-50 text-white font-semibold rounded-2xl active:scale-[0.98] transition-all"
+                >
+                  {inviteSending ? 'Creating invite...' : 'Send via SMS'}
+                </button>
+              </>
+            ) : (
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600">If the messaging app didn&apos;t open, copy the link below and send it manually:</p>
+                <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl">
+                  <input readOnly value={inviteLink} className="flex-1 bg-transparent text-sm text-gray-700 outline-none truncate" />
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(inviteLink); showToast('Link copied!', 'success') }}
+                    className="px-3 py-1.5 bg-[#0066FF] text-white text-xs font-semibold rounded-lg flex-shrink-0"
+                  >Copy</button>
+                </div>
+                <button
+                  onClick={() => { setInviteLink(''); setInviteInput(''); setShowInviteModal(false) }}
+                  className="w-full py-3 border border-gray-200 text-gray-700 font-medium rounded-2xl active:scale-[0.98] transition-all"
+                >Done</button>
+              </div>
+            )}
           </div>
         </div>
       )}

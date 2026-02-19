@@ -59,7 +59,9 @@ export async function GET(
 /**
  * POST /api/workspaces/[id]/invites
  * Create an invite link for workspace (admin only)
- * Body: { email: string, role?: 'admin' | 'member' | 'viewer', message?: string }
+ * Body: { contact: string, role?: 'admin' | 'member' | 'viewer', message?: string }
+ * contact = phone number or email — stored in email column for compatibility.
+ * The actual invite is delivered via the client opening the native SMS composer.
  */
 export async function POST(
   request: NextRequest,
@@ -73,10 +75,13 @@ export async function POST(
 
     const { id: workspaceId } = await context.params
     const body = await request.json()
-    const { email, role = 'member', message } = body
+    // Accept both 'contact' (new) and 'email' (legacy) field names
+    const contact = body.contact || body.email
+    const { role = 'member', message } = body
+    const email = contact // stored in email column for DB compat
 
     if (!email) {
-      return NextResponse.json({ error: 'email is required' }, { status: 400 })
+      return NextResponse.json({ error: 'contact (phone or email) is required' }, { status: 400 })
     }
 
     if (!['admin', 'member', 'viewer'].includes(role)) {
@@ -173,12 +178,14 @@ export async function POST(
 
     const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://kachalabs.com'}/invites/accept/${invite.token}`
 
-    // TODO: Send email notification (integrate with SendGrid, Resend, etc.)
-    // await sendInviteEmail({ email, inviteUrl, workspaceName: workspace?.name, inviterName })
+    // Invite delivery is handled client-side via native SMS composer.
+    // The client opens sms:{phone}?body={message} after receiving the inviteUrl.
 
     return NextResponse.json({ 
       invite,
       inviteUrl,
+      workspaceName: workspace?.name || 'workspace',
+      inviterName,
       message: 'Invite created successfully'
     }, { status: 201 })
   } catch (error) {

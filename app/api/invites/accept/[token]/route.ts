@@ -122,14 +122,8 @@ export async function POST(
       return NextResponse.json({ error: 'Invite not found' }, { status: 404 })
     }
 
-    // Verify invite is for this user's email
-    if (invite.email.toLowerCase() !== userProfile.email.toLowerCase()) {
-      return NextResponse.json({ 
-        error: 'This invite was sent to a different email address',
-        inviteEmail: invite.email,
-        userEmail: userProfile.email
-      }, { status: 403 })
-    }
+    // Token-based auth: anyone with a valid invite link can accept.
+    // This supports SMS invites where the stored contact may be a phone number.
 
     // Check if invite is still valid
     if (invite.status !== 'pending') {
