@@ -1,13 +1,13 @@
 import SwiftUI
 
-// Centralized theme for MafutaPass (Emerald)
+// Centralized theme for MafutaPass (Blue)
 struct EmeraldTheme {
-    // Core brand colors
-    static let primary = Color(red: 0.063, green: 0.725, blue: 0.506) // emerald-500
-    static let primaryDark = Color(red: 0.022, green: 0.588, blue: 0.412) // emerald-600
-    static let lightBackground = Color(red: 0.925, green: 0.992, blue: 0.961) // emerald-50
-    static let lightBackgroundAlt = Color(red: 0.820, green: 0.980, blue: 0.898) // emerald-100/green-50 via
-    static let border = Color(red: 0.654, green: 0.906, blue: 0.816) // emerald-200
+    // Core brand colors - Updated to blue
+    static let primary = Color(red: 0.0, green: 0.4, blue: 1.0) // blue-500 #0066FF
+    static let primaryDark = Color(red: 0.0, green: 0.322, blue: 0.8) // blue-600 #0052CC
+    static let lightBackground = Color(red: 0.937, green: 0.965, blue: 1.0) // blue-50 #eff6ff
+    static let lightBackgroundAlt = Color(red: 0.859, green: 0.918, blue: 0.996) // blue-100 #dbeafe
+    static let border = Color(red: 0.749, green: 0.859, blue: 0.996) // blue-200 #bfdbfe
 
     // Gradient background used across pages
     @ViewBuilder
@@ -15,7 +15,7 @@ struct EmeraldTheme {
         LinearGradient(
             colors: [
                 EmeraldTheme.lightBackground,
-                Color(red: 0.937, green: 0.992, blue: 0.937),
+                Color(red: 0.898, green: 0.941, blue: 0.996),
                 EmeraldTheme.lightBackgroundAlt
             ],
             startPoint: .topLeading,

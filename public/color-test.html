@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kara Color Theme Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+            overflow-x: hidden;
+        }
+
+        .tabs {
+            display: flex;
+            background: white;
+            border-bottom: 2px solid #e5e7eb;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            background: white;
+            border: none;
+            font-size: 14px;
+        }
+
+        .tab:hover {
+            background: #f9fafb;
+        }
+
+        .tab.active {
+            background: linear-gradient(to bottom, white, #f9fafb);
+        }
+
+        .content {
+            display: none;
+        }
+
+        .content.active {
+            display: block;
+        }
+
+        /* Amber/Golden Theme */
+        .amber .tab.active {
+            color: #0066FF;
+            border-bottom: 3px solid #0066FF;
+            background: white;
+        }
+
+        .amber-gradient {
+            background: linear-gradient(135deg, #eff6ff 0%, #ffffff 50%, #dbeafe 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .amber-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border: 1px solid #bfdbfe;
+            box-shadow: 0 2px 8px rgba(0, 102, 255, 0.08);
+        }
+
+        .amber-btn {
+            background: linear-gradient(135deg, #0066FF 0%, #0052cc 100%);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            border: none;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0, 102, 255, 0.25);
+            cursor: pointer;
+        }
+
+        .amber-badge {
+            background: linear-gradient(135deg, #60a5fa 0%, #0066FF 100%);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .amber-accent {
+            color: #0066FF;
+        }
+
+        /* Terracotta/Rust Theme */
+        .terra .tab.active {
+            color: #c2410c;
+            border-bottom: 3px solid #ea580c;
+        }
+
+        .terra-gradient {
+            background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 50%, #fdba74 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .terra-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border: 1px solid #fdba74;
+            box-shadow: 0 4px 12px rgba(194, 65, 12, 0.15);
+        }
+
+        .terra-btn {
+            background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            border: none;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(234, 88, 12, 0.3);
+            cursor: pointer;
+        }
+
+        .terra-badge {
+            background: #fed7aa;
+            color: #7c2d12;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .terra-accent {
+            color: #c2410c;
+        }
+
+        /* Coral/Sunset Theme */
+        .coral .tab.active {
+            color: #ea580c;
+            border-bottom: 3px solid #f97316;
+        }
+
+        .coral-gradient {
+            background: linear-gradient(135deg, #fff5f5 0%, #fecaca 50%, #fca5a5 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .coral-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border: 1px solid #fca5a5;
+            box-shadow: 0 4px 12px rgba(234, 88, 12, 0.15);
+        }
+
+        .coral-btn {
+            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            border: none;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+            cursor: pointer;
+        }
+
+        .coral-badge {
+            background: #fecaca;
+            color: #7f1d1d;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .coral-accent {
+            color: #ea580c;
+        }
+
+        /* Common styles */
+        .header {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .amber .header {
+            border: 1px solid #93c5fd;
+            box-shadow: 0 2px 8px rgba(0, 102, 255, 0.08);
+            background: linear-gradient(135deg, #ffffff 0%, #eff6ff 100%);
+        }
+        
+        .amber h1 {
+            color: #000000;
+        }
+
+        .expense-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .expense-item:last-child {
+            border-bottom: none;
+        }
+
+        .merchant {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 4px;
+            color: #000000;
+        }
+
+        .date {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .amount {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .category-pills {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .pill {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+            border: 2px solid #e5e7eb;
+            color: #000000;
+        }
+        
+        .amber .pill {
+            border-color: #93c5fd;
+            background: #eff6ff;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat {
+            background: white;
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid #e5e7eb;
+        }
+
+        .amber .stat {
+            border: 1px solid #93c5fd;
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+            color: #111827;
+        }
+
+        h2 {
+            font-size: 18px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .subtitle {
+            color: #6b7280;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="tabs" id="tabBar">
+        <button class="tab active amber" onclick="switchTab('amber')">💙 Bright Blue (Upside Style)</button>
+        <button class="tab terra" onclick="switchTab('terra')">🏔️ Terracotta/Rust Earth</button>
+        <button class="tab coral" onclick="switchTab('coral')">🌊 Warm Coral/Sunset</button>
+    </div>
+
+    <!-- Amber Theme -->
+    <div id="amber" class="content active">
+        <div class="amber-gradient">
+            <div class="header">
+                <h1 class="amber-accent">Your Expenses</h1>
+                <p class="subtitle">January 2026 • Personal</p>
+            </div>
+
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-label">Total Spent</div>
+                    <div class="stat-value amber-accent">KES 45,320</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Receipts</div>
+                    <div class="stat-value amber-accent">23</div>
+                </div>
+            </div>
+
+            <div class="category-pills">
+                <span class="pill" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border: none;">All</span>
+                <span class="pill">Food</span>
+                <span class="pill">Transport</span>
+                <span class="pill">Shopping</span>
+            </div>
+
+            <div class="amber-card">
+                <h2>Recent Receipts</h2>
+                
+                <div class="expense-item">
+                    <div>
+                        <div class="merchant">Java House Westlands</div>
+                        <div class="date">Today • 2:30 PM</div>
+                        <span class="amber-badge">Food & Dining</span>
+                    </div>
+                    <div class="amount amber-accent">KES 850</div>
+                </div>
+
+                <div class="expense-item">
+                    <div>
+                        <div class="merchant">Uber Trip</div>
+                        <div class="date">Yesterday • 9:15 AM</div>
+                        <span class="amber-badge">Transport</span>
+                    </div>
+                    <div class="amount amber-accent">KES 420</div>
+                </div>
+
+                <div class="expense-item">
+                    <div>
+                        <div class="merchant">Carrefour Karen</div>
+                        <div class="date">2 days ago</div>
+                        <span class="amber-badge">Groceries</span>
+                    </div>
+                    <div class="amount amber-accent">KES 3,240</div>
+                </div>
+            </div>
+
+            <button class="amber-btn" style="width: 100%; margin-top: 16px;">+ Add New Receipt</button>
+        </div>
+    </div>
+
+    <!-- Terracotta Theme -->
+    <div id="terra" class="content">
+        <div class="terra-gradient">
+            <div class="header">
+                <h1 class="terra-accent">Your Expenses</h1>
+                <p class="subtitle">January 2026 • Personal</p>
+            </div>
+
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-label">Total Spent</div>
+                    <div class="stat-value terra-accent">KES 45,320</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Receipts</div>
+                    <div class="stat-value terra-accent">23</div>
+                </div>
+            </div>
+
+            <div class="category-pills">
+                <span class="pill" style="background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%); color: white; border: none;">All</span>
+                <span class="pill">Food</span>
+                <span class="pill">Transport</span>
+                <span class="pill">Shopping</span>
+            </div>
+
+            <div class="terra-card">
+                <h2>Recent Receipts</h2>
+                
+                <div class="expense-item">
+                    <div>
+                        <div class="merchant">Java House Westlands</div>
+                        <div class="date">Today • 2:30 PM</div>
+                        <span class="terra-badge">Food & Dining</span>
+                    </div>
+                    <div class="amount terra-accent">KES 850</div>
+                </div>
+
+                <div class="expense-item">
+                    <div>
+                        <div class="merchant">Uber Trip</div>
+                        <div class="date">Yesterday • 9:15 AM</div>
+                        <span class="terra-badge">Transport</span>
+                    </div>
+                    <div class="amount terra-accent">KES 420</div>
+                </div>
+
+                <div class="expense-item">
+                    <div>
+                        <div class="merchant">Carrefour Karen</div>
+                        <div class="date">2 days ago</div>
+                        <span class="terra-badge">Groceries</span>
+                    </div>
+                    <div class="amount terra-accent">KES 3,240</div>
+                </div>
+            </div>
+
+            <button class="terra-btn" style="width: 100%; margin-top: 16px;">+ Add New Receipt</button>
+        </div>
+    </div>
+
+    <!-- Coral Theme -->
+    <div id="coral" class="content">
+        <div class="coral-gradient">
+            <div class="header">
+                <h1 class="coral-accent">Your Expenses</h1>
+                <p class="subtitle">January 2026 • Personal</p>
+            </div>
+
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-label">Total Spent</div>
+                    <div class="stat-value coral-accent">KES 45,320</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Receipts</div>
+                    <div class="stat-value coral-accent">23</div>
+                </div>
+            </div>
+
+            <div class="category-pills">
+                <span class="pill" style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; border: none;">All</span>
+                <span class="pill">Food</span>
+                <span class="pill">Transport</span>
+                <span class="pill">Shopping</span>
+            </div>
+
+            <div class="coral-card">
+                <h2>Recent Receipts</h2>
+                
+                <div class="expense-item">
+                    <div>
+                        <div class="merchant">Java House Westlands</div>
+                        <div class="date">Today • 2:30 PM</div>
+                        <span class="coral-badge">Food & Dining</span>
+                    </div>
+                    <div class="amount coral-accent">KES 850</div>
+                </div>
+
+                <div class="expense-item">
+                    <div>
+                        <div class="merchant">Uber Trip</div>
+                        <div class="date">Yesterday • 9:15 AM</div>
+                        <span class="coral-badge">Transport</span>
+                    </div>
+                    <div class="amount coral-accent">KES 420</div>
+                </div>
+
+                <div class="expense-item">
+                    <div>
+                        <div class="merchant">Carrefour Karen</div>
+                        <div class="date">2 days ago</div>
+                        <span class="coral-badge">Groceries</span>
+                    </div>
+                    <div class="amount coral-accent">KES 3,240</div>
+                </div>
+            </div>
+
+            <button class="coral-btn" style="width: 100%; margin-top: 16px;">+ Add New Receipt</button>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(theme) {
+            // Hide all content
+            document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            
+            // Show selected content
+            document.getElementById(theme).classList.add('active');
+            
+            // Update tab bar class for styling
+            const tabBar = document.getElementById('tabBar');
+            tabBar.className = 'tabs ' + theme;
+            
+            // Activate correct tab
+            document.querySelectorAll('.tab.' + theme).forEach(t => t.classList.add('active'));
+        }
+    </script>
+</body>
+</html>

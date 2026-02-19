@@ -2,15 +2,15 @@ package com.mafutapass.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Emerald color palette matching iOS/Web
-val Emerald50 = Color(0xFFECFDF5)  // rgb(236, 253, 245) = 0.925, 0.992, 0.961
-val Green50 = Color(0xFFF0FEF0)    // rgb(240, 254, 240) = 0.937, 0.992, 0.937
-val Emerald100 = Color(0xFFD1FAE5) // rgb(209, 250, 229) = 0.820, 0.980, 0.898
-val Emerald200 = Color(0xFFA7F3D0)
-val Emerald400 = Color(0xFF34D399) // rgb(52, 211, 153)
-val Emerald600 = Color(0xFF10B981) // rgb(16, 185, 129) = 0.063, 0.725, 0.506 - primary
-val Emerald700 = Color(0xFF059669) // rgb(5, 150, 105) - dark theme container
-val Emerald900 = Color(0xFF064E3B) // rgb(6, 78, 59) - dark theme on-primary
+// Blue color palette matching iOS/Web
+val Blue50 = Color(0xFFEFF6FF)     // rgb(239, 246, 255)
+val Blue100 = Color(0xFFDBEAFE)    // rgb(219, 234, 254)
+val Blue200 = Color(0xFFBFDBFE)    // rgb(191, 219, 254)
+val Blue400 = Color(0xFF60A5FA)    // rgb(96, 165, 250)
+val Blue500 = Color(0xFF0066FF)    // rgb(0, 102, 255) - primary
+val Blue600 = Color(0xFF0052CC)    // rgb(0, 82, 204)
+val Blue700 = Color(0xFF0041A8)    // rgb(0, 65, 168) - dark theme container
+val Blue900 = Color(0xFF002563)    // rgb(0, 37, 99) - dark theme on-primary
 
 // Grayscale
 val Gray50 = Color(0xFFF9FAFB)
