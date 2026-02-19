@@ -1,16 +1,16 @@
 import { redirect } from 'next/navigation'
 import { auth } from '@clerk/nextjs/server'
+import HomeClient from './HomeClient'
 
-// Landing page for non-authenticated users
-// Authenticated users get redirected to reports
+// Home page shows dashboard for authenticated users
+// Non-authenticated users see welcome page
 export default async function HomePage() {
   const { userId } = await auth()
   
-  if (userId) {
-    // Logged in users go to reports
-    redirect('/reports')
+  if (!userId) {
+    // Non-authenticated users see the public landing page
+    redirect('/welcome')
   }
   
-  // Non-authenticated users see the public landing page
-  redirect('/welcome')
+  return <HomeClient />
 }

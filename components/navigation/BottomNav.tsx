@@ -3,17 +3,19 @@
 import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, FileText, PlusCircle, Briefcase } from 'lucide-react'
+import { Home, FileText, Scan, Briefcase } from 'lucide-react'
 import { useAvatar } from '@/contexts/AvatarContext'
 
 export default function BottomNav() {
   const pathname = usePathname()
   const { avatar } = useAvatar()
   
-  const navItems = [
-    // { id: 'inbox', label: 'Inbox', icon: Home, href: '/' }, // Hidden - chat not set up yet
+  const leftNavItems = [
+    { id: 'home', label: 'Home', icon: Home, href: '/' },
     { id: 'reports', label: 'Reports', icon: FileText, href: '/reports' },
-    { id: 'create', label: 'Create', icon: PlusCircle, href: '/create' },
+  ]
+  
+  const rightNavItems = [
     { id: 'workspaces', label: 'Workspaces', icon: Briefcase, href: '/workspaces' },
     { id: 'account', label: 'Account', icon: null, href: '/account', isAvatar: true },
   ]
@@ -23,7 +25,6 @@ export default function BottomNav() {
       className="
         fixed bottom-0 left-0 right-0
         bg-white/80 backdrop-blur-lg border-t border-blue-200
-        px-2
         z-40
         shadow-lg
       "
@@ -31,42 +32,85 @@ export default function BottomNav() {
         paddingBottom: 'max(12px, env(safe-area-inset-bottom))'
       }}
     >
-      <div className="flex items-center justify-around max-w-md mx-auto py-2">
-        {navItems.map((item) => {
-          const Icon = item.icon
-          const isActive = pathname === item.href
-          
-          return (
-            <Link
-              key={item.id}
-              href={item.href}
-              className={`
-                flex flex-col items-center gap-1 px-3 py-2
-                min-w-[60px] min-h-[56px]
-                transition-colors duration-200 rounded-lg
-                active:scale-95 touch-manipulation
-                ${isActive ? 'text-blue-600' : 'text-blue-600 active:text-blue-700'}
-              `}
-            >
-              {item.isAvatar ? (
-                <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${avatar.imageUrl ? 'bg-gray-100' : avatar.color} flex items-center justify-center text-xs overflow-hidden ${isActive ? 'ring-2 ring-blue-600 ring-offset-1' : ''}`}>
-                  {avatar.imageUrl ? (
-                    <img 
-                      src={avatar.imageUrl} 
-                      alt="Profile" 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span>{avatar.emoji}</span>
-                  )}
-                </div>
-              ) : Icon ? (
+      <div className="relative flex items-end justify-around max-w-md mx-auto py-2 px-2">
+        {/* Left Nav Items */}
+        <div className="flex items-center justify-around flex-1">
+          {leftNavItems.map((item) => {
+            const Icon = item.icon
+            const isActive = pathname === item.href
+            
+            return (
+              <Link
+                key={item.id}
+                href={item.href}
+                className={`
+                  flex flex-col items-center gap-1 px-3 py-2
+                  min-w-[60px]
+                  transition-colors duration-200 rounded-lg
+                  active:scale-95 touch-manipulation
+                  ${isActive ? 'text-blue-600' : 'text-gray-600 active:text-blue-600'}
+                `}
+              >
                 <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
-              ) : null}
-              <span className="text-xs font-medium whitespace-nowrap">{item.label}</span>
-            </Link>
-          )
-        })}
+                <span className="text-xs font-medium whitespace-nowrap">{item.label}</span>
+              </Link>
+            )
+          })}
+        </div>
+
+        {/* Center Scan Button - Elevated */}
+        <Link
+          href="/create"
+          className="
+            flex items-center justify-center
+            w-14 h-14 -mt-8
+            bg-gradient-to-br from-blue-500 to-blue-600
+            rounded-full shadow-lg
+            active:scale-95 touch-manipulation
+            transition-transform duration-200
+          "
+        >
+          <Scan size={28} className="text-white" strokeWidth={2.5} />
+        </Link>
+
+        {/* Right Nav Items */}
+        <div className="flex items-center justify-around flex-1">
+          {rightNavItems.map((item) => {
+            const Icon = item.icon
+            const isActive = pathname === item.href
+            
+            return (
+              <Link
+                key={item.id}
+                href={item.href}
+                className={`
+                  flex flex-col items-center gap-1 px-3 py-2
+                  min-w-[60px]
+                  transition-colors duration-200 rounded-lg
+                  active:scale-95 touch-manipulation
+                  ${isActive ? 'text-blue-600' : 'text-gray-600 active:text-blue-600'}
+                `}
+              >
+                {item.isAvatar ? (
+                  <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${avatar.imageUrl ? 'bg-gray-100' : avatar.color} flex items-center justify-center text-xs overflow-hidden ${isActive ? 'ring-2 ring-blue-600 ring-offset-1' : ''}`}>
+                    {avatar.imageUrl ? (
+                      <img 
+                        src={avatar.imageUrl} 
+                        alt="Profile" 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span>{avatar.emoji}</span>
+                    )}
+                  </div>
+                ) : Icon ? (
+                  <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
+                ) : null}
+                <span className="text-xs font-medium whitespace-nowrap">{item.label}</span>
+              </Link>
+            )
+          })}
+        </div>
       </div>
     </nav>
   )
