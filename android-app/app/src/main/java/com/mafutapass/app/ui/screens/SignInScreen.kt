@@ -119,7 +119,7 @@ fun SignInOrUpScreen() {
         ) {
             // App branding
             Text(
-                text = "MafutaPass",
+                text = "Kacha",
                 style = MaterialTheme.typography.displaySmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
@@ -275,7 +275,7 @@ fun SignInView() {
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = "Sign in to MafutaPass",
+            text = "Sign in to Kacha",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
@@ -409,7 +409,7 @@ fun SignUpView(onSwitchToSignIn: () -> Unit = {}) {
         )
 
         Text(
-            text = "Start your expense management journey with MafutaPass.",
+            text = "Start your expense management journey with Kacha.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )

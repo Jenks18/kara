@@ -8,7 +8,7 @@ import android.util.Log
  */
 object ClerkConfig {
     const val PUBLISHABLE_KEY = "pk_live_Y2xlcmsubWFmdXRhcGFzcy5jb20k"
-    const val FRONTEND_API = "https://clerk.mafutapass.com"
+    const val FRONTEND_API = "https://clerk.kachalabs.com"
 }
 
 /**

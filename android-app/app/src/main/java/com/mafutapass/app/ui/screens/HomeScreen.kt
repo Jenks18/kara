@@ -19,9 +19,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.mafutapass.app.ui.theme.*
+import com.mafutapass.app.util.CurrencyFormatter
 import com.mafutapass.app.viewmodel.ReportsViewModel
-import java.text.NumberFormat
-import java.util.*
 
 @Composable
 fun HomeScreen(
@@ -37,15 +36,11 @@ fun HomeScreen(
     }
     
     val pendingCount = remember(expenses) {
-        expenses.count { it.status.equals("needs_review", ignoreCase = true) }
+        expenses.count { it.processingStatus.equals("needs_review", ignoreCase = true) }
     }
     
     val submittedReportsCount = remember(reports) {
         reports.count { it.status.equals("submitted", ignoreCase = true) }
-    }
-    
-    val currencyFormatter = remember {
-        NumberFormat.getCurrencyInstance(Locale.US)
     }
     
     LaunchedEffect(Unit) {
@@ -102,7 +97,7 @@ fun HomeScreen(
                     icon = Icons.Filled.AttachMoney,
                     iconColor = Blue500,
                     iconBackground = Blue50,
-                    value = currencyFormatter.format(totalExpenses),
+                    value = CurrencyFormatter.formatSimple(totalExpenses),
                     label = "Total Expenses",
                     sublabel = "This month",
                     trend = "+12.5%",
@@ -212,23 +207,23 @@ fun HomeScreen(
                                         Column(horizontalAlignment = Alignment.End) {
                                             Surface(
                                                 shape = RoundedCornerShape(12.dp),
-                                                color = when (expense.status) {
+                                                color = when (expense.processingStatus) {
                                                     "needs_review" -> Color(0xFFFEF3C7)
                                                     "approved" -> Color(0xFFD1FAE5)
                                                     else -> Color(0xFFF3F4F6)
                                                 }
                                             ) {
                                                 Text(
-                                                    text = when (expense.status) {
+                                                    text = when (expense.processingStatus) {
                                                         "needs_review" -> "Pending"
                                                         "approved" -> "Approved"
                                                         else -> "Draft"
                                                     },
                                                     style = MaterialTheme.typography.labelSmall,
                                                     fontWeight = FontWeight.Medium,
-                                                    color = when (expense.status) {
+                                                    color = when (expense.processingStatus) {
                                                         "needs_review" -> Color(0xFFB45309)
-                                                        "approved" -> Color(0xFF065F46)
+                                                        "approved" -> Color(0xFF0052CC)
                                                         else -> Color(0xFF374151)
                                                     },
                                                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
@@ -236,7 +231,7 @@ fun HomeScreen(
                                             }
                                             Spacer(modifier = Modifier.height(4.dp))
                                             Text(
-                                                text = currencyFormatter.format(expense.amount),
+                                                text = CurrencyFormatter.formatSimple(expense.amount),
                                                 style = MaterialTheme.typography.bodyLarge,
                                                 fontWeight = FontWeight.SemiBold,
                                                 color = MaterialTheme.colorScheme.onSurface
@@ -328,7 +323,7 @@ fun HomeScreen(
                                                     fontWeight = FontWeight.Medium,
                                                     color = when (report.status) {
                                                         "submitted" -> Color(0xFF1E40AF)
-                                                        "approved" -> Color(0xFF065F46)
+                                                        "approved" -> Color(0xFF0052CC)
                                                         else -> Color(0xFF374151)
                                                     },
                                                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
@@ -341,12 +336,12 @@ fun HomeScreen(
                                             horizontalArrangement = Arrangement.SpaceBetween
                                         ) {
                                             Text(
-                                                text = "${report.itemCount ?: 0} expense${if (report.itemCount != 1) "s" else ""}",
+                                                text = "${report.itemsCount} expense${if (report.itemsCount != 1) "s" else ""}",
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                             Text(
-                                                text = currencyFormatter.format(report.totalAmount ?: 0.0),
+                                                text = CurrencyFormatter.formatSimple(report.totalAmount),
                                                 style = MaterialTheme.typography.bodyLarge,
                                                 fontWeight = FontWeight.SemiBold,
                                                 color = MaterialTheme.colorScheme.onSurface
@@ -360,7 +355,7 @@ fun HomeScreen(
                                 onClick = { /* TODO */ },
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(12.dp),
-                                border = androidx.compose.foundation.BorderStroke(2.dp, Color(0xFFD1D5DB), androidx.compose.foundation.BorderStrokeStyle.Dashed)
+                                border = androidx.compose.foundation.BorderStroke(2.dp, Color(0xFFD1D5DB))
                             ) {
                                 Icon(
                                     imageVector = Icons.Filled.Add,
@@ -430,7 +425,7 @@ fun HomeScreen(
                                             color = MaterialTheme.colorScheme.onSurface
                                         )
                                         Text(
-                                            text = currencyFormatter.format(amount),
+                                            text = CurrencyFormatter.formatSimple(amount),
                                             style = MaterialTheme.typography.bodyMedium,
                                             fontWeight = FontWeight.SemiBold,
                                             color = MaterialTheme.colorScheme.onSurface

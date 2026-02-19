@@ -42,10 +42,10 @@ data class AppColors(
 
 // ── Light palette ─────────────────────────────────────────────
 val LightAppColors = AppColors(
-    backgroundGradient = Brush.linearGradient(listOf(Emerald50, Green50, Emerald100)),
-    primaryGradient = Brush.linearGradient(listOf(Emerald400, Emerald600)),
-    headerGradient = Brush.linearGradient(listOf(Emerald600, Color(0xFF059669))),
-    statusApproved = Emerald600,
+    backgroundGradient = Brush.linearGradient(listOf(Blue50, Color(0xFFE8F0FE), Blue100)),
+    primaryGradient = Brush.linearGradient(listOf(Blue400, Blue500)),
+    headerGradient = Brush.linearGradient(listOf(Blue500, Blue600)),
+    statusApproved = Blue500,
     statusPending = Color(0xFFD97706),
     statusRejected = Color(0xFFDC2626),
     statusDraft = Gray500,
@@ -58,11 +58,11 @@ val LightAppColors = AppColors(
 // ── Dark palette (ready to wire up when dark mode is enabled) ─
 val DarkAppColors = AppColors(
     backgroundGradient = Brush.linearGradient(
-        listOf(Color(0xFF0A1A10), Color(0xFF0F1F15), Color(0xFF0A1A10))
+        listOf(Color(0xFF0A1020), Color(0xFF0F1528), Color(0xFF0A1020))
     ),
-    primaryGradient = Brush.linearGradient(listOf(Emerald600, Emerald700)),
-    headerGradient = Brush.linearGradient(listOf(Emerald700, Color(0xFF065F46))),
-    statusApproved = Emerald400,
+    primaryGradient = Brush.linearGradient(listOf(Blue500, Blue600)),
+    headerGradient = Brush.linearGradient(listOf(Blue600, Blue700)),
+    statusApproved = Blue400,
     statusPending = Color(0xFFFBBF24),
     statusRejected = Color(0xFFF87171),
     statusDraft = Gray400,

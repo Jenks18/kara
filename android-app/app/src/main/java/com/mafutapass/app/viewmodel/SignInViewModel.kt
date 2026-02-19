@@ -72,7 +72,7 @@ class SignInViewModel @Inject constructor(
 
         val requestBody = json.toString().toRequestBody("application/json".toMediaType())
         val request = Request.Builder()
-            .url("https://www.mafutapass.com/api/auth/mobile-signin")
+            .url("https://www.kachalabs.com/api/auth/mobile-signin")
             .post(requestBody)
             .build()
 

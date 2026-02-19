@@ -3,6 +3,7 @@ package com.mafutapass.app.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import com.mafutapass.app.util.CurrencyFormatter
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -179,7 +180,7 @@ private fun ReportDetailContent(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        SummaryItem("Total", "KES ${String.format("%.2f", report.totalAmount)}")
+                        SummaryItem("Total", CurrencyFormatter.formatSimple(report.totalAmount))
                         SummaryItem("Items", "${report.itemsCount}")
                         SummaryItem("Created", displayDate.ifEmpty { "—" })
                     }
@@ -276,7 +277,7 @@ private fun ReportDetailContent(
                     }
 
                     Text(
-                        "KES ${String.format("%.2f", item.amount)}",
+                        CurrencyFormatter.formatSimple(item.amount),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary

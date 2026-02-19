@@ -3,6 +3,7 @@ package com.mafutapass.app.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import com.mafutapass.app.util.CurrencyFormatter
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -292,7 +293,7 @@ private fun ExpenseDetailContent(expense: ExpenseItem, onEditClick: () -> Unit) 
                 Text("Amount", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    "KES ${String.format("%.2f", expense.amount)}",
+                    CurrencyFormatter.formatSimple(expense.amount),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -479,7 +480,7 @@ private fun EditExpenseContent(
                 OutlinedTextField(
                     value = amountText,
                     onValueChange = { amountText = it },
-                    label = { Text("Amount (KES)") },
+                    label = { Text("Amount (${CurrencyFormatter.defaultCurrencyCode})") },
                     leadingIcon = { Icon(Icons.Filled.AttachMoney, null) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.fillMaxWidth(),

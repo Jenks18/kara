@@ -2,6 +2,7 @@ package com.mafutapass.app.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -47,13 +48,16 @@ fun BottomNavBar(navController: NavController, avatarManager: AvatarManager) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(80.dp)
+            .navigationBarsPadding()
     ) {
         // Background navigation bar
         NavigationBar(
             containerColor = MaterialTheme.colorScheme.surface,
             tonalElevation = 0.dp,
-            modifier = Modifier.fillMaxSize()
+            windowInsets = WindowInsets(0, 0, 0, 0),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(80.dp)
         ) {
             // Left items
             leftItems.forEach { screen ->

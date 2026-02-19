@@ -50,8 +50,8 @@ class NativeOAuthViewModel @Inject constructor(
     
     companion object {
         private const val TAG = "NativeOAuthViewModel"
-        private const val API_URL = "https://www.mafutapass.com/api/auth/google-native"
-        private const val COMPLETE_SIGNUP_URL = "https://www.mafutapass.com/api/auth/complete-google-signup"
+        private const val API_URL = "https://www.kachalabs.com/api/auth/google-native"
+        private const val COMPLETE_SIGNUP_URL = "https://www.kachalabs.com/api/auth/complete-google-signup"
         private const val GOOGLE_CLIENT_ID = "509785450495-ltsejjolpsl130pvs179lnqtms0g2uj8.apps.googleusercontent.com"
     }
 

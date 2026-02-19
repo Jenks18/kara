@@ -13,13 +13,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 private val LightColorScheme = lightColorScheme(
-    primary = Emerald600,
+    primary = Blue500,
     onPrimary = Color.White,
-    primaryContainer = Emerald100,
-    onPrimaryContainer = Emerald600,
-    secondary = Emerald600,
+    primaryContainer = Blue100,
+    onPrimaryContainer = Blue600,
+    secondary = Blue500,
     onSecondary = Color.White,
-    background = Emerald50,
+    background = Blue50,
     onBackground = Gray900,
     surface = Color.White,
     onSurface = Gray900,
@@ -34,12 +34,12 @@ private val LightColorScheme = lightColorScheme(
 )
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Emerald400,
-    onPrimary = Emerald900,
-    primaryContainer = Emerald700,
-    onPrimaryContainer = Emerald100,
-    secondary = Emerald400,
-    onSecondary = Emerald900,
+    primary = Blue400,
+    onPrimary = Blue900,
+    primaryContainer = Blue700,
+    onPrimaryContainer = Blue100,
+    secondary = Blue400,
+    onSecondary = Blue900,
     background = Color(0xFF121212),
     onBackground = Color.White,
     surface = Color(0xFF1E1E1E),

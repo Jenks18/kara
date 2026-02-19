@@ -52,6 +52,7 @@ import com.google.mlkit.vision.documentscanner.GmsDocumentScanning
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult
 import com.mafutapass.app.data.ReceiptUploadResponse
 import com.mafutapass.app.ui.theme.*
+import com.mafutapass.app.util.CurrencyFormatter
 import com.mafutapass.app.viewmodel.ScanReceiptViewModel
 import com.mafutapass.app.viewmodel.ScanReceiptViewModel.ScanState
 import java.io.File
@@ -538,7 +539,7 @@ private fun ReceiptResultCard(index: Int, result: ReceiptUploadResponse) {
                 )
                 if (result.success && result.amount > 0) {
                     Text(
-                        "KES ${String.format("%.2f", result.amount)}",
+                        CurrencyFormatter.formatSimple(result.amount),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Medium

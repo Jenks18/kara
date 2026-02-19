@@ -103,7 +103,7 @@ class AuthAuthenticator @Inject constructor(
                 .build()
 
             val request = okhttp3.Request.Builder()
-                .url("https://www.mafutapass.com/api/auth/mobile-refresh")
+                .url("https://www.kachalabs.com/api/auth/mobile-refresh")
                 .post("{}".toRequestBody("application/json".toMediaType()))
                 .addHeader("Authorization", "Bearer $oldToken")
                 .build()

@@ -33,6 +33,7 @@ import coil.request.ImageRequest
 import com.mafutapass.app.data.ExpenseItem
 import com.mafutapass.app.data.ExpenseReport
 import com.mafutapass.app.ui.theme.*
+import com.mafutapass.app.util.CurrencyFormatter
 import com.mafutapass.app.util.DateUtils
 import com.mafutapass.app.viewmodel.ReportsViewModel
 
@@ -304,7 +305,7 @@ fun ExpenseCard(expense: ExpenseItem, onNavigateToDetail: (String) -> Unit = {})
 
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = "KES ${String.format("%.2f", expense.amount)}",
+                    text = CurrencyFormatter.formatSimple(expense.amount),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -346,7 +347,7 @@ fun ReportCard(report: ExpenseReport, onNavigateToDetail: (String) -> Unit = {})
                 )
                 if (report.totalAmount > 0) {
                     Text(
-                        text = "KES ${String.format("%.2f", report.totalAmount)}",
+                        text = CurrencyFormatter.formatSimple(report.totalAmount),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary

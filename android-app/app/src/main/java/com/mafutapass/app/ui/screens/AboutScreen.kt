@@ -38,17 +38,17 @@ fun AboutScreen(onBack: () -> Unit) {
             item {
                 Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.surface, shadowElevation = 1.dp, modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("About MafutaPass", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
-                        Text("MafutaPass is a fuel expense tracking app built for Kenyan businesses and drivers. Track your fuel expenses, receipts, and mileage all in one place.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = MaterialTheme.typography.bodyMedium.lineHeight)
+                        Text("About Kacha", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+                        Text("Kacha is a receipt capture and expense tracking app built for businesses and teams. Track expenses, receipts, and reports all in one place.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = MaterialTheme.typography.bodyMedium.lineHeight)
                     }
                 }
             }
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    AboutRow(Icons.Filled.Link, "App download links") { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.mafutapass.com"))) }
+                    AboutRow(Icons.Filled.Link, "App download links") { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.kachalabs.com"))) }
                     AboutRow(Icons.Filled.Keyboard, "Keyboard shortcuts") { Toast.makeText(context, "No keyboard shortcuts on mobile", Toast.LENGTH_SHORT).show() }
-                    AboutRow(Icons.Filled.Work, "View open jobs") { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.mafutapass.com"))) }
-                    AboutRow(Icons.Filled.BugReport, "Report a bug") { context.startActivity(Intent(Intent.ACTION_SENDTO).apply { data = Uri.parse("mailto:support@mafutapass.com"); putExtra(Intent.EXTRA_SUBJECT, "Bug Report - MafutaPass Android") }) }
+                    AboutRow(Icons.Filled.Work, "View open jobs") { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.kachalabs.com"))) }
+                    AboutRow(Icons.Filled.BugReport, "Report a bug") { context.startActivity(Intent(Intent.ACTION_SENDTO).apply { data = Uri.parse("mailto:masomonews19@gmail.com"); putExtra(Intent.EXTRA_SUBJECT, "Bug Report - Kacha Android") }) }
                 }
             }
             item { Text("Read the Terms of Service and Privacy.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) }

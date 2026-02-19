@@ -48,8 +48,8 @@ fun TurnstileWidget(
     modifier: Modifier = Modifier
 ) {
     // Load CAPTCHA widget from actual domain (not inline HTML)
-    // This ensures Cloudflare sees it as legitimate request from mafutapass.com
-    val widgetUrl = "https://mafutapass.com/turnstile-widget.html"
+    // This ensures Cloudflare sees it as legitimate request from kachalabs.com
+    val widgetUrl = "https://kachalabs.com/turnstile-widget.html"
     
     AndroidView(
         modifier = modifier,
