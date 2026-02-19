@@ -132,15 +132,15 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
 
   if (showLocationPrompt) {
     return (
-      <div className="fixed inset-0 bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 z-50">
+      <div className="fixed inset-0 bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100 z-50">
         <div className="h-full flex flex-col items-center justify-center p-6">
           <div className="max-w-[430px] w-full bg-white rounded-3xl p-8 text-center border border-gray-200 shadow-lg">
             {/* Icon */}
-            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-500/10 to-emerald-400/10 mx-auto mb-6 flex items-center justify-center ring-2 ring-emerald-500/20">
+            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-500/10 to-emerald-400/10 mx-auto mb-6 flex items-center justify-center ring-2 ring-blue-500/20">
               <div className="relative">
-                <Globe size={40} className="text-emerald-500" strokeWidth={2} />
-                <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-white rounded-full flex items-center justify-center border-2 border-emerald-500">
-                  <MapPin size={16} className="text-emerald-500" />
+                <Globe size={40} className="text-blue-500" strokeWidth={2} />
+                <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-white rounded-full flex items-center justify-center border-2 border-blue-500">
+                  <MapPin size={16} className="text-blue-500" />
                 </div>
               </div>
             </div>
@@ -155,7 +155,7 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
             <div className="space-y-3">
               <button
                 onClick={handleLocationContinue}
-                className="w-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-400 hover:from-emerald-700 hover:via-emerald-600 hover:to-emerald-500 active:scale-[0.98] text-white font-semibold py-4 rounded-full transition-all duration-300 shadow-emerald-md hover:shadow-emerald-lg"
+                className="w-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-400 hover:from-emerald-700 hover:via-emerald-600 hover:to-emerald-500 active:scale-[0.98] text-white font-semibold py-4 rounded-full transition-all duration-300 shadow-blue-md hover:shadow-blue-lg"
               >
                 Continue
               </button>
@@ -179,10 +179,10 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
   }
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 z-50 overflow-hidden">
+    <div className="fixed inset-0 bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100 z-50 overflow-hidden">
       <div className="h-full flex flex-col max-w-[430px] mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-emerald-200 bg-white/80 backdrop-blur-lg relative z-50">
+        <div className="flex items-center justify-between p-4 border-b border-blue-200 bg-white/80 backdrop-blur-lg relative z-50">
           <button
             onClick={onCancel}
             className="w-10 h-10 rounded-full bg-white hover:bg-gray-50 active:scale-95 transition-all flex items-center justify-center border border-gray-200 shadow-sm"
@@ -205,7 +205,7 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
                   className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 touch-manipulation ${
                     currentImageIndex === 0
                       ? 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-50'
-                      : 'bg-emerald-600 text-white active:scale-95 shadow-xl border-2 border-emerald-400'
+                      : 'bg-blue-600 text-white active:scale-95 shadow-xl border-2 border-blue-400'
                   }`}
                 >
                   <ChevronLeft size={20} strokeWidth={3} />
@@ -224,7 +224,7 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
                   className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 touch-manipulation ${
                     currentImageIndex === images.length - 1
                       ? 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-50'
-                      : 'bg-emerald-600 text-white active:scale-95 shadow-xl border-2 border-emerald-400'
+                      : 'bg-blue-600 text-white active:scale-95 shadow-xl border-2 border-blue-400'
                   }`}
                 >
                   <ChevronRight size={20} strokeWidth={3} />
@@ -252,7 +252,7 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
                 className="w-full bg-white hover:bg-gray-50 active:scale-[0.99] transition-all rounded-2xl p-4 flex items-center justify-between border border-gray-200 shadow-sm"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white font-bold text-xl shadow-md">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-xl shadow-md">
                     T
                   </div>
                   <div className="text-left">
@@ -290,7 +290,7 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
             >
               <span className="text-gray-900">Category</span>
               <div className="flex items-center gap-2">
-                <span className="text-emerald-600 font-medium">Fuel</span>
+                <span className="text-blue-600 font-medium">Fuel</span>
                 <ChevronRight size={20} className="text-gray-500" />
               </div>
             </button>
@@ -301,7 +301,7 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
               <button
                 onClick={() => updateField('reimbursable', !expenseData.reimbursable)}
                 className={`w-14 h-8 rounded-full transition-all duration-200 ${
-                  expenseData.reimbursable ? 'bg-gradient-to-r from-emerald-500 to-green-600' : 'bg-gray-300'
+                  expenseData.reimbursable ? 'bg-gradient-to-r from-blue-500 to-blue-600' : 'bg-gray-300'
                 }`}
               >
                 <div
@@ -330,11 +330,11 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-emerald-200 bg-white/80 backdrop-blur-lg">
+        <div className="p-4 border-t border-blue-200 bg-white/80 backdrop-blur-lg">
           <button
             onClick={handleContinue}
             disabled={isSubmitting}
-            className={`w-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 active:scale-[0.98] text-white font-semibold py-4 rounded-full transition-all duration-300 shadow-md ${
+            className={`w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 active:scale-[0.98] text-white font-semibold py-4 rounded-full transition-all duration-300 shadow-md ${
               isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
             }`}
           >

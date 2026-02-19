@@ -12,7 +12,7 @@ export default function Card({ children, className = '', onClick, hoverable = fa
     <div 
       className={`
         bg-white rounded-2xl p-5 border border-gray-200 shadow-sm
-        ${hoverable ? 'transition-all duration-200 hover:border-emerald-300 active:bg-gray-50 active:scale-[0.98] cursor-pointer touch-manipulation' : ''}
+        ${hoverable ? 'transition-all duration-200 hover:border-blue-300 active:bg-gray-50 active:scale-[0.98] cursor-pointer touch-manipulation' : ''}
         ${className}
       `}
       onClick={onClick}

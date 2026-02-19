@@ -3,36 +3,36 @@ import { Receipt, Smartphone, Cloud, Shield, Zap, TrendingUp } from 'lucide-reac
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100">
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-lg border-b border-gray-200 sticky top-0 z-50">
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-2">
-              <Receipt className="w-8 h-8 text-emerald-600" />
+              <Receipt className="w-8 h-8 text-blue-600" />
               <span className="text-2xl font-bold text-gray-900">Kacha</span>
             </div>
             <div className="hidden md:flex items-center gap-8">
-              <Link href="#features" className="text-gray-600 hover:text-emerald-600 transition-colors">
+              <Link href="#features" className="text-gray-600 hover:text-blue-600 transition-colors">
                 Features
               </Link>
-              <Link href="/privacy-policy" className="text-gray-600 hover:text-emerald-600 transition-colors">
+              <Link href="/privacy-policy" className="text-gray-600 hover:text-blue-600 transition-colors">
                 Privacy
               </Link>
-              <Link href="/terms-of-service" className="text-gray-600 hover:text-emerald-600 transition-colors">
+              <Link href="/terms-of-service" className="text-gray-600 hover:text-blue-600 transition-colors">
                 Terms
               </Link>
             </div>
             <div className="flex items-center gap-4">
               <Link
                 href="/sign-in"
-                className="text-emerald-600 hover:text-emerald-700 font-medium"
+                className="text-blue-600 hover:text-blue-700 font-medium"
               >
                 Sign in
               </Link>
               <Link
                 href="/sign-up"
-                className="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 transition-colors font-medium"
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
               >
                 Get started
               </Link>
@@ -46,7 +46,7 @@ export default function LandingPage() {
         <div className="text-center max-w-3xl mx-auto">
           <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
             Expense Management
-            <span className="text-emerald-600"> Simplified</span>
+            <span className="text-blue-600"> Simplified</span>
           </h1>
           <p className="text-xl text-gray-600 mb-8">
             Scan receipts, track expenses, and generate reports in seconds. 
@@ -55,13 +55,13 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/sign-up"
-              className="bg-emerald-600 text-white px-8 py-4 rounded-lg hover:bg-emerald-700 transition-colors text-lg font-medium"
+              className="bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 transition-colors text-lg font-medium"
             >
               Start for free
             </Link>
             <Link
               href="#features"
-              className="bg-white text-emerald-600 border-2 border-emerald-600 px-8 py-4 rounded-lg hover:bg-emerald-50 transition-colors text-lg font-medium"
+              className="bg-white text-blue-600 border-2 border-blue-600 px-8 py-4 rounded-lg hover:bg-blue-50 transition-colors text-lg font-medium"
             >
               Learn more
             </Link>
@@ -74,17 +74,17 @@ export default function LandingPage() {
           <div className="relative bg-white rounded-2xl shadow-2xl p-8 border border-gray-200">
             <div className="grid md:grid-cols-3 gap-6">
               <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl p-6 text-center">
-                <Receipt className="w-12 h-12 text-emerald-600 mx-auto mb-4" />
+                <Receipt className="w-12 h-12 text-blue-600 mx-auto mb-4" />
                 <h3 className="font-semibold text-gray-900 mb-2">Scan Receipts</h3>
                 <p className="text-gray-600 text-sm">AI-powered receipt scanning with QR code support</p>
               </div>
               <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl p-6 text-center">
-                <TrendingUp className="w-12 h-12 text-emerald-600 mx-auto mb-4" />
+                <TrendingUp className="w-12 h-12 text-blue-600 mx-auto mb-4" />
                 <h3 className="font-semibold text-gray-900 mb-2">Track Expenses</h3>
                 <p className="text-gray-600 text-sm">Organize expenses by category and workspace</p>
               </div>
               <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl p-6 text-center">
-                <Zap className="w-12 h-12 text-emerald-600 mx-auto mb-4" />
+                <Zap className="w-12 h-12 text-blue-600 mx-auto mb-4" />
                 <h3 className="font-semibold text-gray-900 mb-2">Generate Reports</h3>
                 <p className="text-gray-600 text-sm">Instant expense reports for accounting</p>
               </div>
@@ -107,8 +107,8 @@ export default function LandingPage() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             <div className="p-6">
-              <div className="bg-emerald-100 rounded-lg w-12 h-12 flex items-center justify-center mb-4">
-                <Smartphone className="w-6 h-6 text-emerald-600" />
+              <div className="bg-blue-100 rounded-lg w-12 h-12 flex items-center justify-center mb-4">
+                <Smartphone className="w-6 h-6 text-blue-600" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Mobile First</h3>
               <p className="text-gray-600">
@@ -117,8 +117,8 @@ export default function LandingPage() {
             </div>
 
             <div className="p-6">
-              <div className="bg-emerald-100 rounded-lg w-12 h-12 flex items-center justify-center mb-4">
-                <Receipt className="w-6 h-6 text-emerald-600" />
+              <div className="bg-blue-100 rounded-lg w-12 h-12 flex items-center justify-center mb-4">
+                <Receipt className="w-6 h-6 text-blue-600" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Smart Scanning</h3>
               <p className="text-gray-600">
@@ -127,8 +127,8 @@ export default function LandingPage() {
             </div>
 
             <div className="p-6">
-              <div className="bg-emerald-100 rounded-lg w-12 h-12 flex items-center justify-center mb-4">
-                <Cloud className="w-6 h-6 text-emerald-600" />
+              <div className="bg-blue-100 rounded-lg w-12 h-12 flex items-center justify-center mb-4">
+                <Cloud className="w-6 h-6 text-blue-600" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Cloud Sync</h3>
               <p className="text-gray-600">
@@ -137,8 +137,8 @@ export default function LandingPage() {
             </div>
 
             <div className="p-6">
-              <div className="bg-emerald-100 rounded-lg w-12 h-12 flex items-center justify-center mb-4">
-                <Shield className="w-6 h-6 text-emerald-600" />
+              <div className="bg-blue-100 rounded-lg w-12 h-12 flex items-center justify-center mb-4">
+                <Shield className="w-6 h-6 text-blue-600" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Secure & Private</h3>
               <p className="text-gray-600">
@@ -147,8 +147,8 @@ export default function LandingPage() {
             </div>
 
             <div className="p-6">
-              <div className="bg-emerald-100 rounded-lg w-12 h-12 flex items-center justify-center mb-4">
-                <TrendingUp className="w-6 h-6 text-emerald-600" />
+              <div className="bg-blue-100 rounded-lg w-12 h-12 flex items-center justify-center mb-4">
+                <TrendingUp className="w-6 h-6 text-blue-600" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Workspace Management</h3>
               <p className="text-gray-600">
@@ -157,8 +157,8 @@ export default function LandingPage() {
             </div>
 
             <div className="p-6">
-              <div className="bg-emerald-100 rounded-lg w-12 h-12 flex items-center justify-center mb-4">
-                <Zap className="w-6 h-6 text-emerald-600" />
+              <div className="bg-blue-100 rounded-lg w-12 h-12 flex items-center justify-center mb-4">
+                <Zap className="w-6 h-6 text-blue-600" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Instant Reports</h3>
               <p className="text-gray-600">
@@ -180,7 +180,7 @@ export default function LandingPage() {
           </p>
           <Link
             href="/sign-up"
-            className="inline-block bg-emerald-600 text-white px-8 py-4 rounded-lg hover:bg-emerald-700 transition-colors text-lg font-medium"
+            className="inline-block bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 transition-colors text-lg font-medium"
           >
             Get started for free
           </Link>
@@ -193,7 +193,7 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-4 gap-8">
             <div className="col-span-2">
               <div className="flex items-center gap-2 mb-4">
-                <Receipt className="w-6 h-6 text-emerald-600" />
+                <Receipt className="w-6 h-6 text-blue-600" />
                 <span className="text-xl font-bold text-gray-900">Kacha</span>
               </div>
               <p className="text-gray-600 mb-4">
@@ -208,12 +208,12 @@ export default function LandingPage() {
               <h3 className="font-semibold text-gray-900 mb-4">Product</h3>
               <ul className="space-y-2">
                 <li>
-                  <Link href="#features" className="text-gray-600 hover:text-emerald-600">
+                  <Link href="#features" className="text-gray-600 hover:text-blue-600">
                     Features
                   </Link>
                 </li>
                 <li>
-                  <Link href="/sign-up" className="text-gray-600 hover:text-emerald-600">
+                  <Link href="/sign-up" className="text-gray-600 hover:text-blue-600">
                     Get started
                   </Link>
                 </li>
@@ -224,12 +224,12 @@ export default function LandingPage() {
               <h3 className="font-semibold text-gray-900 mb-4">Legal</h3>
               <ul className="space-y-2">
                 <li>
-                  <Link href="/privacy-policy" className="text-gray-600 hover:text-emerald-600">
+                  <Link href="/privacy-policy" className="text-gray-600 hover:text-blue-600">
                     Privacy Policy
                   </Link>
                 </li>
                 <li>
-                  <Link href="/terms-of-service" className="text-gray-600 hover:text-emerald-600">
+                  <Link href="/terms-of-service" className="text-gray-600 hover:text-blue-600">
                     Terms of Service
                   </Link>
                 </li>

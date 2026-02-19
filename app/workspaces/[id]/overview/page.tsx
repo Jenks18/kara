@@ -230,7 +230,7 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100 flex items-center justify-center">
         <div className="text-gray-600">Loading...</div>
       </div>
     )
@@ -238,16 +238,16 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
 
   if (!workspace) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100 flex items-center justify-center">
         <div className="text-gray-600">Workspace not found</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100">
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-white border-b border-emerald-200">
+      <div className="sticky top-0 z-30 bg-white border-b border-blue-200">
         <div className="px-4 py-4 max-w-md mx-auto flex items-center gap-4">
           <button
             onClick={() => router.back()}
@@ -255,7 +255,7 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
           >
             <ChevronLeft size={24} className="text-gray-700" />
           </button>
-          <Building size={24} className="text-emerald-600" />
+          <Building size={24} className="text-blue-600" />
           <h1 className="text-xl font-bold text-gray-900 flex-1">Overview</h1>
         </div>
       </div>
@@ -266,7 +266,7 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
         <div className="flex items-center gap-3">
           <button
             onClick={handleInvite}
-            className="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+            className="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
           >
             <UserPlus size={20} />
             Invite
@@ -274,7 +274,7 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
           <div className="relative">
             <button
               onClick={() => setShowMoreMenu(!showMoreMenu)}
-              className="px-6 py-3 rounded-xl bg-white border border-emerald-200 text-gray-600 font-semibold active:scale-[0.98] transition-transform flex items-center gap-2 shadow-sm"
+              className="px-6 py-3 rounded-xl bg-white border border-blue-200 text-gray-600 font-semibold active:scale-[0.98] transition-transform flex items-center gap-2 shadow-sm"
             >
               More
               <svg className={`w-4 h-4 transition-transform ${showMoreMenu ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -284,12 +284,12 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
 
             {/* More Menu Dropdown */}
             {showMoreMenu && (
-              <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl border border-emerald-200 shadow-lg overflow-hidden z-40">
+              <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl border border-blue-200 shadow-lg overflow-hidden z-40">
                 <button
                   onClick={handleShare}
-                  className="w-full px-4 py-3 flex items-center gap-3 hover:bg-emerald-50 transition-colors text-left"
+                  className="w-full px-4 py-3 flex items-center gap-3 hover:bg-blue-50 transition-colors text-left"
                 >
-                  <Share2 size={20} className="text-emerald-600" />
+                  <Share2 size={20} className="text-blue-600" />
                   <span className="text-gray-900 font-medium">Share</span>
                 </button>
                 <button
@@ -307,7 +307,7 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
         {/* Workspace Avatar */}
         <div className="flex justify-center">
           <div className="relative">
-            <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-700 flex items-center justify-center overflow-hidden">
+            <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center overflow-hidden">
               {workspace.avatar?.startsWith('http') ? (
                 <img 
                   src={workspace.avatar} 
@@ -320,7 +320,7 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
             </div>
             <button 
               onClick={() => setShowAvatarMenu(true)}
-              className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-white border border-emerald-200 flex items-center justify-center active:scale-95 transition-transform shadow-sm"
+              className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-white border border-blue-200 flex items-center justify-center active:scale-95 transition-transform shadow-sm"
             >
               <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -334,7 +334,7 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
           {/* Workspace name */}
           <button 
             onClick={() => router.push(`/workspaces/${workspaceId}/overview/edit-name`)}
-            className="w-full bg-white rounded-xl border border-emerald-200 p-4 hover:bg-emerald-50 transition-colors shadow-sm relative"
+            className="w-full bg-white rounded-xl border border-blue-200 p-4 hover:bg-blue-50 transition-colors shadow-sm relative"
           >
             <div className="text-left space-y-1">
               <div className="text-xs text-gray-600">Workspace name</div>
@@ -346,7 +346,7 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
           {/* Description */}
           <button 
             onClick={() => router.push(`/workspaces/${workspaceId}/overview/edit-description`)}
-            className="w-full bg-white rounded-xl border border-emerald-200 p-4 hover:bg-emerald-50 transition-colors relative shadow-sm"
+            className="w-full bg-white rounded-xl border border-blue-200 p-4 hover:bg-blue-50 transition-colors relative shadow-sm"
           >
             <div className="text-left space-y-1">
               <div className="text-xs text-gray-600">Description</div>
@@ -360,7 +360,7 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
           {/* Default currency */}
           <button 
             onClick={() => router.push(`/workspaces/${workspaceId}/overview/edit-currency`)}
-            className="w-full bg-white rounded-xl border border-emerald-200 p-4 hover:bg-emerald-50 transition-colors relative shadow-sm"
+            className="w-full bg-white rounded-xl border border-blue-200 p-4 hover:bg-blue-50 transition-colors relative shadow-sm"
           >
             <div className="text-left space-y-1">
               <div className="text-xs text-gray-600">Default currency</div>
@@ -375,7 +375,7 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
           {/* Company address */}
           <button 
             onClick={() => router.push(`/workspaces/${workspaceId}/overview/edit-address`)}
-            className="w-full bg-white rounded-xl border border-emerald-200 p-4 hover:bg-emerald-50 transition-colors relative shadow-sm"
+            className="w-full bg-white rounded-xl border border-blue-200 p-4 hover:bg-blue-50 transition-colors relative shadow-sm"
           >
             <div className="text-left space-y-1">
               <div className="text-xs text-gray-600">Company address</div>
@@ -393,23 +393,23 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
             <div className="p-6 space-y-2">
               <button
                 onClick={() => handleAvatarChange('camera')}
-                className="w-full py-4 flex items-center gap-4 text-gray-900 hover:bg-emerald-50 rounded-xl px-4 transition-colors"
+                className="w-full py-4 flex items-center gap-4 text-gray-900 hover:bg-blue-50 rounded-xl px-4 transition-colors"
               >
-                <Camera size={24} className="text-emerald-600" />
+                <Camera size={24} className="text-blue-600" />
                 <span className="font-medium">Take photo</span>
               </button>
               <button
                 onClick={() => handleAvatarChange('gallery')}
-                className="w-full py-4 flex items-center gap-4 text-gray-900 hover:bg-emerald-50 rounded-xl px-4 transition-colors"
+                className="w-full py-4 flex items-center gap-4 text-gray-900 hover:bg-blue-50 rounded-xl px-4 transition-colors"
               >
-                <ImageIcon size={24} className="text-emerald-600" />
+                <ImageIcon size={24} className="text-blue-600" />
                 <span className="font-medium">Choose from gallery</span>
               </button>
               <button
                 onClick={() => handleAvatarChange('file')}
-                className="w-full py-4 flex items-center gap-4 text-gray-900 hover:bg-emerald-50 rounded-xl px-4 transition-colors"
+                className="w-full py-4 flex items-center gap-4 text-gray-900 hover:bg-blue-50 rounded-xl px-4 transition-colors"
               >
-                <FileText size={24} className="text-emerald-600" />
+                <FileText size={24} className="text-blue-600" />
                 <span className="font-medium">Choose file</span>
               </button>
               {workspace?.avatar?.startsWith('http') && (
@@ -448,7 +448,7 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
               value={inviteInput}
               onChange={(e) => setInviteInput(e.target.value)}
               placeholder="Name, email, or phone number"
-              className="w-full px-4 py-3 border-2 border-emerald-500 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-600"
+              className="w-full px-4 py-3 border-2 border-blue-500 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-600"
             />
             <button
               onClick={() => {
@@ -458,7 +458,7 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
                   setShowInviteModal(false)
                 }
               }}
-              className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-2xl active:scale-[0.98] transition-all"
+              className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-2xl active:scale-[0.98] transition-all"
             >
               Next
             </button>
@@ -479,7 +479,7 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
             
             {/* Real QR Code */}
             <div className="flex justify-center py-8">
-              <div className="p-4 bg-white border-4 border-emerald-600 rounded-2xl">
+              <div className="p-4 bg-white border-4 border-blue-600 rounded-2xl">
                 <QRCode
                   id="workspace-qr-code"
                   value={shareUrl}
@@ -493,7 +493,7 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
             </div>
 
             {/* Share URL */}
-            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
               <p className="text-xs text-gray-600 mb-2">Share link</p>
               <p className="text-sm text-gray-900 font-mono break-all">{shareUrl}</p>
             </div>
@@ -505,14 +505,14 @@ export default function OverviewPage({ params }: { params: Promise<{ id: string 
                   navigator.clipboard.writeText(shareUrl)
                   alert('Link copied to clipboard!')
                 }}
-                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2"
               >
                 <Share2 size={18} />
                 Copy Link
               </button>
               <button
                 onClick={downloadQRCode}
-                className="flex-1 py-3 bg-white border-2 border-emerald-600 text-emerald-600 font-semibold rounded-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                className="flex-1 py-3 bg-white border-2 border-blue-600 text-blue-600 font-semibold rounded-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2"
               >
                 <Download size={18} />
                 Download QR

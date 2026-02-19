@@ -98,7 +98,7 @@ export default function ReportDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100 flex items-center justify-center">
         <div className="text-gray-600">Loading report...</div>
       </div>
     )
@@ -106,7 +106,7 @@ export default function ReportDetailPage() {
 
   if (error || !report) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100 flex items-center justify-center">
         <div className="text-red-600">{error || 'Report not found'}</div>
       </div>
     )
@@ -128,10 +128,10 @@ export default function ReportDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100">
       <div className="w-full max-w-[430px] mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-emerald-200 bg-white/80 backdrop-blur-lg">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-blue-200 bg-white/80 backdrop-blur-lg">
           <button
             onClick={() => router.push('/reports')}
             className="p-2 -ml-2 active:scale-95 transition-transform"
@@ -147,16 +147,16 @@ export default function ReportDetailPage() {
         </div>
 
         {/* Report Summary */}
-        <div className="p-4 bg-white/60 border-b border-emerald-200">
+        <div className="p-4 bg-white/60 border-b border-blue-200">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-xl font-bold text-gray-900">{report.title}</h2>
-            <span className="px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+            <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
               {report.status}
             </span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-gray-600">{formatDate(report.created_at)}</span>
-            <span className="text-2xl font-bold text-emerald-600">
+            <span className="text-2xl font-bold text-blue-600">
               {formatCurrency(report.total_amount)}
             </span>
           </div>
@@ -167,7 +167,7 @@ export default function ReportDetailPage() {
           {report.items.map((item) => (
             <div
               key={item.id}
-              className="bg-white rounded-2xl p-4 shadow-sm border border-emerald-100"
+              className="bg-white rounded-2xl p-4 shadow-sm border border-blue-100"
             >
               {/* Receipt Image */}
               {item.image_url && (
@@ -179,7 +179,7 @@ export default function ReportDetailPage() {
                     className="object-cover"
                   />
                   {item.kra_verified && (
-                    <div className="absolute top-2 right-2 px-2 py-1 rounded-lg bg-emerald-500/90 text-white text-xs font-medium">
+                    <div className="absolute top-2 right-2 px-2 py-1 rounded-lg bg-blue-500/90 text-white text-xs font-medium">
                       ✓ Verified
                     </div>
                   )}
@@ -217,7 +217,7 @@ export default function ReportDetailPage() {
                           {reviewFields?.amount && (
                             <span className="text-xs text-amber-600">⚠️</span>
                           )}
-                          <span className={`text-lg font-bold ${item.processing_status === 'scanning' ? 'text-gray-400 animate-pulse' : reviewFields?.amount ? 'text-amber-700' : 'text-emerald-600'}`}>
+                          <span className={`text-lg font-bold ${item.processing_status === 'scanning' ? 'text-gray-400 animate-pulse' : reviewFields?.amount ? 'text-amber-700' : 'text-blue-600'}`}>
                             {item.amount > 0 ? formatCurrency(item.amount) : 'Scanning...'}
                           </span>
                         </div>
@@ -237,7 +237,7 @@ export default function ReportDetailPage() {
 
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-600">Category</span>
-                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
                           {item.category}
                         </span>
                       </div>
@@ -262,10 +262,10 @@ export default function ReportDetailPage() {
 
                 {/* Status Badge */}
                 {item.processing_status === 'scanning' && (
-                  <div className="mt-3 p-3 bg-emerald-50 rounded-lg border border-emerald-200">
+                  <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                      <span className="text-sm text-emerald-700">Scanning receipt...</span>
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                      <span className="text-sm text-blue-700">Scanning receipt...</span>
                     </div>
                   </div>
                 )}

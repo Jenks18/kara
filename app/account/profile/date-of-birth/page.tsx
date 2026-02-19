@@ -104,7 +104,7 @@ export default function DateOfBirthPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
       <div className="sticky top-0 z-30 bg-white border-b border-gray-200">
         <div className="px-4 py-4 max-w-md mx-auto flex items-center gap-4">
           <button onClick={() => router.back()} className="p-2 -ml-2 active:scale-95 transition-transform touch-manipulation">
@@ -133,7 +133,7 @@ export default function DateOfBirthPage() {
                   if (val.length <= 2) { setDay(val); setError('') }
                 }}
                 placeholder="DD"
-                className="w-full px-4 py-4 bg-white border border-gray-300 rounded-xl text-gray-900 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 touch-manipulation"
+                className="w-full px-4 py-4 bg-white border border-gray-300 rounded-xl text-gray-900 text-center focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 touch-manipulation"
               />
             </div>
             
@@ -143,7 +143,7 @@ export default function DateOfBirthPage() {
               <select
                 value={month}
                 onChange={(e) => { setMonth(e.target.value); setError('') }}
-                className="w-full px-4 py-4 bg-white border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 touch-manipulation appearance-none"
+                className="w-full px-4 py-4 bg-white border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 touch-manipulation appearance-none"
               >
                 <option value="">Month</option>
                 {months.map(m => (
@@ -164,7 +164,7 @@ export default function DateOfBirthPage() {
                   if (val.length <= 4) { setYear(val); setError('') }
                 }}
                 placeholder="YYYY"
-                className="w-full px-4 py-4 bg-white border border-gray-300 rounded-xl text-gray-900 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 touch-manipulation"
+                className="w-full px-4 py-4 bg-white border border-gray-300 rounded-xl text-gray-900 text-center focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 touch-manipulation"
               />
             </div>
           </div>
@@ -183,7 +183,7 @@ export default function DateOfBirthPage() {
         <button 
           onClick={handleSave}
           disabled={saving}
-          className="w-full max-w-md mx-auto py-4 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-400 rounded-2xl text-white font-semibold text-lg active:scale-[0.98] transition-all touch-manipulation"
+          className="w-full max-w-md mx-auto py-4 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-400 rounded-2xl text-white font-semibold text-lg active:scale-[0.98] transition-all touch-manipulation"
         >
           {saving ? 'Saving...' : 'Save'}
         </button>

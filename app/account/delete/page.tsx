@@ -59,14 +59,14 @@ export default function DeleteAccountPage() {
   if (!isLoaded) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
       </div>
     )
   }
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100">
         <div className="px-4 py-6 max-w-2xl mx-auto">
           {/* Header */}
           <div className="mb-8">
@@ -90,7 +90,7 @@ export default function DeleteAccountPage() {
             <p className="text-gray-600 mb-6">
               Your account deletion has been processed. All your data has been permanently deleted.
             </p>
-            <p className="font-semibold text-emerald-600 mb-6">
+            <p className="font-semibold text-blue-600 mb-6">
               {user?.emailAddresses?.[0]?.emailAddress}
             </p>
             <p className="text-sm text-gray-500">
@@ -98,7 +98,7 @@ export default function DeleteAccountPage() {
             </p>
             <button
               onClick={() => router.push('/account')}
-              className="mt-8 px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+              className="mt-8 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               Return to Account
             </button>
@@ -109,7 +109,7 @@ export default function DeleteAccountPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100">
       <div className="px-4 py-6 max-w-2xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -147,23 +147,23 @@ export default function DeleteAccountPage() {
           </h2>
           <ul className="space-y-3 text-gray-600">
             <li className="flex items-start gap-2">
-              <span className="text-emerald-600 mt-1">•</span>
+              <span className="text-blue-600 mt-1">•</span>
               <span><strong>Profile Information:</strong> Your name, email, phone number, and profile settings</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-emerald-600 mt-1">•</span>
+              <span className="text-blue-600 mt-1">•</span>
               <span><strong>Receipt Data:</strong> All uploaded receipts and their associated images</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-emerald-600 mt-1">•</span>
+              <span className="text-blue-600 mt-1">•</span>
               <span><strong>Expense Reports:</strong> All expense reports and expense items</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-emerald-600 mt-1">•</span>
+              <span className="text-blue-600 mt-1">•</span>
               <span><strong>Workspace Memberships:</strong> Your access to all workspaces</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-emerald-600 mt-1">•</span>
+              <span className="text-blue-600 mt-1">•</span>
               <span><strong>Account Authentication:</strong> Your login credentials and sessions</span>
             </li>
           </ul>
@@ -179,19 +179,19 @@ export default function DeleteAccountPage() {
           </p>
           <ul className="space-y-2 text-gray-600">
             <li className="flex items-start gap-2">
-              <span className="text-emerald-600 mt-1">•</span>
+              <span className="text-blue-600 mt-1">•</span>
               <span>Your account and all data will be <strong>permanently deleted immediately</strong></span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-emerald-600 mt-1">•</span>
+              <span className="text-blue-600 mt-1">•</span>
               <span>You will be signed out automatically</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-emerald-600 mt-1">•</span>
+              <span className="text-blue-600 mt-1">•</span>
               <span>This action <strong>cannot be undone</strong> - all receipts, reports, and data will be lost</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-emerald-600 mt-1">•</span>
+              <span className="text-blue-600 mt-1">•</span>
               <span>Anonymized analytics data may be retained for service improvement</span>
             </li>
           </ul>
@@ -219,7 +219,7 @@ export default function DeleteAccountPage() {
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               rows={4}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Help us improve by sharing your feedback..."
             />
           </div>
@@ -234,7 +234,7 @@ export default function DeleteAccountPage() {
               type="text"
               value={confirmText}
               onChange={(e) => setConfirmText(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="DELETE MY ACCOUNT"
               required
             />
@@ -265,7 +265,7 @@ export default function DeleteAccountPage() {
         {/* Support Contact */}
         <div className="text-center text-sm text-gray-600">
           <p>Need help? Contact us at{' '}
-            <a href="mailto:support@mafutapass.com" className="text-emerald-600 hover:text-emerald-700 font-medium">
+            <a href="mailto:support@mafutapass.com" className="text-blue-600 hover:text-blue-700 font-medium">
               support@mafutapass.com
             </a>
           </p>

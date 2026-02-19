@@ -17,8 +17,8 @@ export default function StatsCard({
   variant = 'primary' 
 }: StatsCardProps) {
   const variants = {
-    primary: 'from-emerald-500 to-green-600',
-    success: 'from-green-500 to-emerald-600',
+    primary: 'from-blue-500 to-blue-600',
+    success: 'from-blue-500 to-blue-600',
     warning: 'from-amber-500 to-orange-600',
   }
   

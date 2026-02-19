@@ -25,7 +25,7 @@ export default function ExpenseItemCard({
   return (
     <div 
       onClick={onClick}
-      className="bg-white rounded-2xl p-4 border border-gray-200 hover:border-emerald-300 transition-colors cursor-pointer active:scale-[0.98] shadow-sm"
+      className="bg-white rounded-2xl p-4 border border-gray-200 hover:border-blue-300 transition-colors cursor-pointer active:scale-[0.98] shadow-sm"
     >
       {/* User Info */}
       <div className="flex items-center gap-2 mb-3">
@@ -35,7 +35,7 @@ export default function ExpenseItemCard({
           </span>
         </div>
         <span className="text-gray-600 text-sm">{userEmail}</span>
-        <button className="ml-auto text-emerald-600 text-sm font-medium px-3 py-1 bg-emerald-100 rounded-full">
+        <button className="ml-auto text-blue-600 text-sm font-medium px-3 py-1 bg-blue-100 rounded-full">
           View
         </button>
       </div>
@@ -77,7 +77,7 @@ export default function ExpenseItemCard({
 
           {status === 'scanning' && (
             <div className="flex items-center gap-2 mt-2">
-              <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse"></div>
+              <div className="w-1 h-1 rounded-full bg-blue-500 animate-pulse"></div>
               <p className="text-gray-500 text-sm">
                 Scanning...
               </p>

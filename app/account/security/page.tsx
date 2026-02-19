@@ -9,7 +9,7 @@ export default function SecurityPage() {
   const router = useRouter()
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100">
       {/* Header */}
       <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-lg border-b border-gray-200">
         <div className="px-4 py-4 max-w-md mx-auto flex items-center gap-4">
@@ -19,7 +19,7 @@ export default function SecurityPage() {
           >
             <ChevronLeft size={24} className="text-gray-600" />
           </button>
-          <Shield size={24} className="text-emerald-600" />
+          <Shield size={24} className="text-blue-600" />
           <h1 className="text-xl font-bold text-gray-900 flex-1">Security</h1>
           <button className="p-2 active:scale-95 transition-transform">
             <svg className="w-6 h-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -42,18 +42,18 @@ export default function SecurityPage() {
           </div>
 
           {/* Two-factor authentication */}
-          <button className="w-full bg-white rounded-xl border border-gray-200 p-4 hover:border-emerald-300 active:bg-gray-50 transition-colors relative shadow-sm">
+          <button className="w-full bg-white rounded-xl border border-gray-200 p-4 hover:border-blue-300 active:bg-gray-50 transition-colors relative shadow-sm">
             <div className="flex items-center gap-3">
-              <Shield size={24} className="text-emerald-600" />
+              <Shield size={24} className="text-blue-600" />
               <span className="text-gray-900 font-medium">Two-factor authentication</span>
             </div>
             <ChevronRight size={20} className="text-gray-400 absolute right-6 top-1/2 -translate-y-1/2" />
           </button>
 
           {/* Merge accounts */}
-          <button className="w-full bg-white rounded-xl border border-gray-200 p-4 hover:border-emerald-300 active:bg-gray-50 transition-colors relative shadow-sm">
+          <button className="w-full bg-white rounded-xl border border-gray-200 p-4 hover:border-blue-300 active:bg-gray-50 transition-colors relative shadow-sm">
             <div className="flex items-center gap-3">
-              <svg className="w-6 h-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
               </svg>
               <span className="text-gray-900 font-medium">Merge accounts</span>
@@ -62,9 +62,9 @@ export default function SecurityPage() {
           </button>
 
           {/* Report suspicious activity */}
-          <button className="w-full bg-white rounded-xl border border-gray-200 p-4 hover:border-emerald-300 active:bg-gray-50 transition-colors relative shadow-sm">
+          <button className="w-full bg-white rounded-xl border border-gray-200 p-4 hover:border-blue-300 active:bg-gray-50 transition-colors relative shadow-sm">
             <div className="flex items-center gap-3">
-              <svg className="w-6 h-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
               <span className="text-gray-900 font-medium">Report suspicious activity</span>
@@ -93,14 +93,14 @@ export default function SecurityPage() {
             <h2 className="text-gray-900 text-lg font-semibold mb-1">Copilot: Delegated access</h2>
             <p className="text-gray-600 text-sm">
               Allow other members to access your account.{' '}
-              <span className="text-emerald-600 underline">Learn more.</span>
+              <span className="text-blue-600 underline">Learn more.</span>
             </p>
           </div>
 
           {/* Add copilot */}
-          <button className="w-full bg-white rounded-xl border border-gray-200 p-4 hover:border-emerald-300 active:bg-gray-50 transition-colors relative shadow-sm">
+          <button className="w-full bg-white rounded-xl border border-gray-200 p-4 hover:border-blue-300 active:bg-gray-50 transition-colors relative shadow-sm">
             <div className="flex items-center gap-3">
-              <UserPlus size={24} className="text-emerald-600" />
+              <UserPlus size={24} className="text-blue-600" />
               <span className="text-gray-900 font-medium">Add copilot</span>
             </div>
             <ChevronRight size={20} className="text-gray-400 absolute right-6 top-1/2 -translate-y-1/2" />

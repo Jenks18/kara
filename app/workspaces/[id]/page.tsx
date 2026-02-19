@@ -62,7 +62,7 @@ export default function WorkspaceDetailPage({ params }: { params: Promise<{ id: 
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100 flex items-center justify-center">
         <div className="text-gray-600">Loading...</div>
       </div>
     )
@@ -70,7 +70,7 @@ export default function WorkspaceDetailPage({ params }: { params: Promise<{ id: 
 
   if (!workspace) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100 flex items-center justify-center">
         <div className="text-gray-600">Workspace not found</div>
       </div>
     )
@@ -82,9 +82,9 @@ export default function WorkspaceDetailPage({ params }: { params: Promise<{ id: 
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 pb-20" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100 pb-20" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-white border-b border-emerald-200">
+      <div className="sticky top-0 z-30 bg-white border-b border-blue-200">
         <div className="px-4 py-4 max-w-md mx-auto flex items-center gap-4">
           <button
             onClick={() => router.back()}
@@ -93,7 +93,7 @@ export default function WorkspaceDetailPage({ params }: { params: Promise<{ id: 
             <ChevronLeft size={24} className="text-gray-700" />
           </button>
           <div className="flex items-center gap-3 flex-1">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-700 flex items-center justify-center flex-shrink-0 overflow-hidden">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center flex-shrink-0 overflow-hidden">
               {workspace.avatar?.startsWith('http') ? (
                 <img 
                   src={workspace.avatar} 
@@ -120,12 +120,12 @@ export default function WorkspaceDetailPage({ params }: { params: Promise<{ id: 
                 key={item.label}
                 onClick={() => router.push(item.href)}
                 className="
-                  w-full px-4 py-4 bg-white rounded-xl border border-emerald-200
-                  active:bg-emerald-50 transition-colors shadow-sm
+                  w-full px-4 py-4 bg-white rounded-xl border border-blue-200
+                  active:bg-blue-50 transition-colors shadow-sm
                   flex items-center gap-4
                 "
               >
-                <Icon size={24} className="text-emerald-600" />
+                <Icon size={24} className="text-blue-600" />
                 <span className="text-gray-900 font-medium text-lg">{item.label}</span>
               </button>
             )

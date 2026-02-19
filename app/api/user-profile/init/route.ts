@@ -63,7 +63,7 @@ export async function POST() {
         first_name: '',  // Leave blank - user will fill manually
         last_name: '',   // Leave blank - user will fill manually
         avatar_emoji: gmailImage ? '' : getRandomAnimalAvatar(),
-        avatar_color: 'from-emerald-500 to-emerald-600',
+        avatar_color: 'from-blue-500 to-blue-600',
         avatar_image_url: gmailImage,
       })
       .select()

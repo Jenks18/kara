@@ -24,10 +24,10 @@ export default function ExpenseReportView({ images, workspace, reportId, onBack 
   })
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 z-50 flex flex-col">
+    <div className="fixed inset-0 bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100 z-50 flex flex-col">
       <div className="w-full max-w-[430px] h-full mx-auto flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-emerald-200 bg-white/80 backdrop-blur-lg">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-blue-200 bg-white/80 backdrop-blur-lg">
           <button
             onClick={onBack}
             className="p-2 -ml-2 active:scale-95 transition-transform"
@@ -36,7 +36,7 @@ export default function ExpenseReportView({ images, workspace, reportId, onBack 
           </button>
           
           <div className="flex-1 flex items-center justify-center gap-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center shadow-emerald-md">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-blue-md">
               <span className="text-white font-bold text-lg">T</span>
             </div>
             <div className="flex flex-col items-start">
@@ -72,7 +72,7 @@ export default function ExpenseReportView({ images, workspace, reportId, onBack 
               <div className="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center">
                 <span className="text-white font-bold text-sm">👤</span>
               </div>
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-br from-emerald-500 to-green-600 rounded-lg flex items-center justify-center shadow-md">
+              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md">
                 <span className="text-white font-bold text-xs">T</span>
               </div>
             </div>
@@ -131,7 +131,7 @@ export default function ExpenseReportView({ images, workspace, reportId, onBack 
                     <span className="text-gray-600 text-sm">Total</span>
                     <span className="text-gray-900 text-xl font-bold font-mono">KES 0.00</span>
                   </div>
-                  <button className="w-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 active:scale-[0.98] text-white font-semibold py-3 rounded-full transition-all duration-200 shadow-md">
+                  <button className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 active:scale-[0.98] text-white font-semibold py-3 rounded-full transition-all duration-200 shadow-md">
                     View Report
                   </button>
                 </div>
@@ -141,10 +141,10 @@ export default function ExpenseReportView({ images, workspace, reportId, onBack 
         </div>
 
         {/* Message Input */}
-        <div className="p-4 border-t border-emerald-200 bg-white/80 backdrop-blur-lg">
+        <div className="p-4 border-t border-blue-200 bg-white/80 backdrop-blur-lg">
           <div className="flex items-center gap-2 bg-white rounded-full px-4 py-3 border border-gray-200 shadow-sm">
             <button className="p-1 active:scale-95 transition-transform">
-              <Plus size={20} className="text-emerald-500" />
+              <Plus size={20} className="text-blue-500" />
             </button>
             <input
               type="text"

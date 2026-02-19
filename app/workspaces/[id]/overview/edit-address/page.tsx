@@ -73,16 +73,16 @@ export default function EditAddressPage({ params }: { params: Promise<{ id: stri
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100 flex items-center justify-center">
         <div className="text-gray-600">Loading...</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100 flex flex-col">
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-white border-b border-emerald-200">
+      <div className="sticky top-0 z-30 bg-white border-b border-blue-200">
         <div className="px-4 py-4 max-w-md mx-auto flex items-center gap-4">
           <button
             onClick={() => router.back()}
@@ -101,7 +101,7 @@ export default function EditAddressPage({ params }: { params: Promise<{ id: stri
           value={address.line1}
           onChange={(e) => setAddress({ ...address, line1: e.target.value })}
           placeholder="Address line 1"
-          className="w-full px-4 py-3 border-2 border-emerald-500 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-600"
+          className="w-full px-4 py-3 border-2 border-blue-500 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-600"
         />
         
         <input
@@ -109,12 +109,12 @@ export default function EditAddressPage({ params }: { params: Promise<{ id: stri
           value={address.line2}
           onChange={(e) => setAddress({ ...address, line2: e.target.value })}
           placeholder="Address line 2"
-          className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-600"
+          className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-600"
         />
 
         <button
           onClick={() => alert('Country selector coming soon')}
-          className="w-full flex items-center justify-between px-4 py-3 border-2 border-emerald-200 rounded-xl text-left"
+          className="w-full flex items-center justify-between px-4 py-3 border-2 border-blue-200 rounded-xl text-left"
         >
           <span className="text-gray-500">Country</span>
           <ChevronRight size={20} className="text-gray-600" />
@@ -125,7 +125,7 @@ export default function EditAddressPage({ params }: { params: Promise<{ id: stri
           value={address.state}
           onChange={(e) => setAddress({ ...address, state: e.target.value })}
           placeholder="State / Province"
-          className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-600"
+          className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-600"
         />
 
         <input
@@ -133,7 +133,7 @@ export default function EditAddressPage({ params }: { params: Promise<{ id: stri
           value={address.city}
           onChange={(e) => setAddress({ ...address, city: e.target.value })}
           placeholder="City"
-          className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-600"
+          className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-600"
         />
 
         <input
@@ -141,7 +141,7 @@ export default function EditAddressPage({ params }: { params: Promise<{ id: stri
           value={address.zipcode}
           onChange={(e) => setAddress({ ...address, zipcode: e.target.value })}
           placeholder="Zip / Postcode"
-          className="w-full px-4 py-3 border-2 border-emerald-200 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-600"
+          className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-600"
         />
       </div>
 
@@ -150,7 +150,7 @@ export default function EditAddressPage({ params }: { params: Promise<{ id: stri
         <button
           onClick={handleSave}
           disabled={saving}
-          className="w-full max-w-md mx-auto block py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-2xl active:scale-[0.98] transition-all disabled:opacity-50"
+          className="w-full max-w-md mx-auto block py-4 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-2xl active:scale-[0.98] transition-all disabled:opacity-50"
         >
           {saving ? 'Saving...' : 'Save'}
         </button>

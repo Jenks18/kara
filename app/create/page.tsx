@@ -40,7 +40,7 @@ export default function CreatePage() {
   return (
     <>
       {/* No header - start directly with content */}
-      <div className="min-h-screen pb-20 bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
+      <div className="min-h-screen pb-20 bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
         {/* Cards start from top with padding */}
         <div className="px-4 pt-6 pb-6 max-w-md mx-auto">
           <div className="space-y-3">
@@ -53,8 +53,8 @@ export default function CreatePage() {
                   onClick={option.action}
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                      <Icon className="text-emerald-600" size={24} />
+                    <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                      <Icon className="text-blue-600" size={24} />
                     </div>
                     <div className="flex-1">
                       <h3 className="font-semibold text-gray-900">{option.label}</h3>

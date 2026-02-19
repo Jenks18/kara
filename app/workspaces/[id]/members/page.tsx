@@ -85,7 +85,7 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
               first_name: profile?.first_name || undefined,
               last_name: profile?.last_name || undefined,
               avatar_emoji: profile?.avatar_emoji || '💼',
-              avatar_color: profile?.avatar_color || 'from-emerald-500 to-emerald-600',
+              avatar_color: profile?.avatar_color || 'from-blue-500 to-blue-600',
               avatar_image_url: profile?.avatar_image_url || undefined,
               joined_at: new Date().toISOString()
             }
@@ -106,7 +106,7 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
             first_name: profile?.first_name || undefined,
             last_name: profile?.last_name || undefined,
             avatar_emoji: profile?.avatar_emoji || '💼',
-            avatar_color: profile?.avatar_color || 'from-emerald-500 to-emerald-600',
+            avatar_color: profile?.avatar_color || 'from-blue-500 to-blue-600',
             avatar_image_url: profile?.avatar_image_url || undefined,
             joined_at: new Date().toISOString()
           }
@@ -181,16 +181,16 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100 flex items-center justify-center">
         <div className="text-gray-600">Loading...</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100">
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-white border-b border-emerald-200">
+      <div className="sticky top-0 z-30 bg-white border-b border-blue-200">
         <div className="px-4 py-4 max-w-md mx-auto flex items-center gap-4">
           <button
             onClick={() => router.back()}
@@ -198,7 +198,7 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
           >
             <ChevronLeft size={24} className="text-gray-700" />
           </button>
-          <Users size={24} className="text-emerald-600" />
+          <Users size={24} className="text-blue-600" />
           <h1 className="text-xl font-bold text-gray-900 flex-1">Members</h1>
         </div>
       </div>
@@ -209,7 +209,7 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
         <div className="flex items-center gap-3">
           <button
             onClick={handleInvite}
-            className="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+            className="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
           >
             <UserPlus size={20} />
             Invite
@@ -217,7 +217,7 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
           <div className="relative">
             <button
               onClick={() => setShowMoreMenu(!showMoreMenu)}
-              className="px-6 py-3 rounded-xl bg-white border border-emerald-200 text-gray-600 font-semibold active:scale-[0.98] transition-transform flex items-center gap-2 shadow-sm"
+              className="px-6 py-3 rounded-xl bg-white border border-blue-200 text-gray-600 font-semibold active:scale-[0.98] transition-transform flex items-center gap-2 shadow-sm"
             >
               More
               <svg className={`w-4 h-4 transition-transform ${showMoreMenu ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -232,12 +232,12 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
                   className="fixed inset-0 z-30" 
                   onClick={() => setShowMoreMenu(false)}
                 />
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl border border-emerald-200 shadow-lg overflow-hidden z-40">
+                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl border border-blue-200 shadow-lg overflow-hidden z-40">
                   <button
                     onClick={handleShare}
-                    className="w-full px-4 py-3 flex items-center gap-3 hover:bg-emerald-50 transition-colors text-left"
+                    className="w-full px-4 py-3 flex items-center gap-3 hover:bg-blue-50 transition-colors text-left"
                   >
-                    <Share2 size={20} className="text-emerald-600" />
+                    <Share2 size={20} className="text-blue-600" />
                     <span className="text-gray-900 font-medium">Share</span>
                   </button>
                   <button
@@ -277,11 +277,11 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
             return (
               <button
                 key={member.id}
-                className="w-full bg-white rounded-xl border border-emerald-200 p-4 active:bg-emerald-50 transition-colors shadow-sm"
+                className="w-full bg-white rounded-xl border border-blue-200 p-4 active:bg-blue-50 transition-colors shadow-sm"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${member.avatar_color || 'from-emerald-500 to-emerald-600'} flex items-center justify-center overflow-hidden flex-shrink-0`}>
+                    <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${member.avatar_color || 'from-blue-500 to-blue-600'} flex items-center justify-center overflow-hidden flex-shrink-0`}>
                       {member.avatar_image_url ? (
                         <img 
                           src={member.avatar_image_url} 
@@ -302,7 +302,7 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
                   <div className="flex items-center gap-3">
                     <span className={`px-4 py-1.5 rounded-full text-sm font-medium ${
                       member.role === 'admin' 
-                        ? 'bg-emerald-100 border border-emerald-200 text-emerald-700' 
+                        ? 'bg-blue-100 border border-blue-200 text-blue-700' 
                         : 'bg-gray-100 border border-gray-200 text-gray-700'
                     }`}>
                       {member.role === 'admin' ? 'Admin' : 'Member'}
@@ -332,7 +332,7 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
               value={inviteInput}
               onChange={(e) => setInviteInput(e.target.value)}
               placeholder="Name, email, or phone number"
-              className="w-full px-4 py-3 border-2 border-emerald-500 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-600"
+              className="w-full px-4 py-3 border-2 border-blue-500 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-600"
             />
             <button
               onClick={() => {
@@ -342,7 +342,7 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
                   setShowInviteModal(false)
                 }
               }}
-              className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-2xl active:scale-[0.98] transition-all"
+              className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-2xl active:scale-[0.98] transition-all"
             >
               Next
             </button>
@@ -366,7 +366,7 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
             
             {/* Real QR Code */}
             <div className="flex justify-center py-8">
-              <div className="p-4 bg-white border-4 border-emerald-600 rounded-2xl">
+              <div className="p-4 bg-white border-4 border-blue-600 rounded-2xl">
                 <QRCode
                   id="members-qr-code"
                   value={shareUrl}
@@ -380,7 +380,7 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
             </div>
 
             {/* Share URL */}
-            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
               <p className="text-xs text-gray-600 mb-2">Share link</p>
               <p className="text-sm text-gray-900 font-mono break-all">{shareUrl}</p>
             </div>
@@ -392,14 +392,14 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
                   navigator.clipboard.writeText(shareUrl)
                   alert('Link copied to clipboard!')
                 }}
-                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2"
               >
                 <Share2 size={18} />
                 Copy Link
               </button>
               <button
                 onClick={downloadQRCode}
-                className="flex-1 py-3 bg-white border-2 border-emerald-600 text-emerald-600 font-semibold rounded-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                className="flex-1 py-3 bg-white border-2 border-blue-600 text-blue-600 font-semibold rounded-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2"
               >
                 <Download size={18} />
                 Download QR

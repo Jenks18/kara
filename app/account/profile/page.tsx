@@ -46,7 +46,7 @@ const AVATAR_OPTIONS = [
   { emoji: '🦔', color: 'from-amber-600 to-orange-600', label: 'Hedgehog' },
   { emoji: '🐢', color: 'from-emerald-700 to-emerald-800', label: 'Turtle' },
   { emoji: '🐊', color: 'from-green-700 to-green-800', label: 'Crocodile' },
-  { emoji: '🦜', color: 'from-emerald-600 to-emerald-700', label: 'Parrot' },
+  { emoji: '🦜', color: 'from-blue-600 to-blue-700', label: 'Parrot' },
   { emoji: '🦚', color: 'from-blue-600 to-blue-700', label: 'Peacock' },
 ]
 
@@ -164,7 +164,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
       
       {/* Header */}
       <div className="sticky top-0 z-30 bg-white border-b border-gray-200">
@@ -175,7 +175,7 @@ export default function ProfilePage() {
           >
             <ChevronLeft size={24} className="text-gray-700" />
           </button>
-          <UserIcon size={24} className="text-emerald-600" />
+          <UserIcon size={24} className="text-blue-600" />
           <h1 className="text-xl font-semibold text-gray-900 flex-1">Profile</h1>
         </div>
       </div>
@@ -183,7 +183,7 @@ export default function ProfilePage() {
       {/* Content */}
       {profileLoading ? (
         <div className="flex items-center justify-center py-24">
-          <div className="w-8 h-8 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
+          <div className="w-8 h-8 border-4 border-blue-200 border-t-emerald-600 rounded-full animate-spin" />
         </div>
       ) : (
       <div className="px-4 py-6 max-w-md mx-auto space-y-6 pb-24">
@@ -212,7 +212,7 @@ export default function ProfilePage() {
               </div>
               <button 
                 onClick={() => setShowAvatarPicker(true)}
-                className="absolute bottom-0 right-0 w-10 h-10 rounded-full bg-emerald-600 border-4 border-white flex items-center justify-center active:scale-95 transition-transform shadow-lg touch-manipulation"
+                className="absolute bottom-0 right-0 w-10 h-10 rounded-full bg-blue-600 border-4 border-white flex items-center justify-center active:scale-95 transition-transform shadow-lg touch-manipulation"
                 disabled={uploadingAvatar}
               >
                 <Camera size={18} className="text-white" />
@@ -327,7 +327,7 @@ export default function ProfilePage() {
             {/* Content */}
             <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(85vh - 160px)' }}>
               {/* Upload button */}
-              <label className="w-full mb-6 px-6 py-4 bg-emerald-600 hover:bg-emerald-500 rounded-2xl text-white font-medium flex items-center justify-center gap-3 transition-colors touch-manipulation cursor-pointer">
+              <label className="w-full mb-6 px-6 py-4 bg-blue-600 hover:bg-blue-500 rounded-2xl text-white font-medium flex items-center justify-center gap-3 transition-colors touch-manipulation cursor-pointer">
                 <Upload size={24} />
                 Upload photo
                 <input
@@ -348,7 +348,7 @@ export default function ProfilePage() {
                     onClick={() => handleAvatarSelect(avatarOption)}
                     className={`aspect-square rounded-full bg-gradient-to-br ${avatarOption.color} flex items-center justify-center text-3xl hover:scale-110 active:scale-95 transition-transform touch-manipulation shadow-lg ${
                       selectedTempAvatar.emoji === avatarOption.emoji && selectedTempAvatar.color === avatarOption.color
-                        ? 'ring-4 ring-emerald-600 ring-offset-2'
+                        ? 'ring-4 ring-blue-600 ring-offset-2'
                         : ''
                     }`}
                     title={avatarOption.label}
@@ -363,7 +363,7 @@ export default function ProfilePage() {
             <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6">
               <button
                 onClick={handleSaveAvatar}
-                className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 rounded-2xl text-white font-semibold text-lg active:scale-[0.98] transition-all touch-manipulation"
+                className="w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-2xl text-white font-semibold text-lg active:scale-[0.98] transition-all touch-manipulation"
               >
                 Save
               </button>

@@ -64,9 +64,9 @@ export default function FeaturesPage({ params }: { params: Promise<{ id: string 
   ] as const
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100">
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-white border-b border-emerald-200">
+      <div className="sticky top-0 z-30 bg-white border-b border-blue-200">
         <div className="px-4 py-4 max-w-md mx-auto flex items-center gap-4">
           <button
             onClick={() => router.back()}
@@ -75,7 +75,7 @@ export default function FeaturesPage({ params }: { params: Promise<{ id: string 
             <ChevronLeft size={24} className="text-gray-700" />
           </button>
           <div className="flex gap-1">
-            <Settings size={24} className="text-emerald-500" />
+            <Settings size={24} className="text-blue-500" />
             <Settings size={24} className="text-yellow-400" />
           </div>
           <h1 className="text-xl font-bold text-gray-900 flex-1">More features</h1>
@@ -101,9 +101,9 @@ export default function FeaturesPage({ params }: { params: Promise<{ id: string 
                 {categoryFeatures.map((feature) => (
                   <div
                     key={feature.id}
-                    className="flex items-center gap-4 bg-white rounded-xl border border-emerald-200 p-4 shadow-sm"
+                    className="flex items-center gap-4 bg-white rounded-xl border border-blue-200 p-4 shadow-sm"
                   >
-                    <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 border border-emerald-200">
+                    <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 border border-blue-200">
                       {feature.icon}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -113,7 +113,7 @@ export default function FeaturesPage({ params }: { params: Promise<{ id: string 
                     <button
                       onClick={() => toggleFeature(feature.id)}
                       className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors flex-shrink-0 ${
-                        feature.enabled ? 'bg-emerald-600' : 'bg-gray-400'
+                        feature.enabled ? 'bg-blue-600' : 'bg-gray-400'
                       }`}
                     >
                       <span

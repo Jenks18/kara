@@ -82,7 +82,7 @@ export default function AccountPage() {
 
           // Map to colors and icons
           const categoryColorMap: { [key: string]: { color: string; icon: string } } = {
-            'Fuel': { color: 'bg-emerald-500', icon: '⛽' },
+            'Fuel': { color: 'bg-blue-500', icon: '⛽' },
             'Food': { color: 'bg-orange-500', icon: '🍔' },
             'Transport': { color: 'bg-blue-500', icon: '🚗' },
             'Shopping': { color: 'bg-purple-500', icon: '🛒' },
@@ -158,7 +158,7 @@ export default function AccountPage() {
   ]
   
   return (
-    <div className="min-h-screen pb-20 bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
+    <div className="min-h-screen pb-20 bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
       {/* Header */}
       <div className="sticky top-0 z-30 bg-white border-b border-gray-200">
         <div className="px-6 py-4 max-w-md mx-auto">
@@ -209,7 +209,7 @@ export default function AccountPage() {
         {categorySpending.length > 0 && (
           <div className="bg-white rounded-2xl p-6 shadow-md border border-gray-200">
             <div className="flex items-center gap-2 mb-4">
-              <PieChart size={20} className="text-emerald-600" />
+              <PieChart size={20} className="text-blue-600" />
               <h2 className="text-lg font-semibold text-gray-900">Spending by Category</h2>
             </div>
 
@@ -276,7 +276,7 @@ export default function AccountPage() {
                       w-full flex items-center justify-between
                       px-4 py-4 min-h-[60px]
                       bg-white active:bg-gray-50
-                      border border-gray-200 hover:border-emerald-300
+                      border border-gray-200 hover:border-blue-300
                       rounded-xl shadow-sm
                       transition-colors duration-200
                       touch-manipulation
@@ -284,7 +284,7 @@ export default function AccountPage() {
                     "
                   >
                     <div className="flex items-center gap-3">
-                      <Icon size={24} className={item.label === 'Sign Out' ? 'text-red-500' : 'text-gray-600 group-hover:text-emerald-600'} />
+                      <Icon size={24} className={item.label === 'Sign Out' ? 'text-red-500' : 'text-gray-600 group-hover:text-blue-600'} />
                       <span className={`font-medium ${item.label === 'Sign Out' ? 'text-red-500' : 'text-gray-900'}`}>{item.label}</span>
                     </div>
                     

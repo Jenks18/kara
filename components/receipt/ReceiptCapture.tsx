@@ -356,10 +356,10 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
   }
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 z-50 flex items-center justify-center">
-      <div className="w-full max-w-[430px] h-full bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 flex flex-col relative">
+    <div className="fixed inset-0 bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100 z-50 flex items-center justify-center">
+      <div className="w-full max-w-[430px] h-full bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100 flex flex-col relative">
         {/* Header */}
-        <div className="flex flex-col px-4 pt-6 pb-4 border-b border-emerald-200 bg-white/80 backdrop-blur-lg">
+        <div className="flex flex-col px-4 pt-6 pb-4 border-b border-blue-200 bg-white/80 backdrop-blur-lg">
           <div className="flex items-center justify-between mb-4">
             <button
               onClick={handleCancel}
@@ -381,7 +381,7 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
               }}
               className={`flex-1 flex items-center justify-center gap-2 px-6 py-2.5 rounded-full transition-all duration-200 font-medium ${
                 activeTab === 'manual'
-                  ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-md'
+                  ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
               }`}
             >
@@ -397,7 +397,7 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
               }}
               className={`flex-1 flex items-center justify-center gap-2 px-6 py-2.5 rounded-full transition-all duration-200 font-medium ${
                 activeTab === 'scan'
-                  ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-md'
+                  ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
               }`}
             >
@@ -411,14 +411,14 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
         <div className="flex-1 overflow-hidden relative">
           {activeTab === 'manual' ? (
             // MANUAL ENTRY FORM
-            <div className="w-full h-full overflow-y-auto bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 p-6">
+            <div className="w-full h-full overflow-y-auto bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100 p-6">
               <div className="max-w-md mx-auto space-y-4">
                 <div>
                   <label className="block text-gray-900 text-sm font-medium mb-2">Merchant</label>
                   <input
                     type="text"
                     placeholder="Enter merchant name"
-                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-colors shadow-sm"
+                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors shadow-sm"
                   />
                 </div>
 
@@ -427,7 +427,7 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                   <input
                     type="number"
                     placeholder="0.00"
-                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-colors shadow-sm"
+                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors shadow-sm"
                   />
                 </div>
 
@@ -437,13 +437,13 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                     type="number"
                     step="0.01"
                     placeholder="0.00"
-                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-colors shadow-sm"
+                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors shadow-sm"
                   />
                 </div>
 
                 <div>
                   <label className="block text-gray-900 text-sm font-medium mb-2">Fuel Type</label>
-                  <select className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-colors shadow-sm">
+                  <select className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors shadow-sm">
                     <option value="">Select fuel type</option>
                     <option value="PETROL">Petrol</option>
                     <option value="DIESEL">Diesel</option>
@@ -456,7 +456,7 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                   <label className="block text-gray-900 text-sm font-medium mb-2">Date</label>
                   <input
                     type="date"
-                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-colors shadow-sm"
+                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors shadow-sm"
                   />
                 </div>
 
@@ -465,12 +465,12 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                   <input
                     type="text"
                     placeholder="KBX 123A"
-                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-colors shadow-sm"
+                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors shadow-sm"
                   />
                 </div>
 
                 <button
-                  className="w-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-400 hover:from-emerald-700 hover:via-emerald-600 hover:to-emerald-500 active:scale-[0.98] text-white font-semibold py-4 rounded-full transition-all duration-300 mt-6 shadow-emerald-md hover:shadow-emerald-lg"
+                  className="w-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-400 hover:from-emerald-700 hover:via-emerald-600 hover:to-emerald-500 active:scale-[0.98] text-white font-semibold py-4 rounded-full transition-all duration-300 mt-6 shadow-blue-md hover:shadow-blue-lg"
                 >
                   Create Expense
                 </button>
@@ -495,21 +495,21 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                 </div>
               ) : selectedImages.length > 0 && continuousMode ? (
                 // Multi-select mode preview
-                <div className="flex-1 flex items-center justify-center p-4 bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100">
+                <div className="flex-1 flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100">
                   <div className="relative w-full max-w-md">
                     <img
                       src={selectedImages[selectedImages.length - 1]}
                       alt="Selected receipt"
                       className="w-full h-auto rounded-2xl shadow-lg"
                     />
-                    <div className="absolute top-4 right-4 w-12 h-12 bg-emerald-500/90 backdrop-blur rounded-full flex items-center justify-center shadow-md">
+                    <div className="absolute top-4 right-4 w-12 h-12 bg-blue-500/90 backdrop-blur rounded-full flex items-center justify-center shadow-md">
                       <Zap size={24} className="text-white" />
                     </div>
                   </div>
                 </div>
               ) : preview ? (
                 // Image Preview (single)
-                <div className="flex-1 flex items-center justify-center p-4 bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100">
+                <div className="flex-1 flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100">
                   <img
                     src={preview}
                     alt="Receipt preview"
@@ -518,7 +518,7 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                 </div>
               ) : (
                 // Empty state
-                <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100">
+                <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100">
                   <div className="text-center px-8">
                     <Camera size={48} className="mx-auto mb-3 text-gray-500" />
                     <p className="text-sm text-gray-600">Allow camera access to start scanning</p>
@@ -528,17 +528,17 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
 
               {/* Continuous mode counter overlay */}
               {cameraActive && continuousMode && selectedImages.length > 0 && (
-                <div className="absolute top-4 right-4 bg-emerald-600/90 backdrop-blur px-4 py-2 rounded-full text-white font-semibold z-10 shadow-lg">
+                <div className="absolute top-4 right-4 bg-blue-600/90 backdrop-blur px-4 py-2 rounded-full text-white font-semibold z-10 shadow-lg">
                   {selectedImages.length} photo{selectedImages.length > 1 ? 's' : ''}
                 </div>
               )}
 
               {/* Camera Permission Prompt - Inside scan mode */}
               {showPermissionPrompt && !cameraActive && (
-                <div className="absolute inset-x-4 bottom-24 bg-white rounded-2xl p-5 shadow-2xl border border-emerald-200 animate-slide-up z-20">
+                <div className="absolute inset-x-4 bottom-24 bg-white rounded-2xl p-5 shadow-2xl border border-blue-200 animate-slide-up z-20">
                   <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
-                      <Camera size={20} className="text-emerald-600" />
+                    <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                      <Camera size={20} className="text-blue-600" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="text-gray-900 font-semibold mb-1 text-sm">Camera Access Required</h3>
@@ -554,7 +554,7 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                         </button>
                         <button
                           onClick={startCamera}
-                          className="flex-1 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-semibold py-2.5 rounded-lg transition-all duration-200 text-sm shadow-md"
+                          className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-2.5 rounded-lg transition-all duration-200 text-sm shadow-md"
                         >
                           Allow
                         </button>
@@ -569,7 +569,7 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
         
         {/* Bottom Controls - Only show in Scan mode */}
         {activeTab === 'scan' && (
-          <div className="px-6 py-4 bg-white/80 backdrop-blur-lg border-t border-emerald-200">
+          <div className="px-6 py-4 bg-white/80 backdrop-blur-lg border-t border-blue-200">
             {preview ? (
               // Preview mode - Retake/Use Photo
               <div className="flex items-center gap-4">
@@ -584,7 +584,7 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                 </button>
                 <button
                   onClick={handleConfirm}
-                  className="flex-1 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 active:scale-[0.98] text-white font-semibold py-4 rounded-full transition-all duration-300 shadow-md"
+                  className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 active:scale-[0.98] text-white font-semibold py-4 rounded-full transition-all duration-300 shadow-md"
                 >
                   Use Photo
                 </button>
@@ -602,7 +602,7 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                           <img
                             src={img}
                             alt={`Receipt ${index + 1}`}
-                            className="w-16 h-20 object-cover rounded-lg border-2 border-emerald-500"
+                            className="w-16 h-20 object-cover rounded-lg border-2 border-blue-500"
                           />
                           <button
                             onClick={() => handleRemoveImage(index)}
@@ -652,7 +652,7 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                   {/* Capture button - ALWAYS visible - Enhanced with gradient and strong borders */}
                   <button
                     onClick={capturePhoto}
-                    className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 active:from-emerald-700 active:to-green-800 transition-all duration-300 flex items-center justify-center active:scale-90 shadow-lg ring-4 ring-emerald-200 hover:ring-emerald-300"
+                    className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 active:from-emerald-700 active:to-green-800 transition-all duration-300 flex items-center justify-center active:scale-90 shadow-lg ring-4 ring-blue-200 hover:ring-blue-300"
                   >
                     <div className="w-[72px] h-[72px] rounded-full border-[6px] border-white shadow-inner" />
                   </button>
@@ -671,8 +671,8 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                       }}
                       className={`w-16 h-16 rounded-xl backdrop-blur active:scale-95 transition-all duration-200 flex items-center justify-center border-2 ${
                         continuousMode 
-                          ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white border-emerald-400 ring-2 ring-emerald-300 shadow-lg' 
-                          : 'bg-white hover:bg-gray-50 text-gray-700 border-gray-300 hover:border-emerald-400 shadow-sm'
+                          ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white border-blue-400 ring-2 ring-blue-300 shadow-lg' 
+                          : 'bg-white hover:bg-gray-50 text-gray-700 border-gray-300 hover:border-blue-400 shadow-sm'
                       }`}
                     >
                       <Receipt size={28} strokeWidth={2.5} />
@@ -682,7 +682,7 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
                     {continuousMode && selectedImages.length > 0 && (
                       <button
                         onClick={handleProcessMultiple}
-                        className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-600 via-emerald-500 to-emerald-400 hover:from-emerald-700 hover:via-emerald-600 hover:to-emerald-500 active:from-emerald-800 active:via-emerald-700 active:to-emerald-600 transition-all duration-300 flex items-center justify-center active:scale-90 shadow-emerald-xl ring-4 ring-emerald-500/30 hover:ring-emerald-500/40"
+                        className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-600 via-emerald-500 to-emerald-400 hover:from-emerald-700 hover:via-emerald-600 hover:to-emerald-500 active:from-emerald-800 active:via-emerald-700 active:to-emerald-600 transition-all duration-300 flex items-center justify-center active:scale-90 shadow-blue-xl ring-4 ring-blue-500/30 hover:ring-blue-500/40"
                       >
                         <ChevronRight size={36} className="text-white" strokeWidth={4} />
                       </button>

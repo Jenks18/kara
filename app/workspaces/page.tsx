@@ -100,16 +100,16 @@ export default function WorkspacesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100 flex items-center justify-center">
         <div className="text-gray-600">Loading...</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-emerald-50 pb-20" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
+    <div className="min-h-screen bg-blue-50 pb-20" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-white border-b border-emerald-100">
+      <div className="sticky top-0 z-30 bg-white border-b border-blue-100">
         <div className="px-4 py-3 max-w-md mx-auto flex items-center justify-between">
           <h1 className="text-3xl font-bold text-gray-900">Workspaces</h1>
           <button className="p-2 active:scale-95 transition-transform">
@@ -136,10 +136,10 @@ export default function WorkspacesPage() {
               onClick={handleNewWorkspace}
               className="
                 w-full max-w-md py-4 rounded-2xl
-                bg-gradient-to-r from-emerald-500 to-emerald-600
+                bg-gradient-to-r from-blue-500 to-blue-600
                 text-white font-semibold text-lg
                 active:scale-[0.98] transition-transform
-                shadow-lg shadow-emerald-500/20
+                shadow-lg shadow-blue-500/20
               "
             >
               New workspace
@@ -158,7 +158,7 @@ export default function WorkspacesPage() {
                     flex items-center gap-3
                   "
                 >
-                  <div className="w-14 h-14 rounded-xl bg-emerald-600 flex items-center justify-center flex-shrink-0">
+                  <div className="w-14 h-14 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0">
                     {workspace.avatar?.startsWith('http') ? (
                       <img 
                         src={workspace.avatar} 
@@ -239,7 +239,7 @@ export default function WorkspacesPage() {
               onClick={handleNewWorkspace}
               className="
                 w-full py-4 rounded-xl
-                bg-emerald-600
+                bg-blue-600
                 text-white font-semibold text-base
                 active:scale-[0.98] transition-transform shadow-sm
                 flex items-center justify-center gap-2

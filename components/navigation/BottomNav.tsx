@@ -22,7 +22,7 @@ export default function BottomNav() {
     <nav 
       className="
         fixed bottom-0 left-0 right-0
-        bg-white/80 backdrop-blur-lg border-t border-emerald-200
+        bg-white/80 backdrop-blur-lg border-t border-blue-200
         px-2
         z-40
         shadow-lg
@@ -45,11 +45,11 @@ export default function BottomNav() {
                 min-w-[60px] min-h-[56px]
                 transition-colors duration-200 rounded-lg
                 active:scale-95 touch-manipulation
-                ${isActive ? 'text-emerald-600' : 'text-emerald-600 active:text-emerald-700'}
+                ${isActive ? 'text-blue-600' : 'text-blue-600 active:text-blue-700'}
               `}
             >
               {item.isAvatar ? (
-                <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${avatar.imageUrl ? 'bg-gray-100' : avatar.color} flex items-center justify-center text-xs overflow-hidden ${isActive ? 'ring-2 ring-emerald-600 ring-offset-1' : ''}`}>
+                <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${avatar.imageUrl ? 'bg-gray-100' : avatar.color} flex items-center justify-center text-xs overflow-hidden ${isActive ? 'ring-2 ring-blue-600 ring-offset-1' : ''}`}>
                   {avatar.imageUrl ? (
                     <img 
                       src={avatar.imageUrl} 

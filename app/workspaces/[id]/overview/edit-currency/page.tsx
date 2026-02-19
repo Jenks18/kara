@@ -90,16 +90,16 @@ export default function EditCurrencyPage({ params }: { params: Promise<{ id: str
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100 flex items-center justify-center">
         <div className="text-gray-600">Loading...</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100 flex flex-col">
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-white border-b border-emerald-200">
+      <div className="sticky top-0 z-30 bg-white border-b border-blue-200">
         <div className="px-4 py-4 max-w-md mx-auto flex items-center gap-4">
           <button
             onClick={() => router.back()}
@@ -120,7 +120,7 @@ export default function EditCurrencyPage({ params }: { params: Promise<{ id: str
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Default currency"
-            className="w-full pl-12 pr-4 py-3 border-2 border-emerald-500 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-600"
+            className="w-full pl-12 pr-4 py-3 border-2 border-blue-500 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-600"
           />
         </div>
       </div>
@@ -136,8 +136,8 @@ export default function EditCurrencyPage({ params }: { params: Promise<{ id: str
                 onClick={() => setSelectedCurrency(currency)}
                 className={`w-full p-4 rounded-xl border transition-all text-left ${
                   isSelected
-                    ? 'bg-emerald-50 border-emerald-500'
-                    : 'bg-white border-emerald-200 hover:bg-emerald-50'
+                    ? 'bg-blue-50 border-blue-500'
+                    : 'bg-white border-blue-200 hover:bg-blue-50'
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -147,7 +147,7 @@ export default function EditCurrencyPage({ params }: { params: Promise<{ id: str
                     </div>
                     <div className="text-sm text-gray-600">{currency.name}</div>
                   </div>
-                  {isSelected && <Check size={24} className="text-emerald-600" />}
+                  {isSelected && <Check size={24} className="text-blue-600" />}
                 </div>
               </button>
             )
@@ -160,7 +160,7 @@ export default function EditCurrencyPage({ params }: { params: Promise<{ id: str
         <button
           onClick={handleSave}
           disabled={!selectedCurrency || saving}
-          className="w-full max-w-md mx-auto block py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-2xl active:scale-[0.98] transition-all disabled:opacity-50"
+          className="w-full max-w-md mx-auto block py-4 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-2xl active:scale-[0.98] transition-all disabled:opacity-50"
         >
           {saving ? 'Saving...' : 'Save'}
         </button>

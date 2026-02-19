@@ -93,14 +93,14 @@ export default function ReportsClient({ initialItems, initialReports }: ReportsC
   ]
   
   return (
-    <div className="min-h-screen pb-20 bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
+    <div className="min-h-screen pb-20 bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-lg border-b border-emerald-200">
+      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-lg border-b border-blue-200">
         <div className="px-4 py-4 max-w-md mx-auto">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
             {/* Filter button hidden for now */}
-            {/* <button className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center active:bg-emerald-100 rounded-full transition-colors touch-manipulation">
+            {/* <button className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center active:bg-blue-100 rounded-full transition-colors touch-manipulation">
               <SlidersHorizontal size={24} className="text-gray-600" />
             </button> */}
           </div>
@@ -111,7 +111,7 @@ export default function ReportsClient({ initialItems, initialReports }: ReportsC
             <input
               type="text"
               placeholder="Search receipts..."
-              className="w-full bg-white text-gray-900 pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-emerald-400 transition-colors shadow-sm"
+              className="w-full bg-white text-gray-900 pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-blue-400 transition-colors shadow-sm"
             />
           </div>
         </div>
@@ -122,7 +122,7 @@ export default function ReportsClient({ initialItems, initialReports }: ReportsC
         {/* Spending Summary Cards */}
         <div className="grid grid-cols-2 gap-3">
           {/* This Month Card */}
-          <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-5 shadow-lg">
+          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-5 shadow-lg">
             <div className="flex items-center gap-2 mb-2">
               <Calendar size={20} className="text-white/80" />
               <span className="text-white/90 text-sm font-medium">This Month</span>
@@ -130,7 +130,7 @@ export default function ReportsClient({ initialItems, initialReports }: ReportsC
             <div className="text-3xl font-bold text-white mb-1">
               ${thisMonthTotal.toFixed(2)}
             </div>
-            <div className="text-emerald-100 text-sm">
+            <div className="text-blue-100 text-sm">
               {thisMonthItems.length} receipt{thisMonthItems.length !== 1 ? 's' : ''}
             </div>
           </div>
@@ -156,7 +156,7 @@ export default function ReportsClient({ initialItems, initialReports }: ReportsC
             onClick={() => setSelectedType('expense')}
             className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
               selectedType === 'expense'
-                ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-md'
+                ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md'
                 : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200'
             }`}
           >
@@ -166,7 +166,7 @@ export default function ReportsClient({ initialItems, initialReports }: ReportsC
             onClick={() => setSelectedType('report')}
             className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
               selectedType === 'report'
-                ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-md'
+                ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md'
                 : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200'
             }`}
           >
@@ -200,7 +200,7 @@ export default function ReportsClient({ initialItems, initialReports }: ReportsC
                 <div
                   key={item.id}
                   onClick={() => router.push(`/reports/${item.report_id}`)}
-                  className="bg-white rounded-2xl p-4 border border-gray-200 hover:border-emerald-300 transition-colors cursor-pointer shadow-sm"
+                  className="bg-white rounded-2xl p-4 border border-gray-200 hover:border-blue-300 transition-colors cursor-pointer shadow-sm"
                 >
                   {/* Receipt Image */}
                   <div className="relative w-full h-48 rounded-lg overflow-hidden bg-gray-100 mb-3">
@@ -219,7 +219,7 @@ export default function ReportsClient({ initialItems, initialReports }: ReportsC
                         {item.merchant_name || 'Unknown Merchant'}
                       </span>
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                        item.processing_status === 'processed' ? 'bg-emerald-500/20 text-emerald-700' :
+                        item.processing_status === 'processed' ? 'bg-blue-500/20 text-blue-700' :
                         item.processing_status === 'error' ? 'bg-red-500/20 text-red-700' :
                         'bg-amber-500/20 text-amber-700'
                       }`}>
@@ -243,7 +243,7 @@ export default function ReportsClient({ initialItems, initialReports }: ReportsC
                     </div>
                     
                     <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
                         {item.category}
                       </span>
                     </div>
@@ -266,20 +266,20 @@ export default function ReportsClient({ initialItems, initialReports }: ReportsC
                   <div 
                     key={report.id}
                     onClick={() => router.push(`/reports/${report.id}`)}
-                    className="bg-white rounded-2xl p-4 border border-gray-200 hover:border-emerald-300 transition-colors cursor-pointer shadow-sm"
+                    className="bg-white rounded-2xl p-4 border border-gray-200 hover:border-blue-300 transition-colors cursor-pointer shadow-sm"
                   >
                     {/* Report Header */}
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <FileText size={16} className="text-emerald-600" />
+                          <FileText size={16} className="text-blue-600" />
                           <h3 className="text-gray-900 font-semibold">{report.title}</h3>
                         </div>
                         <div className="flex items-center gap-2 text-xs text-gray-600">
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-full font-medium ${
                             report.status === 'draft' ? 'bg-gray-500/20 text-gray-700' :
                             report.status === 'submitted' ? 'bg-amber-500/20 text-amber-700' :
-                            report.status === 'approved' ? 'bg-emerald-500/20 text-emerald-700' :
+                            report.status === 'approved' ? 'bg-blue-500/20 text-blue-700' :
                             'bg-red-500/20 text-red-700'
                           }`}>
                             {report.status.charAt(0).toUpperCase() + report.status.slice(1)}

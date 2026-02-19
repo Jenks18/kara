@@ -10,7 +10,7 @@ export default function WalletPage() {
   const router = useRouter()
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100">
       {/* Header */}
       <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-lg border-b border-gray-200">
         <div className="px-4 py-4 max-w-md mx-auto flex items-center gap-4">

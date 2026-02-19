@@ -84,9 +84,9 @@ export default function NewWorkspacePage() {
   )
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100 flex flex-col">
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-white border-b border-emerald-200">
+      <div className="sticky top-0 z-30 bg-white border-b border-blue-200">
         <div className="px-4 py-4 max-w-md mx-auto flex items-center gap-4">
           <button
             onClick={() => router.back()}
@@ -108,10 +108,10 @@ export default function NewWorkspacePage() {
         {/* Avatar */}
         <div className="flex justify-center mb-8">
           <div className="relative">
-            <div className="w-32 h-32 rounded-3xl bg-gradient-to-br from-emerald-600 to-emerald-700 flex items-center justify-center">
+            <div className="w-32 h-32 rounded-3xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center">
               <span className="text-5xl font-bold text-white">{displayAvatar}</span>
             </div>
-            <button className="absolute bottom-0 right-0 w-12 h-12 rounded-full bg-white border-4 border-emerald-100 flex items-center justify-center active:scale-95 transition-transform shadow-sm">
+            <button className="absolute bottom-0 right-0 w-12 h-12 rounded-full bg-white border-4 border-blue-100 flex items-center justify-center active:scale-95 transition-transform shadow-sm">
               <Camera size={20} className="text-gray-600" />
             </button>
           </div>
@@ -130,10 +130,10 @@ export default function NewWorkspacePage() {
             className="
               w-full px-4 py-4
               bg-white
-              border-2 border-emerald-500
+              border-2 border-blue-500
               rounded-xl
               text-gray-900 placeholder-gray-500
-              focus:outline-none focus:border-emerald-400
+              focus:outline-none focus:border-blue-400
               transition-colors shadow-sm
             "
           />
@@ -146,10 +146,10 @@ export default function NewWorkspacePage() {
             w-full flex items-center justify-between
             px-4 py-4
             bg-white
-            border border-emerald-200
+            border border-blue-200
             rounded-xl
             transition-colors
-            hover:bg-emerald-50 shadow-sm
+            hover:bg-blue-50 shadow-sm
           "
         >
           <div className="text-left">
@@ -163,13 +163,13 @@ export default function NewWorkspacePage() {
       </div>
 
       {/* Confirm Button */}
-      <div className="sticky bottom-0 p-4 bg-white border-t border-emerald-200">
+      <div className="sticky bottom-0 p-4 bg-white border-t border-blue-200">
         <button
           onClick={handleConfirm}
           disabled={!workspaceName.trim() || isCreating}
           className="
             w-full py-4 rounded-2xl
-            bg-gradient-to-r from-emerald-500 to-emerald-600
+            bg-gradient-to-r from-blue-500 to-blue-600
             text-white font-semibold text-lg
             active:scale-[0.98] transition-transform
             disabled:opacity-50 disabled:cursor-not-allowed
@@ -184,7 +184,7 @@ export default function NewWorkspacePage() {
         <div className="fixed inset-0 bg-black/80 z-50 flex items-end sm:items-center justify-center">
           <div className="w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl max-h-[80vh] flex flex-col">
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 border-b border-emerald-200">
+            <div className="flex items-center justify-between p-4 border-b border-blue-200">
               <h2 className="text-xl font-bold text-gray-900">Select Currency</h2>
               <button
                 onClick={() => {
@@ -198,7 +198,7 @@ export default function NewWorkspacePage() {
             </div>
 
             {/* Search */}
-            <div className="p-4 border-b border-emerald-200">
+            <div className="p-4 border-b border-blue-200">
               <div className="relative">
                 <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" />
                 <input
@@ -206,7 +206,7 @@ export default function NewWorkspacePage() {
                   value={currencySearch}
                   onChange={(e) => setCurrencySearch(e.target.value)}
                   placeholder="Search currency..."
-                  className="w-full pl-12 pr-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-400"
+                  className="w-full pl-12 pr-4 py-3 bg-blue-50 border border-blue-200 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-400"
                 />
               </div>
             </div>
@@ -221,8 +221,8 @@ export default function NewWorkspacePage() {
                     onClick={() => handleCurrencySelect(curr.code, curr.symbol)}
                     className={`w-full p-4 rounded-xl border transition-colors text-left ${
                       isSelected
-                        ? 'bg-emerald-50 border-emerald-500'
-                        : 'bg-white border-emerald-200 hover:bg-emerald-50'
+                        ? 'bg-blue-50 border-blue-500'
+                        : 'bg-white border-blue-200 hover:bg-blue-50'
                     }`}
                   >
                     <div className="flex items-center justify-between">
@@ -231,7 +231,7 @@ export default function NewWorkspacePage() {
                         <div className="text-sm text-gray-600">{curr.name}</div>
                       </div>
                       {isSelected && (
-                        <svg className="w-6 h-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
                       )}

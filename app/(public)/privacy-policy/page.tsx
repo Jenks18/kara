@@ -3,18 +3,18 @@ import { Receipt, ArrowLeft } from 'lucide-react'
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100">
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-lg border-b border-gray-200 sticky top-0 z-50">
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link href="/" className="flex items-center gap-2">
-              <Receipt className="w-8 h-8 text-emerald-600" />
+              <Receipt className="w-8 h-8 text-blue-600" />
               <span className="text-2xl font-bold text-gray-900">Kacha</span>
             </Link>
             <Link
               href="/"
-              className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 transition-colors"
+              className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
               <span>Back to home</span>
@@ -156,7 +156,7 @@ export default function PrivacyPolicyPage() {
               </p>
               <ul className="list-none text-gray-600 space-y-2">
                 <li><strong>Email:</strong> support@mafutapass.com</li>
-                <li><strong>Account Deletion:</strong> <Link href="/account/delete" className="text-emerald-600 hover:text-emerald-700 underline">https://mafutapass.com/account/delete</Link></li>
+                <li><strong>Account Deletion:</strong> <Link href="/account/delete" className="text-blue-600 hover:text-blue-700 underline">https://mafutapass.com/account/delete</Link></li>
               </ul>
             </section>
           </div>
@@ -168,9 +168,9 @@ export default function PrivacyPolicyPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-600">
           <p>© 2026 Kacha. All rights reserved.</p>
           <div className="mt-4 flex justify-center gap-6">
-            <Link href="/" className="hover:text-emerald-600">Home</Link>
-            <Link href="/privacy-policy" className="hover:text-emerald-600">Privacy</Link>
-            <Link href="/terms-of-service" className="hover:text-emerald-600">Terms</Link>
+            <Link href="/" className="hover:text-blue-600">Home</Link>
+            <Link href="/privacy-policy" className="hover:text-blue-600">Privacy</Link>
+            <Link href="/terms-of-service" className="hover:text-blue-600">Terms</Link>
           </div>
         </div>
       </footer>

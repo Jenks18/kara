@@ -67,7 +67,7 @@ export default function AddressPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100" style={{ paddingBottom: 'calc(150px + env(safe-area-inset-bottom))' }}>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100" style={{ paddingBottom: 'calc(150px + env(safe-area-inset-bottom))' }}>
       <div className="sticky top-0 z-30 bg-white border-b border-gray-200">
         <div className="px-4 py-4 max-w-md mx-auto flex items-center gap-4">
           <button onClick={() => router.back()} className="p-2 -ml-2 active:scale-95 transition-transform touch-manipulation">
@@ -85,7 +85,7 @@ export default function AddressPage() {
             value={addressLine1}
             onChange={(e) => setAddressLine1(e.target.value)}
             placeholder="Address line 1"
-            className="w-full px-4 py-4 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 touch-manipulation"
+            className="w-full px-4 py-4 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 touch-manipulation"
           />
         </div>
 
@@ -96,7 +96,7 @@ export default function AddressPage() {
             value={addressLine2}
             onChange={(e) => setAddressLine2(e.target.value)}
             placeholder="Address line 2"
-            className="w-full px-4 py-4 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 touch-manipulation"
+            className="w-full px-4 py-4 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 touch-manipulation"
           />
         </div>
 
@@ -105,7 +105,7 @@ export default function AddressPage() {
           <select
             value={country}
             onChange={(e) => setCountry(e.target.value)}
-            className="w-full px-4 py-4 bg-white border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 touch-manipulation"
+            className="w-full px-4 py-4 bg-white border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 touch-manipulation"
           >
             <option value="Kenya">Kenya</option>
             <option value="United States">United States</option>
@@ -123,7 +123,7 @@ export default function AddressPage() {
             value={state}
             onChange={(e) => setState(e.target.value)}
             placeholder="State"
-            className="w-full px-4 py-4 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 touch-manipulation"
+            className="w-full px-4 py-4 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 touch-manipulation"
           />
         </div>
 
@@ -134,7 +134,7 @@ export default function AddressPage() {
             value={city}
             onChange={(e) => setCity(e.target.value)}
             placeholder="City"
-            className="w-full px-4 py-4 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 touch-manipulation"
+            className="w-full px-4 py-4 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 touch-manipulation"
           />
         </div>
 
@@ -145,7 +145,7 @@ export default function AddressPage() {
             value={zipCode}
             onChange={(e) => setZipCode(e.target.value)}
             placeholder="Zip / Postcode"
-            className="w-full px-4 py-4 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 touch-manipulation"
+            className="w-full px-4 py-4 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 touch-manipulation"
           />
           <p className="text-xs text-gray-500 mt-2">e.g. 12345, 12345-1234, 12345 1234</p>
         </div>
@@ -155,7 +155,7 @@ export default function AddressPage() {
         <button 
           onClick={handleSave}
           disabled={saving}
-          className="w-full max-w-md mx-auto py-4 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-400 rounded-2xl text-white font-semibold text-lg active:scale-[0.98] transition-all touch-manipulation"
+          className="w-full max-w-md mx-auto py-4 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-400 rounded-2xl text-white font-semibold text-lg active:scale-[0.98] transition-all touch-manipulation"
         >
           {saving ? 'Saving...' : 'Save'}
         </button>

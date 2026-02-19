@@ -83,7 +83,7 @@ export default function PhoneNumberPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
       <div className="sticky top-0 z-30 bg-white border-b border-gray-200">
         <div className="px-4 py-4 max-w-md mx-auto flex items-center gap-4">
           <button onClick={() => router.back()} className="p-2 -ml-2 active:scale-95 transition-transform touch-manipulation">
@@ -101,7 +101,7 @@ export default function PhoneNumberPage() {
         <div>
           <label className="block text-sm text-gray-700 mb-2">Phone number</label>
           <div className={`flex items-center bg-white border rounded-xl overflow-hidden ${
-            error ? 'border-red-500 ring-2 ring-red-500' : 'border-gray-300 focus-within:ring-2 focus-within:ring-emerald-500 focus-within:border-emerald-500'
+            error ? 'border-red-500 ring-2 ring-red-500' : 'border-gray-300 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500'
           }`}>
             <div className="px-4 py-4 bg-gray-50 border-r border-gray-300 flex items-center gap-2 select-none flex-shrink-0">
               <span className="text-lg">🇰🇪</span>
@@ -136,7 +136,7 @@ export default function PhoneNumberPage() {
         <button 
           onClick={handleSave}
           disabled={saving}
-          className="w-full max-w-md mx-auto py-4 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-400 rounded-2xl text-white font-semibold text-lg active:scale-[0.98] transition-all touch-manipulation"
+          className="w-full max-w-md mx-auto py-4 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-400 rounded-2xl text-white font-semibold text-lg active:scale-[0.98] transition-all touch-manipulation"
         >
           {saving ? 'Saving...' : 'Save'}
         </button>

@@ -20,7 +20,7 @@ export default function CategoryPill({
         px-3 py-1.5 rounded-full text-xs font-medium
         transition-all duration-200
         ${selected 
-          ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-md' 
+          ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md' 
           : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
         }
       `}
