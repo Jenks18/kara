@@ -65,14 +65,14 @@ export default function HomeClient() {
         // Calculate total expenses for this month
         const now = new Date()
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-        const monthlyExpenses = expenses.filter(e => new Date(e.created_at) >= startOfMonth)
-        const totalExpenses = monthlyExpenses.reduce((sum, e) => sum + (e.amount || 0), 0)
+        const monthlyExpenses = expenses.filter((e: any) => new Date(e.created_at) >= startOfMonth)
+        const totalExpenses = monthlyExpenses.reduce((sum: number, e: any) => sum + (e.amount || 0), 0)
         
         // Count pending (needs_review)
-        const pendingCount = expenses.filter(e => e.status === 'needs_review').length
+        const pendingCount = expenses.filter((e: any) => e.status === 'needs_review').length
         
         // Count submitted reports
-        const submittedReports = reports?.filter(r => r.status === 'submitted') || []
+        const submittedReports = reports?.filter((r: any) => r.status === 'submitted') || []
         
         setStats({
           totalExpenses,
@@ -81,7 +81,7 @@ export default function HomeClient() {
         })
 
         // Get recent expenses with status
-        const recent = expenses.slice(0, 5).map(e => ({
+        const recent = expenses.slice(0, 5).map((e: any) => ({
           id: e.id,
           merchant_name: e.merchant_name || 'Unknown',
           category: e.category || 'Uncategorized',
@@ -277,7 +277,7 @@ export default function HomeClient() {
             ) : (
               <div className="space-y-4">
                 {(() => {
-                  const categoryTotals = expenses.reduce((acc, exp) => {
+                  const categoryTotals = expenses.reduce((acc: Record<string, number>, exp: any) => {
                     const cat = exp.category || 'Other'
                     acc[cat] = (acc[cat] || 0) + exp.amount
                     return acc
