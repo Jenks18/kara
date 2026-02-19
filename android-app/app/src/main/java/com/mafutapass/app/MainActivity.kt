@@ -82,9 +82,12 @@ fun MafutaPassApp(themeViewModel: ThemeViewModel, avatarManager: AvatarManager) 
         }
         AuthState.SignedIn -> {
             Scaffold(bottomBar = { BottomNavBar(navController, avatarManager) }) { paddingValues ->
-                NavHost(navController = navController, startDestination = Screen.Reports.route,
+                NavHost(navController = navController, startDestination = Screen.Home.route,
                     modifier = Modifier.padding(paddingValues)) {
 
+                    composable(Screen.Home.route) {
+                        HomeScreen()
+                    }
                     composable(Screen.Reports.route) {
                         ReportsScreen(
                             onNavigateToExpenseDetail = { id -> navController.navigate("expenses/$id") },
@@ -95,6 +98,9 @@ fun MafutaPassApp(themeViewModel: ThemeViewModel, avatarManager: AvatarManager) 
                         AddReceiptScreen(
                             onNavigateToReport = { reportId -> navController.navigate("reports/$reportId") }
                         )
+                    }
+                    composable(Screen.Workspaces.route) {
+                        WorkspacesScreen()
                     }
                     composable(Screen.Account.route) {
                         AccountScreen(
