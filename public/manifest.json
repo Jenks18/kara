@@ -4,8 +4,8 @@
   "description": "AI-powered receipt capture & expense tracking",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0c1710",
-  "theme_color": "#10b981",
+  "background_color": "#eff6ff",
+  "theme_color": "#0066FF",
   "orientation": "portrait",
   "icons": [
     {
