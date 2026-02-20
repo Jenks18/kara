@@ -1,11 +1,13 @@
 import Foundation
 import Combine
+import Clerk
 
 // MARK: - Configuration
 struct ClerkConfig {
     static let publishableKey = "pk_live_Y2xlcmsubWFmdXRhcGFzcy5jb20k"
-    static let frontendAPI = "https://clerk.kachalabs.com"
-    static let baseAPIURL = "https://www.kachalabs.com/api"
+    static let baseAPIURL     = "https://www.kachalabs.com/api"
+    /// Called after sign-up to create the Supabase profile row (same as Android Step 2)
+    static let profileURL     = "\(baseAPIURL)/auth/create-profile"
 }
 
 // MARK: - Clerk User Info (distinct from Models.UserProfile)
@@ -17,237 +19,109 @@ struct ClerkUserInfo: Codable {
 }
 
 // MARK: - Clerk Auth Manager
+// Uses the official Clerk iOS SDK (clerk.auth.*) — mirrors Android's auth flow
+// but uses the first-class SDK instead of raw HTTP to Clerk's Frontend API.
 @MainActor
 class ClerkAuthManager: ObservableObject {
     @Published var isAuthenticated = false
     @Published var currentUser: ClerkUserInfo?
     @Published var errorMessage: String?
     @Published var isLoading = false
-    
+
     static let shared = ClerkAuthManager()
-    
-    private init() {
-        // Check if user has saved session
-        if let token = UserDefaults.standard.string(forKey: "clerk_token"),
-           let userData = UserDefaults.standard.data(forKey: "user_profile"),
-           let user = try? JSONDecoder().decode(ClerkUserInfo.self, from: userData) {
-            self.isAuthenticated = true
-            self.currentUser = user
-            APIClient.shared.setAuthToken(token)
-        }
+    private init() {}
+
+    /// Called from ClerkContentView.onAppear/onChange whenever clerk.user changes.
+    /// Reads directly from Clerk.shared.user to avoid SDK type-name conflicts.
+    func syncUser() {
+        guard let user = Clerk.shared.user else { return }
+        // Prefer the primary address; fall back to first in the list
+        let email = user.primaryEmailAddress?.emailAddress
+               ?? user.emailAddresses.first?.emailAddress
+               ?? ""
+        let name  = [user.firstName, user.lastName].compactMap { $0 }.joined(separator: " ")
+        currentUser = ClerkUserInfo(
+            id: user.id,
+            email: email,
+            name: name.isEmpty ? nil : name,
+            avatarURL: user.imageUrl
+        )
+        isAuthenticated = true
     }
-    
-    // MARK: - Sign In with Clerk
-    func signIn(email: String, password: String) async -> Bool {
-        isLoading = true
+
+    func clearUser() {
+        currentUser = nil
+        isAuthenticated = false
         errorMessage = nil
-        
-        do {
-            let url = URL(string: "\(ClerkConfig.frontendAPI)/v1/client/sign_ins")!
-            var request = URLRequest(url: url)
-            request.httpMethod = "POST"
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            
-            let body: [String: String] = [
-                "identifier": email,
-                "password": password
-            ]
-            request.httpBody = try JSONEncoder().encode(body)
-            
-            let (data, response) = try await URLSession.shared.data(for: request)
-            
-            guard let httpResponse = response as? HTTPURLResponse else {
-                errorMessage = "Network error"
-                isLoading = false
-                return false
-            }
-            
-            if httpResponse.statusCode != 200 {
-                errorMessage = "Invalid email or password"
-                isLoading = false
-                return false
-            }
-            
-            // Parse response and extract token
-            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let client = json["client"] as? [String: Any],
-               let sessions = client["sessions"] as? [[String: Any]],
-               let firstSession = sessions.first,
-               let lastActiveToken = firstSession["last_active_token"] as? [String: Any],
-               let token = lastActiveToken["jwt"] as? String,
-               let user = firstSession["user"] as? [String: Any],
-               let emailAddresses = user["email_addresses"] as? [[String: Any]],
-               let firstEmail = emailAddresses.first,
-               let emailAddress = firstEmail["email_address"] as? String,
-               let userId = user["id"] as? String {
-                
-                let firstName = user["first_name"] as? String ?? ""
-                let lastName = user["last_name"] as? String ?? ""
-                let fullName = "\(firstName) \(lastName)".trimmingCharacters(in: .whitespaces)
-                
-                let userProfile = ClerkUserInfo(
-                    id: userId,
-                    email: emailAddress,
-                    name: fullName.isEmpty ? nil : fullName,
-                    avatarURL: user["image_url"] as? String
-                )
-                
-                // Save session
-                UserDefaults.standard.set(token, forKey: "clerk_token")
-                if let userData = try? JSONEncoder().encode(userProfile) {
-                    UserDefaults.standard.set(userData, forKey: "user_profile")
-                }
-                
-                self.currentUser = userProfile
-                self.isAuthenticated = true
-                APIClient.shared.setAuthToken(token)
-                
-                isLoading = false
-                return true
-            }
-            
-            errorMessage = "Invalid response format"
-            isLoading = false
-            return false
-            
-        } catch {
-            errorMessage = "Sign in failed: \(error.localizedDescription)"
-            isLoading = false
-            return false
-        }
     }
-    
-    // MARK: - Sign Up with Clerk
-    func signUp(email: String, password: String, firstName: String, lastName: String) async -> Bool {
-        isLoading = true
-        errorMessage = nil
-        
-        do {
-            let url = URL(string: "\(ClerkConfig.frontendAPI)/v1/client/sign_ups")!
-            var request = URLRequest(url: url)
-            request.httpMethod = "POST"
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            
-            let body: [String: String] = [
-                "email_address": email,
-                "password": password,
-                "first_name": firstName,
-                "last_name": lastName
-            ]
-            request.httpBody = try JSONEncoder().encode(body)
-            
-            let (data, response) = try await URLSession.shared.data(for: request)
-            
-            guard let httpResponse = response as? HTTPURLResponse else {
-                errorMessage = "Network error"
-                isLoading = false
-                return false
-            }
-            
-            if httpResponse.statusCode != 200 {
-                if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                   let errors = json["errors"] as? [[String: Any]],
-                   let firstError = errors.first,
-                   let message = firstError["message"] as? String {
-                    errorMessage = message
-                } else {
-                    errorMessage = "Sign up failed"
-                }
-                isLoading = false
-                return false
-            }
-            
-            // Parse response and extract token
-            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let client = json["client"] as? [String: Any],
-               let sessions = client["sessions"] as? [[String: Any]],
-               let firstSession = sessions.first,
-               let lastActiveToken = firstSession["last_active_token"] as? [String: Any],
-               let token = lastActiveToken["jwt"] as? String,
-               let user = firstSession["user"] as? [String: Any],
-               let emailAddresses = user["email_addresses"] as? [[String: Any]],
-               let firstEmail = emailAddresses.first,
-               let emailAddress = firstEmail["email_address"] as? String,
-               let userId = user["id"] as? String {
-                
-                let fullName = "\(firstName) \(lastName)".trimmingCharacters(in: .whitespaces)
-                
-                let userProfile = ClerkUserInfo(
-                    id: userId,
-                    email: emailAddress,
-                    name: fullName.isEmpty ? nil : fullName,
-                    avatarURL: user["image_url"] as? String
-                )
-                
-                // Save session
-                UserDefaults.standard.set(token, forKey: "clerk_token")
-                if let userData = try? JSONEncoder().encode(userProfile) {
-                    UserDefaults.standard.set(userData, forKey: "user_profile")
-                }
-                
-                self.currentUser = userProfile
-                self.isAuthenticated = true
-                APIClient.shared.setAuthToken(token)
-                
-                isLoading = false
-                return true
-            }
-            
-            errorMessage = "Invalid response format"
-            isLoading = false
-            return false
-            
-        } catch {
-            errorMessage = "Sign up failed: \(error.localizedDescription)"
-            isLoading = false
-            return false
-        }
-    }
-    
+
     // MARK: - Sign Out
     func signOut() {
-        UserDefaults.standard.removeObject(forKey: "clerk_token")
-        UserDefaults.standard.removeObject(forKey: "user_profile")
-        self.currentUser = nil
-        self.isAuthenticated = false
-        self.errorMessage = nil
-        APIClient.shared.clearAuthToken()
+        // Fire-and-forget: clear local state immediately so the UI updates,
+        // then tell Clerk to revoke the server-side session.
+        clearUser()
+        Task {
+            do {
+                try await Clerk.shared.signOut()
+            } catch {
+                // Session may already be expired — not actionable, log in debug only
+                #if DEBUG
+                print("[ClerkAuthManager] signOut error: \(error)")
+                #endif
+            }
+        }
+    }
+
+    // MARK: - Create Supabase profile after sign-up (mirrors Android Step 2)
+    func createProfile(token: String, email: String, username: String, firstName: String, lastName: String) async {
+        guard let url = URL(string: ClerkConfig.profileURL) else {
+            #if DEBUG
+            print("[ClerkAuthManager] createProfile: invalid URL")
+            #endif
+            return
+        }
+        let body: [String: String] = [
+            "token": token, "email": email,
+            "username": username, "firstName": firstName, "lastName": lastName,
+        ]
+        guard let bodyData = try? JSONEncoder().encode(body) else { return }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = bodyData
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request)
+            if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+                #if DEBUG
+                print("[ClerkAuthManager] createProfile HTTP \(http.statusCode)")
+                #endif
+            }
+        } catch {
+            #if DEBUG
+            print("[ClerkAuthManager] createProfile error: \(error)")
+            #endif
+        }
     }
 }
 
-// MARK: - API Client with Auth
+// MARK: - API Client (thin wrapper kept for backward compatibility)
 class APIClient {
     static let shared = APIClient()
-    private var authToken: String?
-    
-    func setAuthToken(_ token: String) {
-        self.authToken = token
-    }
-    
-    func clearAuthToken() {
-        self.authToken = nil
-    }
-    
+    func setAuthToken(_ token: String) {}
+    func clearAuthToken() {}
+
     func makeRequest<T: Decodable>(url: URL, method: String = "GET", body: Data? = nil) async throws -> T {
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        if let token = authToken {
+        if let token = try? await Clerk.shared.session?.getToken()?.jwt {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
-        
-        if let body = body {
-            request.httpBody = body
-        }
-        
+        if let body = body { request.httpBody = body }
         let (data, response) = try await URLSession.shared.data(for: request)
-        
-        guard let httpResponse = response as? HTTPURLResponse,
-              (200...299).contains(httpResponse.statusCode) else {
+        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
             throw URLError(.badServerResponse)
         }
-        
         return try JSONDecoder().decode(T.self, from: data)
     }
 }
