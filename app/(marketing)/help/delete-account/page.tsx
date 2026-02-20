@@ -1,5 +1,3 @@
-import Link from 'next/link'
-
 export default function DeleteAccountHelpPage() {
   return (
     <div className="min-h-screen bg-white">
@@ -17,15 +15,15 @@ export default function DeleteAccountHelpPage() {
           <p className="text-blue-100 text-lg">
             How to permanently delete your Kacha account and all associated data.
           </p>
-          <Link
-            href="/account/delete"
+          <a
+            href="https://web.kachalabs.com/account/delete"
             className="inline-flex items-center gap-2 mt-6 px-6 py-3 bg-white text-blue-700 font-semibold rounded-xl hover:bg-blue-50 transition-colors text-sm"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
             Go straight to account deletion →
-          </Link>
+          </a>
         </div>
       </div>
 
@@ -70,6 +68,7 @@ export default function DeleteAccountHelpPage() {
           <h2 className="text-xl font-bold text-gray-900 mb-4">How to delete your account</h2>
 
           <div className="space-y-6">
+            {/* Step 1 */}
             <div className="flex gap-4">
               <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">
                 1
@@ -86,6 +85,7 @@ export default function DeleteAccountHelpPage() {
               </div>
             </div>
 
+            {/* Step 2 */}
             <div className="flex gap-4">
               <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">
                 2
@@ -98,6 +98,7 @@ export default function DeleteAccountHelpPage() {
               </div>
             </div>
 
+            {/* Step 3 */}
             <div className="flex gap-4">
               <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">
                 3
@@ -110,6 +111,7 @@ export default function DeleteAccountHelpPage() {
               </div>
             </div>
 
+            {/* Step 4 */}
             <div className="flex gap-4">
               <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">
                 4
@@ -125,20 +127,6 @@ export default function DeleteAccountHelpPage() {
           </div>
         </section>
 
-        {/* Direct delete CTA */}
-        <section className="bg-red-50 border border-red-200 rounded-xl p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between">
-          <div>
-            <h3 className="font-semibold text-red-900 mb-1">Ready to delete your account?</h3>
-            <p className="text-red-700 text-sm">Skip the steps above and go straight to the deletion page.</p>
-          </div>
-          <Link
-            href="/account/delete"
-            className="flex-shrink-0 inline-flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-colors text-sm"
-          >
-            Delete my account
-          </Link>
-        </section>
-
         {/* Timeframe */}
         <section className="bg-amber-50 border border-amber-200 rounded-xl p-6">
           <h3 className="font-semibold text-amber-900 mb-2">Data deletion timeframe</h3>
@@ -147,6 +135,20 @@ export default function DeleteAccountHelpPage() {
             active systems right away. Residual copies in encrypted backups may take up to
             30 days to be fully purged.
           </p>
+        </section>
+
+        {/* Direct delete CTA */}
+        <section className="bg-red-50 border border-red-200 rounded-xl p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between">
+          <div>
+            <h3 className="font-semibold text-red-900 mb-1">Ready to delete your account?</h3>
+            <p className="text-red-700 text-sm">Sign in to your account and we&apos;ll take you straight to the deletion page.</p>
+          </div>
+          <a
+            href="https://web.kachalabs.com/account/delete"
+            className="flex-shrink-0 inline-flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-colors text-sm"
+          >
+            Delete my account
+          </a>
         </section>
 
         {/* Contact */}
