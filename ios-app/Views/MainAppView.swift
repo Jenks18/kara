@@ -97,9 +97,13 @@ struct CustomTabBar: View {
         }
         .padding(.horizontal, 8)
         .padding(.top, 8)
-        .padding(.bottom, 12)
+        // Let SafeAreaInsets control the bottom so the bar always reaches the screen edge
+        .padding(.bottom, 8)
         .background(
-            Color.white
+            // ignoresSafeArea(edges: .bottom) lets the background colour fill the home
+            // indicator area, so the bar sits flush against the bottom of the screen
+            AppTheme.Colors.cardSurface
+                .ignoresSafeArea(edges: .bottom)
                 .shadow(color: Color.black.opacity(0.08), radius: 8, y: -2)
         )
         .overlay(alignment: .top) {

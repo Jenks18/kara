@@ -24,7 +24,7 @@ export default function BottomNav() {
     <nav 
       className="
         fixed bottom-0 left-0 right-0
-        bg-white border-t border-blue-200
+        bg-white/80 backdrop-blur-lg border-t border-blue-200
         z-40
         shadow-lg
       "
