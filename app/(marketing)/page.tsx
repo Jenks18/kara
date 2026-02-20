@@ -11,7 +11,7 @@ export default function LandingPage() {
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16 lg:h-18">
             {/* Logo */}
-            <KachaLogo variant="inline" className="h-10 w-auto" />
+            <KachaLogo variant="inline" className="h-14 w-auto" />
 
             {/* Desktop Nav Links */}
             <div className="hidden md:flex items-center gap-1">
