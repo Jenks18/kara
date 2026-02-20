@@ -398,7 +398,7 @@ class API {
         let imageUrl = try await uploadAvatar(imageData: imageData)
         
         // Update workspace with new avatar URL
-        let workspace = try await updateWorkspace(id: workspaceId, updates: ["avatar": imageUrl])
+        _ = try await updateWorkspace(id: workspaceId, updates: ["avatar": imageUrl])
         return imageUrl
     }
 }

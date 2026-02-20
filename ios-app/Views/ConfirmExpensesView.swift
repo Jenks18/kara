@@ -137,7 +137,7 @@ struct ConfirmExpensesView: View {
                                 }
                 
                 // QR Scan Badge (if detected)
-                if let qrUrl = detectedQRUrl {
+                if detectedQRUrl != nil {
                     VStack {
                         Spacer()
                         HStack {

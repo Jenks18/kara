@@ -52,7 +52,7 @@ struct ReportDetailPage: View {
     private func startRealtimeUpdates() {
         // Polling every 10 seconds for updates
         pollingTimer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { _ in
-            Task {
+            Task { @MainActor in
                 do {
                     let fetchedReport = try await API.shared.fetchReport(id: reportId)
                     report = fetchedReport

@@ -25,7 +25,7 @@ struct WorkspaceDetailView: View {
             
             if isLoading {
                 ProgressView("Loading...")
-            } else if let workspace = workspace {
+            } else if workspace != nil {
                 ScrollView {
                     VStack(spacing: 12) {
                         // Overview
@@ -331,9 +331,9 @@ struct WorkspaceOverviewView: View {
             Button("Cancel", role: .cancel) {}
         }
         .photosPicker(isPresented: $showImagePicker, selection: $selectedPhotoItem, matching: .images)
-        .onChange(of: selectedPhotoItem) { newItem in
+        .onChange(of: selectedPhotoItem) {
             Task {
-                if let data = try? await newItem?.loadTransferable(type: Data.self) {
+                if let data = try? await selectedPhotoItem?.loadTransferable(type: Data.self) {
                     await uploadAvatar(imageData: data)
                 }
             }
@@ -647,7 +647,7 @@ struct MemberRow: View {
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.primary)
                 
-                if let displayName = member.displayName {
+                if member.displayName != nil {
                     Text(member.email)
                         .font(.system(size: 14))
                         .foregroundColor(.secondary)
