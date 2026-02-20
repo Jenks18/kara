@@ -1,16 +1,15 @@
-import Image from 'next/image'
-
 interface KachaLogoProps {
-  /** 'icon' = K mark only, 'full' = wordmark only, 'inline' = K mark + "Kacha" text */
-  variant?: 'icon' | 'full' | 'inline'
-  /** Size of the icon container in px (icon/inline variants) */
+  /** 'icon' = K mark only, 'inline' = K mark + "Kacha" text */
+  variant?: 'icon' | 'inline'
+  /** Diameter of the icon circle in px */
   size?: number
   /** Background color for the icon circle. Defaults to #88e7fa */
   iconBg?: string
-  /** Text color for "Kacha" label in inline variant */
-  textClassName?: string
+  /** Extra class names on the outer wrapper */
   className?: string
-  /** Use a white background instead of the brand cyan — for use on dark/colored backgrounds */
+  /** Text colour class for the "Kacha" label (inline variant only) */
+  textClassName?: string
+  /** True when placed on a dark/coloured background — uses a semi-white circle */
   onDark?: boolean
 }
 
@@ -18,61 +17,64 @@ export function KachaLogo({
   variant = 'inline',
   size = 32,
   iconBg,
-  textClassName = 'text-gray-900',
   className = '',
+  textClassName = 'text-gray-900',
   onDark = false,
 }: KachaLogoProps) {
-  const bg = iconBg ?? (onDark ? 'rgba(255,255,255,0.18)' : '#88e7fa')
+  const bg = iconBg ?? (onDark ? 'rgba(255,255,255,0.20)' : '#88e7fa')
+  // inner image occupies 75% of the circle so there's a visible border effect
+  const imgSize = Math.round(size * 0.75)
 
   const IconMark = () => (
-    <div
-      className="flex items-center justify-center flex-shrink-0 rounded-full overflow-hidden"
-      style={{ width: size, height: size, background: bg }}
+    <span
+      aria-hidden
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+        width: size,
+        height: size,
+        borderRadius: '50%',
+        background: bg,
+        overflow: 'hidden',
+      }}
     >
-      <Image
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
         src="/logo-icon.png"
-        alt="Kacha"
-        width={size}
-        height={size}
-        className="object-contain"
-        style={{ width: '100%', height: '100%' }}
+        alt=""
+        width={imgSize}
+        height={imgSize}
+        style={{
+          width: imgSize,
+          height: imgSize,
+          objectFit: 'contain',
+          // Force the K to render as white so it pops on any bg colour
+          filter: 'brightness(0) invert(1)',
+        }}
       />
-    </div>
+    </span>
   )
 
   if (variant === 'icon') {
     return (
-      <div className={className}>
+      <span className={className}>
         <IconMark />
-      </div>
+      </span>
     )
   }
 
-  if (variant === 'full') {
-    return (
-      <div
-        className={`flex items-center justify-center rounded-xl overflow-hidden ${className}`}
-        style={{ background: bg, padding: '6px 12px' }}
-      >
-        <Image
-          src="/logo-full.png"
-          alt="Kacha"
-          width={120}
-          height={40}
-          className="object-contain"
-          style={{ height: 40, width: 'auto' }}
-        />
-      </div>
-    )
-  }
-
-  // inline: icon circle + text
+  // inline: circle icon + wordmark text
   return (
-    <div className={`flex items-center gap-2.5 ${className}`}>
+    <span className={`inline-flex items-center gap-2.5 ${className}`}>
       <IconMark />
-      <span className={`font-bold tracking-tight ${textClassName}`} style={{ fontSize: size * 0.65 }}>
+      <span
+        className={`font-bold tracking-tight leading-none ${textClassName}`}
+        style={{ fontSize: Math.round(size * 0.62) }}
+      >
         Kacha
       </span>
-    </div>
+    </span>
   )
 }
