@@ -82,7 +82,7 @@ struct ReportDetailContent: View {
                                 .foregroundColor(.secondary)
                             Text(formatCurrency(report.total_amount))
                                 .font(.title3.bold())
-                                .foregroundColor(.green)
+                                .foregroundColor(AppTheme.Colors.green500)
                         }
                         
                         Spacer()
@@ -194,7 +194,7 @@ struct ExpenseItemRow: View {
                     if item.kra_verified == true {
                         Image(systemName: "checkmark.seal.fill")
                             .font(.caption)
-                            .foregroundColor(.green)
+                            .foregroundColor(AppTheme.Colors.green500)
                     }
                 }
                 
@@ -261,9 +261,9 @@ struct ExpenseItemDetailView: View {
                     if item.kra_verified == true {
                         HStack {
                             Image(systemName: "checkmark.seal.fill")
-                                .foregroundColor(.green)
+                                .foregroundColor(AppTheme.Colors.green500)
                             Text("KRA Verified")
-                                .foregroundColor(.green)
+                                .foregroundColor(AppTheme.Colors.green500)
                         }
                     }
                 }
@@ -325,7 +325,7 @@ struct StatusBadge: View {
         switch status.lowercased() {
         case "draft": return .gray
         case "submitted": return .blue
-        case "approved": return .green
+        case "approved": return AppTheme.Colors.green500
         case "rejected": return .red
         default: return .gray
         }
@@ -372,7 +372,7 @@ struct ProcessingStatusPill: View {
     private var statusColor: Color {
         switch status.lowercased() {
         case "scanning": return .orange
-        case "processed": return .green
+        case "processed": return AppTheme.Colors.green500
         case "needs_review": return .yellow
         case "error": return .red
         default: return .gray

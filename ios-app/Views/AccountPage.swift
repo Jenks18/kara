@@ -11,17 +11,8 @@ struct AccountPage: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // Background gradient matching webapp
-                LinearGradient(
-                    colors: [
-                        Color(red: 0.937, green: 0.965, blue: 1.0),
-                        Color(red: 0.898, green: 0.941, blue: 0.996),
-                        Color(red: 0.937, green: 0.965, blue: 1.0)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
+                // Centralized background
+                AppTheme.backgroundView()
                 
                 ScrollView {
                     VStack(spacing: 32) {
@@ -31,7 +22,7 @@ struct AccountPage: View {
                             Circle()
                                 .fill(
                                     LinearGradient(
-                                        colors: [Color(red: 0.0, green: 0.4, blue: 1.0), Color(red: 0.0, green: 0.322, blue: 0.8)],
+                                        colors: [AppTheme.Colors.primary, AppTheme.Colors.primaryDark],
                                         startPoint: .topLeading,
                                         endPoint: .bottomTrailing
                                     )
@@ -152,7 +143,7 @@ struct AccountMenuRow: View {
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.system(size: 24))
-                .foregroundColor(isDestructive ? .red : Color(red: 0.0, green: 0.4, blue: 1.0))
+                .foregroundColor(isDestructive ? .red : AppTheme.Colors.primary)
                 .frame(width: 24)
             
             Text(label)
@@ -202,16 +193,7 @@ struct ProfilePage: View {
     var body: some View {
         ZStack {
             // Background gradient
-            LinearGradient(
-                colors: [
-                    Color(red: 0.937, green: 0.965, blue: 1.0),
-                    Color(red: 0.898, green: 0.941, blue: 0.996),
-                    Color(red: 0.937, green: 0.965, blue: 1.0)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            AppTheme.backgroundView()
             
             if isLoading {
                 ProgressView("Loading profile...")
@@ -261,7 +243,7 @@ struct ProfilePage: View {
                             Circle()
                                 .fill(
                                     LinearGradient(
-                                        colors: [Color(red: 0.0, green: 0.4, blue: 1.0), Color(red: 0.0, green: 0.322, blue: 0.8)],
+                                        colors: [AppTheme.Colors.primary, AppTheme.Colors.primaryDark],
                                         startPoint: .topLeading,
                                         endPoint: .bottomTrailing
                                     )
@@ -278,7 +260,7 @@ struct ProfilePage: View {
                                 showAvatarPicker = true
                             }) {
                                 Circle()
-                                    .fill(Color(red: 0.0, green: 0.4, blue: 1.0))
+                                    .fill(AppTheme.Colors.primary)
                                     .frame(width: 40, height: 40)
                                     .overlay(
                                         Image(systemName: "camera.fill")
@@ -455,16 +437,7 @@ struct PreferencesPage: View {
     var body: some View {
         ZStack {
             // Background gradient
-            LinearGradient(
-                colors: [
-                    Color(red: 0.937, green: 0.965, blue: 1.0),
-                    Color(red: 0.898, green: 0.941, blue: 0.996),
-                    Color(red: 0.937, green: 0.965, blue: 1.0)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            AppTheme.backgroundView()
             
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
@@ -614,16 +587,7 @@ struct SecurityPage: View {
     var body: some View {
         ZStack {
             // Background gradient
-            LinearGradient(
-                colors: [
-                    Color(red: 0.937, green: 0.965, blue: 1.0),
-                    Color(red: 0.898, green: 0.941, blue: 0.996),
-                    Color(red: 0.937, green: 0.965, blue: 1.0)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            AppTheme.backgroundView()
             
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
@@ -695,7 +659,7 @@ struct SecurityMenuRow: View {
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.system(size: 24))
-                .foregroundColor(isDestructive ? .red : Color(red: 0.0, green: 0.4, blue: 1.0))
+                .foregroundColor(isDestructive ? .red : AppTheme.Colors.primary)
                 .frame(width: 24)
             
             Text(label)
@@ -742,7 +706,7 @@ struct TwoFactorAuthView: View {
                         Text("Authenticator App")
                         Spacer()
                         Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.green)
+                            .foregroundColor(AppTheme.Colors.green500)
                     }
                     
                     Button {
@@ -753,7 +717,7 @@ struct TwoFactorAuthView: View {
                             Text("SMS Authentication")
                             Spacer()
                             Image(systemName: "plus.circle")
-                                .foregroundColor(.green)
+                                .foregroundColor(AppTheme.Colors.green500)
                         }
                     }
                 }
@@ -777,16 +741,7 @@ struct AboutPage: View {
     var body: some View {
         ZStack {
             // Background gradient
-            LinearGradient(
-                colors: [
-                    Color(red: 0.937, green: 0.965, blue: 1.0),
-                    Color(red: 0.898, green: 0.941, blue: 0.996),
-                    Color(red: 0.937, green: 0.965, blue: 1.0)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            AppTheme.backgroundView()
             
             ScrollView {
                 VStack(spacing: 24) {
@@ -849,7 +804,7 @@ struct AboutPage: View {
                             Button(action: {}) {
                                 Text("Terms of Service")
                                     .font(.system(size: 14))
-                                    .foregroundColor(Color(red: 0.0, green: 0.4, blue: 1.0))
+                                    .foregroundColor(AppTheme.Colors.primary)
                                     .underline()
                             }
                             Text("and")
@@ -858,7 +813,7 @@ struct AboutPage: View {
                             Button(action: {}) {
                                 Text("Privacy")
                                     .font(.system(size: 14))
-                                    .foregroundColor(Color(red: 0.0, green: 0.4, blue: 1.0))
+                                    .foregroundColor(AppTheme.Colors.primary)
                                     .underline()
                             }
                             Text(".")
@@ -886,7 +841,7 @@ struct AboutMenuRow: View {
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.system(size: 24))
-                .foregroundColor(Color(red: 0.0, green: 0.4, blue: 1.0))
+                .foregroundColor(AppTheme.Colors.primary)
                 .frame(width: 24)
             
             Text(label)

@@ -112,14 +112,14 @@ struct ExpenseDetailView: View {
                     if hasEtimsQR {
                         HStack {
                             Image(systemName: "checkmark.shield.fill")
-                                .foregroundColor(.green)
+                                .foregroundColor(AppTheme.Colors.green500)
                             Text("KRA Verified")
                                 .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(.green)
+                                .foregroundColor(AppTheme.Colors.green500)
                         }
                         .padding(.vertical, 8)
                         .padding(.horizontal, 16)
-                        .background(Color.green.opacity(0.1))
+                        .background(AppTheme.Colors.green500.opacity(0.1))
                         .cornerRadius(20)
                     }
                 }
@@ -132,7 +132,7 @@ struct ExpenseDetailView: View {
                     Spacer()
                     HStack {
                         Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.green)
+                            .foregroundColor(AppTheme.Colors.green500)
                         Text("Saved successfully")
                             .font(.system(size: 15))
                     }
@@ -158,7 +158,7 @@ struct ExpenseDetailView: View {
                 } else if !needsReview {
                     Button(action: startEditing) {
                         Text("Edit")
-                            .foregroundColor(Color(red: 0.0, green: 0.4, blue: 1.0))
+                            .foregroundColor(AppTheme.Colors.primary)
                     }
                 }
             }
@@ -292,7 +292,7 @@ struct ExpenseDetailView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(Color(red: 0.0, green: 0.4, blue: 1.0))
+                .background(AppTheme.Colors.primary)
                 .foregroundColor(.white)
                 .cornerRadius(12)
             }

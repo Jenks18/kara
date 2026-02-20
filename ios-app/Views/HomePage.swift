@@ -10,17 +10,8 @@ struct HomePage: View {
     
     var body: some View {
         ZStack {
-            // Blue gradient background
-            LinearGradient(
-                colors: [
-                    Color(red: 0.937, green: 0.965, blue: 1.0), // blue-50
-                    Color(red: 0.937, green: 0.965, blue: 1.0), // blue-50
-                    Color(red: 0.875, green: 0.918, blue: 0.980)  // blue-100
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            // Centralized blue gradient background
+            AppTheme.backgroundView()
             
             VStack(spacing: 0) {
                 // Header
@@ -32,10 +23,10 @@ struct HomePage: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Dashboard")
                             .font(.system(size: 32, weight: .bold))
-                            .foregroundColor(Color(red: 0.11, green: 0.11, blue: 0.11))
+                            .foregroundColor(AppTheme.Colors.textPrimary)
                         Text("Welcome back. Here's your expense overview.")
                             .font(.system(size: 14))
-                            .foregroundColor(Color(red: 0.459, green: 0.459, blue: 0.459))
+                            .foregroundColor(AppTheme.Colors.textSecondary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 16)
@@ -60,8 +51,8 @@ struct HomePage: View {
                             // Total Expenses Card
                             StatCardView(
                                 icon: "dollarsign.circle.fill",
-                                iconColor: Color(red: 0.0, green: 0.4, blue: 1.0),
-                                iconBackground: Color(red: 0.937, green: 0.965, blue: 1.0),
+                                iconColor: AppTheme.Colors.primary,
+                                iconBackground: AppTheme.Colors.blue50,
                                 value: formatCurrency(totalExpenses),
                                 label: "Total Expenses",
                                 sublabel: "This month",
@@ -72,8 +63,8 @@ struct HomePage: View {
                             // Pending Approval Card
                             StatCardView(
                                 icon: "clock.fill",
-                                iconColor: Color(red: 0.965, green: 0.620, blue: 0.043),
-                                iconBackground: Color(red: 0.996, green: 0.953, blue: 0.780),
+                                iconColor: AppTheme.Colors.yellow500,
+                                iconBackground: AppTheme.Colors.yellowBadgeBg,
                                 value: "\(pendingCount)",
                                 label: "Pending Approval",
                                 sublabel: "Awaiting review",
@@ -84,8 +75,8 @@ struct HomePage: View {
                             // Reports Submitted Card
                             StatCardView(
                                 icon: "doc.text.fill",
-                                iconColor: Color(red: 0.0, green: 0.4, blue: 1.0),
-                                iconBackground: Color(red: 0.820, green: 0.980, blue: 0.898),
+                                iconColor: AppTheme.Colors.primary,
+                                iconBackground: AppTheme.Colors.blueBadgeBg,
                                 value: "\(submittedReportsCount)",
                                 label: "Reports Submitted",
                                 sublabel: "This month",
@@ -98,11 +89,11 @@ struct HomePage: View {
                                 HStack {
                                     Text("Recent Expenses")
                                         .font(.system(size: 20, weight: .bold))
-                                        .foregroundColor(Color(red: 0.11, green: 0.11, blue: 0.11))
+                                        .foregroundColor(AppTheme.Colors.textPrimary)
                                     Spacer()
                                     Text("View All")
                                         .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(Color(red: 0.0, green: 0.4, blue: 1.0))
+                                        .foregroundColor(AppTheme.Colors.primary)
                                 }
                                 .padding(.horizontal, 20)
                                 .padding(.top, 20)
@@ -110,7 +101,7 @@ struct HomePage: View {
                                 if expenses.isEmpty {
                                     Text("No expenses yet. Start by scanning a receipt!")
                                         .font(.system(size: 14))
-                                        .foregroundColor(Color(red: 0.459, green: 0.459, blue: 0.459))
+                                        .foregroundColor(AppTheme.Colors.textSecondary)
                                         .padding(.horizontal, 20)
                                         .padding(.bottom, 20)
                                 } else {
@@ -119,15 +110,15 @@ struct HomePage: View {
                                             VStack(alignment: .leading, spacing: 2) {
                                                 Text(expense.merchant_name ?? "Receipt")
                                                     .font(.system(size: 15, weight: .medium))
-                                                    .foregroundColor(Color(red: 0.11, green: 0.11, blue: 0.11))
+                                                    .foregroundColor(AppTheme.Colors.textPrimary)
                                                 Text(expense.category.capitalized)
                                                     .font(.system(size: 12))
-                                                    .foregroundColor(Color(red: 0.459, green: 0.459, blue: 0.459))
+                                                    .foregroundColor(AppTheme.Colors.textSecondary)
                                             }
                                             Spacer()
                                             Text(formatCurrency(expense.amount))
                                                 .font(.system(size: 15, weight: .semibold))
-                                                .foregroundColor(Color(red: 0.11, green: 0.11, blue: 0.11))
+                                                .foregroundColor(AppTheme.Colors.textPrimary)
                                         }
                                         .padding(.horizontal, 20)
                                         .padding(.vertical, 4)
@@ -145,11 +136,11 @@ struct HomePage: View {
                                 HStack {
                                     Text("Active Reports")
                                         .font(.system(size: 20, weight: .bold))
-                                        .foregroundColor(Color(red: 0.11, green: 0.11, blue: 0.11))
+                                        .foregroundColor(AppTheme.Colors.textPrimary)
                                     Spacer()
                                     Text("View All")
                                         .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(Color(red: 0.0, green: 0.4, blue: 1.0))
+                                        .foregroundColor(AppTheme.Colors.primary)
                                 }
                                 .padding(.horizontal, 20)
                                 .padding(.top, 20)
@@ -157,7 +148,7 @@ struct HomePage: View {
                                 if reports.isEmpty {
                                     Text("No active reports")
                                         .font(.system(size: 14))
-                                        .foregroundColor(Color(red: 0.459, green: 0.459, blue: 0.459))
+                                        .foregroundColor(AppTheme.Colors.textSecondary)
                                         .padding(.horizontal, 20)
                                         .padding(.bottom, 20)
                                 } else {
@@ -166,15 +157,15 @@ struct HomePage: View {
                                             VStack(alignment: .leading, spacing: 2) {
                                                 Text(report.title)
                                                     .font(.system(size: 15, weight: .medium))
-                                                    .foregroundColor(Color(red: 0.11, green: 0.11, blue: 0.11))
+                                                    .foregroundColor(AppTheme.Colors.textPrimary)
                                                 Text(report.status.capitalized)
                                                     .font(.system(size: 12))
-                                                    .foregroundColor(Color(red: 0.459, green: 0.459, blue: 0.459))
+                                                    .foregroundColor(AppTheme.Colors.textSecondary)
                                             }
                                             Spacer()
                                             Text(formatCurrency(report.total_amount))
                                                 .font(.system(size: 15, weight: .semibold))
-                                                .foregroundColor(Color(red: 0.11, green: 0.11, blue: 0.11))
+                                                .foregroundColor(AppTheme.Colors.textPrimary)
                                         }
                                         .padding(.horizontal, 20)
                                         .padding(.vertical, 4)
@@ -192,17 +183,17 @@ struct HomePage: View {
                                 HStack(spacing: 8) {
                                     Image(systemName: "chart.line.uptrend.xyaxis")
                                         .font(.system(size: 18))
-                                        .foregroundColor(Color(red: 0.11, green: 0.11, blue: 0.11))
+                                        .foregroundColor(AppTheme.Colors.textPrimary)
                                     Text("Spending by Category")
                                         .font(.system(size: 20, weight: .bold))
-                                        .foregroundColor(Color(red: 0.11, green: 0.11, blue: 0.11))
+                                        .foregroundColor(AppTheme.Colors.textPrimary)
                                 }
                                 .padding(.horizontal, 20)
                                 .padding(.top, 20)
                                 
                                 Text("No spending data available")
                                     .font(.system(size: 14))
-                                    .foregroundColor(Color(red: 0.459, green: 0.459, blue: 0.459))
+                                    .foregroundColor(AppTheme.Colors.textSecondary)
                                     .padding(.horizontal, 20)
                                     .padding(.bottom, 20)
                             }
@@ -280,13 +271,13 @@ struct StatCardView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(value)
                         .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(Color(red: 0.11, green: 0.11, blue: 0.11))
+                        .foregroundColor(AppTheme.Colors.textPrimary)
                     Text(sublabel)
                         .font(.system(size: 12))
-                        .foregroundColor(Color(red: 0.459, green: 0.459, blue: 0.459))
+                        .foregroundColor(AppTheme.Colors.textSecondary)
                     Text(label)
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(Color(red: 0.11, green: 0.11, blue: 0.11))
+                        .foregroundColor(AppTheme.Colors.textPrimary)
                 }
             }
             
@@ -296,10 +287,10 @@ struct StatCardView: View {
                 HStack(spacing: 4) {
                     Image(systemName: trendUp ? "arrow.up.right" : "arrow.down.right")
                         .font(.system(size: 12))
-                        .foregroundColor(trendUp ? Color(red: 0.0, green: 0.4, blue: 1.0) : Color(red: 0.937, green: 0.267, blue: 0.267))
+                        .foregroundColor(trendUp ? AppTheme.Colors.primary : AppTheme.Colors.red500)
                     Text(trend)
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(trendUp ? Color(red: 0.0, green: 0.4, blue: 1.0) : Color(red: 0.937, green: 0.267, blue: 0.267))
+                        .foregroundColor(trendUp ? AppTheme.Colors.primary : AppTheme.Colors.red500)
                 }
             }
         }

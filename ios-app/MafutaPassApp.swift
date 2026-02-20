@@ -104,9 +104,9 @@ struct BrandGradientBackground: View {
     var body: some View {
         LinearGradient(
             colors: [
-                Color(red: 0.937, green: 0.965, blue: 1.0),   // blue-50: #eff6ff
-                Color(red: 0.898, green: 0.941, blue: 0.996),  // blue-100 (via)
-                Color(red: 0.859, green: 0.918, blue: 0.996)   // blue-100: #dbeafe
+                AppTheme.Colors.blue50,   // blue-50: #eff6ff
+                Color(hex: "#E8F0FE"),  // blue-100 (via)
+                AppTheme.Colors.blue100   // blue-100: #dbeafe
             ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
@@ -127,7 +127,7 @@ struct ClerkAuthSheet: View {
             VStack {
                 LinearGradient(
                     colors: [
-                        Color(red: 0.937, green: 0.965, blue: 1.0).opacity(0.3),
+                        AppTheme.Colors.blue50.opacity(0.3),
                         Color.white
                     ],
                     startPoint: .top,
@@ -139,7 +139,7 @@ struct ClerkAuthSheet: View {
             .ignoresSafeArea()
             
             AuthView()
-                .accentColor(Color(red: 0.0, green: 0.4, blue: 1.0))
+                .accentColor(AppTheme.Colors.primary)
         }
     }
 }
@@ -159,7 +159,7 @@ struct WelcomeView: View {
             VStack(spacing: 12) {
                 Text("Kacha")
                     .font(.system(size: 42, weight: .bold, design: .rounded))
-                    .foregroundColor(Color(red: 0.0, green: 0.4, blue: 1.0))
+                    .foregroundColor(AppTheme.Colors.primary)
                 
                 Text("Smart Expense Tracker")
                     .font(.system(size: 17, weight: .medium))
@@ -190,8 +190,8 @@ struct BrandIcon: View {
                 .fill(
                     LinearGradient(
                         colors: [
-                            Color(red: 0.0, green: 0.4, blue: 1.0),       // blue-500
-                            Color(red: 0.0, green: 0.322, blue: 0.8)      // blue-600
+                            AppTheme.Colors.primary,       // blue-500
+                            AppTheme.Colors.primaryDark      // blue-600
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -199,7 +199,7 @@ struct BrandIcon: View {
                 )
                 .frame(width: 120, height: 120)
                 .shadow(
-                    color: Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.3),
+                    color: AppTheme.Colors.primary.opacity(0.3),
                     radius: 20,
                     x: 0,
                     y: 10
@@ -229,8 +229,8 @@ struct SignInButton: View {
             .background(
                 LinearGradient(
                     colors: [
-                        Color(red: 0.0, green: 0.4, blue: 1.0),       // blue-500
-                        Color(red: 0.0, green: 0.322, blue: 0.8)      // blue-600
+                        AppTheme.Colors.primary,       // blue-500
+                        AppTheme.Colors.primaryDark      // blue-600
                     ],
                     startPoint: .leading,
                     endPoint: .trailing
@@ -239,7 +239,7 @@ struct SignInButton: View {
             .foregroundColor(.white)
             .cornerRadius(16)
             .shadow(
-                color: Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.25),
+                color: AppTheme.Colors.primary.opacity(0.25),
                 radius: 12,
                 x: 0,
                 y: 6
@@ -273,7 +273,7 @@ struct AccountTab: View {
                                 .frame(width: 120, height: 120)
                                 .clipShape(Circle())
                                 .shadow(
-                                    color: Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.2),
+                                    color: AppTheme.Colors.primary.opacity(0.2),
                                     radius: 15,
                                     x: 0,
                                     y: 8
@@ -287,11 +287,11 @@ struct AccountTab: View {
                             if let firstName = user.firstName, let lastName = user.lastName {
                                 Text("\(firstName) \(lastName)")
                                     .font(.system(size: 28, weight: .bold))
-                                    .foregroundColor(Color(red: 0.0, green: 0.4, blue: 1.0))
+                                    .foregroundColor(AppTheme.Colors.primary)
                             } else if let email = user.emailAddresses.first?.emailAddress {
                                 Text(email)
                                     .font(.system(size: 24, weight: .bold))
-                                    .foregroundColor(Color(red: 0.0, green: 0.4, blue: 1.0))
+                                    .foregroundColor(AppTheme.Colors.primary)
                             }
                             
                             // Email
@@ -311,7 +311,7 @@ struct AccountTab: View {
             .navigationTitle("Account")
             .navigationBarTitleDisplayMode(.large)
         }
-        .accentColor(Color(red: 0.0, green: 0.4, blue: 1.0))
+        .accentColor(AppTheme.Colors.primary)
     }
 }
 
@@ -323,8 +323,8 @@ struct ProfileImagePlaceholder: View {
                 .fill(
                     LinearGradient(
                         colors: [
-                            Color(red: 0.0, green: 0.4, blue: 1.0),
-                            Color(red: 0.0, green: 0.322, blue: 0.8)
+                            AppTheme.Colors.primary,
+                            AppTheme.Colors.primaryDark
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -336,7 +336,7 @@ struct ProfileImagePlaceholder: View {
                 .foregroundColor(.white)
         }
         .shadow(
-            color: Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.2),
+            color: AppTheme.Colors.primary.opacity(0.2),
             radius: 15,
             x: 0,
             y: 8

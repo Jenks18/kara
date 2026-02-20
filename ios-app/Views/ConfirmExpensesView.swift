@@ -39,7 +39,7 @@ struct ConfirmExpensesView: View {
                                     .font(.system(size: 17, weight: .semibold))
                                 Text("Back")
                             }
-                            .foregroundColor(Color(red: 0.0, green: 0.4, blue: 1.0))
+                            .foregroundColor(AppTheme.Colors.primary)
                         }
                         
                         Spacer()
@@ -98,12 +98,12 @@ struct ConfirmExpensesView: View {
                                                 .frame(width: 36, height: 36)
                                                 .background(currentImageIndex == 0 ?
                                                     Color.gray.opacity(0.3) :
-                                                    Color(red: 0.0, green: 0.4, blue: 1.0))
+                                                    AppTheme.Colors.primary)
                                                 .cornerRadius(18)
                                                 .overlay(
                                                     RoundedRectangle(cornerRadius: 18)
                                                         .stroke(currentImageIndex == 0 ? Color.clear :
-                                                            Color(red: 0.3, green: 0.8, blue: 0.5), lineWidth: 2)
+                                                            AppTheme.Colors.primary, lineWidth: 2)
                                                 )
                                                 .shadow(color: .black.opacity(0.3), radius: 8)
                                         }
@@ -121,12 +121,12 @@ struct ConfirmExpensesView: View {
                                                 .frame(width: 36, height: 36)
                                                 .background(currentImageIndex == images.count - 1 ?
                                                     Color.gray.opacity(0.3) :
-                                                    Color(red: 0.0, green: 0.4, blue: 1.0))
+                                                    AppTheme.Colors.primary)
                                                 .cornerRadius(18)
                                                 .overlay(
                                                     RoundedRectangle(cornerRadius: 18)
                                                         .stroke(currentImageIndex == images.count - 1 ? Color.clear :
-                                                            Color(red: 0.3, green: 0.8, blue: 0.5), lineWidth: 2)
+                                                            AppTheme.Colors.primary, lineWidth: 2)
                                                 )
                                                 .shadow(color: .black.opacity(0.3), radius: 8)
                                         }
@@ -149,7 +149,7 @@ struct ConfirmExpensesView: View {
                         .foregroundColor(.white)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.9))
+                        .background(AppTheme.Colors.primary.opacity(0.9))
                         .cornerRadius(16)
                         .padding(.bottom, 8)
                     }
@@ -244,7 +244,7 @@ struct ConfirmExpensesView: View {
                                     HStack(spacing: 8) {
                                         Image(systemName: "location.fill")
                                             .font(.system(size: 14))
-                                            .foregroundColor(Color(red: 0.0, green: 0.4, blue: 1.0))
+                                            .foregroundColor(AppTheme.Colors.primary)
                                         
                                         Text("Location: \(String(format: "%.4f, %.4f", location.coordinate.latitude, location.coordinate.longitude))")
                                             .font(.system(size: 13))
@@ -274,7 +274,7 @@ struct ConfirmExpensesView: View {
                                 .background(
                                     selectedWorkspace.isEmpty || isSubmitting ?
                                         Color.gray :
-                                        Color(red: 0.0, green: 0.4, blue: 1.0)
+                                        AppTheme.Colors.primary
                                 )
                                 .cornerRadius(12)
                             }

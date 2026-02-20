@@ -98,7 +98,7 @@ struct ReceiptCaptureView: View {
                                 VStack(spacing: 4) {
                                     Image(systemName: "checkmark.circle.fill")
                                         .font(.system(size: 24))
-                                        .foregroundColor(capturedImages.isEmpty ? .gray : Color(red: 0.0, green: 0.4, blue: 1.0))
+                                        .foregroundColor(capturedImages.isEmpty ? .gray : AppTheme.Colors.primary)
                                     Text("Done")
                                         .font(.system(size: 12))
                                         .foregroundColor(capturedImages.isEmpty ? .gray : .white)
@@ -132,7 +132,7 @@ struct ReceiptCaptureView: View {
                             .foregroundColor(.white)
                             .padding(.horizontal, 30)
                             .padding(.vertical, 12)
-                            .background(Color(red: 0.0, green: 0.4, blue: 1.0))
+                            .background(AppTheme.Colors.primary)
                             .cornerRadius(12)
                     }
                     .padding(.top, 10)

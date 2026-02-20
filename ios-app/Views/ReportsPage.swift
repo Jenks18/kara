@@ -146,7 +146,7 @@ struct ExpenseCardView: View {
     
     var statusColor: Color {
         switch expense.processing_status {
-        case "processed": return .green
+        case "processed": return AppTheme.Colors.green500
         case "scanning": return .gray
         case "needs_review": return .orange
         case "error": return .red
@@ -170,7 +170,7 @@ struct ExpenseCardView: View {
             HStack(alignment: .top) {
                 Image(systemName: expense.processing_status == "scanning" ? "arrow.clockwise" : "doc.text")
                     .font(.system(size: 20))
-                    .foregroundColor(expense.processing_status == "scanning" ? .gray : Color(red: 0.0, green: 0.4, blue: 1.0))
+                    .foregroundColor(expense.processing_status == "scanning" ? .gray : AppTheme.Colors.primary)
                     .frame(width: 40, height: 40)
                     .rotationEffect(.degrees(isAnimating && expense.processing_status == "scanning" ? 360 : 0))
                     .animation(expense.processing_status == "scanning" ? Animation.linear(duration: 1.5).repeatForever(autoreverses: false) : .default, value: isAnimating)
@@ -179,7 +179,7 @@ struct ExpenseCardView: View {
                             isAnimating = true
                         }
                     }
-                    .background(Color(red: 0.820, green: 0.980, blue: 0.898))
+                    .background(AppTheme.Colors.blueBadgeBg)
                     .cornerRadius(8)
                 
                 VStack(alignment: .leading, spacing: 4) {
@@ -213,7 +213,7 @@ struct ExpenseCardView: View {
                     } else {
                         Text(CurrencyFormatter.shared.formatSimple(expense.amount))
                             .font(.system(size: 17, weight: .bold))
-                            .foregroundColor(expense.processing_status == "needs_review" ? Color.orange : Color(red: 0.0, green: 0.4, blue: 1.0))
+                            .foregroundColor(expense.processing_status == "needs_review" ? Color.orange : AppTheme.Colors.primary)
                     }
                     
                     // KRA Verified Pill (keep this!)
@@ -224,10 +224,10 @@ struct ExpenseCardView: View {
                             Text("KRA")
                                 .font(.system(size: 11, weight: .medium))
                         }
-                        .foregroundColor(Color(red: 0.0, green: 0.4, blue: 1.0))
+                        .foregroundColor(AppTheme.Colors.primary)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .background(Color(red: 0.820, green: 0.980, blue: 0.898))
+                        .background(AppTheme.Colors.blueBadgeBg)
                         .cornerRadius(8)
                     }
                 }
@@ -292,21 +292,21 @@ struct ExpenseCardView: View {
             if expense.processing_status == "scanning" {
                 HStack(spacing: 8) {
                     Circle()
-                        .fill(Color.green)
+                        .fill(AppTheme.Colors.green500)
                         .frame(width: 8, height: 8)
                         .opacity(isAnimating ? 0.3 : 1.0)
                         .animation(Animation.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: isAnimating)
                     Text("Scanning receipt...")
                         .font(.system(size: 12))
-                        .foregroundColor(Color.green)
+                        .foregroundColor(AppTheme.Colors.green500)
                     Spacer()
                 }
                 .padding(10)
-                .background(Color.green.opacity(0.1))
+                .background(AppTheme.Colors.green500.opacity(0.1))
                 .cornerRadius(8)
                 .overlay(
                     RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.green.opacity(0.3), lineWidth: 1)
+                        .stroke(AppTheme.Colors.green500.opacity(0.3), lineWidth: 1)
                 )
             }
         }
@@ -366,7 +366,7 @@ struct ReportCardView: View {
                 // Title row
                 HStack {
                     Image(systemName: "doc.text")
-                        .foregroundColor(Color(red: 0.0, green: 0.4, blue: 1.0))
+                        .foregroundColor(AppTheme.Colors.primary)
                     Text(report.title)
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(.black)
@@ -431,10 +431,10 @@ struct ReportCardView: View {
                     Text(report.workspace_name)
                         .font(.system(size: 13, weight: .medium))
                 }
-                .foregroundColor(Color(red: 0.0, green: 0.4, blue: 1.0))
+                .foregroundColor(AppTheme.Colors.primary)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 5)
-                .background(Color(red: 0.820, green: 0.980, blue: 0.898))
+                .background(AppTheme.Colors.blueBadgeBg)
                 .cornerRadius(12)
                 
                 Spacer()
@@ -456,9 +456,9 @@ struct ReportCardView: View {
         case "draft":
             return Color.gray
         case "submitted":
-            return Color(red: 0.0, green: 0.4, blue: 1.0)
+            return AppTheme.Colors.primary
         case "approved":
-            return Color(red: 0.0, green: 0.4, blue: 1.0)
+            return AppTheme.Colors.primary
         case "rejected":
             return Color.red
         default:

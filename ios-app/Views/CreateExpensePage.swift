@@ -1,106 +1,116 @@
 import SwiftUI
+import PhotosUI
+
+// =============================================================
+// AddReceiptPage — matches Android AddReceiptScreen design
+// Two clean options: Scan Receipt (camera) + Choose from Gallery
+// =============================================================
 
 struct CreateExpensePage: View {
     @State private var showReceiptCapture = false
+    @State private var showPhotosPicker = false
+    @State private var selectedPhotos: [PhotosPickerItem] = []
+    @State private var galleryImages: [UIImage] = []
+    @State private var showConfirmExpenses = false
     
     var body: some View {
         ZStack {
-            // Light emerald gradient matching web app
-            LinearGradient(
-                colors: [
-                    Color(red: 0.925, green: 0.992, blue: 0.961),
-                    Color(red: 0.937, green: 0.992, blue: 0.937),
-                    Color(red: 0.820, green: 0.980, blue: 0.898)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            // Blue gradient background (matches Android)
+            AppTheme.backgroundView()
             
-            // Content - No header, start directly with cards
-            ScrollView {
+            VStack(spacing: 0) {
+                // Header
+                VStack(spacing: 4) {
+                    Text("Add Receipt")
+                        .font(AppTheme.Typography.displayMedium)
+                        .foregroundColor(AppTheme.Colors.textPrimary)
+                    
+                    Text("Choose how to capture your receipt")
+                        .font(AppTheme.Typography.bodyMedium)
+                        .foregroundColor(AppTheme.Colors.textSecondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.top, 40)
+                .padding(.bottom, 32)
+                
+                // Illustration icon
+                ZStack {
+                    Circle()
+                        .fill(AppTheme.Colors.blueBadgeBg)
+                        .frame(width: 120, height: 120)
+                    
+                    Image(systemName: "doc.viewfinder.fill")
+                        .font(.system(size: 56))
+                        .foregroundColor(AppTheme.Colors.primary)
+                }
+                .padding(.bottom, 40)
+                
+                // Action buttons
                 VStack(spacing: 16) {
-                    // Scan Receipt Card
-                    CreateOptionCard(
-                        icon: "doc.text.fill",
-                        title: "Scan Receipt",
-                        description: "Capture fuel receipt with camera",
-                        iconColor: Color(red: 0.0, green: 0.4, blue: 1.0)
-                    ) {
-                        showReceiptCapture = true
+                    // Primary: Scan Receipt (Camera)
+                    Button(action: { showReceiptCapture = true }) {
+                        HStack(spacing: 12) {
+                            Image(systemName: "camera.fill")
+                                .font(.system(size: 22))
+                            Text("Scan Receipt")
+                        }
+                        .primaryButtonStyle()
                     }
                     
-                    // Start Chat Card
-                    CreateOptionCard(
-                        icon: "bubble.left.fill",
-                        title: "Start chat",
-                        description: "Message your manager or team",
-                        iconColor: Color(red: 0.0, green: 0.4, blue: 1.0)
-                    ) {
-                        // TODO: Open chat
-                    }
-                    
-                    // Create Report Card
-                    CreateOptionCard(
-                        icon: "doc.text.fill",
-                        title: "Create report",
-                        description: "Create a new expense report",
-                        iconColor: Color(red: 0.0, green: 0.4, blue: 1.0)
-                    ) {
-                        // TODO: Open create report
+                    // Secondary: Choose from Gallery
+                    Button(action: { showPhotosPicker = true }) {
+                        HStack(spacing: 12) {
+                            Image(systemName: "photo.on.rectangle.angled")
+                                .font(.system(size: 22))
+                            Text("Choose from Gallery")
+                        }
+                        .outlinedButtonStyle()
                     }
                 }
-                .padding(16)
-                .padding(.top, 60) // Space from top
-                .padding(.bottom, 16)
+                .padding(.horizontal, AppTheme.Dimensions.pagePadding)
+                
+                Spacer()
+                
+                // Tip text at bottom
+                HStack(spacing: 8) {
+                    Image(systemName: "lightbulb.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(AppTheme.Colors.yellow500)
+                    Text("Tip: Use good lighting for best results")
+                        .font(AppTheme.Typography.bodySmall)
+                        .foregroundColor(AppTheme.Colors.textSecondary)
+                }
+                .padding(.bottom, 100)
             }
         }
         .fullScreenCover(isPresented: $showReceiptCapture) {
             ReceiptCaptureView()
         }
-    }
-}
-
-// Create Option Card Component (matching web app)
-struct CreateOptionCard: View {
-    let icon: String
-    let title: String
-    let description: String
-    let iconColor: Color
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 16) {
-                // Icon circle
-                ZStack {
-                    Circle()
-                        .fill(iconColor.opacity(0.15))
-                        .frame(width: 56, height: 56)
-                    
-                    Image(systemName: icon)
-                        .font(.system(size: 24))
-                        .foregroundColor(iconColor)
-                }
-                
-                // Text content
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(title)
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.black)
-                    
-                    Text(description)
-                        .font(.system(size: 15))
-                        .foregroundColor(.gray)
-                }
-                
-                Spacer()
+        .photosPicker(isPresented: $showPhotosPicker, selection: $selectedPhotos, maxSelectionCount: 10, matching: .images)
+        .onChange(of: selectedPhotos) { _, newValue in
+            Task {
+                await loadGalleryPhotos(newValue)
             }
-            .padding(20)
-            .background(Color.white)
-            .cornerRadius(12)
-            .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
         }
-        .buttonStyle(.plain)
+        .fullScreenCover(isPresented: $showConfirmExpenses) {
+            ConfirmExpensesView(images: galleryImages)
+        }
+    }
+    
+    private func loadGalleryPhotos(_ items: [PhotosPickerItem]) async {
+        var loaded: [UIImage] = []
+        for item in items {
+            if let data = try? await item.loadTransferable(type: Data.self),
+               let image = UIImage(data: data) {
+                loaded.append(image)
+            }
+        }
+        await MainActor.run {
+            galleryImages = loaded
+            selectedPhotos = []
+            if !galleryImages.isEmpty {
+                showConfirmExpenses = true
+            }
+        }
     }
 }

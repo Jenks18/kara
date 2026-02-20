@@ -47,7 +47,7 @@ struct CustomTabBar: View {
                 selectedTab = 1
             }
             
-            // Center scan button (elevated)
+            // Center scan button spacer
             Spacer()
             
             TabBarButton(icon: "building.2.fill", title: "Workspaces", isSelected: selectedTab == 3) {
@@ -61,31 +61,22 @@ struct CustomTabBar: View {
         .padding(.horizontal, 8)
         .padding(.top, 8)
         .padding(.bottom, 12)
-        .background(.ultraThinMaterial)
+        .background(
+            Color.white
+                .shadow(color: Color.black.opacity(0.08), radius: 8, y: -2)
+        )
         .overlay(alignment: .top) {
-            Divider()
-        }
-        .overlay(alignment: .top) {
-            // Elevated scan button
+            // Elevated scan button (matches Android raised center FAB)
             Button {
                 selectedTab = 2
             } label: {
                 Image(systemName: "doc.viewfinder.fill")
                     .font(.system(size: 28, weight: .semibold))
                     .foregroundStyle(.white)
-                    .frame(width: 56, height: 56)
-                    .background(
-                        LinearGradient(
-                            colors: [
-                                Color(red: 0.0, green: 0.4, blue: 1.0),
-                                Color(red: 0.0, green: 0.32, blue: 0.8)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                    .frame(width: AppTheme.Dimensions.fabSize, height: AppTheme.Dimensions.fabSize)
+                    .background(AppTheme.Gradients.primary)
                     .clipShape(Circle())
-                    .shadow(color: .black.opacity(0.2), radius: 8, y: 4)
+                    .shadow(color: AppTheme.Colors.primary.opacity(0.35), radius: 10, y: 4)
             }
             .offset(y: -32)
         }
@@ -102,12 +93,12 @@ struct TabBarButton: View {
         Button(action: action) {
             VStack(spacing: 4) {
                 Image(systemName: icon)
-                    .font(.system(size: 24))
+                    .font(.system(size: 22))
                 Text(title)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.system(size: 11, weight: .semibold))
             }
             .frame(maxWidth: .infinity)
-            .foregroundStyle(isSelected ? Color(red: 0.0, green: 0.4, blue: 1.0) : .gray)
+            .foregroundStyle(isSelected ? AppTheme.Colors.primary : AppTheme.Colors.gray600)
         }
     }
 }

@@ -14,9 +14,9 @@ struct WorkspaceDetailView: View {
             // Background gradient
             LinearGradient(
                 colors: [
-                    Color(red: 0.937, green: 0.965, blue: 1.0),
-                    Color(red: 0.898, green: 0.941, blue: 0.996),
-                    Color(red: 0.937, green: 0.965, blue: 1.0)
+                    AppTheme.Colors.blue50,
+                    Color(hex: "#E8F0FE"),
+                    AppTheme.Colors.blue50
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
@@ -72,7 +72,7 @@ struct WorkspaceMenuRow: View {
         HStack(spacing: 16) {
             Image(systemName: icon)
                 .font(.system(size: 24))
-                .foregroundColor(Color(red: 0.0, green: 0.4, blue: 1.0))
+                .foregroundColor(AppTheme.Colors.primary)
                 .frame(width: 24)
             
             Text(label)
@@ -87,7 +87,7 @@ struct WorkspaceMenuRow: View {
         .cornerRadius(12)
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.2), lineWidth: 1)
+                .stroke(AppTheme.Colors.primary.opacity(0.2), lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.03), radius: 2, y: 1)
     }
@@ -114,9 +114,9 @@ struct WorkspaceOverviewView: View {
             // Background gradient
             LinearGradient(
                 colors: [
-                    Color(red: 0.937, green: 0.965, blue: 1.0),
-                    Color(red: 0.898, green: 0.941, blue: 0.996),
-                    Color(red: 0.937, green: 0.965, blue: 1.0)
+                    AppTheme.Colors.blue50,
+                    Color(hex: "#E8F0FE"),
+                    AppTheme.Colors.blue50
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
@@ -142,7 +142,7 @@ struct WorkspaceOverviewView: View {
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 12)
-                                .background(Color(red: 0.0, green: 0.4, blue: 1.0))
+                                .background(AppTheme.Colors.primary)
                                 .cornerRadius(12)
                             }
                             
@@ -172,7 +172,7 @@ struct WorkspaceOverviewView: View {
                                 .cornerRadius(12)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.2), lineWidth: 1)
+                                        .stroke(AppTheme.Colors.primary.opacity(0.2), lineWidth: 1)
                                 )
                                 .shadow(color: .black.opacity(0.03), radius: 2, y: 1)
                             }
@@ -187,8 +187,8 @@ struct WorkspaceOverviewView: View {
                                     .fill(
                                         LinearGradient(
                                             colors: [
-                                                Color(red: 0.0, green: 0.4, blue: 1.0),
-                                                Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.8)
+                                                AppTheme.Colors.primary,
+                                                AppTheme.Colors.primary.opacity(0.8)
                                             ],
                                             startPoint: .topLeading,
                                             endPoint: .bottomTrailing
@@ -226,7 +226,7 @@ struct WorkspaceOverviewView: View {
                                         .frame(width: 32, height: 32)
                                         .overlay(
                                             Circle()
-                                                .stroke(Color(red: 0.937, green: 0.965, blue: 1.0), lineWidth: 2)
+                                                .stroke(AppTheme.Colors.blue50, lineWidth: 2)
                                         )
                                         .overlay(
                                             Image(systemName: "pencil")
@@ -273,7 +273,7 @@ struct WorkspaceOverviewView: View {
                                 .cornerRadius(12)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.2), lineWidth: 1)
+                                        .stroke(AppTheme.Colors.primary.opacity(0.2), lineWidth: 1)
                                 )
                                 .overlay(
                                     Image(systemName: "chevron.right")
@@ -429,7 +429,7 @@ struct OverviewFieldRow: View {
         .cornerRadius(12)
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.2), lineWidth: 1)
+                .stroke(AppTheme.Colors.primary.opacity(0.2), lineWidth: 1)
         )
         .overlay(
             Image(systemName: "chevron.right")
@@ -460,9 +460,9 @@ struct WorkspaceMembersView: View {
             // Background gradient
             LinearGradient(
                 colors: [
-                    Color(red: 0.937, green: 0.965, blue: 1.0),
-                    Color(red: 0.898, green: 0.941, blue: 0.996),
-                    Color(red: 0.937, green: 0.965, blue: 1.0)
+                    AppTheme.Colors.blue50,
+                    Color(hex: "#E8F0FE"),
+                    AppTheme.Colors.blue50
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
@@ -488,7 +488,7 @@ struct WorkspaceMembersView: View {
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 12)
-                                .background(Color(red: 0.0, green: 0.4, blue: 1.0))
+                                .background(AppTheme.Colors.primary)
                                 .cornerRadius(12)
                             }
                             
@@ -518,7 +518,7 @@ struct WorkspaceMembersView: View {
                                 .cornerRadius(12)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.2), lineWidth: 1)
+                                        .stroke(AppTheme.Colors.primary.opacity(0.2), lineWidth: 1)
                                 )
                                 .shadow(color: .black.opacity(0.03), radius: 2, y: 1)
                             }
@@ -613,8 +613,8 @@ struct MemberRow: View {
                 .fill(
                     LinearGradient(
                         colors: [
-                            Color(red: 0.0, green: 0.4, blue: 1.0),
-                            Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.8)
+                            AppTheme.Colors.primary,
+                            AppTheme.Colors.primary.opacity(0.8)
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -663,12 +663,12 @@ struct MemberRow: View {
                 .padding(.vertical, 6)
                 .background(
                     member.role == "admin" ?
-                    Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.1) :
+                    AppTheme.Colors.primary.opacity(0.1) :
                     Color.gray.opacity(0.1)
                 )
                 .foregroundColor(
                     member.role == "admin" ?
-                    Color(red: 0.0, green: 0.4, blue: 1.0) :
+                    AppTheme.Colors.primary :
                     Color.gray
                 )
                 .cornerRadius(16)
@@ -676,7 +676,7 @@ struct MemberRow: View {
                     RoundedRectangle(cornerRadius: 16)
                         .stroke(
                             member.role == "admin" ?
-                            Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.2) :
+                            AppTheme.Colors.primary.opacity(0.2) :
                             Color.gray.opacity(0.2),
                             lineWidth: 1
                         )
@@ -691,7 +691,7 @@ struct MemberRow: View {
         .cornerRadius(12)
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.2), lineWidth: 1)
+                .stroke(AppTheme.Colors.primary.opacity(0.2), lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.03), radius: 2, y: 1)
     }
@@ -718,7 +718,7 @@ struct InviteModal: View {
                     .cornerRadius(12)
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color(red: 0.0, green: 0.4, blue: 1.0), lineWidth: 2)
+                            .stroke(AppTheme.Colors.primary, lineWidth: 2)
                     )
                 
                 Button(action: {
@@ -730,7 +730,7 @@ struct InviteModal: View {
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
-                        .background(Color(red: 0.0, green: 0.4, blue: 1.0))
+                        .background(AppTheme.Colors.primary)
                         .cornerRadius(16)
                 }
                 .disabled(inviteInput.isEmpty)
@@ -772,7 +772,7 @@ struct ShareWorkspaceModal: View {
                     .frame(width: 200, height: 200)
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color(red: 0.0, green: 0.4, blue: 1.0), lineWidth: 4)
+                            .stroke(AppTheme.Colors.primary, lineWidth: 4)
                     )
                     .overlay(
                         Text("QR Code")
@@ -791,11 +791,11 @@ struct ShareWorkspaceModal: View {
                 }
                 .padding(16)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color(red: 0.937, green: 0.965, blue: 1.0))
+                .background(AppTheme.Colors.blue50)
                 .cornerRadius(12)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color(red: 0.0, green: 0.4, blue: 1.0).opacity(0.2), lineWidth: 1)
+                        .stroke(AppTheme.Colors.primary.opacity(0.2), lineWidth: 1)
                 )
                 
                 // Action Buttons
@@ -811,7 +811,7 @@ struct ShareWorkspaceModal: View {
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
-                        .background(Color(red: 0.0, green: 0.4, blue: 1.0))
+                        .background(AppTheme.Colors.primary)
                         .cornerRadius(12)
                     }
                     
@@ -823,14 +823,14 @@ struct ShareWorkspaceModal: View {
                             Text("Download QR")
                         }
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(Color(red: 0.0, green: 0.4, blue: 1.0))
+                        .foregroundColor(AppTheme.Colors.primary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
                         .background(Color.white)
                         .cornerRadius(12)
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color(red: 0.0, green: 0.4, blue: 1.0), lineWidth: 2)
+                                .stroke(AppTheme.Colors.primary, lineWidth: 2)
                         )
                     }
                 }
