@@ -56,7 +56,7 @@ struct CreateExpensePage: View {
             }
         }
         .fullScreenCover(isPresented: $showReceiptCapture) {
-            ReceiptCapture()
+            ReceiptCaptureView()
         }
     }
 }

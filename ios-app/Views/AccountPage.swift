@@ -131,7 +131,7 @@ struct AccountPage: View {
             let profile = try await API.shared.getUserProfile(userId: userId)
             await MainActor.run {
                 userProfile = profile
-                displayName = profile.display_name ?? authManager.currentUser?.name ?? ""
+                displayName = profile?.display_name ?? authManager.currentUser?.name ?? ""
             }
         } catch {
             // Fallback to auth manager data
@@ -480,7 +480,7 @@ struct PreferencesPage: View {
                         }
                         
                         // Payment currency
-                        NavigationLink(destination: CurrencyPickerView(selectedCurrency: $selectedCurrency)) {
+                        NavigationLink(destination: AccountCurrencyPickerView(selectedCurrency: $selectedCurrency)) {
                             PreferenceFieldRow(label: "Payment currency", value: selectedCurrency)
                         }
                         
@@ -558,7 +558,7 @@ struct LanguagePickerView: View {
     }
 }
 
-struct CurrencyPickerView: View {
+struct AccountCurrencyPickerView: View {
     @Binding var selectedCurrency: String
     @Environment(\.dismiss) var dismiss
     let currencies = ["KES - KSh", "USD - $", "EUR - €", "GBP - £"]
@@ -758,10 +758,12 @@ struct TwoFactorAuthView: View {
                     }
                 }
                 
-                Section("Backup Codes") {
+                Section {
                     Button("Generate Backup Codes") {
                         // Generate backup codes
                     }
+                } header: {
+                    Text("Backup Codes")
                 } footer: {
                     Text("Backup codes can be used to access your account if you lose access to your primary 2FA method")
                 }

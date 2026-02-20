@@ -138,7 +138,7 @@ class API {
         }
         
         if let category = category {
-            body.append(" --\(boundary)\r\n".data(using: .utf8)!)
+            body.append("--\(boundary)\r\n".data(using: .utf8)!)
             body.append("Content-Disposition: form-data; name=\"category\"\r\n\r\n".data(using: .utf8)!)
             body.append(category.data(using: .utf8)!)
             body.append("\r\n".data(using: .utf8)!)
@@ -200,14 +200,14 @@ class API {
         return response.workspaces
     }
     
-    func createWorkspace(name: String, avatar: String, currency: String, currencySymbol: String) async throws -> Workspace {
+    func createWorkspace(name: String, avatar: String, currency: String, currencySymbol: String? = nil) async throws -> Workspace {
         let url = URL(string: "\(baseURL)/workspaces")!
         
         struct CreatePayload: Codable {
             let name: String
             let avatar: String
             let currency: String
-            let currencySymbol: String
+            let currencySymbol: String?
         }
         
         let payload = CreatePayload(name: name, avatar: avatar, currency: currency, currencySymbol: currencySymbol)

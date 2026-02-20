@@ -13,6 +13,10 @@ struct ConfirmExpensesView: View {
     @State private var isSubmitting = false
     @State private var showSuccess = false
     @State private var locationPermissionGranted = false
+    @State private var workspaces: [Workspace] = []
+    @State private var isLoadingWorkspaces = false
+    @State private var uploadErrorMessage: String?
+    @State private var showUploadError = false
     @State private var detectedQRUrl: String? = nil // NEW: Detected eTIMS QR code
     @State private var scanningQR = false // NEW: QR scan progress
     @StateObject private var locationManager = LocationManager()
@@ -171,15 +175,20 @@ struct ConfirmExpensesView: View {
                                         .foregroundColor(.secondary)
                                     
                                     Menu {
-                                        Button("Personal") {
-                                            selectedWorkspace = "personal"
-                                        }
-                                        Button("Work") {
-                                            selectedWorkspace = "work"
+                                        if isLoadingWorkspaces {
+                                            Text("Loading...")
+                                        } else if workspaces.isEmpty {
+                                            Text("No workspaces")
+                                        } else {
+                                            ForEach(workspaces) { workspace in
+                                                Button(workspace.name) {
+                                                    selectedWorkspace = workspace.id
+                                                }
+                                            }
                                         }
                                     } label: {
                                         HStack {
-                                            Text(selectedWorkspace.isEmpty ? "Select workspace" : selectedWorkspace.capitalized)
+                                            Text(selectedWorkspace.isEmpty ? "Select workspace" : (workspaces.first(where: { $0.id == selectedWorkspace })?.name ?? "Select workspace"))
                                                 .foregroundColor(selectedWorkspace.isEmpty ? .secondary : .primary)
                                             Spacer()
                                             Image(systemName: "chevron.down")
@@ -280,6 +289,7 @@ struct ConfirmExpensesView: View {
                 // Auto-scan for QR codes when view appears (like Android)
                 scanForQRCodes()
                 checkLocationPermission()
+                loadWorkspaces()
             }
             .alert("Success", isPresented: $showSuccess) {
                 Button("OK") {
@@ -287,6 +297,11 @@ struct ConfirmExpensesView: View {
                 }
             } message: {
                 Text("Receipts submitted successfully!")
+            }
+            .alert("Upload Failed", isPresented: $showUploadError) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(uploadErrorMessage ?? "An error occurred while uploading receipts.")
             }
         }
     }
@@ -310,6 +325,28 @@ struct ConfirmExpensesView: View {
     private func checkLocationPermission() {
         locationManager.checkPermission { granted in
             locationPermissionGranted = granted
+        }
+    }
+    
+    private func loadWorkspaces() {
+        isLoadingWorkspaces = true
+        Task {
+            do {
+                let fetched = try await API.shared.fetchWorkspaces()
+                await MainActor.run {
+                    workspaces = fetched
+                    // Auto-select first workspace if only one
+                    if workspaces.count == 1 {
+                        selectedWorkspace = workspaces[0].id
+                    }
+                    isLoadingWorkspaces = false
+                }
+            } catch {
+                await MainActor.run {
+                    isLoadingWorkspaces = false
+                    print("Error loading workspaces: \(error)")
+                }
+            }
         }
     }
     
@@ -345,8 +382,8 @@ struct ConfirmExpensesView: View {
             } catch {
                 await MainActor.run {
                     isSubmitting = false
-                    print("Upload error: \(error)")
-                    // TODO: Show error alert
+                    uploadErrorMessage = error.localizedDescription
+                    showUploadError = true
                 }
             }
         }

@@ -110,7 +110,7 @@ export default function AcceptInvitePage({ params }: { params: Promise<{ token: 
           <h2 className="text-xl font-bold text-gray-900">Invalid Invite</h2>
           <p className="text-gray-600">{error}</p>
           <button
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/home')}
             className="w-full py-3 bg-blue-600 text-white font-semibold rounded-xl active:scale-[0.98] transition-transform"
           >
             Go Home
@@ -203,7 +203,7 @@ export default function AcceptInvitePage({ params }: { params: Promise<{ token: 
           )}
           
           <button
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/home')}
             className="w-full py-3 text-gray-500 font-medium hover:text-gray-700 transition-colors"
           >
             Decline

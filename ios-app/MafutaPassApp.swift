@@ -71,8 +71,24 @@ struct ClerkContentView: View {
             // Blue gradient background matching web app design system
             BrandGradientBackground()
             
-            if clerk.user != nil {
+            if let user = clerk.user {
                 MainAppView()
+                    .environmentObject(ClerkAuthManager.shared)
+                    .onAppear {
+                        // Sync Clerk SDK user to ClerkAuthManager for AccountPage
+                        let email = user.emailAddresses.first?.emailAddress ?? ""
+                        let name = [user.firstName, user.lastName]
+                            .compactMap { $0 }
+                            .joined(separator: " ")
+                        
+                        ClerkAuthManager.shared.currentUser = ClerkUserInfo(
+                            id: user.id,
+                            email: email,
+                            name: name.isEmpty ? nil : name,
+                            avatarURL: user.imageUrl
+                        )
+                        ClerkAuthManager.shared.isAuthenticated = true
+                    }
             } else {
                 WelcomeView(authIsPresented: $authIsPresented)
             }

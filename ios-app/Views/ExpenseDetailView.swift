@@ -42,28 +42,36 @@ struct ExpenseDetailView: View {
             ScrollView {
                 VStack(spacing: 16) {
                     // Receipt Image
-                    AsyncImage(url: URL(string: expense.image_url)) { phase in
-                        switch phase {
-                        case .empty:
-                            ProgressView()
-                                .frame(height: 400)
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .scaledToFit()
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 400)
-                                .cornerRadius(12)
-                        case .failure:
-                            Image(systemName: "photo")
-                                .font(.system(size: 50))
-                                .foregroundColor(.gray)
-                                .frame(height: 400)
-                        @unknown default:
-                            EmptyView()
+                    if let imageUrl = expense.image_url, let url = URL(string: imageUrl) {
+                        AsyncImage(url: url) { phase in
+                            switch phase {
+                            case .empty:
+                                ProgressView()
+                                    .frame(height: 400)
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 400)
+                                    .cornerRadius(12)
+                            case .failure:
+                                Image(systemName: "photo")
+                                    .font(.system(size: 50))
+                                    .foregroundColor(.gray)
+                                    .frame(height: 400)
+                            @unknown default:
+                                EmptyView()
+                            }
                         }
+                        .padding(.horizontal)
+                    } else {
+                        Image(systemName: "photo")
+                            .font(.system(size: 50))
+                            .foregroundColor(.gray)
+                            .frame(height: 400)
+                            .padding(.horizontal)
                     }
-                    .padding(.horizontal)
                     
                     // Needs Review Banner
                     if needsReview && !isEditing {
@@ -341,14 +349,16 @@ struct ExpenseDetailView: View {
         Task {
             do {
                 // Call API to update expense
-                let updates: [String: Any] = [
+                var updates: [String: Any] = [
                     "merchant_name": editMerchant,
                     "amount": amount,
                     "category": editCategory.lowercased(),
                     "transaction_date": ISO8601DateFormatter().string(from: editDate),
-                    "description": editNotes.isEmpty ? nil : editNotes,
                     "processing_status": "processed" // Mark as processed after edit
                 ]
+                if !editNotes.isEmpty {
+                    updates["description"] = editNotes
+                }
                 
                 let updated = try await API.shared.updateExpense(id: expense.id, updates: updates)
                 
@@ -373,7 +383,6 @@ struct ExpenseDetailView: View {
     }
     
     func formatAmount(_ amount: Double) -> String {
-        let symbol = expense.workspace_name == "Personal" ? "KSh" : "$"
-        return "\(symbol) \(String(format: "%.2f", amount))"
+        return CurrencyFormatter.shared.formatSimple(amount)
     }
 }

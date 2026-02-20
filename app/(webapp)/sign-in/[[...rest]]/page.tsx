@@ -8,7 +8,7 @@ export default async function SignInPage({
   // If coming from mobile app, redirect to mobile-redirect endpoint after sign in
   const params = await searchParams
   const isMobile = params.mobile === 'android'
-  const redirectUrl = isMobile ? '/api/auth/android-callback' : '/reports'
+  const redirectUrl = isMobile ? '/api/auth/android-callback' : '/home'
   
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100 p-4">

@@ -5,6 +5,7 @@ struct ReportDetailPage: View {
     @State private var report: ExpenseReport?
     @State private var isLoading = true
     @State private var errorMessage: String?
+    @State private var pollingTimer: Timer?
     
     var body: some View {
         ZStack {
@@ -28,6 +29,10 @@ struct ReportDetailPage: View {
             loadReport()
             startRealtimeUpdates()
         }
+        .onDisappear {
+            pollingTimer?.invalidate()
+            pollingTimer = nil
+        }
     }
     
     private func loadReport() {
@@ -46,7 +51,7 @@ struct ReportDetailPage: View {
     
     private func startRealtimeUpdates() {
         // Polling every 10 seconds for updates
-        Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { _ in
+        pollingTimer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { _ in
             Task {
                 do {
                     let fetchedReport = try await API.shared.fetchReport(id: reportId)
@@ -100,7 +105,7 @@ struct ReportDetailContent: View {
                         
                         Spacer()
                         
-                        Text("\(report.items.count) items")
+                        Text("\((report.items ?? []).count) items")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -116,7 +121,7 @@ struct ReportDetailContent: View {
                         .font(.headline)
                         .padding(.horizontal)
                     
-                    ForEach(report.items) { item in
+                    ForEach(report.items ?? []) { item in
                         NavigationLink(destination: ExpenseItemDetailView(item: item)) {
                             ExpenseItemRow(item: item)
                         }
@@ -178,7 +183,7 @@ struct ExpenseItemRow: View {
             
             // Item Details
             VStack(alignment: .leading, spacing: 4) {
-                Text(item.merchant_name)
+                Text(item.merchant_name ?? "Unknown")
                     .font(.subheadline.bold())
                     .foregroundColor(.primary)
                 
@@ -186,14 +191,14 @@ struct ExpenseItemRow: View {
                     CategoryPill(category: item.category)
                     ProcessingStatusPill(status: item.processing_status)
                     
-                    if item.kra_verified {
+                    if item.kra_verified == true {
                         Image(systemName: "checkmark.seal.fill")
                             .font(.caption)
                             .foregroundColor(.green)
                     }
                 }
                 
-                Text(formatDate(item.transaction_date))
+                Text(formatDate(item.transaction_date ?? item.created_at))
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -247,13 +252,13 @@ struct ExpenseItemDetailView: View {
                 
                 // Details
                 VStack(alignment: .leading, spacing: 16) {
-                    DetailRow(label: "Merchant", value: item.merchant_name)
+                    DetailRow(label: "Merchant", value: item.merchant_name ?? "Unknown")
                     DetailRow(label: "Amount", value: formatCurrency(item.amount))
                     DetailRow(label: "Category", value: item.category)
-                    DetailRow(label: "Date", value: formatDate(item.transaction_date))
+                    DetailRow(label: "Date", value: formatDate(item.transaction_date ?? item.created_at))
                     DetailRow(label: "Status", value: item.processing_status.capitalized)
                     
-                    if item.kra_verified {
+                    if item.kra_verified == true {
                         HStack {
                             Image(systemName: "checkmark.seal.fill")
                                 .foregroundColor(.green)

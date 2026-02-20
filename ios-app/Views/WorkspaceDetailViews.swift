@@ -367,24 +367,27 @@ struct WorkspaceOverviewView: View {
     private func uploadAvatar(imageData: Data) async {
         isUploadingAvatar = true
         do {
-            let result = try await API.shared.uploadWorkspaceAvatar(
+            let imageUrl = try await API.shared.uploadWorkspaceAvatar(
                 workspaceId: workspaceId,
-                imageData: imageData,
-                fileName: "avatar.jpg"
+                imageData: imageData
             )
             
             await MainActor.run {
-                workspace?.avatarURL = result.url
+                // Reload workspace to get updated avatar URL
+                Task {
+                    if let updated = try? await API.shared.getWorkspace(id: workspaceId) {
+                        workspace = updated
+                    }
+                }
                 isUploadingAvatar = false
                 selectedPhotoItem = nil
-                print("Avatar uploaded successfully: \(result.url?.absoluteString ?? "")")
+                print("Avatar uploaded successfully: \(imageUrl)")
             }
         } catch {
             await MainActor.run {
                 isUploadingAvatar = false
                 selectedPhotoItem = nil
                 print("Error uploading avatar: \(error)")
-                // TODO: Show error alert
             }
         }
     }
@@ -393,10 +396,7 @@ struct WorkspaceOverviewView: View {
         do {
             let updatedWorkspace = try await API.shared.updateWorkspace(
                 id: workspaceId,
-                name: nil,
-                description: nil,
-                currency: nil,
-                avatar: "" // Empty string removes avatar
+                updates: ["avatar": ""]
             )
             
             await MainActor.run {

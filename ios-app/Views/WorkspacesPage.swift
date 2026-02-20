@@ -171,7 +171,7 @@ struct WorkspacesPage: View {
         do {
             let newWorkspace = try await API.shared.createWorkspace(
                 name: "\(workspace.name) (Copy)",
-                avatar: workspace.avatar,
+                avatar: workspace.avatarUrl ?? "",
                 currency: workspace.currency
             )
             await MainActor.run {

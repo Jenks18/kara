@@ -11,7 +11,7 @@ export default function BottomNav() {
   const { avatar } = useAvatar()
   
   const leftNavItems = [
-    { id: 'home', label: 'Home', icon: Home, href: '/' },
+    { id: 'home', label: 'Home', icon: Home, href: '/home' },
     { id: 'reports', label: 'Reports', icon: FileText, href: '/reports' },
   ]
   

@@ -34,9 +34,15 @@ final class CurrencyFormatter {
     
     private var formatters: [String: NumberFormatter] = [:]
     
+    /// Normalize legacy currency codes
+    private func normalizeCode(_ code: String) -> String {
+        let upper = code.uppercased()
+        return upper == "KSH" ? "KES" : upper
+    }
+    
     /// Locale-aware format: "KSh1,234.50" or "$1,234.50" depending on locale.
     func format(_ amount: Double, _ currencyCode: String? = nil) -> String {
-        let code = currencyCode ?? defaultCurrencyCode
+        let code = normalizeCode(currencyCode ?? defaultCurrencyCode)
         if formatters[code] == nil {
             let nf = NumberFormatter()
             nf.numberStyle = .currency
@@ -51,7 +57,7 @@ final class CurrencyFormatter {
     
     /// Simple format: "KES 1,234.50" — always uses the code prefix, consistent cross-platform.
     func formatSimple(_ amount: Double, _ currencyCode: String? = nil) -> String {
-        let code = currencyCode ?? defaultCurrencyCode
+        let code = normalizeCode(currencyCode ?? defaultCurrencyCode)
         let nf = NumberFormatter()
         nf.numberStyle = .decimal
         nf.minimumFractionDigits = 2

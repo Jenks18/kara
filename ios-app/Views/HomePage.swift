@@ -107,11 +107,33 @@ struct HomePage: View {
                                 .padding(.horizontal, 20)
                                 .padding(.top, 20)
                                 
-                                Text("No expenses yet. Start by scanning a receipt!")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(Color(red: 0.459, green: 0.459, blue: 0.459))
-                                    .padding(.horizontal, 20)
-                                    .padding(.bottom, 20)
+                                if expenses.isEmpty {
+                                    Text("No expenses yet. Start by scanning a receipt!")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(Color(red: 0.459, green: 0.459, blue: 0.459))
+                                        .padding(.horizontal, 20)
+                                        .padding(.bottom, 20)
+                                } else {
+                                    ForEach(expenses.prefix(5)) { expense in
+                                        HStack {
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                Text(expense.merchant_name ?? "Receipt")
+                                                    .font(.system(size: 15, weight: .medium))
+                                                    .foregroundColor(Color(red: 0.11, green: 0.11, blue: 0.11))
+                                                Text(expense.category.capitalized)
+                                                    .font(.system(size: 12))
+                                                    .foregroundColor(Color(red: 0.459, green: 0.459, blue: 0.459))
+                                            }
+                                            Spacer()
+                                            Text(formatCurrency(expense.amount))
+                                                .font(.system(size: 15, weight: .semibold))
+                                                .foregroundColor(Color(red: 0.11, green: 0.11, blue: 0.11))
+                                        }
+                                        .padding(.horizontal, 20)
+                                        .padding(.vertical, 4)
+                                    }
+                                    .padding(.bottom, 12)
+                                }
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .background(Color.white)
@@ -132,11 +154,33 @@ struct HomePage: View {
                                 .padding(.horizontal, 20)
                                 .padding(.top, 20)
                                 
-                                Text("No active reports")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(Color(red: 0.459, green: 0.459, blue: 0.459))
-                                    .padding(.horizontal, 20)
-                                    .padding(.bottom, 20)
+                                if reports.isEmpty {
+                                    Text("No active reports")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(Color(red: 0.459, green: 0.459, blue: 0.459))
+                                        .padding(.horizontal, 20)
+                                        .padding(.bottom, 20)
+                                } else {
+                                    ForEach(reports.prefix(3)) { report in
+                                        HStack {
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                Text(report.title)
+                                                    .font(.system(size: 15, weight: .medium))
+                                                    .foregroundColor(Color(red: 0.11, green: 0.11, blue: 0.11))
+                                                Text(report.status.capitalized)
+                                                    .font(.system(size: 12))
+                                                    .foregroundColor(Color(red: 0.459, green: 0.459, blue: 0.459))
+                                            }
+                                            Spacer()
+                                            Text(formatCurrency(report.total_amount))
+                                                .font(.system(size: 15, weight: .semibold))
+                                                .foregroundColor(Color(red: 0.11, green: 0.11, blue: 0.11))
+                                        }
+                                        .padding(.horizontal, 20)
+                                        .padding(.vertical, 4)
+                                    }
+                                    .padding(.bottom, 12)
+                                }
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .background(Color.white)
@@ -180,13 +224,29 @@ struct HomePage: View {
     
     func loadData() {
         isLoading = true
-        // TODO: Replace with actual API calls
-        // For now using mock data
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            self.totalExpenses = 2411.00
-            self.pendingCount = 3
-            self.submittedReportsCount = 2
-            self.isLoading = false
+        Task {
+            do {
+                async let expensesTask = API.shared.fetchExpenses()
+                async let reportsTask = API.shared.fetchReports()
+                
+                let (fetchedExpenses, fetchedReports) = try await (expensesTask, reportsTask)
+                
+                await MainActor.run {
+                    self.expenses = fetchedExpenses
+                    self.reports = fetchedReports
+                    
+                    // Calculate stats from real data
+                    self.totalExpenses = fetchedExpenses.reduce(0) { $0 + $1.amount }
+                    self.pendingCount = fetchedExpenses.filter { $0.processing_status == "needs_review" || $0.processing_status == "scanning" }.count
+                    self.submittedReportsCount = fetchedReports.filter { $0.status == "submitted" }.count
+                    self.isLoading = false
+                }
+            } catch {
+                await MainActor.run {
+                    print("Error loading dashboard: \(error)")
+                    self.isLoading = false
+                }
+            }
         }
     }
     

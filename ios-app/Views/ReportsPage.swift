@@ -234,8 +234,8 @@ struct ExpenseCardView: View {
             }
             
             // Receipt image if available
-            if !expense.image_url.isEmpty {
-                AsyncImage(url: URL(string: expense.image_url)) { image in
+            if let imageUrl = expense.image_url, !imageUrl.isEmpty {
+                AsyncImage(url: URL(string: imageUrl)) { image in
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fill)
@@ -403,17 +403,19 @@ struct ReportCardView: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         ForEach(Array(items.prefix(3).enumerated()), id: \.element.id) { index, item in
-                            AsyncImage(url: URL(string: item.image_url)) { image in
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                            } placeholder: {
-                                Rectangle()
-                                    .fill(Color.gray.opacity(0.2))
+                            if let imageUrl = item.image_url {
+                                AsyncImage(url: URL(string: imageUrl)) { image in
+                                    image
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                } placeholder: {
+                                    Rectangle()
+                                        .fill(Color.gray.opacity(0.2))
+                                }
+                                .frame(width: 80, height: 96)
+                                .cornerRadius(8)
+                                .clipped()
                             }
-                            .frame(width: 80, height: 96)
-                            .cornerRadius(8)
-                            .clipped()
                         }
                     }
                 }

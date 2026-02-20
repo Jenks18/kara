@@ -31,7 +31,7 @@ struct ExpenseReport: Identifiable, Codable {
 struct ExpenseItem: Identifiable, Codable {
     let id: String
     let created_at: String
-    let image_url: String
+    let image_url: String?
     let description: String?
     let category: String
     let amount: Double
@@ -86,8 +86,8 @@ struct Workspace: Identifiable, Codable {
         }
         
         // Fallback to computed symbol
-        switch currency {
-        case "KSH": return "KSh"
+        switch currency.uppercased() {
+        case "KES", "KSH": return "KSh"
         case "USD": return "$"
         case "EUR": return "€"
         case "GBP": return "£"

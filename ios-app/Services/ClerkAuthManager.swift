@@ -8,8 +8,9 @@ struct ClerkConfig {
     static let baseAPIURL = "https://www.kachalabs.com/api"
 }
 
-// MARK: - User Profile Model
-struct UserProfile: Codable {
+// MARK: - Clerk User Info (distinct from Models.UserProfile)
+struct ClerkUserInfo: Codable {
+    let id: String
     let email: String
     let name: String?
     let avatarURL: String?
@@ -19,7 +20,7 @@ struct UserProfile: Codable {
 @MainActor
 class ClerkAuthManager: ObservableObject {
     @Published var isAuthenticated = false
-    @Published var currentUser: UserProfile?
+    @Published var currentUser: ClerkUserInfo?
     @Published var errorMessage: String?
     @Published var isLoading = false
     
@@ -29,7 +30,7 @@ class ClerkAuthManager: ObservableObject {
         // Check if user has saved session
         if let token = UserDefaults.standard.string(forKey: "clerk_token"),
            let userData = UserDefaults.standard.data(forKey: "user_profile"),
-           let user = try? JSONDecoder().decode(UserProfile.self, from: userData) {
+           let user = try? JSONDecoder().decode(ClerkUserInfo.self, from: userData) {
             self.isAuthenticated = true
             self.currentUser = user
             APIClient.shared.setAuthToken(token)
@@ -77,13 +78,15 @@ class ClerkAuthManager: ObservableObject {
                let user = firstSession["user"] as? [String: Any],
                let emailAddresses = user["email_addresses"] as? [[String: Any]],
                let firstEmail = emailAddresses.first,
-               let emailAddress = firstEmail["email_address"] as? String {
+               let emailAddress = firstEmail["email_address"] as? String,
+               let userId = user["id"] as? String {
                 
                 let firstName = user["first_name"] as? String ?? ""
                 let lastName = user["last_name"] as? String ?? ""
                 let fullName = "\(firstName) \(lastName)".trimmingCharacters(in: .whitespaces)
                 
-                let userProfile = UserProfile(
+                let userProfile = ClerkUserInfo(
+                    id: userId,
                     email: emailAddress,
                     name: fullName.isEmpty ? nil : fullName,
                     avatarURL: user["image_url"] as? String
@@ -164,11 +167,13 @@ class ClerkAuthManager: ObservableObject {
                let user = firstSession["user"] as? [String: Any],
                let emailAddresses = user["email_addresses"] as? [[String: Any]],
                let firstEmail = emailAddresses.first,
-               let emailAddress = firstEmail["email_address"] as? String {
+               let emailAddress = firstEmail["email_address"] as? String,
+               let userId = user["id"] as? String {
                 
                 let fullName = "\(firstName) \(lastName)".trimmingCharacters(in: .whitespaces)
                 
-                let userProfile = UserProfile(
+                let userProfile = ClerkUserInfo(
+                    id: userId,
                     email: emailAddress,
                     name: fullName.isEmpty ? nil : fullName,
                     avatarURL: user["image_url"] as? String

@@ -5,7 +5,7 @@ export default function SignUpPage() {
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100 p-4">
       <div className="w-full max-w-md">
         <SignUp 
-          forceRedirectUrl="/reports"
+          forceRedirectUrl="/home"
           appearance={{
             elements: {
               rootBox: 'w-full',
