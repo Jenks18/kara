@@ -15,7 +15,7 @@ struct ExpenseDetailView: View {
     @State private var isEditing = false
     @State private var isSaving = false
     @State private var saveError: String?
-    @State private var saved Success = false
+    @State private var savedSuccess = false
     
     // Editable fields
     @State private var editMerchant: String = ""

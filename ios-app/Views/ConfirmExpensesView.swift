@@ -276,7 +276,6 @@ struct ConfirmExpensesView: View {
                         .padding(.top)
                     }
                 }
-            }
             .onAppear {
                 // Auto-scan for QR codes when view appears (like Android)
                 scanForQRCodes()
