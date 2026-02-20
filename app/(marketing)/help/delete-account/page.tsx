@@ -17,7 +17,7 @@ export default function DeleteAccountHelpPage() {
             Back to Kacha
           </Link>
           <div className="flex items-center gap-3 mb-4">
-            <KachaLogo variant="inline" size={38} onDark textClassName="text-white text-2xl" />
+            <KachaLogo variant="inline" height={38} />
           </div>
           <h1 className="text-3xl font-bold mb-3">Delete Your Account</h1>
           <p className="text-blue-100 text-lg">

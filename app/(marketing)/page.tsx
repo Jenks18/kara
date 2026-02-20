@@ -11,7 +11,7 @@ export default function LandingPage() {
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16 lg:h-18">
             {/* Logo */}
-            <KachaLogo variant="inline" size={34} textClassName="text-gray-900 text-xl" />
+            <KachaLogo variant="inline" height={38} />
 
             {/* Desktop Nav Links */}
             <div className="hidden md:flex items-center gap-1">
@@ -343,8 +343,8 @@ export default function LandingPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 lg:gap-12 mb-12">
             {/* Brand col */}
             <div className="col-span-2 lg:col-span-2">
-              <div className="flex items-center gap-2.5 mb-4">
-                <KachaLogo variant="inline" size={34} onDark textClassName="text-white text-xl" />
+              <div className="mb-4">
+                <span className="text-xl font-bold text-white tracking-tight">Kacha</span>
               </div>
               <p className="text-sm text-gray-500 leading-relaxed max-w-xs">
                 Modern expense management for individuals and teams. Scan receipts, track spending, generate reports.
