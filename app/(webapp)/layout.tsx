@@ -13,7 +13,14 @@ export default function AppLayout({
 }) {
   return (
     <ClerkProvider>
-      <Providers>{children}</Providers>
+      <Providers>
+        {/* Constrain webapp to mobile form factor on all screen sizes */}
+        <div className="bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100 min-h-screen">
+          <div className="max-w-[430px] mx-auto relative min-h-screen min-h-[100dvh]">
+            {children}
+          </div>
+        </div>
+      </Providers>
     </ClerkProvider>
   )
 }
