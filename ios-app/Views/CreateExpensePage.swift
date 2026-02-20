@@ -1,17 +1,14 @@
 import SwiftUI
-import PhotosUI
 
 // =============================================================
 // AddReceiptPage — matches Android AddReceiptScreen design
 // Two clean options: Scan Receipt (camera) + Choose from Gallery
+// Presentation is handled by MainAppView for reliable iOS 26 context
 // =============================================================
 
 struct CreateExpensePage: View {
-    @State private var showReceiptCapture = false
-    @State private var showPhotosPicker = false
-    @State private var selectedPhotos: [PhotosPickerItem] = []
-    @State private var galleryImages: [UIImage] = []
-    @State private var showConfirmExpenses = false
+    let onScanTapped: () -> Void
+    let onGalleryTapped: () -> Void
     
     var body: some View {
         ZStack {
@@ -48,7 +45,7 @@ struct CreateExpensePage: View {
                 // Action buttons
                 VStack(spacing: 16) {
                     // Primary: Scan Receipt (Camera)
-                    Button(action: { showReceiptCapture = true }) {
+                    Button(action: onScanTapped) {
                         HStack(spacing: 12) {
                             Image(systemName: "camera.fill")
                                 .font(.system(size: 22))
@@ -58,7 +55,7 @@ struct CreateExpensePage: View {
                     }
                     
                     // Secondary: Choose from Gallery
-                    Button(action: { showPhotosPicker = true }) {
+                    Button(action: onGalleryTapped) {
                         HStack(spacing: 12) {
                             Image(systemName: "photo.on.rectangle.angled")
                                 .font(.system(size: 22))
@@ -81,35 +78,6 @@ struct CreateExpensePage: View {
                         .foregroundColor(AppTheme.Colors.textSecondary)
                 }
                 .padding(.bottom, 100)
-            }
-        }
-        .fullScreenCover(isPresented: $showReceiptCapture) {
-            ReceiptCaptureView()
-        }
-        .photosPicker(isPresented: $showPhotosPicker, selection: $selectedPhotos, maxSelectionCount: 10, matching: .images)
-        .onChange(of: selectedPhotos) { _, newValue in
-            Task {
-                await loadGalleryPhotos(newValue)
-            }
-        }
-        .fullScreenCover(isPresented: $showConfirmExpenses) {
-            ConfirmExpensesView(images: galleryImages)
-        }
-    }
-    
-    private func loadGalleryPhotos(_ items: [PhotosPickerItem]) async {
-        var loaded: [UIImage] = []
-        for item in items {
-            if let data = try? await item.loadTransferable(type: Data.self),
-               let image = UIImage(data: data) {
-                loaded.append(image)
-            }
-        }
-        await MainActor.run {
-            galleryImages = loaded
-            selectedPhotos = []
-            if !galleryImages.isEmpty {
-                showConfirmExpenses = true
             }
         }
     }

@@ -14,6 +14,7 @@ struct MafutaPassApp: App {
         WindowGroup {
             ClerkContentView()
                 .environment(\.clerk, clerk)
+                .preferredColorScheme(.light) // Force light mode — semantic colors resolve correctly
                 .task {
                     clerk.configure(publishableKey: "pk_live_Y2xlcmsubWFmdXRhcGFzcy5jb20k")
                     try? await clerk.load()

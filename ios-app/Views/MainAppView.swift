@@ -1,9 +1,16 @@
 import SwiftUI
+import PhotosUI
 
 // Main app with 5-tab navigation with elevated center scan button
 // Tabs: Home, Reports, [Scan], Workspaces, Account
 struct MainAppView: View {
     @State private var selectedTab = 0
+    // Scan cover state lives HERE — reliable iOS 26 presentation context
+    @State private var showCamera = false
+    @State private var showPhotosPicker = false
+    @State private var selectedPhotos: [PhotosPickerItem] = []
+    @State private var galleryImages: [UIImage] = []
+    @State private var showConfirmGallery = false
     
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -15,7 +22,10 @@ struct MainAppView: View {
                 case 1:
                     ReportsPage()
                 case 2:
-                    CreateExpensePage()
+                    CreateExpensePage(
+                        onScanTapped: { showCamera = true },
+                        onGalleryTapped: { showPhotosPicker = true }
+                    )
                 case 3:
                     WorkspacesPage()
                 case 4:
@@ -30,6 +40,33 @@ struct MainAppView: View {
             CustomTabBar(selectedTab: $selectedTab)
         }
         .ignoresSafeArea(.keyboard)
+        // Presentations at root level — guaranteed UIViewController context
+        .fullScreenCover(isPresented: $showCamera) {
+            ReceiptCaptureView()
+        }
+        .fullScreenCover(isPresented: $showConfirmGallery) {
+            ConfirmExpensesView(images: galleryImages)
+        }
+        .photosPicker(isPresented: $showPhotosPicker, selection: $selectedPhotos, maxSelectionCount: 10, matching: .images)
+        .onChange(of: selectedPhotos) { _, newValue in
+            guard !newValue.isEmpty else { return }
+            Task {
+                var loaded: [UIImage] = []
+                for item in newValue {
+                    if let data = try? await item.loadTransferable(type: Data.self),
+                       let image = UIImage(data: data) {
+                        loaded.append(image)
+                    }
+                }
+                await MainActor.run {
+                    selectedPhotos = []
+                    if !loaded.isEmpty {
+                        galleryImages = loaded
+                        showConfirmGallery = true
+                    }
+                }
+            }
+        }
     }
 }
 
