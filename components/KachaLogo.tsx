@@ -4,7 +4,7 @@ interface KachaLogoProps {
    * 'icon'   — square K icon using logo-url.png, best for avatars / small badges
    */
   variant?: 'inline' | 'icon'
-  /** Height of the logo in px. Width is calculated from the image's natural aspect ratio. */
+  /** Height in px for the icon variant. Inline variant sizes itself naturally to fill its container. */
   height?: number
   /** Extra class names on the wrapper element */
   className?: string
@@ -12,7 +12,7 @@ interface KachaLogoProps {
 
 export function KachaLogo({
   variant = 'inline',
-  height = 36,
+  height = 40,
   className = '',
 }: KachaLogoProps) {
   if (variant === 'icon') {
@@ -29,16 +29,13 @@ export function KachaLogo({
     )
   }
 
-  // inline: full combined wordmark (K mark + "Kacha" text) — natural aspect ratio 461:259 ≈ 1.78
-  const width = Math.round(height * (461 / 259))
+  // inline: render the combined wordmark at its natural proportions — size via className (e.g. h-10 w-auto)
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src="/logo-combined.png"
       alt="Kacha"
-      height={height}
-      width={width}
-      style={{ height, width: 'auto', objectFit: 'contain', flexShrink: 0 }}
+      style={{ flexShrink: 0 }}
       className={className}
     />
   )

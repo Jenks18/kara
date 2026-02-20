@@ -10,7 +10,7 @@ export default function TermsOfServicePage() {
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link href="/">
-              <KachaLogo variant="inline" height={36} />
+              <KachaLogo variant="inline" className="h-9 w-auto" />
             </Link>
             <Link
               href="/"
