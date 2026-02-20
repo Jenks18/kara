@@ -97,8 +97,8 @@ struct CustomTabBar: View {
         }
         .padding(.horizontal, 8)
         .padding(.top, 8)
-        // Let SafeAreaInsets control the bottom so the bar always reaches the screen edge
-        .padding(.bottom, 8)
+        // No explicit bottom padding — SwiftUI places content at the safe-area
+        // boundary naturally; the background fill handles the home indicator area.
         .background(
             // ignoresSafeArea(edges: .bottom) lets the background colour fill the home
             // indicator area, so the bar sits flush against the bottom of the screen
