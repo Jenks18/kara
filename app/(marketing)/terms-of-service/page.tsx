@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { Receipt, ArrowLeft } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
+import { KachaLogo } from '@/components/KachaLogo'
 
 export default function TermsOfServicePage() {
   return (
@@ -8,9 +9,8 @@ export default function TermsOfServicePage() {
       <header className="bg-white/80 backdrop-blur-lg border-b border-gray-200 sticky top-0 z-50">
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <Link href="/" className="flex items-center gap-2">
-              <Receipt className="w-8 h-8 text-blue-600" />
-              <span className="text-2xl font-bold text-gray-900">Kacha</span>
+            <Link href="/">
+              <KachaLogo variant="inline" size={34} textClassName="text-gray-900 text-xl" />
             </Link>
             <Link
               href="/"

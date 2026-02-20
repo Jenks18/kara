@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { Receipt, Smartphone, Cloud, Shield, Zap, TrendingUp, ArrowRight, CheckCircle } from 'lucide-react'
+import { Smartphone, Cloud, Shield, Zap, TrendingUp, ArrowRight, CheckCircle, Receipt } from 'lucide-react'
+import { KachaLogo } from '@/components/KachaLogo'
 
 export default function LandingPage() {
   return (
@@ -10,12 +11,7 @@ export default function LandingPage() {
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16 lg:h-18">
             {/* Logo */}
-            <div className="flex items-center gap-2.5 flex-shrink-0">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <Receipt className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-gray-900 tracking-tight">Kacha</span>
-            </div>
+            <KachaLogo variant="inline" size={34} textClassName="text-gray-900 text-xl" />
 
             {/* Desktop Nav Links */}
             <div className="hidden md:flex items-center gap-1">
@@ -348,10 +344,7 @@ export default function LandingPage() {
             {/* Brand col */}
             <div className="col-span-2 lg:col-span-2">
               <div className="flex items-center gap-2.5 mb-4">
-                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <Receipt className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-xl font-bold text-white">Kacha</span>
+                <KachaLogo variant="inline" size={34} onDark textClassName="text-white text-xl" />
               </div>
               <p className="text-sm text-gray-500 leading-relaxed max-w-xs">
                 Modern expense management for individuals and teams. Scan receipts, track spending, generate reports.

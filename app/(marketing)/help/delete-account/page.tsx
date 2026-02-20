@@ -1,3 +1,6 @@
+import { KachaLogo } from '@/components/KachaLogo'
+import Link from 'next/link'
+
 export default function DeleteAccountHelpPage() {
   return (
     <div className="min-h-screen bg-white">
@@ -5,11 +8,7 @@ export default function DeleteAccountHelpPage() {
       <div className="bg-gradient-to-br from-blue-600 to-blue-700 text-white">
         <div className="max-w-2xl mx-auto px-6 py-12">
           <div className="flex items-center gap-3 mb-4">
-            <svg className="w-10 h-10" viewBox="0 0 40 40" fill="none">
-              <rect width="40" height="40" rx="10" fill="white" fillOpacity="0.15"/>
-              <text x="50%" y="55%" textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="20">K</text>
-            </svg>
-            <span className="text-2xl font-bold">Kacha</span>
+            <KachaLogo variant="inline" size={38} onDark textClassName="text-white text-2xl" />
           </div>
           <h1 className="text-3xl font-bold mb-3">Delete Your Account</h1>
           <p className="text-blue-100 text-lg">
