@@ -35,6 +35,7 @@ struct MainAppView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .ignoresSafeArea(edges: .bottom)
             
             // Custom Tab Bar
             CustomTabBar(selectedTab: $selectedTab)
