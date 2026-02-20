@@ -100,9 +100,11 @@ struct CustomTabBar: View {
         // No explicit bottom padding — SwiftUI places content at the safe-area
         // boundary naturally; the background fill handles the home indicator area.
         .background(
-            // ignoresSafeArea(edges: .bottom) lets the background colour fill the home
-            // indicator area, so the bar sits flush against the bottom of the screen
-            AppTheme.Colors.cardSurface
+            // .ultraThinMaterial = system frosted glass, same material Apple uses
+            // for UITabBar/UINavigationBar. ignoresSafeArea fills the home indicator
+            // region so the bar sits flush against the physical screen edge.
+            Rectangle()
+                .fill(.ultraThinMaterial)
                 .ignoresSafeArea(edges: .bottom)
                 .shadow(color: Color.black.opacity(0.08), radius: 8, y: -2)
         )
