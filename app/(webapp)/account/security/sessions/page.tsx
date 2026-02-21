@@ -46,7 +46,7 @@ export default function ActiveSessionsPage() {
     if (!target) return
     setRevokingId(sessionId)
     try {
-      await target.revoke()
+      await target.end()
     } catch {
       // session may already be inactive
     } finally {
