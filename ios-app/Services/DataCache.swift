@@ -32,10 +32,14 @@ final class DataCache {
     // MARK: - Keys (base strings; fully-qualified at runtime via fullKey(_:))
 
     enum Key {
+        // Legacy keys (kept for backward-compat cleanup)
         static let homeExpenses    = "home_expenses"
         static let homeReports     = "home_reports"
         static let reportsExpenses = "reports_expenses"
         static let reportsReports  = "reports_reports"
+        // Current keys used by AppDataStore
+        static let expenses        = "expenses"
+        static let reports         = "reports"
         static let workspaces      = "workspaces"
     }
 
@@ -65,8 +69,10 @@ final class DataCache {
     /// Cross-account safety does NOT depend on this — a different
     /// `currentUserId` already guarantees cache misses for the next account.
     func clearCurrentUser() {
+        // Clear both legacy and current keys
         [Key.homeExpenses, Key.homeReports,
          Key.reportsExpenses, Key.reportsReports,
+         Key.expenses, Key.reports,
          Key.workspaces].forEach { defaults.removeObject(forKey: fullKey($0)) }
     }
 

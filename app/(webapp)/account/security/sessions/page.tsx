@@ -96,7 +96,7 @@ export default function ActiveSessionsPage() {
                 const isCurrent = session.id === currentSession?.id
                 const { device, os } = parseUserAgent(
                   (session as any).latestActivity?.browserName
-                    ? `${(session as any).latestActivity.browserName} ${os}`
+                    ? `${(session as any).latestActivity.browserName}`
                     : undefined
                 )
                 const DeviceIcon = isCurrent || device === 'Desktop' ? Monitor : Smartphone

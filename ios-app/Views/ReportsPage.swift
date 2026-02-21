@@ -404,7 +404,7 @@ struct ReportCardView: View {
                     Text("•")
                         .foregroundColor(.gray)
                     
-                    Text("\(report.items?.count ?? 0) expenses")
+                    Text("\(report.displayItemsCount) expenses")
                         .font(.system(size: 13))
                         .foregroundColor(.gray)
                 
@@ -416,24 +416,31 @@ struct ReportCardView: View {
                     .foregroundColor(.gray)
             }
             
-            // Receipt thumbnails if available
-            if let items = report.items, !items.isEmpty {
+            // Receipt thumbnails — prefer thumbnails from mobile endpoint,
+            // fall back to items array from detail/web endpoint
+            let thumbUrls: [String] = {
+                if let t = report.thumbnails, !t.isEmpty { return Array(t.prefix(3)) }
+                if let items = report.items {
+                    return items.prefix(3).compactMap { $0.image_url }.filter { !$0.isEmpty }
+                }
+                return []
+            }()
+            
+            if !thumbUrls.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
-                        ForEach(Array(items.prefix(3).enumerated()), id: \.element.id) { index, item in
-                            if let imageUrl = item.image_url {
-                                AsyncImage(url: URL(string: imageUrl)) { image in
-                                    image
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                } placeholder: {
-                                    Rectangle()
-                                        .fill(Color.gray.opacity(0.2))
-                                }
-                                .frame(width: 80, height: 96)
-                                .cornerRadius(8)
-                                .clipped()
+                        ForEach(Array(thumbUrls.enumerated()), id: \.offset) { _, urlStr in
+                            AsyncImage(url: URL(string: urlStr)) { image in
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                            } placeholder: {
+                                Rectangle()
+                                    .fill(Color.gray.opacity(0.2))
                             }
+                            .frame(width: 80, height: 96)
+                            .cornerRadius(8)
+                            .clipped()
                         }
                     }
                 }

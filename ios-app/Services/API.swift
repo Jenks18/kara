@@ -1,12 +1,14 @@
 import Foundation
 import Clerk
 
-// API Service to match web app endpoints with Clerk JWT authentication
+// Production-grade API service — all routes use /api/mobile/* endpoints
+// authenticated via Clerk Bearer JWT, matching the Android app exactly.
+//
+// NEVER query Supabase directly from the client. All data flows through
+// the backend which mints Supabase-compatible JWTs from the Clerk token.
 class API {
     static let shared = API()
     private let baseURL = "https://www.kachalabs.com/api"
-    private let supabaseURL = "https://bkypfuyiknytkuhxtduc.supabase.co"
-    private let supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJreXBmdXlpa255dGt1aHh0ZHVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0ODkxNjAsImV4cCI6MjA4MzA2NTE2MH0.7OqBp3VbfffoYt2xOYUuzYy_dOvDchvGftE4gqCfVKo"
     
     // MARK: - Helper to get Clerk JWT token
     
@@ -17,7 +19,7 @@ class API {
         return tokenResource.jwt
     }
     
-    private func makeAuthenticatedRequest(url: URL, method: String = "GET", body: Data? = nil) async throws -> Data {
+    private func makeAuthenticatedRequest(url: URL, method: String = "GET", body: Data? = nil, _retryCount: Int = 0) async throws -> Data {
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -32,8 +34,26 @@ class API {
         
         let (data, response) = try await URLSession.shared.data(for: request)
         
-        guard let httpResponse = response as? HTTPURLResponse,
-              (200...299).contains(httpResponse.statusCode) else {
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw APIError.invalidResponse
+        }
+        
+        // Retry once on 401 — Clerk session token may still be warming up
+        // (race between MafutaPassApp.task session validation and first API call).
+        if httpResponse.statusCode == 401, _retryCount < 2 {
+            #if DEBUG
+            print("⚠️ API 401 on \(url.path), retry #\(_retryCount + 1) after brief delay...")
+            #endif
+            try? await Task.sleep(nanoseconds: 600_000_000) // 0.6s
+            guard !Task.isCancelled else { throw CancellationError() }
+            return try await makeAuthenticatedRequest(url: url, method: method, body: body, _retryCount: _retryCount + 1)
+        }
+        
+        guard (200...299).contains(httpResponse.statusCode) else {
+            #if DEBUG
+            let bodyStr = String(data: data, encoding: .utf8) ?? "<no body>"
+            print("❌ API \(method) \(url.path) → \(httpResponse.statusCode): \(bodyStr)")
+            #endif
             throw APIError.invalidResponse
         }
         
@@ -43,32 +63,47 @@ class API {
     // MARK: - Expense Reports
     
     func fetchReports() async throws -> [ExpenseReport] {
-        let url = URL(string: "\(baseURL)/expense-reports")!
+        let url = URL(string: "\(baseURL)/mobile/expense-reports")!
         let data = try await makeAuthenticatedRequest(url: url)
-        return try JSONDecoder().decode([ExpenseReport].self, from: data)
+        do {
+            return try JSONDecoder().decode([ExpenseReport].self, from: data)
+        } catch {
+            #if DEBUG
+            print("❌ Decode [ExpenseReport] failed: \(error)")
+            print("   Response: \(String(data: data.prefix(500), encoding: .utf8) ?? "<binary>")")
+            #endif
+            throw error
+        }
     }
     
     func fetchReport(id: String) async throws -> ExpenseReport {
-        let url = URL(string: "\(baseURL)/expense-reports/\(id)")!
+        let url = URL(string: "\(baseURL)/mobile/expense-reports/\(id)")!
         let data = try await makeAuthenticatedRequest(url: url)
-        return try JSONDecoder().decode(ExpenseReport.self, from: data)
+        do {
+            return try JSONDecoder().decode(ExpenseReport.self, from: data)
+        } catch {
+            #if DEBUG
+            print("❌ Decode ExpenseReport failed: \(error)")
+            print("   Response: \(String(data: data.prefix(500), encoding: .utf8) ?? "<binary>")")
+            #endif
+            throw error
+        }
     }
     
     // MARK: - Expense Items
     
     func fetchExpenses() async throws -> [ExpenseItem] {
-        // Use the authenticated mobile API endpoint — same as Android, avoids
-        // direct Supabase queries that can fail when RLS JWT expectations differ.
         let url = URL(string: "\(baseURL)/mobile/receipts?limit=100")!
         let data = try await makeAuthenticatedRequest(url: url)
-        return try JSONDecoder().decode([ExpenseItem].self, from: data)
-    }
-    
-    func createExpense(item: ExpenseItem) async throws -> ExpenseItem {
-        let url = URL(string: "\(baseURL)/expense-items")!
-        let body = try JSONEncoder().encode(item)
-        let data = try await makeAuthenticatedRequest(url: url, method: "POST", body: body)
-        return try JSONDecoder().decode(ExpenseItem.self, from: data)
+        do {
+            return try JSONDecoder().decode([ExpenseItem].self, from: data)
+        } catch {
+            #if DEBUG
+            print("❌ Decode [ExpenseItem] failed: \(error)")
+            print("   Response: \(String(data: data.prefix(500), encoding: .utf8) ?? "<binary>")")
+            #endif
+            throw error
+        }
     }
     
     /// Update expense item (PATCH endpoint like Android)
@@ -88,6 +123,8 @@ class API {
     
     // MARK: - Receipt Upload
     
+    /// Upload receipts via the mobile endpoint — one image per request,
+    /// same as Android. The backend creates reports and items automatically.
     func uploadReceipts(
         images: [Data],
         workspaceId: String,
@@ -96,90 +133,66 @@ class API {
         category: String?,
         latitude: Double?,
         longitude: Double?,
-        qrUrl: String? = nil // NEW: eTIMS QR URL from scanner
+        qrUrl: String? = nil
     ) async throws -> UploadReceiptsResponse {
-        let url = URL(string: "\(baseURL)/receipts/upload")!
+        let url = URL(string: "\(baseURL)/mobile/receipts/upload")!
+        var lastReportId: String?
+        var allSucceeded = true
         
-        // Create multipart form data
-        let boundary = UUID().uuidString
-        var body = Data()
-        
-        // Add images
         for (index, imageData) in images.enumerated() {
+            let boundary = UUID().uuidString
+            var body = Data()
+            
+            // Single image — field name "image" (matches Android / backend)
             body.append("--\(boundary)\r\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\"images\"; filename=\"receipt\(index).jpg\"\r\n".data(using: .utf8)!)
+            body.append("Content-Disposition: form-data; name=\"image\"; filename=\"receipt\(index).jpg\"\r\n".data(using: .utf8)!)
             body.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
             body.append(imageData)
             body.append("\r\n".data(using: .utf8)!)
+            
+            // Workspace context
+            func addField(_ name: String, _ value: String) {
+                body.append("--\(boundary)\r\n".data(using: .utf8)!)
+                body.append("Content-Disposition: form-data; name=\"\(name)\"\r\n\r\n".data(using: .utf8)!)
+                body.append(value.data(using: .utf8)!)
+                body.append("\r\n".data(using: .utf8)!)
+            }
+            
+            addField("workspaceId", workspaceId)
+            addField("workspaceName", workspaceName)
+            if let reportId = lastReportId { addField("reportId", reportId) }
+            if let latitude  = latitude  { addField("latitude",  "\(latitude)") }
+            if let longitude = longitude { addField("longitude", "\(longitude)") }
+            if let qrUrl     = qrUrl     { addField("qrUrl",     qrUrl) }
+            
+            body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+            
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+            let token = try await getClerkToken()
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            request.httpBody = body
+            
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse,
+                  (200...299).contains(httpResponse.statusCode) else {
+                #if DEBUG
+                let bodyStr = String(data: data, encoding: .utf8) ?? "<no body>"
+                print("❌ Upload image \(index) failed: \(bodyStr)")
+                #endif
+                allSucceeded = false
+                continue
+            }
+            
+            // Extract reportId so subsequent images join the same report
+            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let rid = json["reportId"] as? String {
+                lastReportId = rid
+            }
         }
         
-        // Add workspaceId
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"workspaceId\"\r\n\r\n".data(using: .utf8)!)
-        body.append(workspaceId.data(using: .utf8)!)
-        body.append("\r\n".data(using: .utf8)!)
-        
-        // Add workspaceName (so backend can label the report correctly)
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"workspaceName\"\r\n\r\n".data(using: .utf8)!)
-        body.append(workspaceName.data(using: .utf8)!)
-        body.append("\r\n".data(using: .utf8)!)
-        
-        // Add optional fields
-        if let description = description {
-            body.append("--\(boundary)\r\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\"description\"\r\n\r\n".data(using: .utf8)!)
-            body.append(description.data(using: .utf8)!)
-            body.append("\r\n".data(using: .utf8)!)
-        }
-        
-        if let category = category {
-            body.append("--\(boundary)\r\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\"category\"\r\n\r\n".data(using: .utf8)!)
-            body.append(category.data(using: .utf8)!)
-            body.append("\r\n".data(using: .utf8)!)
-        }
-        
-        if let latitude = latitude {
-            body.append("--\(boundary)\r\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\"latitude\"\r\n\r\n".data(using: .utf8)!)
-            body.append("\(latitude)".data(using: .utf8)!)
-            body.append("\r\n".data(using: .utf8)!)
-        }
-        
-        if let longitude = longitude {
-            body.append("--\(boundary)\r\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\"longitude\"\r\n\r\n".data(using: .utf8)!)
-            body.append("\(longitude)".data(using: .utf8)!)
-            body.append("\r\n".data(using: .utf8)!)
-        }
-        
-        // NEW: Add QR URL if detected
-        if let qrUrl = qrUrl {
-            body.append("--\(boundary)\r\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\"qrUrl\"\r\n\r\n".data(using: .utf8)!)
-            body.append(qrUrl.data(using: .utf8)!)
-            body.append("\r\n".data(using: .utf8)!)
-        }
-        
-        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-        
-        let token = try await getClerkToken()
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        request.httpBody = body
-        
-        let (data, response) = try await URLSession.shared.data(for: request)
-        
-        guard let httpResponse = response as? HTTPURLResponse,
-              (200...299).contains(httpResponse.statusCode) else {
-            throw APIError.uploadFailed
-        }
-        
-        return try JSONDecoder().decode(UploadReceiptsResponse.self, from: data)
+        return UploadReceiptsResponse(success: allSucceeded, reportId: lastReportId, message: nil)
     }
     
     // MARK: - Workspaces
@@ -192,8 +205,16 @@ class API {
             let workspaces: [Workspace]
         }
         
-        let response = try JSONDecoder().decode(WorkspacesResponse.self, from: data)
-        return response.workspaces
+        do {
+            let response = try JSONDecoder().decode(WorkspacesResponse.self, from: data)
+            return response.workspaces
+        } catch {
+            #if DEBUG
+            print("❌ Decode WorkspacesResponse failed: \(error)")
+            print("   Response: \(String(data: data.prefix(500), encoding: .utf8) ?? "<binary>")")
+            #endif
+            throw error
+        }
     }
     
     func createWorkspace(name: String, avatar: String, currency: String, currencySymbol: String? = nil) async throws -> Workspace {
@@ -218,61 +239,41 @@ class API {
         return response.workspace
     }
     
-    // MARK: - User Profile
+    // MARK: - User Profile (via /api/auth/mobile-profile — same as Android)
     
     func getUserProfile(userId: String) async throws -> UserProfile? {
-        let url = URL(string: "\(supabaseURL)/rest/v1/user_profiles?user_id=eq.\(userId)&select=*")!
+        let url = URL(string: "\(baseURL)/auth/mobile-profile")!
+        let data = try await makeAuthenticatedRequest(url: url)
         
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(supabaseAnonKey, forHTTPHeaderField: "apikey")
-        
-        // Add Clerk JWT token for RLS
-        let token = try await getClerkToken()
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        
-        let (data, response) = try await URLSession.shared.data(for: request)
-        
-        guard let httpResponse = response as? HTTPURLResponse,
-              (200...299).contains(httpResponse.statusCode) else {
-            throw APIError.invalidResponse
+        struct ProfileResponse: Codable {
+            let success: Bool
+            let profile: UserProfile?
         }
         
-        let profiles = try JSONDecoder().decode([UserProfile].self, from: data)
-        return profiles.first
+        do {
+            let response = try JSONDecoder().decode(ProfileResponse.self, from: data)
+            return response.profile
+        } catch {
+            #if DEBUG
+            print("❌ Decode ProfileResponse failed: \(error)")
+            print("   Response: \(String(data: data.prefix(500), encoding: .utf8) ?? "<binary>")")
+            #endif
+            throw error
+        }
     }
     
     func updateUserProfile(userId: String, updates: [String: Any]) async throws -> UserProfile {
-        let url = URL(string: "\(supabaseURL)/rest/v1/user_profiles?user_id=eq.\(userId)")!
+        let url = URL(string: "\(baseURL)/auth/mobile-profile")!
+        let body = try JSONSerialization.data(withJSONObject: updates)
+        let data = try await makeAuthenticatedRequest(url: url, method: "PATCH", body: body)
         
-        var payload = updates
-        payload["user_id"] = userId
-        
-        let body = try JSONSerialization.data(withJSONObject: payload)
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "PATCH"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("return=representation", forHTTPHeaderField: "Prefer")
-        request.setValue(supabaseAnonKey, forHTTPHeaderField: "apikey")
-        
-        let token = try await getClerkToken()
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        request.httpBody = body
-        
-        let (data, response) = try await URLSession.shared.data(for: request)
-        
-        guard let httpResponse = response as? HTTPURLResponse,
-              (200...299).contains(httpResponse.statusCode) else {
-            throw APIError.invalidResponse
+        struct ProfileResponse: Codable {
+            let success: Bool
+            let profile: UserProfile
         }
         
-        let profiles = try JSONDecoder().decode([UserProfile].self, from: data)
-        guard let profile = profiles.first else {
-            throw APIError.invalidResponse
-        }
-        return profile
+        let response = try JSONDecoder().decode(ProfileResponse.self, from: data)
+        return response.profile
     }
     
     func updateDisplayName(userId: String, displayName: String) async throws -> UserProfile {
@@ -409,7 +410,6 @@ enum APIError: Error {
 
 struct UploadReceiptsResponse: Codable {
     let success: Bool
-    let expenseItems: [ExpenseItem]?
     let reportId: String?
     let message: String?
 }

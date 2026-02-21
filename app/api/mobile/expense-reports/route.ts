@@ -27,13 +27,16 @@ async function enrichReports(supabase: any, reports: any[]) {
 
       return {
         id: report.id,
+        created_at: report.created_at,
+        user_id: report.user_id || '',
+        user_email: report.user_email || '',
+        workspace_name: report.workspace_name || '',
+        workspace_avatar: report.workspace_avatar || '',
         title: report.title || 'Untitled Report',
         status: report.status || 'draft',
-        items_count: itemsList.length,
         total_amount: totalAmount || report.total_amount || 0,
-        workspace_name: report.workspace_name || '',
+        items_count: itemsList.length,
         thumbnails,
-        created_at: report.created_at,
       };
     })
   );

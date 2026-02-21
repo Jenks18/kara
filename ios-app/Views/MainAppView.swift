@@ -49,9 +49,16 @@ struct MainAppView: View {
         }
         .ignoresSafeArea(.keyboard)
         .onAppear {
-            // Seed data store from cache, then kick off parallel network refresh
+            // Seed data store from cache (synchronous, instant first paint)
             dataStore.seed()
-            Task { await dataStore.refreshAll() }
+        }
+        .task {
+            // Structured async refresh — SwiftUI manages cancellation properly.
+            // Brief delay lets Clerk finish session validation (MafutaPassApp.task)
+            // so API calls use a valid, non-stale token.
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            guard !Task.isCancelled else { return }
+            await dataStore.refreshAll()
         }
         // Presentations at root level — guaranteed UIViewController context
         .fullScreenCover(isPresented: $showCamera) {

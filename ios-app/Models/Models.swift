@@ -6,13 +6,46 @@ struct ExpenseReport: Identifiable, Codable {
     let id: String
     let created_at: String
     let user_id: String?
-    let user_email: String
+    let user_email: String?
     let workspace_name: String
     let workspace_avatar: String?
     let title: String
     let status: String
     let total_amount: Double
     let items: [ExpenseItem]?
+    /// Mobile endpoint returns items_count instead of full items array
+    let items_count: Int?
+    /// Mobile endpoint returns thumbnail URLs directly
+    let thumbnails: [String]?
+    
+    /// Robust decoder — handles nulls in required fields gracefully so a
+    /// single bad row never kills the entire list decode.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id              = try c.decode(String.self, forKey: .id)
+        created_at      = try c.decodeIfPresent(String.self, forKey: .created_at) ?? ""
+        user_id         = try c.decodeIfPresent(String.self, forKey: .user_id)
+        user_email      = try c.decodeIfPresent(String.self, forKey: .user_email)
+        workspace_name  = try c.decodeIfPresent(String.self, forKey: .workspace_name) ?? ""
+        workspace_avatar = try c.decodeIfPresent(String.self, forKey: .workspace_avatar)
+        title           = try c.decodeIfPresent(String.self, forKey: .title) ?? "Untitled Report"
+        status          = try c.decodeIfPresent(String.self, forKey: .status) ?? "draft"
+        total_amount    = try c.decodeIfPresent(Double.self, forKey: .total_amount) ?? 0
+        items           = try c.decodeIfPresent([ExpenseItem].self, forKey: .items)
+        items_count     = try c.decodeIfPresent(Int.self, forKey: .items_count)
+        thumbnails      = try c.decodeIfPresent([String].self, forKey: .thumbnails)
+    }
+    
+    private enum CodingKeys: String, CodingKey {
+        case id, created_at, user_id, user_email, workspace_name, workspace_avatar
+        case title, status, total_amount, items, items_count, thumbnails
+    }
+    
+    /// Number of expense items — prefers items_count from mobile endpoint,
+    /// falls back to items array count from web endpoint.
+    var displayItemsCount: Int {
+        items_count ?? items?.count ?? 0
+    }
     
     // Date formatter helper
     var formattedDate: String {
@@ -42,6 +75,31 @@ struct ExpenseItem: Identifiable, Codable {
     let kra_verified: Bool?
     let user_email: String?
     let workspace_name: String?
+    
+    /// Robust decoder — provides sensible defaults for fields that may be null
+    /// in the database so a single bad row never kills the entire list decode.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id                = try c.decode(String.self, forKey: .id)
+        created_at        = try c.decodeIfPresent(String.self, forKey: .created_at) ?? ""
+        image_url         = try c.decodeIfPresent(String.self, forKey: .image_url)
+        description       = try c.decodeIfPresent(String.self, forKey: .description)
+        category          = try c.decodeIfPresent(String.self, forKey: .category) ?? "Uncategorized"
+        amount            = try c.decodeIfPresent(Double.self, forKey: .amount) ?? 0
+        merchant_name     = try c.decodeIfPresent(String.self, forKey: .merchant_name)
+        transaction_date  = try c.decodeIfPresent(String.self, forKey: .transaction_date)
+        processing_status = try c.decodeIfPresent(String.self, forKey: .processing_status) ?? "processed"
+        report_id         = try c.decodeIfPresent(String.self, forKey: .report_id)
+        kra_verified      = try c.decodeIfPresent(Bool.self, forKey: .kra_verified)
+        user_email        = try c.decodeIfPresent(String.self, forKey: .user_email)
+        workspace_name    = try c.decodeIfPresent(String.self, forKey: .workspace_name)
+    }
+    
+    private enum CodingKeys: String, CodingKey {
+        case id, created_at, image_url, description, category, amount
+        case merchant_name, transaction_date, processing_status, report_id
+        case kra_verified, user_email, workspace_name
+    }
     
     // Date formatter helper
     var formattedDate: String {
@@ -172,6 +230,41 @@ struct UserProfile: Identifiable, Codable {
     var country: String
     let created_at: String
     let updated_at: String
+    
+    /// Robust decoder — provides sensible defaults for fields that may be null
+    /// in the database so a single bad row never kills the profile decode.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id               = try c.decode(String.self, forKey: .id)
+        user_id          = try c.decodeIfPresent(String.self, forKey: .user_id) ?? ""
+        user_email       = try c.decodeIfPresent(String.self, forKey: .user_email) ?? ""
+        display_name     = try c.decodeIfPresent(String.self, forKey: .display_name)
+        first_name       = try c.decodeIfPresent(String.self, forKey: .first_name)
+        last_name        = try c.decodeIfPresent(String.self, forKey: .last_name)
+        avatar_emoji     = try c.decodeIfPresent(String.self, forKey: .avatar_emoji) ?? "💼"
+        avatar_color     = try c.decodeIfPresent(String.self, forKey: .avatar_color) ?? "#0066FF"
+        avatar_image_url = try c.decodeIfPresent(String.self, forKey: .avatar_image_url)
+        phone_number     = try c.decodeIfPresent(String.self, forKey: .phone_number)
+        legal_first_name = try c.decodeIfPresent(String.self, forKey: .legal_first_name)
+        legal_last_name  = try c.decodeIfPresent(String.self, forKey: .legal_last_name)
+        date_of_birth    = try c.decodeIfPresent(String.self, forKey: .date_of_birth)
+        address_line1    = try c.decodeIfPresent(String.self, forKey: .address_line1)
+        address_line2    = try c.decodeIfPresent(String.self, forKey: .address_line2)
+        city             = try c.decodeIfPresent(String.self, forKey: .city)
+        state            = try c.decodeIfPresent(String.self, forKey: .state)
+        zip_code         = try c.decodeIfPresent(String.self, forKey: .zip_code)
+        country          = try c.decodeIfPresent(String.self, forKey: .country) ?? "KE"
+        created_at       = try c.decodeIfPresent(String.self, forKey: .created_at) ?? ""
+        updated_at       = try c.decodeIfPresent(String.self, forKey: .updated_at) ?? ""
+    }
+    
+    private enum CodingKeys: String, CodingKey {
+        case id, user_id, user_email, display_name, first_name, last_name
+        case avatar_emoji, avatar_color, avatar_image_url, phone_number
+        case legal_first_name, legal_last_name, date_of_birth
+        case address_line1, address_line2, city, state, zip_code, country
+        case created_at, updated_at
+    }
     
     var fullName: String {
         if let first = first_name, let last = last_name {

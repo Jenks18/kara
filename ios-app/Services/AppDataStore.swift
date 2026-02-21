@@ -91,6 +91,10 @@ final class AppDataStore: ObservableObject {
             expenses = fetched
             lastExpenseFetch = Date()
             recomputeStats()
+        } catch is CancellationError {
+            // Structured concurrency cancellation — view disappeared, not an error
+        } catch let urlError as URLError where urlError.code == .cancelled {
+            // URLSession task cancelled — view lifecycle, not an error
         } catch {
             print("❌ Expense fetch error: \(error)")
         }
@@ -106,6 +110,10 @@ final class AppDataStore: ObservableObject {
             reports = fetched
             lastReportFetch = Date()
             recomputeStats()
+        } catch is CancellationError {
+            // Structured concurrency cancellation — not an error
+        } catch let urlError as URLError where urlError.code == .cancelled {
+            // URLSession task cancelled — not an error
         } catch {
             print("❌ Reports fetch error: \(error)")
         }
@@ -121,6 +129,10 @@ final class AppDataStore: ObservableObject {
             DataCache.shared.save(fetched, key: CacheKey.workspaces)
             workspaces = fetched
             lastWorkspaceFetch = Date()
+        } catch is CancellationError {
+            // Structured concurrency cancellation — not an error
+        } catch let urlError as URLError where urlError.code == .cancelled {
+            // URLSession task cancelled — not an error
         } catch {
             print("❌ Workspaces fetch error: \(error)")
         }

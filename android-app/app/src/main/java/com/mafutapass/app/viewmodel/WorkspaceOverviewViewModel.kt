@@ -30,9 +30,9 @@ class WorkspaceOverviewViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val ws = apiService.getWorkspace(workspaceId)
-                _workspace.value = ws
-                Log.d(TAG, "✅ Loaded workspace: ${ws.name}")
+                val response = apiService.getWorkspace(workspaceId)
+                _workspace.value = response.workspace
+                Log.d(TAG, "✅ Loaded workspace: ${response.workspace.name}")
             } catch (e: Exception) {
                 Log.e(TAG, "❌ Failed to load workspace: ${e.message}", e)
             } finally {
@@ -44,8 +44,8 @@ class WorkspaceOverviewViewModel @Inject constructor(
     fun updateField(workspaceId: String, field: String, value: String) {
         viewModelScope.launch {
             try {
-                val updated = apiService.updateWorkspace(workspaceId, mapOf(field to value))
-                _workspace.value = updated
+                val response = apiService.updateWorkspace(workspaceId, mapOf(field to value))
+                _workspace.value = response.workspace
                 workspaceRepository.refresh()
                 Log.d(TAG, "✅ Updated $field")
             } catch (e: Exception) {
@@ -57,11 +57,11 @@ class WorkspaceOverviewViewModel @Inject constructor(
     fun updateCurrency(workspaceId: String, code: String, symbol: String) {
         viewModelScope.launch {
             try {
-                val updated = apiService.updateWorkspace(workspaceId, mapOf(
+                val response = apiService.updateWorkspace(workspaceId, mapOf(
                     "currency" to code,
                     "currencySymbol" to symbol
                 ))
-                _workspace.value = updated
+                _workspace.value = response.workspace
                 workspaceRepository.refresh()
                 Log.d(TAG, "✅ Updated currency to $code")
             } catch (e: Exception) {

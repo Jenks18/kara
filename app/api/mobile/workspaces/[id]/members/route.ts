@@ -76,7 +76,7 @@ export async function GET(
     // Enrich with user profiles
     const { data: profiles } = await supabase
       .from('user_profiles')
-      .select('user_id, email, display_name, first_name, last_name, avatar_emoji, avatar_color, avatar_image_url')
+      .select('user_id, user_email, display_name, first_name, last_name, avatar_emoji, avatar_color, avatar_image_url')
       .in('user_id', members.map(m => m.user_id))
 
     const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || [])
@@ -88,7 +88,7 @@ export async function GET(
         user_id: member.user_id,
         workspace_id: member.workspace_id,
         role: member.role,
-        email: profile?.email || '',
+        email: profile?.user_email || '',
         display_name: profile?.display_name,
         first_name: profile?.first_name,
         last_name: profile?.last_name,

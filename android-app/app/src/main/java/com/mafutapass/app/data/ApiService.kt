@@ -23,7 +23,7 @@ interface ApiService {
     suspend fun getWorkspaces(): WorkspacesResponse
     
     @GET("api/mobile/workspaces/{id}")
-    suspend fun getWorkspace(@Path("id") id: String): Workspace
+    suspend fun getWorkspace(@Path("id") id: String): WorkspaceDetailResponse
     
     @DELETE("api/mobile/workspaces/{id}")
     suspend fun deleteWorkspace(@Path("id") id: String): Map<String, Any>
@@ -32,7 +32,7 @@ interface ApiService {
     suspend fun createWorkspace(@Body body: CreateWorkspaceRequest): CreateWorkspaceResponse
 
     @PATCH("api/mobile/workspaces/{id}")
-    suspend fun updateWorkspace(@Path("id") id: String, @Body body: Map<String, String>): Workspace
+    suspend fun updateWorkspace(@Path("id") id: String, @Body body: Map<String, String>): WorkspaceDetailResponse
     
     // ============= Expense Reports =============
     
@@ -97,6 +97,7 @@ interface ApiService {
 }
 
 data class WorkspacesResponse(val workspaces: List<Workspace>)
+data class WorkspaceDetailResponse(val workspace: Workspace)
 data class CreateWorkspaceRequest(val name: String, val currency: String = "KES", val currencySymbol: String = "KSh")
 data class CreateWorkspaceResponse(val workspace: Workspace)
 data class WorkspaceMembersResponse(val members: List<WorkspaceMember>)

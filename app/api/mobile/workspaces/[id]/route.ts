@@ -37,7 +37,8 @@ export async function GET(
       return NextResponse.json({ error: 'Workspace not found' }, { status: 404, headers: corsHeaders });
     }
 
-    return NextResponse.json(workspace, { headers: corsHeaders });
+    // Wrap in { workspace: ... } to match iOS/Android client expectations
+    return NextResponse.json({ workspace }, { headers: corsHeaders });
   } catch (error: any) {
     console.error('Error in mobile workspace detail:', error instanceof Error ? error.message : String(error));
     return NextResponse.json(
@@ -145,7 +146,8 @@ export async function PATCH(
       );
     }
 
-    return NextResponse.json(workspace, { headers: corsHeaders });
+    // Wrap in { workspace: ... } to match iOS/Android client expectations
+    return NextResponse.json({ workspace }, { headers: corsHeaders });
   } catch (error: any) {
     console.error('Error in mobile workspace update:', error instanceof Error ? error.message : String(error));
     return NextResponse.json(

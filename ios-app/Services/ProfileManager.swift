@@ -63,6 +63,12 @@ class ProfileManager: ObservableObject {
             let fetched = try await API.shared.getUserProfile(userId: userId)
             apply(fetched, fallbackName: fallbackName, fallbackEmail: fallbackEmail)
             persistToCache(userId: userId)  // keep cache up-to-date
+        } catch is CancellationError {
+            // Task cancelled (view lifecycle) — keep whatever cache state we have
+            if !hadCache { isLoaded = true }
+        } catch let urlError as URLError where urlError.code == .cancelled {
+            // URLSession cancelled — same as above
+            if !hadCache { isLoaded = true }
         } catch {
             #if DEBUG
             print("[ProfileManager] Network fetch failed: \(error)")

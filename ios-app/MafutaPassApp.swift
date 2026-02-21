@@ -157,51 +157,46 @@ struct ClerkContentView: View {
             BrandGradientBackground()
             
             if let clerkUser = clerk.user {
-                // Prime the cache synchronously BEFORE MainAppView() is composed
-                // so the tab bar and account header show the correct avatar/name
-                // from frame zero — not the default 💼.
-                let _ = {
-                    // Set userId namespace FIRST so every DataCache read that
-                    // follows uses the correct per-user keys — zero stale flash.
-                    DataCache.shared.currentUserId = clerkUser.id
-                    ProfileManager.shared.primeFromCache(userId: clerkUser.id)
-                }()
+                // Set userId namespace synchronously in the body — this is a
+                // plain property assign (NOT @Published), so it's safe during
+                // view updates. Must happen before MainAppView is composed so
+                // DataCache reads use the correct per-user keys.
+                let _ = DataCache.shared.currentUserId = clerkUser.id
+
                 MainAppView()
                     .environmentObject(ClerkAuthManager.shared)
                     .environmentObject(ProfileManager.shared)
                     .onAppear {
+                        // Prime caches from disk in onAppear (NOT the body) to
+                        // avoid "Publishing changes from within view updates".
+                        // onAppear runs before the first visible frame.
+                        ProfileManager.shared.primeFromCache(userId: clerkUser.id)
                         ClerkAuthManager.shared.syncUser()
-                        // Load profile once after auth — ProfileManager is the single source of truth
-                        Task {
-                            if let user = ClerkAuthManager.shared.currentUser {
-                                await ProfileManager.shared.loadProfile(
-                                    userId: user.id,
-                                    fallbackName: user.name,
-                                    fallbackEmail: user.email
-                                )
-                            }
+                    }
+                    .task(id: clerkUser.id) {
+                        // Async profile fetch — .task(id:) ties lifecycle to the
+                        // view and auto-cancels if user changes.
+                        // Brief delay lets Clerk's .task in MafutaPassApp finish
+                        // session validation so getToken() returns a fresh JWT.
+                        try? await Task.sleep(nanoseconds: 300_000_000)
+                        guard !Task.isCancelled else { return }
+                        ClerkAuthManager.shared.syncUser()
+                        if let user = ClerkAuthManager.shared.currentUser {
+                            await ProfileManager.shared.loadProfile(
+                                userId: user.id,
+                                fallbackName: user.name,
+                                fallbackEmail: user.email
+                            )
                         }
                     }
                     .onChange(of: clerk.user) { _, newUser in
                         if let newUser {
-                            // Set DataCache namespace to new user BEFORE any
-                            // view reads the cache — different userId = automatic
-                            // cache miss, so no clearAll() is needed for safety.
                             DataCache.shared.currentUserId = newUser.id
                             ProfileManager.shared.clear()
                             ClerkAuthManager.shared.syncUser()
-                            Task {
-                                if let user = ClerkAuthManager.shared.currentUser {
-                                    await ProfileManager.shared.loadProfile(
-                                        userId: user.id,
-                                        fallbackName: user.name,
-                                        fallbackEmail: user.email
-                                    )
-                                }
-                            }
+                            // .task(id: clerkUser.id) auto-re-runs on user change
                         } else {
-                            // Sign-out: wipe current user's data from disk (privacy cleanup)
-                            // and reset namespace so stale reads are impossible.
+                            // Sign-out: privacy cleanup
                             DataCache.shared.clearCurrentUser()
                             DataCache.shared.currentUserId = "anon"
                             ClerkAuthManager.shared.clearUser()

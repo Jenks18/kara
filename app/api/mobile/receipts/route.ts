@@ -21,6 +21,7 @@ function flattenItems(data: any[]) {
     kra_verified: item.kra_verified,
     description: item.description,
     processing_status: item.processing_status || 'processed',
+    report_id: item.report_id,
     workspace_name: item.expense_reports?.workspace_name || '',
   }));
 }

@@ -34,7 +34,7 @@ class WorkspaceMembersViewModel @Inject constructor(
             try {
                 // Fetch workspace details
                 val ws = try {
-                    apiService.getWorkspace(workspaceId)
+                    apiService.getWorkspace(workspaceId).workspace
                 } catch (e: Exception) {
                     Log.e(TAG, "⚠️ Failed to fetch workspace: ${e.message}")
                     null
