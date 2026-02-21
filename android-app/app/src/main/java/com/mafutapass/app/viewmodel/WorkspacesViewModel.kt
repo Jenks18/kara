@@ -1,5 +1,6 @@
 package com.mafutapass.app.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mafutapass.app.data.ApiService
@@ -17,6 +18,7 @@ class WorkspacesViewModel @Inject constructor(
     private val workspaceRepository: WorkspaceRepository,
     private val apiService: ApiService
 ) : ViewModel() {
+    private val TAG = "WorkspacesViewModel"
 
     val workspaces: StateFlow<List<Workspace>> = workspaceRepository.workspaces
     val isLoaded: StateFlow<Boolean> = workspaceRepository.isLoaded
@@ -53,16 +55,17 @@ class WorkspacesViewModel @Inject constructor(
     fun createWorkspace(name: String, currency: String = "KES", currencySymbol: String = "KSh") {
         viewModelScope.launch {
             try {
-                apiService.createWorkspace(
+                val response = apiService.createWorkspace(
                     com.mafutapass.app.data.CreateWorkspaceRequest(
                         name = name,
                         currency = currency,
                         currencySymbol = currencySymbol
                     )
                 )
+                Log.d(TAG, "✅ Created workspace: ${response.workspace.name}")
                 workspaceRepository.refresh()
             } catch (e: Exception) {
-                // Silent failure
+                Log.e(TAG, "❌ Failed to create workspace: ${e.message}", e)
             }
         }
     }

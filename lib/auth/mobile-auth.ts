@@ -1,6 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { clerkClient, verifyToken } from '@clerk/nextjs/server';
+import { clerkClient } from '@clerk/nextjs/server';
+import { createClerkClient } from '@clerk/backend';
 import { verifyMobileSessionJwt } from '@/lib/auth/mobile-jwt';
+
+/**
+ * Singleton Clerk backend client for authenticateRequest.
+ * Lazily created so it never throws at module evaluation if the env var is missing.
+ */
+function getClerkBackend() {
+  const secretKey = process.env.CLERK_SECRET_KEY;
+  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+  if (!secretKey || !publishableKey) {
+    console.error('❌ CLERK_SECRET_KEY or NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY missing from environment');
+    return null;
+  }
+  return createClerkClient({ secretKey, publishableKey });
+}
 
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -33,36 +48,37 @@ export async function verifyAndExtractUser(
     return mobileResult;
   }
 
-  // Secondary: Clerk-issued JWT (iOS SDK sends RS256 session tokens)
-  const secretKey = process.env.CLERK_SECRET_KEY;
-  if (secretKey) {
-    // Step 1: Verify Clerk JWT signature via JWKS
-    let payload: any;
+  // Secondary: Clerk-issued JWT (iOS Clerk SDK sends RS256 session tokens)
+  // Use authenticateRequest — the official Clerk API for verifying Bearer tokens
+  // in custom backend routes. Handles JWKS fetching, caching, and all token types.
+  const clerkBackend = getClerkBackend();
+  if (clerkBackend) {
     try {
-      payload = await verifyToken(token, { secretKey });
-    } catch (verifyErr: any) {
-      console.error('❌ Clerk verifyToken failed:', verifyErr?.message || verifyErr);
-      // Token is not valid — fall through to final rejection
-    }
+      const requestState = await clerkBackend.authenticateRequest(request, {
+        publishableKey: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
+      });
 
-    if (payload?.sub) {
-      const userId = payload.sub as string;
+      if (requestState.isSignedIn) {
+        const auth = requestState.toAuth()!;
+        const userId = auth.userId;
 
-      // Step 2: Get email — try Clerk API, fall back to empty string
-      // (RLS only needs sub, not email — don't fail auth over email lookup)
-      let email = '';
-      try {
-        const clerk = await clerkClient();
-        const user = await clerk.users.getUser(userId);
-        email = user.emailAddresses?.[0]?.emailAddress || '';
-      } catch (userErr: any) {
-        console.warn('⚠️ Clerk getUser lookup failed (non-fatal):', userErr?.message || userErr);
+        // Get email non-fatally — RLS only needs sub (user_id), email is for logging
+        let email = '';
+        try {
+          const clerk = await clerkClient();
+          const user = await clerk.users.getUser(userId);
+          email = user.emailAddresses?.[0]?.emailAddress || '';
+        } catch {
+          // Non-fatal — proceed without email
+        }
+
+        return { userId, email };
       }
 
-      return { userId, email };
+      console.error('❌ Clerk authenticateRequest: not signed in. Reason:', requestState.reason, requestState.message);
+    } catch (e: any) {
+      console.error('❌ Clerk authenticateRequest threw:', e?.message || e);
     }
-  } else {
-    console.error('❌ CLERK_SECRET_KEY not configured — cannot verify Clerk iOS tokens');
   }
 
   console.warn('❌ Token verification failed: not a valid mobile or Clerk JWT');
