@@ -1,23 +1,23 @@
 import SwiftUI
 
 struct WorkspacesPage: View {
-    @State private var workspaces: [Workspace] = []
-    @State private var isLoading = true
+    @ObservedObject var dataStore: AppDataStore
     @State private var activeMenuId: String? = nil
     @State private var showCreateSheet = false
+    @State private var isScrolled = false
+
+    init(dataStore: AppDataStore) {
+        self.dataStore = dataStore
+    }
     
     var body: some View {
         NavigationStack {
-            ZStack {
-                // Centralized background
-                AppTheme.backgroundView()
-                
-                VStack(spacing: 0) {
+            VStack(spacing: 0) {
                     // Header
                     HStack {
                         Text("Workspaces")
                             .font(.system(size: 28, weight: .bold))
-                            .foregroundColor(.primary)
+                            .foregroundColor(AppTheme.Colors.textPrimary)
                         
                         Spacer()
                         
@@ -32,32 +32,49 @@ struct WorkspacesPage: View {
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
-                    .background(Color.white)
-                    .overlay(
-                        Rectangle()
-                            .fill(AppTheme.Colors.primary.opacity(0.1))
-                            .frame(height: 1),
-                        alignment: .bottom
-                    )
+                    .background {
+                        ZStack {
+                            AppTheme.Colors.cardSurface
+                                .opacity(isScrolled ? 0 : 1)
+                            Rectangle()
+                                .fill(.ultraThinMaterial)
+                                .opacity(isScrolled ? 1 : 0)
+                        }
+                        .ignoresSafeArea(edges: .top)
+                        .animation(.easeInOut(duration: 0.2), value: isScrolled)
+                    }
+                    .shadow(color: .black.opacity(isScrolled ? 0.12 : 0.04), radius: isScrolled ? 6 : 1, y: 1)
+                    .animation(.easeInOut(duration: 0.2), value: isScrolled)
                     
-                    if isLoading {
+                    if dataStore.isLoadingWorkspaces && dataStore.workspaces.isEmpty {
                         Spacer()
                         ProgressView("Loading...")
                         Spacer()
-                    } else if workspaces.isEmpty {
+                    } else if dataStore.workspaces.isEmpty {
                         // Empty State
                         ScrollView {
                             VStack(spacing: 16) {
                                 Spacer()
                                     .frame(height: 80)
                                 
-                                Text("You have no workspaces")
+                                // Building icon matching webapp empty state
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .fill(AppTheme.Colors.primary.opacity(0.12))
+                                        .frame(width: 80, height: 80)
+                                    Image(systemName: "building.2")
+                                        .font(.system(size: 36, weight: .medium))
+                                        .foregroundColor(AppTheme.Colors.primary)
+                                }
+                                .padding(.bottom, 8)
+                                
+                                Text("No workspaces yet")
                                     .font(.system(size: 24, weight: .bold))
-                                    .foregroundColor(.primary)
+                                    .foregroundColor(AppTheme.Colors.textPrimary)
                                 
                                 Text("Track receipts, reimburse expenses, manage travel, send invoices, and more.")
                                     .font(.system(size: 16))
-                                    .foregroundColor(.secondary)
+                                    .foregroundColor(AppTheme.Colors.textSecondary)
                                     .multilineTextAlignment(.center)
                                     .padding(.horizontal, 40)
                                 
@@ -86,13 +103,41 @@ struct WorkspacesPage: View {
                                         .shadow(color: AppTheme.Colors.primary.opacity(0.2), radius: 8, y: 4)
                                 }
                                 .padding(.horizontal, 16)
+                            
+                                // What are Workspaces? info card
+                                Spacer()
+                                    .frame(height: 8)
+                                
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text("What are Workspaces?")
+                                        .font(.system(size: 16, weight: .bold))
+                                        .foregroundColor(AppTheme.Colors.textPrimary)
+                                    
+                                    Text("Workspaces help you organize expenses by team, project, or department. Invite team members and collaborate on expense tracking.")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(AppTheme.Colors.textSecondary)
+                                        .lineSpacing(2)
+                                }
+                                .padding(16)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(AppTheme.Colors.cardSurface)
+                                .cornerRadius(12)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.gray.opacity(0.1), lineWidth: 1)
+                                )
                             }
+                        }
+                        .onScrollGeometryChange(for: Bool.self) { geo in
+                            geo.contentOffset.y > 8
+                        } action: { _, scrolled in
+                            isScrolled = scrolled
                         }
                     } else {
                         // Workspaces List
                         ScrollView {
                             VStack(spacing: 12) {
-                                ForEach(workspaces) { workspace in
+                                ForEach(dataStore.workspaces) { workspace in
                                     WorkspaceRow(
                                         workspace: workspace,
                                         isMenuActive: activeMenuId == workspace.id,
@@ -133,50 +178,58 @@ struct WorkspacesPage: View {
                                     .cornerRadius(12)
                                 }
                                 .shadow(color: .black.opacity(0.03), radius: 2, y: 1)
+                                
+                                // What are Workspaces? info card
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text("What are Workspaces?")
+                                        .font(.system(size: 16, weight: .bold))
+                                        .foregroundColor(AppTheme.Colors.textPrimary)
+                                    
+                                    Text("Workspaces help you organize expenses by team, project, or department. Invite team members and collaborate on expense tracking.")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(AppTheme.Colors.textSecondary)
+                                        .lineSpacing(2)
+                                }
+                                .padding(16)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(AppTheme.Colors.cardSurface)
+                                .cornerRadius(12)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.gray.opacity(0.1), lineWidth: 1)
+                                )
                             }
                             .padding(16)
                             .padding(.bottom, 100)
                         }
+                        .onScrollGeometryChange(for: Bool.self) { geo in
+                            geo.contentOffset.y > 8
+                        } action: { _, scrolled in
+                            isScrolled = scrolled
+                        }
                     }
                 }
             }
+            .background(AppTheme.backgroundView())
             .navigationBarHidden(true)
             .sheet(isPresented: $showCreateSheet) {
                 NewWorkspaceView(onComplete: {
                     Task {
-                        await loadWorkspaces()
+                        await dataStore.refreshWorkspaces(force: true)
                     }
                 })
             }
-            .task {
-                await loadWorkspaces()
-            }
         }
-    }
-    
-    private func loadWorkspaces() async {
-        isLoading = true
-        
-        do {
-            workspaces = try await API.shared.fetchWorkspaces()
-        } catch {
-            print("Error loading workspaces: \(error)")
-        }
-        
-        isLoading = false
-    }
     
     private func duplicateWorkspace(_ workspace: Workspace) async {
         do {
             let newWorkspace = try await API.shared.createWorkspace(
                 name: "\(workspace.name) (Copy)",
                 avatar: workspace.avatarUrl ?? "",
-                currency: workspace.currency
+                currency: workspace.safeCurrency
             )
-            await MainActor.run {
-                workspaces.append(newWorkspace)
-                activeMenuId = nil
-            }
+            dataStore.addWorkspace(newWorkspace)
+            activeMenuId = nil
         } catch {
             print("Error duplicating workspace: \(error)")
         }
@@ -188,10 +241,8 @@ struct WorkspacesPage: View {
         
         do {
             try await API.shared.deleteWorkspace(id: id)
-            await MainActor.run {
-                workspaces.removeAll { $0.id == id }
-                activeMenuId = nil
-            }
+            dataStore.removeWorkspace(id: id)
+            activeMenuId = nil
         } catch {
             print("Error deleting workspace: \(error)")
         }
@@ -244,17 +295,17 @@ struct WorkspaceRow: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(workspace.name)
                             .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.primary)
+                            .foregroundColor(AppTheme.Colors.textPrimary)
                         
-                        Text("\(workspace.currency) - \(workspace.displayCurrencySymbol)")
+                        Text("\(workspace.safeCurrency) - \(workspace.displayCurrencySymbol)")
                             .font(.system(size: 14))
-                            .foregroundColor(.secondary)
+                            .foregroundColor(AppTheme.Colors.textSecondary)
                     }
                     
                     Spacer()
                 }
                 .padding(16)
-                .background(Color.white)
+                .background(AppTheme.Colors.cardSurface)
                 .cornerRadius(12)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
@@ -294,11 +345,11 @@ struct WorkspaceRow: View {
                                     .frame(width: 20)
                                 Text("Go to workspace")
                                     .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.primary)
+                                    .foregroundColor(AppTheme.Colors.textPrimary)
                                 Spacer()
                             }
                             .padding(16)
-                            .background(Color.white)
+                            .background(AppTheme.Colors.cardSurface)
                         }
                         
                         Divider()
@@ -311,11 +362,11 @@ struct WorkspaceRow: View {
                                     .frame(width: 20)
                                 Text("Duplicate Workspace")
                                     .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.primary)
+                                    .foregroundColor(AppTheme.Colors.textPrimary)
                                 Spacer()
                             }
                             .padding(16)
-                            .background(Color.white)
+                            .background(AppTheme.Colors.cardSurface)
                         }
                         
                         Divider()
@@ -332,10 +383,10 @@ struct WorkspaceRow: View {
                                 Spacer()
                             }
                             .padding(16)
-                            .background(Color.white)
+                            .background(AppTheme.Colors.cardSurface)
                         }
                     }
-                    .background(Color.white)
+                    .background(AppTheme.Colors.cardSurface)
                     .cornerRadius(12)
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
@@ -372,17 +423,7 @@ struct NewWorkspaceView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // Background gradient
-                LinearGradient(
-                    colors: [
-                        AppTheme.Colors.blue50,
-                        Color(hex: "#E8F0FE"),
-                        AppTheme.Colors.blue50
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
+                AppTheme.backgroundView()
                 
                 VStack(spacing: 0) {
                     // Content
@@ -391,7 +432,7 @@ struct NewWorkspaceView: View {
                             // Description
                             Text("Track receipts, reimburse expenses, manage travel, send invoices, and more.")
                                 .font(.system(size: 16))
-                                .foregroundColor(.secondary)
+                                .foregroundColor(AppTheme.Colors.textSecondary)
                                 .padding(.top, 8)
                             
                             // Avatar
@@ -420,7 +461,7 @@ struct NewWorkspaceView: View {
                                         // Photo picker
                                     }) {
                                         Circle()
-                                            .fill(Color.white)
+                                            .fill(AppTheme.Colors.cardSurface)
                                             .frame(width: 48, height: 48)
                                             .overlay(
                                                 Circle()
@@ -441,12 +482,12 @@ struct NewWorkspaceView: View {
                             VStack(alignment: .leading, spacing: 8) {
                                 Text("Workspace name")
                                     .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(.secondary)
+                                    .foregroundColor(AppTheme.Colors.textSecondary)
                                 
                                 TextField("Terpmail's Workspace", text: $workspaceName)
                                     .font(.system(size: 16))
                                     .padding(16)
-                                    .background(Color.white)
+                                    .background(AppTheme.Colors.cardSurface)
                                     .cornerRadius(12)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 12)
@@ -462,12 +503,12 @@ struct NewWorkspaceView: View {
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text("Default currency")
                                         .font(.system(size: 14))
-                                        .foregroundColor(.secondary)
+                                        .foregroundColor(AppTheme.Colors.textSecondary)
                                     
                                     HStack {
                                         Text(currency)
                                             .font(.system(size: 16, weight: .medium))
-                                            .foregroundColor(.primary)
+                                            .foregroundColor(AppTheme.Colors.textPrimary)
                                         
                                         Spacer()
                                         
@@ -477,7 +518,7 @@ struct NewWorkspaceView: View {
                                     }
                                 }
                                 .padding(16)
-                                .background(Color.white)
+                                .background(AppTheme.Colors.cardSurface)
                                 .cornerRadius(12)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 12)
@@ -521,7 +562,7 @@ struct NewWorkspaceView: View {
                         .opacity((workspaceName.isEmpty || isCreating) ? 0.5 : 1.0)
                         .padding(16)
                     }
-                    .background(Color.white)
+                    .background(AppTheme.Colors.cardSurface)
                     .overlay(
                         Rectangle()
                             .fill(AppTheme.Colors.primary.opacity(0.2))
@@ -537,7 +578,7 @@ struct NewWorkspaceView: View {
                     Button(action: { dismiss() }) {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(.primary)
+                            .foregroundColor(AppTheme.Colors.textPrimary)
                     }
                 }
             }
@@ -646,10 +687,10 @@ struct CurrencyPickerView: View {
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text(displayString)
                                             .font(.system(size: 16, weight: .semibold))
-                                            .foregroundColor(.primary)
+                                            .foregroundColor(AppTheme.Colors.textPrimary)
                                         Text(name)
                                             .font(.system(size: 14))
-                                            .foregroundColor(.secondary)
+                                            .foregroundColor(AppTheme.Colors.textSecondary)
                                     }
                                     
                                     Spacer()
@@ -661,7 +702,7 @@ struct CurrencyPickerView: View {
                                     }
                                 }
                                 .padding(16)
-                                .background(isSelected ? AppTheme.Colors.blue50 : Color.white)
+                                .background(isSelected ? AppTheme.Colors.blue50 : AppTheme.Colors.cardSurface)
                                 .cornerRadius(12)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 12)
@@ -693,5 +734,5 @@ struct CurrencyPickerView: View {
 }
 
 #Preview {
-    WorkspacesPage()
+    WorkspacesPage(dataStore: AppDataStore())
 }

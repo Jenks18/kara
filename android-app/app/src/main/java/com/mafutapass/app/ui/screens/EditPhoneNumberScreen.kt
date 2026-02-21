@@ -63,8 +63,7 @@ fun EditPhoneNumberScreen(
     Column(modifier = Modifier.fillMaxSize().background(AppTheme.colors.backgroundGradient)) {
         TopAppBar(title = { Text("Phone number", fontWeight = FontWeight.Bold) },
             navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
-            windowInsets = WindowInsets(0, 0, 0, 0))
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface))
 
         if (isLoading) { Box(Modifier.fillMaxSize(), Alignment.Center) { CircularProgressIndicator(color = MaterialTheme.colorScheme.primary) } }
         else {

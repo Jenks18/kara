@@ -205,7 +205,6 @@ export async function getExpenseReports(
     const { data: reportsData, error: reportsError } = await supabase
       .from('expense_reports')
       .select('*')
-      .eq('user_email', userEmailOrId)
       .order('created_at', { ascending: false })
       .limit(limit)
 

@@ -5,8 +5,10 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mafutapass.app.data.ApiService
+import com.mafutapass.app.data.AppDataCache
 import com.mafutapass.app.data.ExpenseItem
 import com.mafutapass.app.data.ExpenseReport
+import com.mafutapass.app.data.UserSession
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,7 +17,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ReportsViewModel @Inject constructor(
-    private val apiService: ApiService
+    private val apiService: ApiService,
+    private val appDataCache: AppDataCache,
+    private val userSession: UserSession
 ) : ViewModel() {
     private val TAG = "ReportsViewModel"
 
@@ -34,6 +38,14 @@ class ReportsViewModel @Inject constructor(
     init {
         try {
             Log.d(TAG, "Initializing ReportsViewModel...")
+            // Seed from userId-keyed cache — instant render, no skeleton flash.
+            // If this is a different user, their userId key won't exist in cache,
+            // so this is a no-op and fetchExpenseData() shows the spinner correctly.
+            val userId = userSession.userId.value
+            if (userId != null) {
+                appDataCache.loadExpenseItems(userId)?.let { _expenseItems.value = it }
+                appDataCache.loadExpenseReports(userId)?.let { _expenseReports.value = it }
+            }
             fetchExpenseData()
             Log.d(TAG, "✅ ReportsViewModel initialized")
         } catch (e: Exception) {
@@ -53,7 +65,8 @@ class ReportsViewModel @Inject constructor(
         
         viewModelScope.launch {
             try {
-                // Fetch expense reports from API
+                val userId = userSession.userId.value
+
                 val reports = try {
                     apiService.getExpenseReports()
                 } catch (e: Exception) {
@@ -61,9 +74,9 @@ class ReportsViewModel @Inject constructor(
                     emptyList()
                 }
                 _expenseReports.value = reports
+                userId?.let { appDataCache.saveExpenseReports(it, reports) }
                 Log.d(TAG, "✅ Fetched ${reports.size} expense reports")
                 
-                // Fetch receipts/expense items from API
                 val items = try {
                     apiService.getReceipts()
                 } catch (e: Exception) {
@@ -71,6 +84,7 @@ class ReportsViewModel @Inject constructor(
                     emptyList()
                 }
                 _expenseItems.value = items
+                userId?.let { appDataCache.saveExpenseItems(it, items) }
                 Log.d(TAG, "✅ Fetched ${items.size} expense items")
                 
             } catch (e: Exception) {

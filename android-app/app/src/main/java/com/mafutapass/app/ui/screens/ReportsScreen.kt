@@ -2,7 +2,9 @@
 package com.mafutapass.app.ui.screens
 
 import android.widget.Toast
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -20,6 +22,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -65,7 +68,7 @@ fun ReportsScreen(
             color = MaterialTheme.colorScheme.surface,
             shadowElevation = 1.dp
         ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.fillMaxWidth().statusBarsPadding()) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -88,30 +91,57 @@ fun ReportsScreen(
                     }
                 }
 
-                // Segmented Control
-                TabRow(
-                    selectedTabIndex = selectedTab,
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.primary,
-                    indicator = {},
-                    divider = {},
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                // Summary pills: Total Spent + KRA Verified
+                SummaryPills(
+                    totalSpent = expenses.sumOf { it.amount },
+                    kraVerifiedCount = expenses.count { it.kraVerified == true }
+                )
+
+                // Segmented Control (iOS-style)
+                Row(
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                        .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), RoundedCornerShape(14.dp))
+                        .padding(6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     tabs.forEachIndexed { index, title ->
-                        Tab(
-                            selected = selectedTab == index,
-                            onClick = { selectedTab = index },
+                        Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(
-                                    if (selectedTab == index) MaterialTheme.colorScheme.primary else Color.Transparent
+                                .weight(1f)
+                                .clip(RoundedCornerShape(10.dp))
+                                .then(
+                                    if (selectedTab == index) {
+                                        Modifier
+                                            .background(
+                                                brush = AppTheme.colors.primaryGradient,
+                                                shape = RoundedCornerShape(10.dp)
+                                            )
+                                    } else {
+                                        Modifier
+                                            .background(
+                                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
+                                                shape = RoundedCornerShape(10.dp)
+                                            )
+                                    }
                                 )
+                                .border(
+                                    1.dp,
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
+                                    RoundedCornerShape(10.dp)
+                                )
+                                .clickable { selectedTab = index }
+                                .padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = title,
-                                color = if (selectedTab == index) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontWeight = if (selectedTab == index) FontWeight.SemiBold else FontWeight.Normal,
-                                modifier = Modifier.padding(vertical = 8.dp)
+                                color = if (selectedTab == index) Color.White else MaterialTheme.colorScheme.primary,
+                                fontWeight = if (selectedTab == index) FontWeight.SemiBold else FontWeight.Medium,
+                                style = MaterialTheme.typography.labelLarge
                             )
                         }
                     }
@@ -427,6 +457,71 @@ fun ReportCard(report: ExpenseReport, onNavigateToDetail: (String) -> Unit = {})
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun SummaryPills(totalSpent: Double, kraVerifiedCount: Int) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(
+                brush = Brush.linearGradient(listOf(Blue500, Blue600)),
+                shape = RoundedCornerShape(14.dp)
+            )
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Total Spent
+        Column {
+            Text(
+                text = "Total Spent",
+                style = MaterialTheme.typography.labelMedium,
+                color = Color.White.copy(alpha = 0.9f)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = CurrencyFormatter.formatSimple(totalSpent),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+        }
+        // KRA Verified
+        Column(horizontalAlignment = Alignment.End) {
+            Text(
+                text = "KRA Verified",
+                style = MaterialTheme.typography.labelMedium,
+                color = Color.White.copy(alpha = 0.9f)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier
+                    .background(
+                        Color.White.copy(alpha = 0.2f),
+                        RoundedCornerShape(10.dp)
+                    )
+                    .padding(horizontal = 10.dp, vertical = 6.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.CheckCircle,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(16.dp)
+                )
+                Text(
+                    text = "$kraVerifiedCount",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White
+                )
             }
         }
     }

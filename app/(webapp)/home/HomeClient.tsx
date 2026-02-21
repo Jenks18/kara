@@ -5,7 +5,6 @@ import Link from 'next/link'
 import BottomNav from '@/components/navigation/BottomNav'
 import { 
   Wallet,
-  Clock, 
   FileText, 
   TrendingUp, 
   TrendingDown,
@@ -185,35 +184,25 @@ export default function HomeClient({
         </div>
 
         {/* ── Stat Pills Row ────────────────────────────────────── */}
-        <div className="grid grid-cols-3 gap-2">
-          <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm">
-            <div className="flex items-center gap-2 mb-1.5">
-              <div className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center">
-                <Clock className="w-4 h-4 text-amber-600" />
-              </div>
-            </div>
-            <p className="text-xl font-bold text-gray-900">{stats.pendingReviewCount}</p>
-            <p className="text-xs text-gray-500">Pending</p>
-          </div>
-
-          <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm">
-            <div className="flex items-center gap-2 mb-1.5">
-              <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
                 <FileText className="w-4 h-4 text-blue-600" />
               </div>
             </div>
-            <p className="text-xl font-bold text-gray-900">{stats.activeReportsCount}</p>
-            <p className="text-xs text-gray-500">Active Reports</p>
+            <p className="text-2xl font-bold text-gray-900 tracking-tight">{stats.activeReportsCount}</p>
+            <p className="text-xs font-medium text-gray-500 mt-0.5">Active Reports</p>
           </div>
 
-          <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm">
-            <div className="flex items-center gap-2 mb-1.5">
-              <div className="w-7 h-7 rounded-lg bg-green-50 flex items-center justify-center">
+          <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-9 h-9 rounded-xl bg-green-50 flex items-center justify-center">
                 <Wallet className="w-4 h-4 text-green-600" />
               </div>
             </div>
-            <p className="text-xl font-bold text-gray-900">{fmtCompact(stats.totalExpensesAllTime, currency)}</p>
-            <p className="text-xs text-gray-500">All Time</p>
+            <p className="text-2xl font-bold text-gray-900 tracking-tight">{fmtCompact(stats.totalExpensesAllTime, currency)}</p>
+            <p className="text-xs font-medium text-gray-500 mt-0.5">All Time</p>
           </div>
         </div>
 

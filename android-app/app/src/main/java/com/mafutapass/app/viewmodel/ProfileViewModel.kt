@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mafutapass.app.data.AvatarManager
 import com.mafutapass.app.data.UpdateProfileRequest
+import com.mafutapass.app.data.UserSession
 import com.mafutapass.app.data.User
 import com.mafutapass.app.data.network.NetworkResult
 import com.mafutapass.app.data.repository.UserRepository
@@ -25,7 +26,8 @@ import javax.inject.Inject
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val userRepository: UserRepository,
-    private val avatarManager: AvatarManager
+    private val avatarManager: AvatarManager,
+    private val userSession: UserSession
 ) : ViewModel() {
     
     // Profile state
@@ -46,15 +48,13 @@ class ProfileViewModel @Inject constructor(
     init {
         loadProfile()
     }
-    
-    /**
-     * Load user profile from API.
-     */
+
     fun loadProfile() {
+        val userId = userSession.userId.value ?: return
         viewModelScope.launch {
-            userRepository.getUserProfile().collect { result ->
+            _profileState.value = NetworkResult.Loading
+            userRepository.getUserProfile(userId).collect { result ->
                 _profileState.value = result
-                // Keep avatar cache in sync for navbar + account screen
                 if (result is NetworkResult.Success) {
                     result.data.avatarEmoji?.let { avatarManager.update(it) }
                 }

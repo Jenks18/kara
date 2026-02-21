@@ -1,6 +1,7 @@
 package com.mafutapass.app.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.shape.CircleShape
@@ -13,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -22,6 +24,7 @@ import com.mafutapass.app.ui.Screen
 import com.mafutapass.app.ui.theme.AppTheme
 import com.mafutapass.app.ui.theme.Blue500
 import com.mafutapass.app.ui.theme.Blue600
+import com.mafutapass.app.ui.components.EmojiImage
 
 data class BottomNavItem(
     val route: String,
@@ -48,6 +51,7 @@ fun BottomNavBar(navController: NavController, avatarManager: AvatarManager) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface)
             .navigationBarsPadding()
     ) {
         // Background navigation bar
@@ -75,7 +79,10 @@ fun BottomNavBar(navController: NavController, avatarManager: AvatarManager) {
                     label = {
                         Text(
                             text = screen.title,
-                            style = MaterialTheme.typography.bodySmall
+                            style = MaterialTheme.typography.labelSmall,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
                         )
                     },
                     selected = isSelected,
@@ -111,14 +118,20 @@ fun BottomNavBar(navController: NavController, avatarManager: AvatarManager) {
                                 modifier = Modifier
                                     .size(28.dp)
                                     .clip(CircleShape)
-                                    .background(
-                                        brush = AppTheme.colors.primaryGradient
+                                    .background(MaterialTheme.colorScheme.surface)
+                                    .then(
+                                        if (isSelected) Modifier.border(
+                                            width = 2.dp,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            shape = CircleShape
+                                        )
+                                        else Modifier
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text(
-                                    text = avatarEmoji,
-                                    fontSize = 14.sp
+                                EmojiImage(
+                                    emoji = avatarEmoji,
+                                    size = 14.dp
                                 )
                             }
                         } else if (screen.icon != null) {
@@ -132,7 +145,10 @@ fun BottomNavBar(navController: NavController, avatarManager: AvatarManager) {
                     label = {
                         Text(
                             text = screen.title,
-                            style = MaterialTheme.typography.bodySmall
+                            style = MaterialTheme.typography.labelSmall,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
                         )
                     },
                     selected = isSelected,

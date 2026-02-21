@@ -36,8 +36,7 @@ struct ExpenseDetailView: View {
     
     var body: some View {
         ZStack {
-            Color(uiColor: .systemGroupedBackground)
-                .ignoresSafeArea()
+            AppTheme.backgroundView()
             
             ScrollView {
                 VStack(spacing: 16) {
@@ -103,7 +102,7 @@ struct ExpenseDetailView: View {
                             viewMode
                         }
                     }
-                    .background(Color.white)
+                    .background(AppTheme.Colors.cardSurface)
                     .cornerRadius(12)
                     .shadow(color: .black.opacity(0.05), radius: 8)
                     .padding(.horizontal)
@@ -137,7 +136,7 @@ struct ExpenseDetailView: View {
                             .font(.system(size: 15))
                     }
                     .padding()
-                    .background(Color.white)
+                    .background(AppTheme.Colors.cardSurface)
                     .cornerRadius(8)
                     .shadow(radius: 4)
                     .padding()
@@ -192,7 +191,7 @@ struct ExpenseDetailView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Notes")
                         .font(.system(size: 14))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.Colors.textSecondary)
                     Text(notes)
                         .font(.system(size: 16))
                 }
@@ -206,7 +205,7 @@ struct ExpenseDetailView: View {
         HStack {
             Text(label)
                 .font(.system(size: 14))
-                .foregroundColor(.secondary)
+                .foregroundColor(AppTheme.Colors.textSecondary)
             Spacer()
             Text(value)
                 .font(.system(size: 16, weight: .medium))
@@ -222,7 +221,7 @@ struct ExpenseDetailView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Merchant")
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(AppTheme.Colors.textSecondary)
                 TextField("Merchant name", text: $editMerchant)
                     .textFieldStyle(.roundedBorder)
             }
@@ -233,7 +232,7 @@ struct ExpenseDetailView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Amount")
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(AppTheme.Colors.textSecondary)
                 TextField("0.00", text: $editAmount)
                     .keyboardType(.decimalPad)
                     .textFieldStyle(.roundedBorder)
@@ -244,7 +243,7 @@ struct ExpenseDetailView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Category")
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(AppTheme.Colors.textSecondary)
                 Picker("Category", selection: $editCategory) {
                     ForEach(categories, id: \.self) { category in
                         Text(category).tag(category)
@@ -259,7 +258,7 @@ struct ExpenseDetailView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Date")
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(AppTheme.Colors.textSecondary)
                 DatePicker("", selection: $editDate, displayedComponents: .date)
                     .datePickerStyle(.compact)
             }
@@ -269,7 +268,7 @@ struct ExpenseDetailView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Notes")
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(AppTheme.Colors.textSecondary)
                 TextEditor(text: $editNotes)
                     .frame(height: 80)
                     .overlay(

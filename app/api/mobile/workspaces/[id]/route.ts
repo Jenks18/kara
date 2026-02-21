@@ -89,3 +89,68 @@ export async function DELETE(
     );
   }
 }
+
+/**
+ * PATCH /api/mobile/workspaces/[id]
+ * Update a workspace (name, avatar, currency, etc.).
+ */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+
+    const mobileClient = await createMobileClient(request);
+    if (!mobileClient) {
+      return NextResponse.json(
+        { error: 'Authentication failed or server misconfigured' },
+        { status: 401, headers: corsHeaders }
+      );
+    }
+
+    const { supabase } = mobileClient;
+
+    // Only allow specific fields to be updated
+    const allowedFields = ['name', 'avatar', 'avatar_url', 'currency', 'currency_symbol', 'description', 'address'];
+    const updates: Record<string, any> = {};
+    for (const field of allowedFields) {
+      if (field in body) {
+        updates[field] = body[field];
+      }
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json(
+        { error: 'No valid fields to update' },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
+    updates.updated_at = new Date().toISOString();
+
+    const { data: workspace, error } = await supabase
+      .from('workspaces')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error || !workspace) {
+      console.error('Error updating workspace:', error instanceof Error ? error.message : String(error));
+      return NextResponse.json(
+        { error: error?.message || 'Workspace not found' },
+        { status: error ? 500 : 404, headers: corsHeaders }
+      );
+    }
+
+    return NextResponse.json(workspace, { headers: corsHeaders });
+  } catch (error: any) {
+    console.error('Error in mobile workspace update:', error instanceof Error ? error.message : String(error));
+    return NextResponse.json(
+      { error: error.message || 'Internal server error' },
+      { status: 500, headers: corsHeaders }
+    );
+  }
+}

@@ -15,8 +15,24 @@ export async function GET(request: NextRequest) {
 
   try {
     const supabase = await createServerClient()
-    const reports = await getExpenseReports(userId, 50, supabase)
-    return NextResponse.json(reports)
+    // Use a joined query to avoid N+1 — RLS handles user filtering
+    const { data: reports, error } = await supabase
+      .from('expense_reports')
+      .select('*, expense_items(*)')
+      .order('created_at', { ascending: false })
+      .limit(50)
+
+    if (error) {
+      console.error('Error fetching reports:', error)
+      return NextResponse.json([], { status: 200 })
+    }
+
+    // Map to expected shape
+    const mapped = (reports || []).map((r: any) => ({
+      ...r,
+      items: r.expense_items || [],
+    }))
+    return NextResponse.json(mapped)
   } catch (error: any) {
     return NextResponse.json(
       { error: error.message },

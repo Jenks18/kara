@@ -13,8 +13,8 @@ struct ConfirmExpensesView: View {
     @State private var isSubmitting = false
     @State private var showSuccess = false
     @State private var locationPermissionGranted = false
-    @State private var workspaces: [Workspace] = []
-    @State private var isLoadingWorkspaces = false
+    // Workspaces come from WorkspaceManager (already cached — no extra API call)
+    @State private var workspaces: [Workspace] = WorkspaceManager.shared.workspaces
     @State private var uploadErrorMessage: String?
     @State private var showUploadError = false
     @State private var detectedQRUrl: String? = nil // NEW: Detected eTIMS QR code
@@ -27,8 +27,7 @@ struct ConfirmExpensesView: View {
         NavigationStack {
             ZStack {
                 // Background
-                Color(uiColor: .systemGroupedBackground)
-                    .ignoresSafeArea()
+                AppTheme.backgroundView()
                 
                 VStack(spacing: 0) {
                     // Header
@@ -54,7 +53,7 @@ struct ConfirmExpensesView: View {
                             .frame(width: 60)
                     }
                     .padding()
-                    .background(Color(uiColor: .systemBackground))
+                    .background(AppTheme.Colors.cardSurface)
                     
                     ScrollView {
                         VStack(spacing: 20) {
@@ -172,13 +171,11 @@ struct ConfirmExpensesView: View {
                 }
                                     Text("Workspace")
                                         .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(.secondary)
+                                        .foregroundColor(AppTheme.Colors.textSecondary)
                                     
                                     Menu {
-                                        if isLoadingWorkspaces {
-                                            Text("Loading...")
-                                        } else if workspaces.isEmpty {
-                                            Text("No workspaces")
+                                        if workspaces.isEmpty {
+                                            Text("No workspaces — create one first")
                                         } else {
                                             ForEach(workspaces) { workspace in
                                                 Button(workspace.name) {
@@ -193,10 +190,10 @@ struct ConfirmExpensesView: View {
                                             Spacer()
                                             Image(systemName: "chevron.down")
                                                 .font(.system(size: 14))
-                                                .foregroundColor(.secondary)
+                                                .foregroundColor(AppTheme.Colors.textSecondary)
                                         }
                                         .padding()
-                                        .background(Color(uiColor: .systemBackground))
+                                        .background(AppTheme.Colors.cardSurface)
                                         .cornerRadius(10)
                                     }
                                 }
@@ -205,11 +202,11 @@ struct ConfirmExpensesView: View {
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text("Description")
                                         .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(.secondary)
+                                        .foregroundColor(AppTheme.Colors.textSecondary)
                                     
                                     TextField("Add description", text: $description)
                                         .padding()
-                                        .background(Color(uiColor: .systemBackground))
+                                        .background(AppTheme.Colors.cardSurface)
                                         .cornerRadius(10)
                                 }
                                 
@@ -217,7 +214,7 @@ struct ConfirmExpensesView: View {
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text("Category")
                                         .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(.secondary)
+                                        .foregroundColor(AppTheme.Colors.textSecondary)
                                     
                                     Menu {
                                         ForEach(categories, id: \.self) { category in
@@ -231,10 +228,10 @@ struct ConfirmExpensesView: View {
                                             Spacer()
                                             Image(systemName: "chevron.down")
                                                 .font(.system(size: 14))
-                                                .foregroundColor(.secondary)
+                                                .foregroundColor(AppTheme.Colors.textSecondary)
                                         }
                                         .padding()
-                                        .background(Color(uiColor: .systemBackground))
+                                        .background(AppTheme.Colors.cardSurface)
                                         .cornerRadius(10)
                                     }
                                 }
@@ -248,7 +245,7 @@ struct ConfirmExpensesView: View {
                                         
                                         Text("Location: \(String(format: "%.4f, %.4f", location.coordinate.latitude, location.coordinate.longitude))")
                                             .font(.system(size: 13))
-                                            .foregroundColor(.secondary)
+                                            .foregroundColor(AppTheme.Colors.textSecondary)
                                         
                                         Spacer()
                                     }
@@ -289,7 +286,14 @@ struct ConfirmExpensesView: View {
                 // Auto-scan for QR codes when view appears (like Android)
                 scanForQRCodes()
                 checkLocationPermission()
-                loadWorkspaces()
+                // Seed workspaces from WorkspaceManager cache — no network round-trip
+                workspaces = WorkspaceManager.shared.workspaces
+                // Auto-select the is_active workspace, fall back to first
+                if selectedWorkspace.isEmpty {
+                    selectedWorkspace = WorkspaceManager.shared.activeWorkspace?.id
+                        ?? WorkspaceManager.shared.workspaces.first?.id
+                        ?? ""
+                }
             }
             .alert("Success", isPresented: $showSuccess) {
                 Button("OK") {
@@ -328,28 +332,6 @@ struct ConfirmExpensesView: View {
         }
     }
     
-    private func loadWorkspaces() {
-        isLoadingWorkspaces = true
-        Task {
-            do {
-                let fetched = try await API.shared.fetchWorkspaces()
-                await MainActor.run {
-                    workspaces = fetched
-                    // Auto-select first workspace if only one
-                    if workspaces.count == 1 {
-                        selectedWorkspace = workspaces[0].id
-                    }
-                    isLoadingWorkspaces = false
-                }
-            } catch {
-                await MainActor.run {
-                    isLoadingWorkspaces = false
-                    print("Error loading workspaces: \(error)")
-                }
-            }
-        }
-    }
-    
     private func submitExpenses() {
         isSubmitting = true
         
@@ -362,10 +344,14 @@ struct ConfirmExpensesView: View {
                 let lat = locationManager.location?.coordinate.latitude
                 let lon = locationManager.location?.coordinate.longitude
                 
+                // Resolve workspace name for the report label
+                let wsName = workspaces.first(where: { $0.id == selectedWorkspace })?.name ?? "Default Workspace"
+                
                 // Upload receipts
                 let response = try await API.shared.uploadReceipts(
                     images: imageDataArray,
                     workspaceId: selectedWorkspace,
+                    workspaceName: wsName,
                     description: description.isEmpty ? nil : description,
                     category: selectedCategory,
                     latitude: lat,

@@ -2,10 +2,13 @@ import SwiftUI
 
 // Reports Container View with Segmented Control (matching web app)
 struct ReportsPage: View {
+    @ObservedObject var dataStore: AppDataStore
     @State private var selectedTab = 0 // 0 = Expenses, 1 = Reports
-    @State private var expenses: [ExpenseItem] = []
-    @State private var reports: [ExpenseReport] = []
-    @State private var isLoading = true
+    @State private var isScrolled = false
+
+    init(dataStore: AppDataStore) {
+        self.dataStore = dataStore
+    }
     
     var body: some View {
         ZStack {
@@ -20,22 +23,39 @@ struct ReportsPage: View {
                             .font(.system(size: 28, weight: .bold))
                             .foregroundColor(.black)
                         Spacer()
-                        Button(action: {}) {
-                            Image(systemName: "magnifyingglass")
+                        Button(action: {
+                            Task {
+                                await dataStore.refreshExpenses(force: true)
+                                await dataStore.refreshReports(force: true)
+                            }
+                        }) {
+                            Image(systemName: "arrow.clockwise")
                                 .font(.system(size: 20))
-                                .foregroundColor(.gray)
+                                .foregroundColor(AppTheme.Colors.primary)
                         }
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 12)
                     .padding(.bottom, 16)
                 }
-                .background(Color.white)
+                .background {
+                    ZStack {
+                        AppTheme.Colors.cardSurface
+                            .opacity(isScrolled ? 0 : 1)
+                        Rectangle()
+                            .fill(.ultraThinMaterial)
+                            .opacity(isScrolled ? 1 : 0)
+                    }
+                    .ignoresSafeArea(edges: .top)
+                    .animation(.easeInOut(duration: 0.2), value: isScrolled)
+                }
+                .shadow(color: .black.opacity(isScrolled ? 0.12 : 0.04), radius: isScrolled ? 6 : 1, y: 1)
+                .animation(.easeInOut(duration: 0.2), value: isScrolled)
                 
                 // Summary card
                 SummaryCard(
-                    total: expenses.reduce(0) { $0 + $1.amount },
-                    verifiedCount: expenses.filter { $0.kra_verified == true }.count
+                    total: dataStore.expenses.reduce(0) { $0 + $1.amount },
+                    verifiedCount: dataStore.expenses.filter { $0.kra_verified == true }.count
                 )
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
@@ -47,29 +67,15 @@ struct ReportsPage: View {
                 
                 // Content based on selected tab
                 if selectedTab == 0 {
-                    ExpensesListView(expenses: expenses, isLoading: isLoading)
+                    ExpensesListView(expenses: dataStore.expenses, isLoading: dataStore.isLoadingExpenses, isScrolled: $isScrolled)
                 } else {
-                    ReportsAnalyticsView(reports: reports, isLoading: isLoading)
+                    ReportsAnalyticsView(reports: dataStore.reports, isLoading: dataStore.isLoadingReports, isScrolled: $isScrolled)
                 }
             }
         }
-        .task {
-            await loadData()
+        .onChange(of: selectedTab) { _, _ in
+            isScrolled = false
         }
-    }
-    
-    private func loadData() async {
-        isLoading = true
-        do {
-            async let expensesTask = API.shared.fetchExpenses()
-            async let reportsTask = API.shared.fetchReports()
-            
-            expenses = try await expensesTask
-            reports = try await reportsTask
-        } catch {
-            print("Error loading data: \(error)")
-        }
-        isLoading = false
     }
 }
 
@@ -122,6 +128,7 @@ struct SummaryCard: View {
 struct ExpensesListView: View {
     let expenses: [ExpenseItem]
     let isLoading: Bool
+    @Binding var isScrolled: Bool
     
     var body: some View {
         ScrollView {
@@ -135,6 +142,11 @@ struct ExpensesListView: View {
             }
             .padding(16)
             .padding(.bottom, 16)
+        }
+        .onScrollGeometryChange(for: Bool.self) { geo in
+            geo.contentOffset.y > 8
+        } action: { _, scrolled in
+            isScrolled = scrolled
         }
     }
 }
@@ -311,7 +323,7 @@ struct ExpenseCardView: View {
             }
         }
         .padding(16)
-        .background(Color.white)
+        .background(AppTheme.Colors.cardSurface)
         .cornerRadius(12)
         .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
     }
@@ -342,6 +354,7 @@ struct ExpenseCardView: View {
 struct ReportsAnalyticsView: View {
     let reports: [ExpenseReport]
     let isLoading: Bool
+    @Binding var isScrolled: Bool
     
     var body: some View {
         ScrollView {
@@ -352,6 +365,11 @@ struct ReportsAnalyticsView: View {
             }
             .padding(16)
             .padding(.bottom, 16) // Space for tab bar
+        }
+        .onScrollGeometryChange(for: Bool.self) { geo in
+            geo.contentOffset.y > 8
+        } action: { _, scrolled in
+            isScrolled = scrolled
         }
     }
 }
@@ -445,7 +463,7 @@ struct ReportCardView: View {
             }
         }
         .padding(16)
-        .background(Color.white)
+        .background(AppTheme.Colors.cardSurface)
         .cornerRadius(12)
         .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
         }

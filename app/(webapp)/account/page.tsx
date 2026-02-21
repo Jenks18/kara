@@ -4,6 +4,7 @@ import { useUser, useClerk } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import { useAvatar } from '@/contexts/AvatarContext'
 import { useState, useEffect } from 'react'
+import { webCache, CacheKey } from '@/lib/webCache'
 import BottomNav from '@/components/navigation/BottomNav'
 import { 
   User, 
@@ -26,27 +27,33 @@ export default function AccountPage() {
   const [displayName, setDisplayName] = useState('')
   const [displayEmail, setDisplayEmail] = useState('')
 
-  // Hydrate from localStorage after mount to avoid SSR mismatch
+  // Load display data: seed instantly from userId-namespaced cache, then
+  // confirm/update with authoritative Clerk data once Clerk is ready.
+  // Cross-account safety: different userId → automatic cache miss — no
+  // removeItem() is ever needed between accounts.
   useEffect(() => {
-    const cachedName = localStorage.getItem('account_displayName')
-    const cachedEmail = localStorage.getItem('account_displayEmail')
+    if (!isLoaded || !user) return
+    const cache = webCache(user.id)
+    // Seed from cache (instant render after first visit)
+    const cachedName = cache.get<string>(CacheKey.displayName)
+    const cachedEmail = cache.get<string>(CacheKey.displayEmail)
     if (cachedName) setDisplayName(cachedName)
     if (cachedEmail) setDisplayEmail(cachedEmail)
-  }, [])
-
-  // When Clerk loads, update from authoritative source and persist for next visit
-  useEffect(() => {
-    if (isLoaded && user) {
-      const name = user.fullName || ''
-      const email = user.emailAddresses?.[0]?.emailAddress || ''
-      setDisplayName(name)
-      setDisplayEmail(email)
-      localStorage.setItem('account_displayName', name)
-      localStorage.setItem('account_displayEmail', email)
-    }
-  }, [isLoaded, user])
+    // Authoritative override from Clerk (Clerk is ready here, so this is synchronous)
+    const name = user.fullName || ''
+    const email = user.emailAddresses?.[0]?.emailAddress || ''
+    setDisplayName(name)
+    setDisplayEmail(email)
+    cache.set(CacheKey.displayName, name)
+    cache.set(CacheKey.displayEmail, email)
+  }, [isLoaded, user?.id])
 
   const handleSignOut = async () => {
+    // Optional: wipe current user's cached data from disk (privacy cleanup).
+    // Not needed for cross-account safety — different userId = automatic cache miss.
+    if (user) {
+      try { webCache(user.id).clearAll() } catch {}
+    }
     await signOut({ redirectUrl: '/sign-in' })
   }
 

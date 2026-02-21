@@ -16,6 +16,9 @@ import javax.inject.Singleton
 /**
  * Singleton repository that manages the active workspace and its currency.
  *
+ * Pattern: cache-then-network.  The disk cache is seeded synchronously in
+ * [init] so [WorkspacesScreen] renders instantly without a skeleton flash.
+ *
  * Screens should collect [activeCurrency] to format amounts correctly.
  * Defaults to "KES" until the real workspace is fetched from the API.
  *
@@ -23,7 +26,8 @@ import javax.inject.Singleton
  */
 @Singleton
 class WorkspaceRepository @Inject constructor(
-    private val apiService: ApiService
+    private val apiService: ApiService,
+    private val workspacesCache: WorkspacesCache
 ) {
     private val TAG = "WorkspaceRepository"
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -42,6 +46,13 @@ class WorkspaceRepository @Inject constructor(
     val isLoaded: StateFlow<Boolean> = _isLoaded.asStateFlow()
 
     init {
+        // Seed from disk cache synchronously — WorkspacesScreen renders instantly.
+        workspacesCache.load()?.let { cached ->
+            _workspaces.value = cached
+            val active = cached.firstOrNull { it.isActive } ?: cached.firstOrNull()
+            setActiveWorkspace(active)
+            _isLoaded.value = true
+        }
         fetchWorkspaces()
     }
 
@@ -53,6 +64,7 @@ class WorkspaceRepository @Inject constructor(
             try {
                 val response = apiService.getWorkspaces()
                 _workspaces.value = response.workspaces
+                workspacesCache.save(response.workspaces)  // persist for next launch
                 Log.d(TAG, "✅ Fetched ${response.workspaces.size} workspaces")
 
                 // Auto-select first active workspace (or first overall)
@@ -83,4 +95,24 @@ class WorkspaceRepository @Inject constructor(
      * Refresh (re-fetch) workspaces. Call after creating/deleting a workspace.
      */
     fun refresh() = fetchWorkspaces()
+
+    /**
+     * Clear all in-memory state AND the disk cache.
+     *
+     * Called on sign-out and when a different user signs in, so the next
+     * session never sees a previous account's workspaces.  The in-memory
+     * StateFlows must be reset here because this is a @Singleton — its
+     * [init] block runs only once at app start and cannot be re-triggered.
+     * Consumers (e.g. WorkspacesViewModel) call [refresh] after this to
+     * re-populate for the new user.
+     */
+    fun clearData() {
+        _workspaces.value = emptyList()
+        _activeWorkspace.value = null
+        _activeCurrency.value = "KES"
+        _isLoaded.value = false
+        CurrencyFormatter.defaultCurrencyCode = "KES"
+        workspacesCache.clear()
+        Log.d(TAG, "clearData() — in-memory state and disk cache wiped")
+    }
 }

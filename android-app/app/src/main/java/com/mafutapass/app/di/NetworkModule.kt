@@ -1,5 +1,7 @@
 package com.mafutapass.app.di
 
+import com.google.gson.Gson
+import com.mafutapass.app.BuildConfig
 import com.mafutapass.app.data.ApiService
 import com.mafutapass.app.data.network.AuthAuthenticator
 import com.mafutapass.app.data.network.AuthInterceptor
@@ -39,7 +41,11 @@ object NetworkModule {
     @Singleton
     fun provideLoggingInterceptor(): HttpLoggingInterceptor {
         return HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+            level = if (BuildConfig.DEBUG) {
+                HttpLoggingInterceptor.Level.BODY
+            } else {
+                HttpLoggingInterceptor.Level.BASIC   // Never log full bodies in release — leaks tokens
+            }
         }
     }
     
@@ -71,15 +77,23 @@ object NetworkModule {
     }
     
     /**
+     * Provides a shared Gson instance — used by both Retrofit and the disk
+     * caches (ReportsCache, WorkspacesCache) so serialization is consistent.
+     */
+    @Provides
+    @Singleton
+    fun provideGson(): Gson = Gson()
+
+    /**
      * Provides Retrofit instance configured with the OkHttpClient.
      */
     @Provides
     @Singleton
-    fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
+    fun provideRetrofit(okHttpClient: OkHttpClient, gson: Gson): Retrofit {
         return Retrofit.Builder()
             .baseUrl(BASE_URL)
             .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
     }
     

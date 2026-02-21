@@ -1,6 +1,7 @@
 package com.mafutapass.app.data
 
 import com.google.gson.annotations.SerializedName
+import retrofit2.Response
 import retrofit2.http.*
 
 /**
@@ -29,6 +30,9 @@ interface ApiService {
     
     @POST("api/mobile/workspaces")
     suspend fun createWorkspace(@Body body: CreateWorkspaceRequest): CreateWorkspaceResponse
+
+    @PATCH("api/mobile/workspaces/{id}")
+    suspend fun updateWorkspace(@Path("id") id: String, @Body body: Map<String, String>): Workspace
     
     // ============= Expense Reports =============
     
@@ -60,6 +64,8 @@ interface ApiService {
     suspend fun uploadReceipt(
         @Part image: okhttp3.MultipartBody.Part,
         @Part("reportId") reportId: okhttp3.RequestBody? = null,
+        @Part("workspaceId") workspaceId: okhttp3.RequestBody? = null,
+        @Part("workspaceName") workspaceName: okhttp3.RequestBody? = null,
         @Part("latitude") latitude: okhttp3.RequestBody? = null,
         @Part("longitude") longitude: okhttp3.RequestBody? = null,
         @Part("qrUrl") qrUrl: okhttp3.RequestBody? = null
@@ -77,6 +83,17 @@ interface ApiService {
 
     @PATCH("api/auth/mobile-profile")
     suspend fun updateUserProfile(@Body request: UpdateProfileRequest): UpdateProfileResponse
+
+    // ============= Account Management =============
+
+    @POST("api/account/delete-request")
+    suspend fun deleteAccount(@Body request: DeleteAccountRequest): Response<Void>
+
+    @POST("api/account/report-bug")
+    suspend fun reportBug(@Body request: ReportBugRequest): Response<Void>
+
+    @POST("api/account/suspicious-activity")
+    suspend fun reportSuspiciousActivity(@Body request: ReportSuspiciousActivityRequest): Response<Void>
 }
 
 data class WorkspacesResponse(val workspaces: List<Workspace>)
@@ -92,4 +109,30 @@ data class WorkspaceMember(
     @SerializedName("first_name") val firstName: String? = null,
     @SerializedName("last_name") val lastName: String? = null,
     @SerializedName("avatar_emoji") val avatarEmoji: String? = null
+)
+
+// ============= Account Management Request Models =============
+
+data class DeleteAccountRequest(
+    val email: String,
+    val reason: String
+)
+
+data class ReportBugRequest(
+    val category: String,
+    val severity: String,
+    val title: String,
+    val description: String,
+    val stepsToReproduce: String,
+    val userEmail: String,
+    val userId: String,
+    val platform: String = "Android"
+)
+
+data class ReportSuspiciousActivityRequest(
+    val activityTypes: List<String>,
+    val description: String,
+    val userEmail: String,
+    val userId: String,
+    val platform: String = "Android"
 )

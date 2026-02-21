@@ -4,6 +4,8 @@ import PhotosUI
 // Main app with 5-tab navigation with elevated center scan button
 // Tabs: Home, Reports, [Scan], Workspaces, Account
 struct MainAppView: View {
+    @EnvironmentObject var authManager: ClerkAuthManager
+    @StateObject private var dataStore = AppDataStore()
     @State private var selectedTab = 0
     // Scan cover state lives HERE — reliable iOS 26 presentation context
     @State private var showCamera = false
@@ -14,25 +16,31 @@ struct MainAppView: View {
     
     var body: some View {
         ZStack(alignment: .bottom) {
-            // Content
-            Group {
-                switch selectedTab {
-                case 0:
-                    HomePage()
-                case 1:
-                    ReportsPage()
-                case 2:
-                    CreateExpensePage(
-                        onScanTapped: { showCamera = true },
-                        onGalleryTapped: { showPhotosPicker = true }
-                    )
-                case 3:
-                    WorkspacesPage()
-                case 4:
-                    AccountPage()
-                default:
-                    HomePage()
-                }
+            // Content — all tab views stay alive via ZStack + opacity.
+            // This prevents view recreation (and redundant API calls) on every tab switch.
+            ZStack {
+                NavigationStack { HomePage(selectedTab: $selectedTab, dataStore: dataStore) }
+                    .opacity(selectedTab == 0 ? 1 : 0)
+                    .allowsHitTesting(selectedTab == 0)
+
+                NavigationStack { ReportsPage(dataStore: dataStore) }
+                    .opacity(selectedTab == 1 ? 1 : 0)
+                    .allowsHitTesting(selectedTab == 1)
+
+                CreateExpensePage(
+                    onScanTapped: { showCamera = true },
+                    onGalleryTapped: { showPhotosPicker = true }
+                )
+                .opacity(selectedTab == 2 ? 1 : 0)
+                .allowsHitTesting(selectedTab == 2)
+
+                WorkspacesPage(dataStore: dataStore)
+                    .opacity(selectedTab == 3 ? 1 : 0)
+                    .allowsHitTesting(selectedTab == 3)
+
+                AccountPage()
+                    .opacity(selectedTab == 4 ? 1 : 0)
+                    .allowsHitTesting(selectedTab == 4)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             
@@ -40,6 +48,11 @@ struct MainAppView: View {
             CustomTabBar(selectedTab: $selectedTab)
         }
         .ignoresSafeArea(.keyboard)
+        .onAppear {
+            // Seed data store from cache, then kick off parallel network refresh
+            dataStore.seed()
+            Task { await dataStore.refreshAll() }
+        }
         // Presentations at root level — guaranteed UIViewController context
         .fullScreenCover(isPresented: $showCamera) {
             ReceiptCaptureView()
@@ -72,6 +85,7 @@ struct MainAppView: View {
 
 struct CustomTabBar: View {
     @Binding var selectedTab: Int
+    @EnvironmentObject var profileManager: ProfileManager
     
     var body: some View {
         HStack(spacing: 0) {
@@ -91,7 +105,7 @@ struct CustomTabBar: View {
                 selectedTab = 3
             }
             
-            TabBarButton(icon: "person.fill", title: "Account", isSelected: selectedTab == 4) {
+            TabBarButton(icon: nil, title: "Account", isSelected: selectedTab == 4, avatarEmoji: profileManager.avatarEmoji) {
                 selectedTab = 4
             }
         }
@@ -113,8 +127,8 @@ struct CustomTabBar: View {
             Button {
                 selectedTab = 2
             } label: {
-                Image(systemName: "doc.viewfinder.fill")
-                    .font(.system(size: 28, weight: .semibold))
+                Image(systemName: "camera.viewfinder")
+                    .font(.system(size: 26, weight: .semibold))
                     .foregroundStyle(.white)
                     .frame(width: AppTheme.Dimensions.fabSize, height: AppTheme.Dimensions.fabSize)
                     .background(AppTheme.Gradients.primary)
@@ -127,16 +141,34 @@ struct CustomTabBar: View {
 }
 
 struct TabBarButton: View {
-    let icon: String
+    let icon: String?
     let title: String
     let isSelected: Bool
+    var avatarEmoji: String? = nil
     let action: () -> Void
     
     var body: some View {
         Button(action: action) {
             VStack(spacing: 4) {
-                Image(systemName: icon)
-                    .font(.system(size: 22))
+                if let emoji = avatarEmoji {
+                    // Avatar circle for Account tab
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: 26, height: 26)
+                        .overlay(
+                            Text(emoji)
+                                .font(.system(size: 14))
+                        )
+                        .overlay(
+                            isSelected ?
+                                Circle()
+                                    .stroke(AppTheme.Colors.primary, lineWidth: 2)
+                                : nil
+                        )
+                } else if let icon = icon {
+                    Image(systemName: icon)
+                        .font(.system(size: 22))
+                }
                 Text(title)
                     .font(.system(size: 11, weight: .semibold))
             }

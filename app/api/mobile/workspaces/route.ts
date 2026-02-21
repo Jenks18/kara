@@ -75,6 +75,7 @@ export async function POST(request: NextRequest) {
       .from('workspaces')
       .insert({
         user_id: userId,
+        owner_id: userId,
         name,
         avatar: avatar || name.charAt(0).toUpperCase(),
         currency: currency || 'KES',

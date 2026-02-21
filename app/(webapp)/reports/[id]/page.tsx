@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { ChevronLeft, Search } from 'lucide-react'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase/client'
+import { formatCurrency, DEFAULT_CURRENCY } from '@/lib/currency'
 
 interface ExpenseItem {
   id: string
@@ -35,6 +36,20 @@ export default function ReportDetailPage() {
   const [report, setReport] = useState<ExpenseReport | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [currency, setCurrency] = useState<string>(DEFAULT_CURRENCY)
+
+  // Fetch workspace currency once
+  useEffect(() => {
+    supabase
+      .from('workspaces')
+      .select('currency')
+      .eq('is_active', true)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .then(({ data }: { data: { currency: string | null }[] | null }) => {
+        if (data?.[0]?.currency) setCurrency(data[0].currency)
+      })
+  }, [])
 
   // Fetch initial data and set up real-time subscription
   useEffect(() => {
@@ -120,13 +135,6 @@ export default function ReportDetailPage() {
     })
   }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount)
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100">
       <div className="w-full max-w-[430px] mx-auto">
@@ -157,7 +165,7 @@ export default function ReportDetailPage() {
           <div className="flex items-center justify-between">
             <span className="text-sm text-gray-600">{formatDate(report.created_at)}</span>
             <span className="text-2xl font-bold text-blue-600">
-              {formatCurrency(report.total_amount)}
+              {formatCurrency(report.total_amount, currency)}
             </span>
           </div>
         </div>
@@ -218,7 +226,7 @@ export default function ReportDetailPage() {
                             <span className="text-xs text-amber-600">⚠️</span>
                           )}
                           <span className={`text-lg font-bold ${item.processing_status === 'scanning' ? 'text-gray-400 animate-pulse' : reviewFields?.amount ? 'text-amber-700' : 'text-blue-600'}`}>
-                            {item.amount > 0 ? formatCurrency(item.amount) : 'Scanning...'}
+                            {item.amount > 0 ? formatCurrency(item.amount, currency) : 'Scanning...'}
                           </span>
                         </div>
                       </div>

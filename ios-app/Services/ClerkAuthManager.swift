@@ -4,7 +4,7 @@ import Clerk
 
 // MARK: - Configuration
 struct ClerkConfig {
-    static let publishableKey = "pk_live_Y2xlcmsubWFmdXRhcGFzcy5jb20k"
+    static let publishableKey = "pk_live_Y2xlcmsua2FjaGFsYWJzLmNvbSQ"
     static let baseAPIURL     = "https://www.kachalabs.com/api"
     /// Called after sign-up to create the Supabase profile row (same as Android Step 2)
     static let profileURL     = "\(baseAPIURL)/auth/create-profile"
@@ -53,22 +53,26 @@ class ClerkAuthManager: ObservableObject {
         currentUser = nil
         isAuthenticated = false
         errorMessage = nil
+        // Clear cached workspace + currency so a subsequent sign-in gets fresh data
+        WorkspaceManager.shared.clear()
     }
 
     // MARK: - Sign Out
     func signOut() {
-        // Fire-and-forget: clear local state immediately so the UI updates,
-        // then tell Clerk to revoke the server-side session.
-        clearUser()
+        isLoading = true
         Task {
             do {
+                // Sign out from Clerk FIRST so clerk.user becomes nil
+                // and ClerkContentView reacts to the state change
                 try await Clerk.shared.signOut()
             } catch {
-                // Session may already be expired — not actionable, log in debug only
                 #if DEBUG
                 print("[ClerkAuthManager] signOut error: \(error)")
                 #endif
             }
+            // Always clear local state even if server call fails
+            clearUser()
+            isLoading = false
         }
     }
 

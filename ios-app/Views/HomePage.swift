@@ -1,25 +1,23 @@
 import SwiftUI
 
 struct HomePage: View {
-    @State private var expenses: [ExpenseItem] = []
-    @State private var reports: [ExpenseReport] = []
-    @State private var isLoading = false
-    @State private var totalExpenses: Double = 0
-    @State private var pendingCount: Int = 0
-    @State private var submittedReportsCount: Int = 0
-    
+    @Binding var selectedTab: Int
+    @ObservedObject var dataStore: AppDataStore
+
+    @State private var isScrolled = false
+
+    init(selectedTab: Binding<Int>, dataStore: AppDataStore) {
+        _selectedTab = selectedTab
+        self.dataStore = dataStore
+    }
+
     var body: some View {
         ZStack {
-            // Centralized blue gradient background
             AppTheme.backgroundView()
-            
+
             VStack(spacing: 0) {
-                // Header
+                // ── Header ───────────────────────────────────────────
                 VStack(spacing: 0) {
-                    Color.white
-                        .frame(height: 0)
-                        .ignoresSafeArea(edges: .top)
-                    
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Dashboard")
                             .font(.system(size: 32, weight: .bold))
@@ -32,218 +30,478 @@ struct HomePage: View {
                     .padding(.horizontal, 16)
                     .padding(.vertical, 16)
                 }
-                .background(Color.white)
-                .overlay(
-                    Rectangle()
-                        .fill(Color(red: 0.9, green: 0.9, blue: 0.9))
-                        .frame(height: 1),
-                    alignment: .bottom
-                )
-                
-                // Content
-                if isLoading {
+                .background {
+                    ZStack {
+                        AppTheme.Colors.cardSurface.opacity(isScrolled ? 0 : 1)
+                        Rectangle().fill(.ultraThinMaterial).opacity(isScrolled ? 1 : 0)
+                    }
+                    .ignoresSafeArea(edges: .top)
+                    .animation(.easeInOut(duration: 0.2), value: isScrolled)
+                }
+                .shadow(color: .black.opacity(isScrolled ? 0.12 : 0.04), radius: isScrolled ? 6 : 1, y: 1)
+                .animation(.easeInOut(duration: 0.2), value: isScrolled)
+
+                // ── Content ──────────────────────────────────────────
+                if dataStore.isLoadingExpenses && dataStore.expenses.isEmpty {
                     Spacer()
                     ProgressView()
                     Spacer()
                 } else {
                     ScrollView {
                         VStack(spacing: 16) {
-                            // Total Expenses Card
-                            StatCardView(
-                                icon: "dollarsign.circle.fill",
-                                iconColor: AppTheme.Colors.primary,
-                                iconBackground: AppTheme.Colors.blue50,
-                                value: formatCurrency(totalExpenses),
-                                label: "Total Expenses",
-                                sublabel: "This month",
-                                trend: "+12.5%",
-                                trendUp: true
+
+                            // ── Hero spending card ───────────────────
+                            HeroSpendingCard(
+                                totalThisMonth: dataStore.totalThisMonth,
+                                trend: dataStore.monthOverMonthTrend,
+                                receiptCountThisMonth: dataStore.receiptCountThisMonth,
+                                totalAllTime: dataStore.totalAllTime
                             )
-                            
-                            // Pending Approval Card
-                            StatCardView(
-                                icon: "clock.fill",
-                                iconColor: AppTheme.Colors.yellow500,
-                                iconBackground: AppTheme.Colors.yellowBadgeBg,
-                                value: "\(pendingCount)",
-                                label: "Pending Approval",
-                                sublabel: "Awaiting review",
-                                trend: pendingCount > 0 ? "-2" : nil,
-                                trendUp: false
-                            )
-                            
-                            // Reports Submitted Card
-                            StatCardView(
-                                icon: "doc.text.fill",
-                                iconColor: AppTheme.Colors.primary,
-                                iconBackground: AppTheme.Colors.blueBadgeBg,
-                                value: "\(submittedReportsCount)",
-                                label: "Reports Submitted",
-                                sublabel: "This month",
-                                trend: "+1",
-                                trendUp: true
-                            )
-                            
-                            // Recent Expenses
-                            VStack(alignment: .leading, spacing: 12) {
+
+                            // ── Stat pills row ───────────────────────
+                            HStack(spacing: 12) {
+                                StatPill(
+                                    icon: "doc.text.fill",
+                                    iconColor: AppTheme.Colors.primary,
+                                    iconBg: AppTheme.Colors.blueBadgeBg,
+                                    value: "\(dataStore.submittedReportsCount)",
+                                    label: "Reports Submitted"
+                                )
+                                StatPill(
+                                    icon: "tray.full.fill",
+                                    iconColor: Color(hex: "#10B981"),
+                                    iconBg: Color(hex: "#D1FAE5"),
+                                    value: "\(dataStore.expenses.count)",
+                                    label: "All Receipts"
+                                )
+                            }
+
+                            // ── Recent Expenses ──────────────────────
+                            VStack(alignment: .leading, spacing: 0) {
                                 HStack {
                                     Text("Recent Expenses")
-                                        .font(.system(size: 20, weight: .bold))
+                                        .font(.system(size: 18, weight: .bold))
                                         .foregroundColor(AppTheme.Colors.textPrimary)
                                     Spacer()
-                                    Text("View All")
-                                        .font(.system(size: 14, weight: .medium))
+                                    Button { selectedTab = 1 } label: {
+                                        HStack(spacing: 2) {
+                                            Text("View All")
+                                                .font(.system(size: 14, weight: .medium))
+                                            Image(systemName: "chevron.right")
+                                                .font(.system(size: 12, weight: .medium))
+                                        }
                                         .foregroundColor(AppTheme.Colors.primary)
+                                    }
                                 }
                                 .padding(.horizontal, 20)
                                 .padding(.top, 20)
-                                
-                                if expenses.isEmpty {
-                                    Text("No expenses yet. Start by scanning a receipt!")
-                                        .font(.system(size: 14))
-                                        .foregroundColor(AppTheme.Colors.textSecondary)
-                                        .padding(.horizontal, 20)
-                                        .padding(.bottom, 20)
+                                .padding(.bottom, 12)
+
+                                if dataStore.expenses.isEmpty {
+                                    VStack(spacing: 8) {
+                                        Image(systemName: "doc.text")
+                                            .font(.system(size: 36))
+                                            .foregroundColor(AppTheme.Colors.border)
+                                        Text("No expenses yet")
+                                            .font(.system(size: 14, weight: .medium))
+                                            .foregroundColor(AppTheme.Colors.textSecondary)
+                                        Text("Scan a receipt to get started")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(AppTheme.Colors.textSecondary.opacity(0.7))
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 28)
                                 } else {
-                                    ForEach(expenses.prefix(5)) { expense in
-                                        HStack {
-                                            VStack(alignment: .leading, spacing: 2) {
-                                                Text(expense.merchant_name ?? "Receipt")
-                                                    .font(.system(size: 15, weight: .medium))
-                                                    .foregroundColor(AppTheme.Colors.textPrimary)
-                                                Text(expense.category.capitalized)
-                                                    .font(.system(size: 12))
-                                                    .foregroundColor(AppTheme.Colors.textSecondary)
+                                    VStack(spacing: 0) {
+                                        ForEach(Array(dataStore.expenses.prefix(5).enumerated()), id: \.element.id) { index, expense in
+                                            HStack(spacing: 12) {
+                                                ZStack {
+                                                    RoundedRectangle(cornerRadius: 10)
+                                                        .fill(categoryColor(expense.category).opacity(0.12))
+                                                        .frame(width: 40, height: 40)
+                                                    Image(systemName: "receipt")
+                                                        .font(.system(size: 16))
+                                                        .foregroundColor(categoryColor(expense.category))
+                                                }
+                                                VStack(alignment: .leading, spacing: 2) {
+                                                    Text(expense.merchant_name ?? "Unknown")
+                                                        .font(.system(size: 14, weight: .semibold))
+                                                        .foregroundColor(AppTheme.Colors.textPrimary)
+                                                    Text("\(expense.category.capitalized) · \(shortDate(expense.created_at))")
+                                                        .font(.system(size: 12))
+                                                        .foregroundColor(AppTheme.Colors.textSecondary)
+                                                }
+                                                Spacer()
+                                                VStack(alignment: .trailing, spacing: 4) {
+                                                    Text(formatCurrency(expense.amount))
+                                                        .font(.system(size: 14, weight: .semibold))
+                                                        .foregroundColor(AppTheme.Colors.textPrimary)
+                                                    expenseStatusBadge(expense.processing_status)
+                                                }
                                             }
-                                            Spacer()
-                                            Text(formatCurrency(expense.amount))
-                                                .font(.system(size: 15, weight: .semibold))
-                                                .foregroundColor(AppTheme.Colors.textPrimary)
+                                            .padding(.horizontal, 20)
+                                            .padding(.vertical, 10)
+
+                                            if index < min(dataStore.expenses.count, 5) - 1 {
+                                                Divider()
+                                                    .padding(.leading, 72)
+                                            }
                                         }
-                                        .padding(.horizontal, 20)
-                                        .padding(.vertical, 4)
                                     }
                                     .padding(.bottom, 12)
                                 }
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color.white)
+                            .background(AppTheme.Colors.cardSurface)
                             .cornerRadius(16)
                             .shadow(color: Color.black.opacity(0.05), radius: 1, y: 1)
-                            
-                            // Active Reports
-                            VStack(alignment: .leading, spacing: 12) {
+
+                            // ── Active Reports ───────────────────────
+                            VStack(alignment: .leading, spacing: 0) {
                                 HStack {
                                     Text("Active Reports")
-                                        .font(.system(size: 20, weight: .bold))
+                                        .font(.system(size: 18, weight: .bold))
                                         .foregroundColor(AppTheme.Colors.textPrimary)
                                     Spacer()
-                                    Text("View All")
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(AppTheme.Colors.primary)
-                                }
-                                .padding(.horizontal, 20)
-                                .padding(.top, 20)
-                                
-                                if reports.isEmpty {
-                                    Text("No active reports")
-                                        .font(.system(size: 14))
-                                        .foregroundColor(AppTheme.Colors.textSecondary)
-                                        .padding(.horizontal, 20)
-                                        .padding(.bottom, 20)
-                                } else {
-                                    ForEach(reports.prefix(3)) { report in
-                                        HStack {
-                                            VStack(alignment: .leading, spacing: 2) {
-                                                Text(report.title)
-                                                    .font(.system(size: 15, weight: .medium))
-                                                    .foregroundColor(AppTheme.Colors.textPrimary)
-                                                Text(report.status.capitalized)
-                                                    .font(.system(size: 12))
-                                                    .foregroundColor(AppTheme.Colors.textSecondary)
-                                            }
-                                            Spacer()
-                                            Text(formatCurrency(report.total_amount))
-                                                .font(.system(size: 15, weight: .semibold))
-                                                .foregroundColor(AppTheme.Colors.textPrimary)
+                                    Button { selectedTab = 1 } label: {
+                                        HStack(spacing: 2) {
+                                            Text("View All")
+                                                .font(.system(size: 14, weight: .medium))
+                                            Image(systemName: "chevron.right")
+                                                .font(.system(size: 12, weight: .medium))
                                         }
-                                        .padding(.horizontal, 20)
-                                        .padding(.vertical, 4)
+                                        .foregroundColor(AppTheme.Colors.primary)
                                     }
-                                    .padding(.bottom, 12)
-                                }
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color.white)
-                            .cornerRadius(16)
-                            .shadow(color: Color.black.opacity(0.05), radius: 1, y: 1)
-                            
-                            // Spending by Category
-                            VStack(alignment: .leading, spacing: 12) {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "chart.line.uptrend.xyaxis")
-                                        .font(.system(size: 18))
-                                        .foregroundColor(AppTheme.Colors.textPrimary)
-                                    Text("Spending by Category")
-                                        .font(.system(size: 20, weight: .bold))
-                                        .foregroundColor(AppTheme.Colors.textPrimary)
                                 }
                                 .padding(.horizontal, 20)
                                 .padding(.top, 20)
-                                
-                                Text("No spending data available")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(AppTheme.Colors.textSecondary)
-                                    .padding(.horizontal, 20)
-                                    .padding(.bottom, 20)
+                                .padding(.bottom, 12)
+
+                                if dataStore.reports.isEmpty {
+                                    VStack(spacing: 8) {
+                                        Image(systemName: "folder")
+                                            .font(.system(size: 36))
+                                            .foregroundColor(AppTheme.Colors.border)
+                                        Text("No active reports")
+                                            .font(.system(size: 14, weight: .medium))
+                                            .foregroundColor(AppTheme.Colors.textSecondary)
+                                        Text("Reports you create will appear here")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(AppTheme.Colors.textSecondary.opacity(0.7))
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 28)
+                                } else {
+                                    VStack(spacing: 8) {
+                                        ForEach(dataStore.reports.prefix(3)) { report in
+                                            HStack {
+                                                VStack(alignment: .leading, spacing: 4) {
+                                                    Text(report.title)
+                                                        .font(.system(size: 14, weight: .semibold))
+                                                        .foregroundColor(AppTheme.Colors.textPrimary)
+                                                    reportStatusBadge(report.status)
+                                                }
+                                                Spacer()
+                                                Text(formatCurrency(report.total_amount))
+                                                    .font(.system(size: 14, weight: .semibold))
+                                                    .foregroundColor(AppTheme.Colors.textPrimary)
+                                            }
+                                            .padding(.horizontal, 16)
+                                            .padding(.vertical, 12)
+                                            .background(AppTheme.Colors.background.opacity(0.5))
+                                            .cornerRadius(12)
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 12)
+                                                    .stroke(AppTheme.Colors.border.opacity(0.5), lineWidth: 1)
+                                            )
+                                        }
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .padding(.bottom, 16)
+                                }
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color.white)
+                            .background(AppTheme.Colors.cardSurface)
                             .cornerRadius(16)
                             .shadow(color: Color.black.opacity(0.05), radius: 1, y: 1)
+
+                            // ── Spending by Category ─────────────────
+                            SpendingByCategoryCard(expenses: dataStore.expenses)
                         }
                         .padding(16)
-                        .padding(.bottom, 100) // Space for tab bar
+                        .padding(.bottom, 100)
+                    }
+                    .onScrollGeometryChange(for: Bool.self) { geo in
+                        geo.contentOffset.y > 8
+                    } action: { _, scrolled in
+                        isScrolled = scrolled
                     }
                 }
             }
         }
-        .onAppear {
-            loadData()
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────
+
+    func formatCurrency(_ amount: Double) -> String { CurrencyFormatter.shared.formatSimple(amount) }
+
+    func shortDate(_ iso: String) -> String {
+        let f = ISO8601DateFormatter()
+        guard let d = f.date(from: iso) else { return iso }
+        let diff = Calendar.current.dateComponents([.day], from: d, to: Date()).day ?? 0
+        if diff == 0 { return "Today" }
+        if diff == 1 { return "Yesterday" }
+        if diff < 7  { return "\(diff)d ago" }
+        let df = DateFormatter(); df.dateFormat = "MMM d"; return df.string(from: d)
+    }
+
+    func categoryColor(_ category: String) -> Color {
+        switch category.lowercased() {
+        case "fuel", "transport": return AppTheme.Colors.primary
+        case "food", "meals":     return Color(hex: "#F59E0B")
+        case "office":            return Color(hex: "#10B981")
+        case "travel":            return Color(hex: "#EC4899")
+        default:                  return Color(hex: "#6B7280")
         }
     }
-    
-    func loadData() {
-        isLoading = true
-        Task {
-            do {
-                async let expensesTask = API.shared.fetchExpenses()
-                async let reportsTask = API.shared.fetchReports()
-                
-                let (fetchedExpenses, fetchedReports) = try await (expensesTask, reportsTask)
-                
-                await MainActor.run {
-                    self.expenses = fetchedExpenses
-                    self.reports = fetchedReports
-                    
-                    // Calculate stats from real data
-                    self.totalExpenses = fetchedExpenses.reduce(0) { $0 + $1.amount }
-                    self.pendingCount = fetchedExpenses.filter { $0.processing_status == "needs_review" || $0.processing_status == "scanning" }.count
-                    self.submittedReportsCount = fetchedReports.filter { $0.status == "submitted" }.count
-                    self.isLoading = false
+
+    @ViewBuilder
+    func expenseStatusBadge(_ status: String) -> some View {
+        let (label, fg, bg): (String, Color, Color) = {
+            switch status {
+            case "needs_review", "scanning": return ("Pending",   Color(hex: "#B45309"), Color(hex: "#FEF3C7"))
+            case "processed", "approved":    return ("Processed", Color(hex: "#065F46"), Color(hex: "#D1FAE5"))
+            default:                          return ("Draft",     Color(hex: "#374151"), Color(hex: "#F3F4F6"))
+            }
+        }()
+        Text(label)
+            .font(.system(size: 10, weight: .semibold))
+            .foregroundColor(fg)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .background(bg)
+            .cornerRadius(6)
+    }
+
+    @ViewBuilder
+    func reportStatusBadge(_ status: String) -> some View {
+        let (label, fg, bg): (String, Color, Color) = {
+            switch status {
+            case "submitted": return ("Submitted", Color(hex: "#1E40AF"), Color(hex: "#DBEAFE"))
+            case "approved":  return ("Approved",  Color(hex: "#065F46"), Color(hex: "#D1FAE5"))
+            default:          return ("Draft",     Color(hex: "#374151"), Color(hex: "#F3F4F6"))
+            }
+        }()
+        Text(label)
+            .font(.system(size: 10, weight: .semibold))
+            .foregroundColor(fg)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .background(bg)
+            .cornerRadius(6)
+    }
+}
+
+// MARK: - Hero Spending Card
+
+struct HeroSpendingCard: View {
+    let totalThisMonth: Double
+    let trend: Double
+    let receiptCountThisMonth: Int
+    let totalAllTime: Double
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("This Month")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.75))
+                Text(CurrencyFormatter.shared.formatSimple(totalThisMonth))
+                    .font(.system(size: 34, weight: .bold))
+                    .foregroundColor(.white)
+                    .minimumScaleFactor(0.7)
+                    .lineLimit(1)
+            }
+
+            if trend != 0 {
+                HStack(spacing: 5) {
+                    Image(systemName: trend > 0 ? "arrow.up.right" : "arrow.down.right")
+                        .font(.system(size: 10, weight: .bold))
+                    Text("\(trend > 0 ? "+" : "")\(String(format: "%.1f", trend))% vs last month")
+                        .font(.system(size: 11, weight: .semibold))
                 }
-            } catch {
-                await MainActor.run {
-                    print("Error loading dashboard: \(error)")
-                    self.isLoading = false
-                }
+                .foregroundColor(.white.opacity(0.9))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(
+                    (trend > 0 ? Color.red : Color.green).opacity(0.25)
+                )
+                .cornerRadius(20)
+            }
+
+            HStack(spacing: 16) {
+                Label("\(receiptCountThisMonth) receipt\(receiptCountThisMonth != 1 ? "s" : "")", systemImage: "doc.text")
+                    .font(.system(size: 12))
+                    .foregroundColor(.white.opacity(0.7))
+
+                Text("·")
+                    .foregroundColor(.white.opacity(0.3))
+
+                Label(CurrencyFormatter.shared.formatSimple(totalAllTime) + " all time", systemImage: "archivebox")
+                    .font(.system(size: 12))
+                    .foregroundColor(.white.opacity(0.7))
             }
         }
+        .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            LinearGradient(
+                colors: [Color(hex: "#2563EB"), Color(hex: "#1E40AF")],
+                startPoint: .topLeading, endPoint: .bottomTrailing
+            )
+        )
+        .cornerRadius(16)
+        .shadow(color: Color(hex: "#2563EB").opacity(0.35), radius: 10, y: 4)
     }
-    
-    func formatCurrency(_ amount: Double) -> String {
-        return CurrencyFormatter.shared.formatSimple(amount)
+}
+
+// MARK: - Stat Pill
+
+struct StatPill: View {
+    let icon: String
+    let iconColor: Color
+    let iconBg: Color
+    let value: String
+    let label: String
+
+    var body: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(iconBg)
+                    .frame(width: 42, height: 42)
+                Image(systemName: icon)
+                    .font(.system(size: 19))
+                    .foregroundColor(iconColor)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(value)
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundColor(AppTheme.Colors.textPrimary)
+                Text(label)
+                    .font(.system(size: 11))
+                    .foregroundColor(AppTheme.Colors.textSecondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(AppTheme.Colors.cardSurface)
+        .cornerRadius(14)
+        .shadow(color: Color.black.opacity(0.05), radius: 1, y: 1)
     }
+}
+
+// MARK: - Spending by Category Card
+
+struct SpendingByCategoryCard: View {
+    let expenses: [ExpenseItem]
+
+    private var categoryTotals: [(String, Double)] {
+        let grouped = Dictionary(grouping: expenses, by: { $0.category })
+        return grouped.mapValues { $0.reduce(0) { $0 + $1.amount } }
+            .sorted { $0.value > $1.value }
+            .prefix(5)
+            .map { ($0.key, $0.value) }
+    }
+
+    private var maxAmount: Double { categoryTotals.first?.1 ?? 1 }
+
+    private func colorForCategory(_ cat: String) -> Color {
+        let colors: [Color] = [
+            Color(hex: "#3B82F6"), Color(hex: "#8B5CF6"), Color(hex: "#F59E0B"),
+            Color(hex: "#10B981"), Color(hex: "#EC4899")
+        ]
+        let index = abs(cat.hashValue) % colors.count
+        return colors[index]
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Image(systemName: "chart.bar.fill")
+                    .font(.system(size: 16))
+                    .foregroundColor(AppTheme.Colors.textPrimary)
+                Text("Spending by Category")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(AppTheme.Colors.textPrimary)
+                Spacer()
+                Text("This month")
+                    .font(.system(size: 12))
+                    .foregroundColor(AppTheme.Colors.textSecondary)
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 20)
+
+            if categoryTotals.isEmpty {
+                VStack(spacing: 6) {
+                    Image(systemName: "chart.bar")
+                        .font(.system(size: 30))
+                        .foregroundColor(AppTheme.Colors.border)
+                    Text("No spending data available")
+                        .font(.system(size: 14))
+                        .foregroundColor(AppTheme.Colors.textSecondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 24)
+                .padding(.bottom, 8)
+            } else {
+                VStack(spacing: 14) {
+                    ForEach(categoryTotals, id: \.0) { (category, amount) in
+                        VStack(spacing: 6) {
+                            HStack {
+                                HStack(spacing: 8) {
+                                    Circle()
+                                        .fill(colorForCategory(category))
+                                        .frame(width: 9, height: 9)
+                                    Text(category.capitalized)
+                                        .font(.system(size: 13, weight: .medium))
+                                        .foregroundColor(AppTheme.Colors.textPrimary)
+                                }
+                                Spacer()
+                                Text(CurrencyFormatter.shared.formatSimple(amount))
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundColor(AppTheme.Colors.textPrimary)
+                            }
+                            GeometryReader { geo in
+                                ZStack(alignment: .leading) {
+                                    Capsule()
+                                        .fill(AppTheme.Colors.border.opacity(0.3))
+                                        .frame(height: 6)
+                                    Capsule()
+                                        .fill(colorForCategory(category))
+                                        .frame(width: geo.size.width * CGFloat(amount / maxAmount), height: 6)
+                                }
+                            }
+                            .frame(height: 6)
+                        }
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(AppTheme.Colors.cardSurface)
+        .cornerRadius(16)
+        .shadow(color: Color.black.opacity(0.05), radius: 1, y: 1)
+    }
+}
+
+#Preview {
+    // Preview shim — uses a constant binding
+    HomePage(selectedTab: .constant(0), dataStore: AppDataStore())
 }
 
 struct StatCardView: View {
@@ -296,12 +554,12 @@ struct StatCardView: View {
         }
         .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white)
+        .background(AppTheme.Colors.cardSurface)
         .cornerRadius(16)
         .shadow(color: Color.black.opacity(0.05), radius: 1, y: 1)
     }
 }
 
 #Preview {
-    HomePage()
+    HomePage(selectedTab: .constant(0), dataStore: AppDataStore())
 }

@@ -1,11 +1,13 @@
 package com.mafutapass.app.data.repository
 
 import com.mafutapass.app.data.ApiService
+import com.mafutapass.app.data.AppDataCache
 import com.mafutapass.app.data.MobileProfileResponse
 import com.mafutapass.app.data.UpdateProfileRequest
 import com.mafutapass.app.data.UpdateProfileResponse
 import com.mafutapass.app.data.User
 import com.mafutapass.app.data.UserProfile
+import com.mafutapass.app.data.UserSession
 import com.mafutapass.app.data.network.NetworkResult
 import com.mafutapass.app.data.network.safeApiCall
 import kotlinx.coroutines.flow.Flow
@@ -14,32 +16,34 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Repository for user-related data operations.
- * 
- * Merges Clerk user data + Supabase profile into a unified User domain model.
- * The GET response has:
- *   { success, profile: {snake_case Supabase row}, clerk: {camelCase Clerk data} }
- * The PATCH response has:
- *   { success, profile: {snake_case Supabase row} }
+ * Repository for user profile data.
+ *
+ * [getUserProfile] uses cache-then-network keyed by userId:
+ *  1. Emits cached User instantly (no skeleton flash for returning users).
+ *  2. Always fetches fresh from the network and updates cache.
+ *
+ * All update operations (PATCH) also persist the result to cache so the
+ * next launch reflects the latest saved values immediately.
  */
 @Singleton
 class UserRepository @Inject constructor(
-    private val apiService: ApiService
+    private val apiService: ApiService,
+    private val appDataCache: AppDataCache,
+    private val userSession: UserSession
 ) {
-    
+
     /**
-     * Get the current user's profile.
-     * Merges Clerk + Supabase data into a User domain model.
+     * Cache-then-network for the current user's profile.
+     * @param userId The authenticated user's id — used as the cache key.
      */
-    fun getUserProfile(): Flow<NetworkResult<User>> = flow {
-        emit(NetworkResult.Loading)
-        val result = safeApiCall { apiService.getUserProfile() }
-        emit(result.map { it.toUser() })
+    fun getUserProfile(userId: String): Flow<NetworkResult<User>> = flow {
+        val cached = appDataCache.loadProfile(userId)
+        emit(if (cached != null) NetworkResult.Success(cached) else NetworkResult.Loading)
+        val result = safeApiCall { apiService.getUserProfile() }.map { it.toUser() }
+        emit(result)
+        if (result is NetworkResult.Success) appDataCache.saveProfile(userId, result.data)
     }
     
-    /**
-     * Get user profile as a single result (not Flow).
-     */
     suspend fun getUserProfileOnce(): NetworkResult<User> {
         return safeApiCall { apiService.getUserProfile() }.map { it.toUser() }
     }
@@ -115,10 +119,16 @@ class UserRepository @Inject constructor(
     // ---- Private helpers ----
     
     private suspend fun updateAndMap(request: UpdateProfileRequest): NetworkResult<User> {
+        // UpdateProfileResponse wraps a UserProfile; unwrap and map to domain User.
         val result = safeApiCall { apiService.updateUserProfile(request) }
-        return result.map { response ->
-            response.profile?.toUser() ?: User()
+            .map { it.profile?.toUser() ?: throw IllegalStateException("Server returned null profile") }
+        // Persist updated profile to cache so next launch reflects latest values
+        if (result is NetworkResult.Success) {
+            userSession.userId.value?.let { userId ->
+                appDataCache.saveProfile(userId, result.data)
+            }
         }
+        return result
     }
     
     /**

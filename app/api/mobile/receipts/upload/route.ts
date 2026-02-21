@@ -43,6 +43,8 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const imageFile = formData.get('image') as File;
     const reportId = formData.get('reportId') as string;
+    const workspaceId = formData.get('workspaceId') as string | null;
+    const workspaceName = formData.get('workspaceName') as string | null;
     const latitude = formData.get('latitude') as string;
     const longitude = formData.get('longitude') as string;
     const qrUrl = formData.get('qrUrl') as string;
@@ -52,6 +54,23 @@ export async function POST(request: NextRequest) {
         { error: 'No image provided' },
         { status: 400, headers: corsHeaders }
       );
+    }
+
+    // Verify the caller actually owns the supplied workspaceId before trusting it
+    if (workspaceId) {
+      const { data: ownedWorkspace, error: wsCheckError } = await supabase
+        .from('workspaces')
+        .select('id')
+        .eq('id', workspaceId)
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (wsCheckError || !ownedWorkspace) {
+        return NextResponse.json(
+          { error: 'Workspace not found or access denied' },
+          { status: 403, headers: corsHeaders }
+        );
+      }
     }
 
     // Production guard: reject oversized uploads
@@ -93,7 +112,8 @@ export async function POST(request: NextRequest) {
             .insert({
               user_id: userId,
               user_email: userEmail,
-              workspace_name: 'Default Workspace',
+              workspace_name: workspaceName || 'Default Workspace',
+              ...(workspaceId ? { workspace_id: workspaceId } : {}),
               title: `Receipt - ${new Date().toLocaleDateString('en-GB')}`,
               status: 'draft',
               total_amount: 0,

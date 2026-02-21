@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -80,10 +81,13 @@ fun ReportDetailScreen(
         viewModel.loadReport(reportId)
     }
 
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(AppTheme.colors.backgroundGradient)
+            .nestedScroll(scrollBehavior.nestedScrollConnection)
     ) {
         TopAppBar(
             title = { Text(report?.title ?: "Report Detail", fontWeight = FontWeight.Bold) },
@@ -92,8 +96,11 @@ fun ReportDetailScreen(
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
                 }
             },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
-            windowInsets = WindowInsets(0, 0, 0, 0)
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+                scrolledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
+            ),
+            scrollBehavior = scrollBehavior
         )
 
         when {

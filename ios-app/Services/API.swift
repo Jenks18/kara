@@ -11,15 +11,10 @@ class API {
     // MARK: - Helper to get Clerk JWT token
     
     private func getClerkToken() async throws -> String {
-        guard let session = Clerk.shared.session else {
-            throw APIError.notAuthenticated
-        }
-        
-        // Get Clerk JWT with Supabase template
-        guard let token = try await session.getToken(.init(template: "supabase")) else {
-            throw APIError.notAuthenticated
-        }
-        return token.jwt
+        // Use the Clerk iOS SDK — handles TLS, token refresh, and session management
+        guard let session = Clerk.shared.session else { throw APIError.notAuthenticated }
+        guard let tokenResource = try await session.getToken() else { throw APIError.notAuthenticated }
+        return tokenResource.jwt
     }
     
     private func makeAuthenticatedRequest(url: URL, method: String = "GET", body: Data? = nil) async throws -> Data {
@@ -62,16 +57,10 @@ class API {
     // MARK: - Expense Items
     
     func fetchExpenses() async throws -> [ExpenseItem] {
-        // Query Supabase directly for expense_items
-        let url = URL(string: "\(supabaseURL)/rest/v1/expense_items?select=*&order=created_at.desc")!
-        var request = URLRequest(url: url)
-        request.setValue(supabaseAnonKey, forHTTPHeaderField: "apikey")
-        
-        // Add Clerk JWT for RLS
-        let token = try await getClerkToken()
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        
-        let (data, _) = try await URLSession.shared.data(for: request)
+        // Use the authenticated mobile API endpoint — same as Android, avoids
+        // direct Supabase queries that can fail when RLS JWT expectations differ.
+        let url = URL(string: "\(baseURL)/mobile/receipts?limit=100")!
+        let data = try await makeAuthenticatedRequest(url: url)
         return try JSONDecoder().decode([ExpenseItem].self, from: data)
     }
     
@@ -102,6 +91,7 @@ class API {
     func uploadReceipts(
         images: [Data],
         workspaceId: String,
+        workspaceName: String,
         description: String?,
         category: String?,
         latitude: Double?,
@@ -127,6 +117,12 @@ class API {
         body.append("--\(boundary)\r\n".data(using: .utf8)!)
         body.append("Content-Disposition: form-data; name=\"workspaceId\"\r\n\r\n".data(using: .utf8)!)
         body.append(workspaceId.data(using: .utf8)!)
+        body.append("\r\n".data(using: .utf8)!)
+        
+        // Add workspaceName (so backend can label the report correctly)
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"workspaceName\"\r\n\r\n".data(using: .utf8)!)
+        body.append(workspaceName.data(using: .utf8)!)
         body.append("\r\n".data(using: .utf8)!)
         
         // Add optional fields
@@ -189,7 +185,7 @@ class API {
     // MARK: - Workspaces
     
     func fetchWorkspaces() async throws -> [Workspace] {
-        let url = URL(string: "\(baseURL)/workspaces")!
+        let url = URL(string: "\(baseURL)/mobile/workspaces")!
         let data = try await makeAuthenticatedRequest(url: url)
         
         struct WorkspacesResponse: Codable {
@@ -201,7 +197,7 @@ class API {
     }
     
     func createWorkspace(name: String, avatar: String, currency: String, currencySymbol: String? = nil) async throws -> Workspace {
-        let url = URL(string: "\(baseURL)/workspaces")!
+        let url = URL(string: "\(baseURL)/mobile/workspaces")!
         
         struct CreatePayload: Codable {
             let name: String
@@ -313,7 +309,7 @@ class API {
     // MARK: - Workspace Details
     
     func getWorkspace(id: String) async throws -> Workspace {
-        let url = URL(string: "\(baseURL)/workspaces/\(id)")!
+        let url = URL(string: "\(baseURL)/mobile/workspaces/\(id)")!
         let data = try await makeAuthenticatedRequest(url: url)
         
         struct WorkspaceResponse: Codable {
@@ -325,7 +321,7 @@ class API {
     }
     
     func updateWorkspace(id: String, updates: [String: Any]) async throws -> Workspace {
-        let url = URL(string: "\(baseURL)/workspaces/\(id)")!
+        let url = URL(string: "\(baseURL)/mobile/workspaces/\(id)")!
         let body = try JSONSerialization.data(withJSONObject: updates)
         let data = try await makeAuthenticatedRequest(url: url, method: "PATCH", body: body)
         
@@ -338,12 +334,12 @@ class API {
     }
     
     func deleteWorkspace(id: String) async throws {
-        let url = URL(string: "\(baseURL)/workspaces/\(id)")!
+        let url = URL(string: "\(baseURL)/mobile/workspaces/\(id)")!
         _ = try await makeAuthenticatedRequest(url: url, method: "DELETE")
     }
     
     func getWorkspaceMembers(workspaceId: String) async throws -> [WorkspaceMember] {
-        let url = URL(string: "\(baseURL)/workspaces/\(workspaceId)/members")!
+        let url = URL(string: "\(baseURL)/mobile/workspaces/\(workspaceId)/members")!
         let data = try await makeAuthenticatedRequest(url: url)
         
         struct MembersResponse: Codable {

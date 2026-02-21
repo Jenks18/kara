@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth, clerkClient } from '@clerk/nextjs/server'
 import { createClient } from '@supabase/supabase-js'
+import { verifyAndExtractUser } from '@/lib/auth/mobile-auth'
+import { rateLimit } from '@/lib/auth/rate-limit'
 
 // Server-side Supabase client with service role for admin operations
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!, // Service role key for admin access
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
   {
     auth: {
       autoRefreshToken: false,
@@ -16,11 +18,29 @@ const supabase = createClient(
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify user is authenticated
-    const { userId } = await auth()
+    // 1. Try Clerk session auth (webapp cookies)
+    let userId: string | null = null
+    try {
+      const authResult = await auth()
+      userId = authResult.userId
+    } catch {}
+
+    // 2. Try verified mobile JWT (Authorization: Bearer <token>)
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      const mobileUser = await verifyAndExtractUser(request)
+      if (mobileUser) {
+        userId = mobileUser.userId
+      }
     }
+
+    // CRITICAL: Account deletion MUST be authenticated — no body userId fallback
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized - authentication required' }, { status: 401 })
+    }
+
+    // Rate limit: 3 delete requests per minute per user (prevents abuse / accidental double-tap)
+    const limited = rateLimit(request, userId, { limit: 3, windowMs: 60_000 })
+    if (limited) return limited
 
     const body = await request.json()
     const { email, reason } = body

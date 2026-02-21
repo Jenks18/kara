@@ -2,60 +2,20 @@
 
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { ChevronLeft, Settings, Sun, Moon, Monitor } from 'lucide-react'
+import { ChevronLeft, Settings, ChevronRight, Palette } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
-type ThemeMode = 'light' | 'dark' | 'system'
-
 export default function PreferencesPage() {
   const router = useRouter()
-  const [theme, setTheme] = useState<ThemeMode>('light')
+  const [currentTheme, setCurrentTheme] = useState('Light')
 
-  // Load saved theme on mount and apply it
   useEffect(() => {
-    const saved = localStorage.getItem('kacha_theme') as ThemeMode | null
-    if (saved && ['light', 'dark', 'system'].includes(saved)) {
-      setTheme(saved)
-      applyTheme(saved)
-    } else {
-      applyTheme('light')
+    const saved = localStorage.getItem('kacha_theme')
+    if (saved) {
+      setCurrentTheme(saved.charAt(0).toUpperCase() + saved.slice(1))
     }
   }, [])
-
-  // Listen for system preference changes when in system mode
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-color-scheme: dark)')
-    const handler = () => {
-      if (theme === 'system') {
-        applyTheme('system')
-      }
-    }
-    mq.addEventListener('change', handler)
-    return () => mq.removeEventListener('change', handler)
-  }, [theme])
-
-  const applyTheme = (mode: ThemeMode) => {
-    const root = document.documentElement
-    if (mode === 'system') {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-      root.classList.toggle('dark', prefersDark)
-    } else {
-      root.classList.toggle('dark', mode === 'dark')
-    }
-  }
-
-  const handleThemeChange = (mode: ThemeMode) => {
-    setTheme(mode)
-    localStorage.setItem('kacha_theme', mode)
-    applyTheme(mode)
-  }
-
-  const themeOptions: { mode: ThemeMode; label: string; icon: typeof Sun; description: string }[] = [
-    { mode: 'light', label: 'Light', icon: Sun, description: 'Always use light mode' },
-    { mode: 'dark', label: 'Dark', icon: Moon, description: 'Always use dark mode' },
-    { mode: 'system', label: 'System', icon: Monitor, description: 'Follow device settings' },
-  ]
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100">
@@ -76,37 +36,22 @@ export default function PreferencesPage() {
       {/* Content */}
       <div className="px-4 py-6 max-w-md mx-auto space-y-6">
         <div className="space-y-4">
-          <div>
-            <h2 className="text-gray-900 text-lg font-semibold mb-1">Theme</h2>
-            <p className="text-gray-600 text-sm">
-              Choose how Kacha looks on this device.
-            </p>
-          </div>
+          <h2 className="text-gray-900 text-lg font-semibold">App preferences</h2>
 
-          <div className="space-y-2">
-            {themeOptions.map(({ mode, label, icon: Icon, description }) => (
-              <button
-                key={mode}
-                onClick={() => handleThemeChange(mode)}
-                className={`w-full bg-white rounded-xl border p-4 active:bg-gray-50 transition-colors relative shadow-sm touch-manipulation flex items-center gap-3 ${
-                  theme === mode ? 'border-blue-500 ring-1 ring-blue-500' : 'border-gray-200'
-                }`}
-              >
-                <Icon size={24} className={theme === mode ? 'text-blue-600' : 'text-gray-400'} />
-                <div className="text-left flex-1">
-                  <div className={`font-medium ${theme === mode ? 'text-blue-600' : 'text-gray-900'}`}>{label}</div>
-                  <div className="text-xs text-gray-500">{description}</div>
-                </div>
-                {theme === mode && (
-                  <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center">
-                    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                )}
-              </button>
-            ))}
-          </div>
+          {/* Theme */}
+          <button
+            onClick={() => router.push('/account/preferences/theme')}
+            className="w-full bg-white rounded-xl border border-gray-200 p-4 hover:border-blue-300 active:bg-gray-50 transition-colors relative shadow-sm touch-manipulation"
+          >
+            <div className="flex items-center gap-3">
+              <Palette className="w-6 h-6 text-blue-600" />
+              <div className="text-left flex-1">
+                <p className="text-xs text-gray-500">Theme</p>
+                <p className="text-gray-900 font-medium">{currentTheme}</p>
+              </div>
+            </div>
+            <ChevronRight size={20} className="text-gray-400 absolute right-4 top-1/2 -translate-y-1/2" />
+          </button>
         </div>
       </div>
     </div>

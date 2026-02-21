@@ -9,11 +9,16 @@ import javax.inject.Singleton
 /**
  * Single source of truth for the current user's avatar emoji.
  *
- * Hilt-scoped as @Singleton so every screen, the navbar, and all
- * ProfileViewModel instances share the same reactive state.
+ * Hilt @Singleton — shared by BottomNavBar, AccountScreen, and all ViewModels.
  *
- * Write: call [update] after a successful profile load or avatar change.
- * Read:  collect [emoji] in any Composable or ViewModel.
+ * ## How it is seeded (zero-flash guarantee)
+ * [AuthViewModel] calls [update] with the cached emoji BEFORE setting
+ * AuthState.SignedIn on the StateFlow. Because both updates happen in the same
+ * coroutine execution block, Compose reads the correct emoji value in the
+ * very first recomposition that renders the SignedIn branch — no 💼 flash.
+ *
+ * Write: [update] after a profile load or avatar change; [reset] on sign-out.
+ * Read:  `avatarManager.emoji.collectAsState()` in any Composable.
  */
 @Singleton
 class AvatarManager @Inject constructor() {
@@ -27,7 +32,12 @@ class AvatarManager @Inject constructor() {
         }
     }
 
+    /** Reset to default on sign-out so the next user never sees stale data. */
+    fun reset() {
+        _emoji.value = DEFAULT_AVATAR
+    }
+
     companion object {
-        const val DEFAULT_AVATAR = "\uD83D\uDC3B" // 🐻
+        const val DEFAULT_AVATAR = "\uD83D\uDCBC" // 💼 (matches webapp + iOS)
     }
 }

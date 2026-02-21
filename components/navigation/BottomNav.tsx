@@ -3,7 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, FileText, Briefcase } from 'lucide-react'
+import { Home, FileText, Building2, ScanLine } from 'lucide-react'
 import { useAvatar } from '@/contexts/AvatarContext'
 
 export default function BottomNav() {
@@ -16,7 +16,7 @@ export default function BottomNav() {
   ]
   
   const rightNavItems = [
-    { id: 'workspaces', label: 'Workspaces', icon: Briefcase, href: '/workspaces' },
+    { id: 'workspaces', label: 'Workspaces', icon: Building2, href: '/workspaces' },
     { id: 'account', label: 'Account', icon: null, href: '/account', isAvatar: true },
   ]
   
@@ -32,7 +32,7 @@ export default function BottomNav() {
         paddingBottom: 'max(12px, env(safe-area-inset-bottom))'
       }}
     >
-      <div className="relative flex items-end justify-around max-w-md mx-auto py-2 px-2">
+      <div className="relative flex items-center justify-around max-w-md mx-auto py-2 px-2">
         {/* Left Nav Items */}
         <div className="flex items-center justify-around flex-1">
           {leftNavItems.map((item) => {
@@ -62,8 +62,9 @@ export default function BottomNav() {
         <Link
           href="/create"
           className="
+            absolute left-1/2 -translate-x-1/2 -top-8
             flex items-center justify-center
-            w-16 h-16 -mt-10
+            w-16 h-16
             bg-[#0066FF]
             rounded-full shadow-xl shadow-blue-500/30
             active:scale-95 touch-manipulation
@@ -72,19 +73,7 @@ export default function BottomNav() {
           "
           aria-label="Scan receipt"
         >
-          {/* QR Code Icon */}
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="3" y="3" width="8" height="8" rx="1" stroke="white" strokeWidth="2"/>
-            <rect x="5" y="5" width="4" height="4" fill="white"/>
-            <rect x="13" y="3" width="8" height="8" rx="1" stroke="white" strokeWidth="2"/>
-            <rect x="15" y="5" width="4" height="4" fill="white"/>
-            <rect x="3" y="13" width="8" height="8" rx="1" stroke="white" strokeWidth="2"/>
-            <rect x="5" y="15" width="4" height="4" fill="white"/>
-            <rect x="13" y="13" width="4" height="4" fill="white"/>
-            <rect x="19" y="13" width="2" height="2" fill="white"/>
-            <rect x="13" y="19" width="2" height="2" fill="white"/>
-            <rect x="17" y="17" width="4" height="4" fill="white"/>
-          </svg>
+          <ScanLine size={28} color="white" strokeWidth={2} />
         </Link>
 
         {/* Right Nav Items */}

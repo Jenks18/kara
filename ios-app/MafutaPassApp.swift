@@ -66,8 +66,20 @@ struct MafutaPassApp: App {
                 .environmentObject(themeManager)
                 .preferredColorScheme(themeManager.mode.colorScheme)
                 .task {
-                    clerk.configure(publishableKey: "pk_live_Y2xlcmsubWFmdXRhcGFzcy5jb20k")
-                    try? await clerk.load()
+                    clerk.configure(publishableKey: "pk_live_Y2xlcmsua2FjaGFsYWJzLmNvbSQ")
+                    do {
+                        try await clerk.load()
+                        // Validate that loaded session is still valid
+                        if clerk.session != nil {
+                            let _ = try await clerk.session?.getToken()
+                        }
+                    } catch {
+                        // Stale session from old Clerk instance — force sign out
+                        #if DEBUG
+                        print("[MafutaPass] Stale session detected, signing out: \(error)")
+                        #endif
+                        try? await clerk.signOut()
+                    }
                 }
         }
     }
@@ -127,32 +139,86 @@ struct MafutaPassApp: App {
     }
 }
 
+// Sheet routing — carried as an Identifiable item so the sheet is always
+// instantiated fresh with the correct mode (no state-batch race condition).
+private enum AuthMode: String, Identifiable {
+    case signIn, signUp
+    var id: String { rawValue }
+}
+
 // MARK: - Root Content View with Authentication
 struct ClerkContentView: View {
     @Environment(\.clerk) private var clerk
-    @State private var authIsPresented = false
+    @State private var authMode: AuthMode? = nil
     
     var body: some View {
         ZStack {
             // Blue gradient background matching web app design system
             BrandGradientBackground()
             
-            if clerk.user != nil {
+            if let clerkUser = clerk.user {
+                // Prime the cache synchronously BEFORE MainAppView() is composed
+                // so the tab bar and account header show the correct avatar/name
+                // from frame zero — not the default 💼.
+                let _ = {
+                    // Set userId namespace FIRST so every DataCache read that
+                    // follows uses the correct per-user keys — zero stale flash.
+                    DataCache.shared.currentUserId = clerkUser.id
+                    ProfileManager.shared.primeFromCache(userId: clerkUser.id)
+                }()
                 MainAppView()
                     .environmentObject(ClerkAuthManager.shared)
+                    .environmentObject(ProfileManager.shared)
                     .onAppear {
                         ClerkAuthManager.shared.syncUser()
+                        // Load profile once after auth — ProfileManager is the single source of truth
+                        Task {
+                            if let user = ClerkAuthManager.shared.currentUser {
+                                await ProfileManager.shared.loadProfile(
+                                    userId: user.id,
+                                    fallbackName: user.name,
+                                    fallbackEmail: user.email
+                                )
+                            }
+                        }
                     }
                     .onChange(of: clerk.user) { _, newUser in
-                        if newUser != nil { ClerkAuthManager.shared.syncUser() }
-                        else { ClerkAuthManager.shared.clearUser() }
+                        if let newUser {
+                            // Set DataCache namespace to new user BEFORE any
+                            // view reads the cache — different userId = automatic
+                            // cache miss, so no clearAll() is needed for safety.
+                            DataCache.shared.currentUserId = newUser.id
+                            ProfileManager.shared.clear()
+                            ClerkAuthManager.shared.syncUser()
+                            Task {
+                                if let user = ClerkAuthManager.shared.currentUser {
+                                    await ProfileManager.shared.loadProfile(
+                                        userId: user.id,
+                                        fallbackName: user.name,
+                                        fallbackEmail: user.email
+                                    )
+                                }
+                            }
+                        } else {
+                            // Sign-out: wipe current user's data from disk (privacy cleanup)
+                            // and reset namespace so stale reads are impossible.
+                            DataCache.shared.clearCurrentUser()
+                            DataCache.shared.currentUserId = "anon"
+                            ClerkAuthManager.shared.clearUser()
+                            ProfileManager.shared.clear()
+                        }
                     }
             } else {
-                WelcomeView(authIsPresented: $authIsPresented)
+                WelcomeView(
+                    onSignUp: { authMode = .signUp },
+                    onLogIn:  { authMode = .signIn }
+                )
             }
         }
-        .sheet(isPresented: $authIsPresented) {
-            ClerkAuthSheet()
+        // sheet(item:) guarantees a fresh view instantiation for each mode value,
+        // so ClerkAuthSheet.init always runs with the exact startWithSignUp from mode.
+        .sheet(item: $authMode) { mode in
+            ClerkAuthSheet(startWithSignUp: mode == .signUp)
         }
     }
 }
@@ -166,33 +232,62 @@ struct BrandGradientBackground: View {
 
 // MARK: - Native Auth Sheet (replaces Clerk's AuthView — uses clerk.auth SDK methods)
 struct ClerkAuthSheet: View {
-    @State private var showSignUp = false
+    let startWithSignUp: Bool
+    @State private var showSignUp: Bool
+    // Google OAuth → new user needs a username
+    @State private var pendingGoogleSignUp: SignUp? = nil
+    @State private var showGoogleUsernameSetup = false
+
+    init(startWithSignUp: Bool = false) {
+        self.startWithSignUp = startWithSignUp
+        // Initialise @State directly so the correct screen shows on first render
+        self._showSignUp = State(initialValue: startWithSignUp)
+    }
 
     var body: some View {
         ZStack {
             AppTheme.backgroundView()
-            if showSignUp {
-                NativeSignUpView(showSignUp: $showSignUp)
+            if showGoogleUsernameSetup {
+                GoogleUsernameSetupView(
+                    pendingSignUp: $pendingGoogleSignUp,
+                    showGoogleUsernameSetup: $showGoogleUsernameSetup
+                )
+                .transition(.asymmetric(insertion: .move(edge: .trailing),
+                                       removal: .move(edge: .leading)))
+            } else if showSignUp {
+                NativeSignUpView(
+                    showSignUp: $showSignUp,
+                    pendingGoogleSignUp: $pendingGoogleSignUp,
+                    showGoogleUsernameSetup: $showGoogleUsernameSetup
+                )
                     .transition(.asymmetric(insertion: .move(edge: .trailing),
                                            removal: .move(edge: .leading)))
             } else {
-                NativeSignInView(showSignUp: $showSignUp)
+                NativeSignInView(
+                    showSignUp: $showSignUp,
+                    pendingGoogleSignUp: $pendingGoogleSignUp,
+                    showGoogleUsernameSetup: $showGoogleUsernameSetup
+                )
                     .transition(.asymmetric(insertion: .move(edge: .leading),
                                            removal: .move(edge: .trailing)))
             }
         }
         .animation(.easeInOut(duration: 0.25), value: showSignUp)
+        .animation(.easeInOut(duration: 0.25), value: showGoogleUsernameSetup)
     }
 }
 
 // MARK: - Sign In View
 private struct NativeSignInView: View {
     @Binding var showSignUp: Bool
+    @Binding var pendingGoogleSignUp: SignUp?
+    @Binding var showGoogleUsernameSetup: Bool
     @Environment(\.dismiss) private var dismiss
 
     @State private var email    = ""
     @State private var password = ""
     @State private var isLoading = false
+    @State private var isGoogleLoading = false
     @State private var errorMsg  = ""
 
     var body: some View {
@@ -214,10 +309,8 @@ private struct NativeSignInView: View {
 
             ScrollView {
                 VStack(spacing: 28) {
-                    // Logo + title
-                    VStack(spacing: 12) {
-                        BrandIcon()
-                            .scaleEffect(0.7)
+                    // Title block — no logo icon
+                    VStack(spacing: 8) {
                         Text("Welcome back")
                             .font(.system(size: 28, weight: .bold))
                             .foregroundColor(AppTheme.Colors.textPrimary)
@@ -225,7 +318,21 @@ private struct NativeSignInView: View {
                             .font(.system(size: 15))
                             .foregroundColor(AppTheme.Colors.textSecondary)
                     }
-                    .padding(.top, 8)
+                    .padding(.top, 24)
+
+                    // Google Sign-In button
+                    GoogleSignInButton(isLoading: $isGoogleLoading, label: "Continue with Google") {
+                        await signInWithGoogle()
+                    }
+
+                    // Divider
+                    HStack {
+                        Rectangle().fill(AppTheme.Colors.border).frame(height: 1)
+                        Text("or")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(AppTheme.Colors.textSecondary)
+                        Rectangle().fill(AppTheme.Colors.border).frame(height: 1)
+                    }
 
                     // Fields
                     VStack(spacing: 14) {
@@ -299,13 +406,213 @@ private struct NativeSignInView: View {
             isLoading = false
         }
     }
+
+    private func signInWithGoogle() async {
+        isGoogleLoading = true
+        errorMsg = ""
+        do {
+            let result = try await SignIn.authenticateWithRedirect(
+                strategy: .oauth(provider: .google)
+            )
+            switch result {
+            case .signIn(_):
+                // Existing user — Clerk session is now active
+                dismiss()
+            case .signUp(let signUp):
+                // New user (no account yet) — needs to complete sign-up with username
+                pendingGoogleSignUp = signUp
+                showGoogleUsernameSetup = true
+            }
+        } catch {
+            errorMsg = error.localizedDescription
+        }
+        isGoogleLoading = false
+    }
+}
+
+// MARK: - Google Username Setup View (for new users who signed in with Google)
+private struct GoogleUsernameSetupView: View {
+    @Binding var pendingSignUp: SignUp?
+    @Binding var showGoogleUsernameSetup: Bool
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var username  = ""
+    @State private var isLoading = false
+    @State private var errorMsg  = ""
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Button(action: { showGoogleUsernameSetup = false }) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 17, weight: .regular))
+                        .foregroundColor(AppTheme.Colors.textSecondary)
+                        .padding(10)
+                        .background(AppTheme.Colors.cardSurface)
+                        .clipShape(Circle())
+                }
+                Spacer()
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 20)
+
+            ScrollView {
+                VStack(spacing: 28) {
+                    VStack(spacing: 12) {
+                        Image(systemName: "person.badge.plus")
+                            .font(.system(size: 44))
+                            .foregroundColor(AppTheme.Colors.primary)
+                            .padding(.top, 24)
+                        Text("Almost there!")
+                            .font(.system(size: 28, weight: .bold))
+                            .foregroundColor(AppTheme.Colors.textPrimary)
+                        Text("Choose a username to complete your account")
+                            .font(.system(size: 15))
+                            .foregroundColor(AppTheme.Colors.textSecondary)
+                            .multilineTextAlignment(.center)
+                    }
+
+                    AuthTextField(placeholder: "Username", text: $username, icon: "at")
+
+                    Text("Lowercase letters, numbers, and underscores only. Min 3 characters.")
+                        .font(.system(size: 13))
+                        .foregroundColor(AppTheme.Colors.textSecondary)
+
+                    if !errorMsg.isEmpty {
+                        HStack(spacing: 8) {
+                            Image(systemName: "exclamationmark.circle.fill")
+                            Text(errorMsg)
+                        }
+                        .font(.system(size: 14))
+                        .foregroundColor(.red)
+                        .padding(.horizontal, 16).padding(.vertical, 10)
+                        .background(Color.red.opacity(0.08))
+                        .cornerRadius(8)
+                    }
+
+                    Button(action: completeSignUp) {
+                        HStack(spacing: 8) {
+                            if isLoading {
+                                ProgressView().progressViewStyle(.circular).tint(.white).scaleEffect(0.9)
+                            } else {
+                                Text("Complete Sign Up")
+                                    .font(.system(size: 17, weight: .semibold))
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
+                        .background(canSubmit ? AppTheme.Colors.primary : AppTheme.Colors.primary.opacity(0.4))
+                        .foregroundColor(.white)
+                        .cornerRadius(14)
+                    }
+                    .disabled(!canSubmit || isLoading)
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 40)
+            }
+        }
+    }
+
+    private var cleanUsername: String {
+        username.trimmingCharacters(in: .whitespaces)
+            .replacingOccurrences(of: " ", with: "").lowercased()
+    }
+
+    private var canSubmit: Bool { cleanUsername.count >= 3 }
+
+    private func completeSignUp() {
+        let clean = cleanUsername
+        guard clean.count >= 3 else {
+            errorMsg = "Username must be at least 3 characters"
+            return
+        }
+        guard clean.range(of: "^[a-z0-9_-]+$", options: .regularExpression) != nil else {
+            errorMsg = "Only lowercase letters, numbers, underscores, and hyphens"
+            return
+        }
+        isLoading = true
+        errorMsg  = ""
+        Task {
+            do {
+                guard var signUp = pendingSignUp else {
+                    errorMsg = "Sign-up session expired. Please try again."
+                    isLoading = false
+                    return
+                }
+                signUp = try await signUp.update(
+                    params: .init(username: clean)
+                )
+                // Create Supabase profile
+                if let token = try? await Clerk.shared.session?.getToken()?.jwt {
+                    let email = Clerk.shared.user?.primaryEmailAddress?.emailAddress ?? ""
+                    let firstName = Clerk.shared.user?.firstName ?? ""
+                    let lastName = Clerk.shared.user?.lastName ?? ""
+                    await ClerkAuthManager.shared.createProfile(
+                        token: token, email: email,
+                        username: clean, firstName: firstName, lastName: lastName
+                    )
+                }
+                dismiss()
+            } catch {
+                errorMsg = error.localizedDescription
+            }
+            isLoading = false
+        }
+    }
+}
+
+// MARK: - Google Sign In Button
+private struct GoogleSignInButton: View {
+    @Binding var isLoading: Bool
+    let label: String
+    let action: () async -> Void
+
+    var body: some View {
+        Button(action: {
+            Task { await action() }
+        }) {
+            HStack(spacing: 12) {
+                if isLoading {
+                    ProgressView()
+                        .progressViewStyle(.circular)
+                        .scaleEffect(0.9)
+                } else {
+                    // Google G logo — white rounded square with coloured G
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(Color.white)
+                            .frame(width: 24, height: 24)
+                        Text("G")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundColor(Color(red: 0.26, green: 0.52, blue: 0.96))
+                    }
+                    Text(label)
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(AppTheme.Colors.textPrimary)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 52)
+            .background(AppTheme.Colors.cardSurface)
+            .cornerRadius(14)
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(AppTheme.Colors.border, lineWidth: 1)
+            )
+        }
+        .disabled(isLoading)
+    }
 }
 
 // MARK: - Sign Up View
 private struct NativeSignUpView: View {
     @Binding var showSignUp: Bool
+    @Binding var pendingGoogleSignUp: SignUp?
+    @Binding var showGoogleUsernameSetup: Bool
     @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject private var authManager: ClerkAuthManager
+    // Use singleton directly — sheet is outside the main view hierarchy so
+    // @EnvironmentObject is not propagated here and would crash on access.
+    private let authManager = ClerkAuthManager.shared
 
     @State private var firstName = ""
     @State private var lastName  = ""
@@ -314,8 +621,7 @@ private struct NativeSignUpView: View {
     @State private var password  = ""
     @State private var isLoading = false
     @State private var errorMsg  = ""
-
-    // Email OTP verification step
+    @State private var isGoogleLoading = false
     @State private var pendingSignUp: SignUp? = nil
     @State private var otpCode = ""
     @State private var showOTP = false
@@ -325,7 +631,13 @@ private struct NativeSignUpView: View {
             // Header
             HStack {
                 Button(action: {
-                    if showOTP { showOTP = false } else { dismiss() }
+                    if showOTP {
+                        // Clear the pending attempt so pressing Create Account again
+                        // always creates a fresh Clerk signup and sends a new code.
+                        pendingSignUp = nil
+                        otpCode = ""
+                        showOTP = false
+                    } else { dismiss() }
                 }) {
                     Image(systemName: showOTP ? "chevron.left" : "xmark")
                         .font(.system(size: 17, weight: showOTP ? .regular : .semibold))
@@ -360,6 +672,20 @@ private struct NativeSignUpView: View {
                         .foregroundColor(AppTheme.Colors.textSecondary)
                 }
                 .padding(.top, 16)
+
+                // Google Sign-Up button
+                GoogleSignInButton(isLoading: $isGoogleLoading, label: "Sign up with Google") {
+                    await signUpWithGoogle()
+                }
+
+                // Divider
+                HStack {
+                    Rectangle().fill(AppTheme.Colors.border).frame(height: 1)
+                    Text("or")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(AppTheme.Colors.textSecondary)
+                    Rectangle().fill(AppTheme.Colors.border).frame(height: 1)
+                }
 
                 VStack(spacing: 14) {
                     HStack(spacing: 10) {
@@ -505,32 +831,66 @@ private struct NativeSignUpView: View {
         }
     }
 
+    @MainActor
     private func verifyOTP() {
         guard let signUp = pendingSignUp else { return }
         isLoading = true
         errorMsg  = ""
-        Task {
+        Task { @MainActor in
             do {
-                _ = try await signUp.attemptVerification(strategy: .emailCode(code: otpCode))
-                await finishSignUp()
+                let result = try await signUp.attemptVerification(strategy: .emailCode(code: otpCode))
+                if result.status == .complete {
+                    // finishSignUp calls dismiss() — stop touching state after that
+                    await finishSignUp()
+                } else {
+                    // Verification not complete yet (shouldn't normally happen)
+                    errorMsg = "Verification pending — please try again"
+                    isLoading = false
+                }
             } catch {
                 errorMsg = "Invalid code — please try again"
+                isLoading = false
             }
-            isLoading = false
+            // Note: on success isLoading stays true until dismiss removes the view
         }
     }
 
+    @MainActor
     private func finishSignUp() async {
         // Create Supabase profile (mirrors Android's Step 2)
         if let token = try? await Clerk.shared.session?.getToken()?.jwt {
             let clean = username.trimmingCharacters(in: .whitespaces)
                 .replacingOccurrences(of: " ", with: "").lowercased()
-            await authManager.createProfile(
+            await ClerkAuthManager.shared.createProfile(
                 token: token, email: email,
                 username: clean, firstName: firstName, lastName: lastName
             )
         }
+        // Dismiss on main actor — sheet is already torn down by Clerk auth state
+        // change, but calling dismiss() is a no-op if already dismissed.
         dismiss()
+    }
+
+    private func signUpWithGoogle() async {
+        isGoogleLoading = true
+        errorMsg = ""
+        do {
+            let result = try await SignUp.authenticateWithRedirect(
+                strategy: .oauth(provider: .google)
+            )
+            switch result {
+            case .signIn(_):
+                // Already has an account — signed in
+                dismiss()
+            case .signUp(let signUp):
+                // New user from Google — needs username
+                pendingGoogleSignUp = signUp
+                showGoogleUsernameSetup = true
+            }
+        } catch {
+            errorMsg = error.localizedDescription
+        }
+        isGoogleLoading = false
     }
 }
 
@@ -569,39 +929,133 @@ private struct AuthTextField: View {
 
 // MARK: - Welcome Screen
 struct WelcomeView: View {
-    @Binding var authIsPresented: Bool
-    
+    let onSignUp: () -> Void
+    let onLogIn: () -> Void
+
     var body: some View {
-        VStack(spacing: 40) {
-            Spacer()
-            
-            // Brand Icon with Emerald Gradient
-            BrandIcon()
-            
-            // Title & Subtitle
-            VStack(spacing: 12) {
-                Text("Kacha")
-                    .font(.system(size: 42, weight: .bold, design: .rounded))
-                    .foregroundColor(AppTheme.Colors.primary)
-                
-                Text("Smart Expense Tracker")
-                    .font(.system(size: 17, weight: .medium))
-                    .foregroundColor(AppTheme.Colors.textSecondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
+        GeometryReader { geo in
+            ZStack {
+                // Background: deep blue gradient
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.04, green: 0.09, blue: 0.18),
+                        Color(red: 0.03, green: 0.12, blue: 0.28)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
+
+                VStack(spacing: 0) {
+                    // ── Hero area ──────────────────────────────
+                    VStack(spacing: 24) {
+                        Spacer().frame(height: geo.safeAreaInsets.top + 32)
+
+                        // Logo
+                        Image("KachaLogo")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: geo.size.width * 0.52,
+                                   height: geo.size.width * 0.52)
+                            .clipShape(RoundedRectangle(cornerRadius: geo.size.width * 0.13,
+                                                        style: .continuous))
+                            .shadow(color: Color(red: 0.33, green: 0.83, blue: 0.96).opacity(0.35),
+                                    radius: 32, x: 0, y: 12)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: geo.size.height * 0.52)
+
+                    // ── Text block ────────────────────────────
+                    VStack(spacing: 12) {
+                        Text("Kacha")
+                            .font(.system(size: 38, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
+
+                        Text("Smart expense tracking\nfor modern teams.")
+                            .font(.system(size: 17, weight: .regular))
+                            .foregroundColor(.white.opacity(0.65))
+                            .multilineTextAlignment(.center)
+                            .lineSpacing(4)
+                    }
+                    .padding(.horizontal, 32)
+                    .padding(.bottom, 12)
+
+                    Spacer()
+
+                    // ── Buttons ───────────────────────────────
+                    VStack(spacing: 12) {
+                        // Sign up — filled
+                        Button(action: onSignUp) {
+                            Text("Sign up")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 56)
+                                .background(
+                                    LinearGradient(
+                                        colors: [
+                                            AppTheme.Colors.primary,
+                                            AppTheme.Colors.primaryDark
+                                        ],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .clipShape(Capsule())
+                        }
+
+                        // Log in — ghost outline
+                        Button(action: onLogIn) {
+                            Text("Log in")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 56)
+                                .background(Color.white.opacity(0.08))
+                                .clipShape(Capsule())
+                                .overlay(
+                                    Capsule()
+                                        .stroke(Color.white.opacity(0.25), lineWidth: 1.5)
+                                )
+                        }
+
+                        // Terms — tappable links
+                        HStack(spacing: 0) {
+                            Text("By continuing you agree to our ")
+                                .font(.system(size: 12))
+                                .foregroundColor(.white.opacity(0.38))
+                            Button(action: {
+                                if let url = URL(string: "https://www.kachalabs.com/terms-of-service") {
+                                    UIApplication.shared.open(url)
+                                }
+                            }) {
+                                Text("Terms")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.white.opacity(0.65))
+                                    .underline()
+                            }
+                            Text(" & ")
+                                .font(.system(size: 12))
+                                .foregroundColor(.white.opacity(0.38))
+                            Button(action: {
+                                if let url = URL(string: "https://www.kachalabs.com/privacy-policy") {
+                                    UIApplication.shared.open(url)
+                                }
+                            }) {
+                                Text("Privacy Policy")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.white.opacity(0.65))
+                                    .underline()
+                            }
+                        }
+                        .padding(.top, 4)
+                    }
+                    .padding(.horizontal, 28)
+                    .padding(.bottom, geo.safeAreaInsets.bottom + 24)
+                }
             }
-            
-            Spacer()
-            
-            // Sign In Button with Production-Grade Design
-            SignInButton(action: { authIsPresented = true })
-            
-            // Clerk Branding
-            Text("Secured by Clerk")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(AppTheme.Colors.textSecondary)
-                .padding(.bottom, 40)
         }
+        .ignoresSafeArea()
     }
 }
 

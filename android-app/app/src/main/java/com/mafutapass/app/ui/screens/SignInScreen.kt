@@ -1,9 +1,12 @@
 package com.mafutapass.app.ui.screens
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -14,15 +17,23 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.mafutapass.app.R
 import com.mafutapass.app.auth.TokenRepository
 import com.mafutapass.app.ui.theme.*
 import com.mafutapass.app.ui.theme.AppTheme
@@ -35,6 +46,7 @@ import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun SignInOrUpScreen() {
+    var showLanding by remember { mutableStateOf(true) }
     var isSignUp by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -103,11 +115,22 @@ fun SignInOrUpScreen() {
         )
         return
     }
-    
+
+    // ── Landing screen ─────────────────────────────────────────────────────────
+    if (showLanding) {
+        KachaLandingScreen(
+            onSignUp = { isSignUp = true; showLanding = false },
+            onLogIn  = { isSignUp = false; showLanding = false }
+        )
+        return
+    }
+
+    // ── Auth form ──────────────────────────────────────────────────────────────
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(AppTheme.colors.backgroundGradient)
+            .systemBarsPadding()
     ) {
         Column(
             modifier = Modifier
@@ -117,23 +140,6 @@ fun SignInOrUpScreen() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // App branding
-            Text(
-                text = "Kacha",
-                style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            
-            Text(
-                text = "Expense Management Made Easy",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(bottom = 48.dp)
-            )
-
             // Auth card
             Surface(
                 modifier = Modifier.fillMaxWidth(),
@@ -240,15 +246,6 @@ fun SignInOrUpScreen() {
             }
 
             Spacer(modifier = Modifier.height(24.dp))
-
-            // Terms and privacy
-            Text(
-                text = "By continuing, you agree to our Terms of Service and Privacy Policy",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
         }
     }
 }
@@ -529,4 +526,153 @@ fun SignUpView(onSwitchToSignIn: () -> Unit = {}) {
                     }
                 }
         }
+}
+
+// ── Kacha Landing Screen ────────────────────────────────────────────────────
+@Composable
+fun KachaLandingScreen(
+    onSignUp: () -> Unit,
+    onLogIn: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF0A1729),
+                        Color(0xFF082047)
+                    )
+                )
+            )
+            .systemBarsPadding()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // ── Hero ───────────────────────────────────────────────────────
+            Spacer(modifier = Modifier.weight(1f))
+
+            Image(
+                painter = painterResource(id = R.drawable.kacha_logo),
+                contentDescription = "Kacha Logo",
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .size(220.dp)
+                    .shadow(
+                        elevation = 24.dp,
+                        shape = RoundedCornerShape(20.dp),
+                        ambientColor = Color(0x5587D4F4),
+                        spotColor = Color(0x5587D4F4)
+                    )
+                    .clip(RoundedCornerShape(20.dp))
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // ── Text block ─────────────────────────────────────────────────
+            Text(
+                text = "Kacha",
+                fontSize = 38.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = "Smart expense tracking\nfor modern teams.",
+                fontSize = 17.sp,
+                color = Color.White.copy(alpha = 0.65f),
+                textAlign = TextAlign.Center,
+                lineHeight = 24.sp
+            )
+
+            Spacer(modifier = Modifier.weight(1.2f))
+
+            // ── Buttons ────────────────────────────────────────────────────
+            Button(
+                onClick = onSignUp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(50),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Text(
+                    text = "Sign up",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedButton(
+                onClick = onLogIn,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(50),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = Color.White.copy(alpha = 0.08f)
+                ),
+                border = BorderStroke(1.5.dp, Color.White.copy(alpha = 0.25f))
+            ) {
+                Text(
+                    text = "Log in",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // ── Tappable terms & privacy links ─────────────────────────────
+            val uriHandler = LocalUriHandler.current
+            Row(
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "By continuing you agree to our ",
+                    fontSize = 12.sp,
+                    color = Color.White.copy(alpha = 0.38f)
+                )
+                Text(
+                    text = "Terms",
+                    fontSize = 12.sp,
+                    color = Color.White.copy(alpha = 0.65f),
+                    textDecoration = TextDecoration.Underline,
+                    modifier = Modifier.clickable {
+                        uriHandler.openUri("https://www.kachalabs.com/terms-of-service")
+                    }
+                )
+                Text(
+                    text = " & ",
+                    fontSize = 12.sp,
+                    color = Color.White.copy(alpha = 0.38f)
+                )
+                Text(
+                    text = "Privacy Policy",
+                    fontSize = 12.sp,
+                    color = Color.White.copy(alpha = 0.65f),
+                    textDecoration = TextDecoration.Underline,
+                    modifier = Modifier.clickable {
+                        uriHandler.openUri("https://www.kachalabs.com/privacy-policy")
+                    }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+        }
     }
+}

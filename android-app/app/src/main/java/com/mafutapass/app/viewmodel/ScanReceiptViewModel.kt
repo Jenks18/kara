@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mafutapass.app.data.ApiService
 import com.mafutapass.app.data.ReceiptUploadResponse
+import com.mafutapass.app.data.WorkspaceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,6 +23,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ScanReceiptViewModel @Inject constructor(
     private val apiService: ApiService,
+    private val workspaceRepository: WorkspaceRepository,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
     
@@ -42,6 +44,31 @@ class ScanReceiptViewModel @Inject constructor(
     /** eTIMS QR URL detected by the camera during scanning */
     private val _detectedQrUrl = MutableStateFlow<String?>(null)
     val detectedQrUrl: StateFlow<String?> = _detectedQrUrl.asStateFlow()
+
+    /** Workspaces for the picker — comes from the repository (already cached) */
+    val workspaces = workspaceRepository.workspaces
+
+    /** The workspace the user selected for this receipt batch */
+    private val _selectedWorkspaceId = MutableStateFlow(
+        workspaceRepository.activeWorkspace.value?.id ?: ""
+    )
+    val selectedWorkspaceId: StateFlow<String> = _selectedWorkspaceId.asStateFlow()
+
+    init {
+        // If the repository hadn't finished loading when the ViewModel was created,
+        // update _selectedWorkspaceId as soon as the active workspace becomes available.
+        viewModelScope.launch {
+            workspaceRepository.activeWorkspace.collect { ws ->
+                if (_selectedWorkspaceId.value.isEmpty() && ws != null) {
+                    _selectedWorkspaceId.value = ws.id
+                }
+            }
+        }
+    }
+
+    fun setWorkspaceId(id: String) {
+        _selectedWorkspaceId.value = id
+    }
     
     fun addImageFromUri(uri: Uri) {
         try {
@@ -83,46 +110,55 @@ class ScanReceiptViewModel @Inject constructor(
     fun uploadAll() {
         val images = _selectedImages.value
         if (images.isEmpty()) return
-        
+
         _uiState.value = ScanState.Uploading
         _currentUploadIndex.value = 0
         _uploadResults.value = emptyList()
-        
+
         viewModelScope.launch {
             var sharedReportId: String? = null
             val results = mutableListOf<ReceiptUploadResponse>()
             val qrUrl = _detectedQrUrl.value
-            
+
+            // Build workspace parts from the selected workspace
+            val wsId = _selectedWorkspaceId.value.takeIf { it.isNotBlank() }
+            val wsName = workspaceRepository.workspaces.value
+                .firstOrNull { it.id == wsId }?.name ?: "Default Workspace"
+            val wsIdPart = wsId?.toRequestBody("text/plain".toMediaType())
+            val wsNamePart = wsName.toRequestBody("text/plain".toMediaType())
+
             for ((index, imageBytes) in images.withIndex()) {
                 _currentUploadIndex.value = index
                 try {
                     val requestBody = imageBytes.toRequestBody("image/jpeg".toMediaType())
                     val imagePart = MultipartBody.Part.createFormData("image", "receipt_$index.jpg", requestBody)
-                    
+
                     val reportIdPart = sharedReportId?.toRequestBody("text/plain".toMediaType())
-                    
+
                     // Send QR URL on first upload (the backend will process it)
                     val qrUrlPart = if (index == 0 && qrUrl != null) {
                         qrUrl.toRequestBody("text/plain".toMediaType())
                     } else null
-                    
+
                     val response = apiService.uploadReceipt(
                         image = imagePart,
                         reportId = reportIdPart,
+                        workspaceId = wsIdPart,
+                        workspaceName = wsNamePart,
                         qrUrl = qrUrlPart
                     )
-                    
+
                     if (sharedReportId == null && response.reportId != null) {
                         sharedReportId = response.reportId
                     }
-                    
+
                     results.add(response)
                 } catch (e: Exception) {
                     Log.e(TAG, "Upload failed for image $index: ${e.message}")
                     results.add(ReceiptUploadResponse(success = false, error = e.message ?: "Upload failed"))
                 }
             }
-            
+
             _uploadResults.value = results
             _uiState.value = ScanState.Results(
                 reportId = sharedReportId,
@@ -137,6 +173,7 @@ class ScanReceiptViewModel @Inject constructor(
         _uploadResults.value = emptyList()
         _currentUploadIndex.value = 0
         _detectedQrUrl.value = null
+        _selectedWorkspaceId.value = workspaceRepository.activeWorkspace.value?.id ?: ""
         _uiState.value = ScanState.ChooseMethod
     }
     

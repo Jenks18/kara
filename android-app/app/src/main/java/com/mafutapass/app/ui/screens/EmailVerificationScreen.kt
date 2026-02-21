@@ -1,5 +1,6 @@
 package com.mafutapass.app.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
@@ -27,6 +28,8 @@ fun EmailVerificationScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(AppTheme.colors.backgroundGradient)
+            .systemBarsPadding()
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center

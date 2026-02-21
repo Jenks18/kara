@@ -9,6 +9,7 @@ struct ReportDetailPage: View {
     
     var body: some View {
         ZStack {
+            AppTheme.backgroundView()
             if isLoading {
                 ProgressView("Loading report...")
             } else if let error = errorMessage {
@@ -17,7 +18,7 @@ struct ReportDetailPage: View {
                         .font(.system(size: 48))
                         .foregroundColor(.red)
                     Text(error)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.Colors.textSecondary)
                 }
             } else if let report = report {
                 ReportDetailContent(report: report)
@@ -79,7 +80,7 @@ struct ReportDetailContent: View {
                         VStack(alignment: .leading) {
                             Text("Total Amount")
                                 .font(.caption)
-                                .foregroundColor(.secondary)
+                                .foregroundColor(AppTheme.Colors.textSecondary)
                             Text(formatCurrency(report.total_amount))
                                 .font(.title3.bold())
                                 .foregroundColor(AppTheme.Colors.green500)
@@ -90,7 +91,7 @@ struct ReportDetailContent: View {
                         VStack(alignment: .trailing) {
                             Text("Status")
                                 .font(.caption)
-                                .foregroundColor(.secondary)
+                                .foregroundColor(AppTheme.Colors.textSecondary)
                             StatusBadge(status: report.status)
                         }
                     }
@@ -98,20 +99,20 @@ struct ReportDetailContent: View {
                     HStack {
                         Image(systemName: "calendar")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(AppTheme.Colors.textSecondary)
                         Text(formatDate(report.created_at))
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(AppTheme.Colors.textSecondary)
                         
                         Spacer()
                         
                         Text("\((report.items ?? []).count) items")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(AppTheme.Colors.textSecondary)
                     }
                 }
                 .padding()
-                .background(Color(UIColor.secondarySystemGroupedBackground))
+                .background(AppTheme.Colors.cardSurface)
                 .cornerRadius(12)
                 .padding(.horizontal)
                 
@@ -131,7 +132,6 @@ struct ReportDetailContent: View {
             }
             .padding(.vertical)
         }
-        .background(Color(UIColor.systemGroupedBackground))
     }
     
     private func formatDate(_ dateString: String) -> String {
@@ -185,7 +185,7 @@ struct ExpenseItemRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(item.merchant_name ?? "Unknown")
                     .font(.subheadline.bold())
-                    .foregroundColor(.primary)
+                    .foregroundColor(AppTheme.Colors.textPrimary)
                 
                 HStack(spacing: 8) {
                     CategoryPill(category: item.category)
@@ -200,7 +200,7 @@ struct ExpenseItemRow: View {
                 
                 Text(formatDate(item.transaction_date ?? item.created_at))
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(AppTheme.Colors.textSecondary)
             }
             
             Spacer()
@@ -208,10 +208,10 @@ struct ExpenseItemRow: View {
             // Amount
             Text(formatCurrency(item.amount))
                 .font(.subheadline.bold())
-                .foregroundColor(.primary)
+                .foregroundColor(AppTheme.Colors.textPrimary)
         }
         .padding()
-        .background(Color(UIColor.secondarySystemGroupedBackground))
+        .background(AppTheme.Colors.cardSurface)
         .cornerRadius(12)
         .padding(.horizontal)
     }
@@ -268,7 +268,7 @@ struct ExpenseItemDetailView: View {
                     }
                 }
                 .padding()
-                .background(Color(UIColor.secondarySystemGroupedBackground))
+                .background(AppTheme.Colors.cardSurface)
                 .cornerRadius(12)
             }
             .padding()
@@ -300,7 +300,7 @@ struct DetailRow: View {
     var body: some View {
         HStack {
             Text(label)
-                .foregroundColor(.secondary)
+                .foregroundColor(AppTheme.Colors.textSecondary)
             Spacer()
             Text(value)
                 .bold()

@@ -19,12 +19,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.mafutapass.app.data.network.NetworkResult
+import com.mafutapass.app.ui.components.EmojiImage
 import com.mafutapass.app.ui.theme.*
 import com.mafutapass.app.util.DateUtils
 import com.mafutapass.app.viewmodel.ProfileViewModel
@@ -109,9 +111,12 @@ fun ProfileScreen(
         if (refreshTrigger > 0) viewModel.loadProfile()
     }
 
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+
     Column(
         modifier = Modifier.fillMaxSize()
             .background(AppTheme.colors.backgroundGradient)
+            .nestedScroll(scrollBehavior.nestedScrollConnection)
     ) {
         TopAppBar(
             title = {
@@ -121,8 +126,11 @@ fun ProfileScreen(
                 }
             },
             navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
-            windowInsets = WindowInsets(0, 0, 0, 0)
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+                scrolledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
+            ),
+            scrollBehavior = scrollBehavior
         )
 
         // Show loading indicator while profile data is being fetched
@@ -155,7 +163,7 @@ fun ProfileScreen(
                                 .background(brush = Brush.verticalGradient(selectedAvatar.gradient))
                                 .clickable { showAvatarPicker = true },
                             contentAlignment = Alignment.Center
-                        ) { Text(selectedAvatar.emoji, fontSize = 56.sp) }
+                        ) { EmojiImage(selectedAvatar.emoji, size = 56.dp, contentDescription = selectedAvatar.label) }
                         Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primary, shadowElevation = 4.dp,
                             modifier = Modifier.size(36.dp).clickable { showAvatarPicker = true }) {
                             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
@@ -208,7 +216,7 @@ fun ProfileScreen(
                                         viewModel.updateAvatar(option.emoji)
                                     },
                                 contentAlignment = Alignment.Center
-                            ) { Text(option.emoji, fontSize = 28.sp) }
+                            ) { EmojiImage(option.emoji, size = 28.dp, contentDescription = option.label) }
                         }
                     }
                 }

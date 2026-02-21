@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import BottomNav from '@/components/navigation/BottomNav'
 import ExpenseItemCard from '@/components/expense/ExpenseItemCard'
 import CategoryPill from '@/components/ui/CategoryPill'
-import { FileText } from 'lucide-react'
+import { FileText, RefreshCw, BadgeCheck } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { formatCurrency } from '@/lib/currency'
 import Image from 'next/image'
@@ -20,6 +20,7 @@ interface ExpenseItem {
   merchant_name: string | null
   transaction_date: string | null
   report_id: string
+  kra_verified?: boolean
 }
 
 interface ExpenseReport {
@@ -42,7 +43,30 @@ export default function ReportsClient({ initialItems, initialReports, currency }
   const [selectedType, setSelectedType] = useState('expense')
   const [expenseItems, setExpenseItems] = useState<ExpenseItem[]>(initialItems)
   const [reports, setReports] = useState<ExpenseReport[]>(initialReports)
-  
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  const refreshData = useCallback(async () => {
+    setIsRefreshing(true)
+    try {
+      const [itemsRes, reportsRes] = await Promise.all([
+        fetch('/api/expense-reports'),
+        fetch('/api/expense-reports?type=reports')
+      ])
+      if (itemsRes.ok) {
+        const data = await itemsRes.json()
+        setExpenseItems(data)
+      }
+      if (reportsRes.ok) {
+        const data = await reportsRes.json()
+        if (Array.isArray(data)) setReports(data)
+      }
+    } catch (error) {
+      console.error('Failed to refresh:', error)
+    } finally {
+      setIsRefreshing(false)
+    }
+  }, [])
+
   // Set up Supabase real-time subscription for expense_items updates
   useEffect(() => {
     const channel = supabase
@@ -78,31 +102,59 @@ export default function ReportsClient({ initialItems, initialReports, currency }
     <div className="min-h-screen pb-20 bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
       {/* Header */}
       <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-lg border-b border-blue-200">
-        <div className="px-4 py-4 max-w-md mx-auto">
+        <div className="px-4 py-4 max-w-md mx-auto flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
+          <button
+            onClick={refreshData}
+            disabled={isRefreshing}
+            className="p-2 rounded-full hover:bg-blue-50 transition-colors text-blue-600"
+          >
+            <RefreshCw size={20} className={isRefreshing ? 'animate-spin' : ''} />
+          </button>
         </div>
       </div>
 
       {/* Content */}
       <div className="px-4 py-6 max-w-md mx-auto space-y-6">
-        {/* Type Filter Tabs */}
-        <div className="flex gap-2">
+        {/* Summary Pills */}
+        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-[14px] p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-white/90">Total Spent</p>
+              <p className="text-[22px] font-bold text-white mt-1">
+                {formatCurrency(expenseItems.reduce((sum, item) => sum + (item.amount || 0), 0), currency)}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs font-medium text-white/90">KRA Verified</p>
+              <div className="flex items-center gap-1.5 mt-1 bg-white/20 rounded-[10px] px-2.5 py-1.5 justify-end">
+                <BadgeCheck size={16} className="text-white" />
+                <span className="text-base font-semibold text-white">
+                  {expenseItems.filter(item => item.kra_verified).length}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Type Filter Tabs – iOS-style segmented control */}
+        <div className="flex gap-2 p-1.5 rounded-[14px] bg-white/50 backdrop-blur border border-gray-200/60">
           <button
             onClick={() => setSelectedType('expense')}
-            className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+            className={`flex-1 py-2.5 px-4 rounded-[10px] font-medium transition-all border ${
               selectedType === 'expense'
-                ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md'
-                : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200'
+                ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md border-blue-500/25'
+                : 'bg-blue-500/[0.08] text-blue-600 hover:bg-blue-500/[0.12] border-blue-500/25'
             }`}
           >
             Expenses
           </button>
           <button
             onClick={() => setSelectedType('report')}
-            className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+            className={`flex-1 py-2.5 px-4 rounded-[10px] font-medium transition-all border ${
               selectedType === 'report'
-                ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md'
-                : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200'
+                ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md border-blue-500/25'
+                : 'bg-blue-500/[0.08] text-blue-600 hover:bg-blue-500/[0.12] border-blue-500/25'
             }`}
           >
             Reports

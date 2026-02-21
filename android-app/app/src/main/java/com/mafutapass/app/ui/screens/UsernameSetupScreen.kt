@@ -34,6 +34,7 @@ fun GoogleUsernameSetupScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(AppTheme.colors.backgroundGradient)
+            .systemBarsPadding()
     ) {
         Column(
             modifier = Modifier

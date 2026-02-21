@@ -62,17 +62,28 @@ struct Workspace: Identifiable, Codable {
     let id: String
     let name: String
     let description: String?
-    let currency: String
+    let currency: String?
     let currencySymbol: String?
     let address: String?
     let avatarUrl: String?
-    let createdAt: String
+    let createdAt: String?
+    let planType: String?
+    let ownerID: String?
+    let isActive: Bool?
     
     enum CodingKeys: String, CodingKey {
         case id, name, description, currency, address
         case currencySymbol = "currency_symbol"
-        case avatarUrl = "avatar_url"
+        case avatarUrl = "avatar"
         case createdAt = "created_at"
+        case planType = "plan_type"
+        case ownerID = "owner_id"
+        case isActive = "is_active"
+    }
+    
+    /// Safe currency code — never nil
+    var safeCurrency: String {
+        currency ?? "KES"
     }
     
     var avatarURL: URL? {
@@ -86,7 +97,7 @@ struct Workspace: Identifiable, Codable {
         }
         
         // Fallback to computed symbol
-        switch currency.uppercased() {
+        switch safeCurrency.uppercased() {
         case "KES", "KSH": return "KSh"
         case "USD": return "$"
         case "EUR": return "€"
@@ -102,7 +113,7 @@ struct Workspace: Identifiable, Codable {
         case "GHS": return "₵"
         case "TZS": return "TSh"
         case "UGX": return "USh"
-        default: return currency
+        default: return safeCurrency
         }
     }
     
@@ -118,13 +129,14 @@ struct Workspace: Identifiable, Codable {
     }
     
     var formattedDate: String {
+        guard let dateStr = createdAt else { return "" }
         let isoFormatter = ISO8601DateFormatter()
-        if let date = isoFormatter.date(from: createdAt) {
+        if let date = isoFormatter.date(from: dateStr) {
             let formatter = DateFormatter()
             formatter.dateStyle = .medium
             return formatter.string(from: date)
         }
-        return createdAt
+        return dateStr
     }
 }
 

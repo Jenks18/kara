@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -84,6 +85,8 @@ fun AddReceiptScreen(
     val selectedImages by viewModel.selectedImages.collectAsState()
     val uploadResults by viewModel.uploadResults.collectAsState()
     val currentUploadIndex by viewModel.currentUploadIndex.collectAsState()
+    val workspaces by viewModel.workspaces.collectAsState()
+    val selectedWorkspaceId by viewModel.selectedWorkspaceId.collectAsState()
 
     // Gallery picker — also scans each image for eTIMS QR codes
     val galleryLauncher = rememberLauncherForActivityResult(
@@ -162,10 +165,13 @@ fun AddReceiptScreen(
         return
     }
 
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(AppTheme.colors.backgroundGradient)
+            .nestedScroll(scrollBehavior.nestedScrollConnection)
     ) {
         val isLanding = uiState is ScanState.ChooseMethod
         val title = when (uiState) {
@@ -184,8 +190,11 @@ fun AddReceiptScreen(
                     }
                 }
             },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
-            windowInsets = WindowInsets(0, 0, 0, 0)
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+                scrolledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
+            ),
+            scrollBehavior = scrollBehavior
         )
 
         when (val state = uiState) {
@@ -207,6 +216,9 @@ fun AddReceiptScreen(
             )
             is ScanState.ReviewImages -> ReviewImagesSection(
                 images = selectedImages,
+                workspaces = workspaces,
+                selectedWorkspaceId = selectedWorkspaceId,
+                onWorkspaceSelected = { viewModel.setWorkspaceId(it) },
                 onRemoveImage = { viewModel.removeImage(it) },
                 onAddMore = { galleryLauncher.launch("image/*") },
                 onTakeAnother = { permissionLauncher.launch(Manifest.permission.CAMERA) },
@@ -301,11 +313,17 @@ private fun ChooseMethodSection(
 @Composable
 private fun ReviewImagesSection(
     images: List<ByteArray>,
+    workspaces: List<com.mafutapass.app.data.Workspace>,
+    selectedWorkspaceId: String,
+    onWorkspaceSelected: (String) -> Unit,
     onRemoveImage: (Int) -> Unit,
     onAddMore: () -> Unit,
     onTakeAnother: () -> Unit,
     onSubmit: () -> Unit
 ) {
+    var workspaceMenuExpanded by remember { mutableStateOf(false) }
+    val selectedWorkspace = workspaces.firstOrNull { it.id == selectedWorkspaceId }
+
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp)
     ) {
@@ -320,6 +338,58 @@ private fun ReviewImagesSection(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+
+        Spacer(Modifier.height(16.dp))
+
+        // Workspace picker
+        if (workspaces.isNotEmpty()) {
+            Text(
+                "Workspace",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+            Box {
+                OutlinedButton(
+                    onClick = { workspaceMenuExpanded = true },
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(Icons.Filled.Business, null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        selectedWorkspace?.name ?: "Select workspace",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Icon(Icons.Filled.KeyboardArrowDown, null, modifier = Modifier.size(18.dp))
+                }
+                DropdownMenu(
+                    expanded = workspaceMenuExpanded,
+                    onDismissRequest = { workspaceMenuExpanded = false }
+                ) {
+                    workspaces.forEach { ws ->
+                        DropdownMenuItem(
+                            text = { Text(ws.name) },
+                            leadingIcon = {
+                                if (ws.isActive) Icon(
+                                    Icons.Filled.Check,
+                                    null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            },
+                            onClick = {
+                                onWorkspaceSelected(ws.id)
+                                workspaceMenuExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+        }
 
         Spacer(Modifier.height(16.dp))
 
@@ -390,6 +460,7 @@ private fun ReviewImagesSection(
 
         Button(
             onClick = onSubmit,
+            enabled = selectedWorkspaceId.isNotBlank(),
             modifier = Modifier.fillMaxWidth().height(56.dp),
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)

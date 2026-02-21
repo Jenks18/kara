@@ -1,15 +1,17 @@
 package com.mafutapass.app.util
 
+import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
 
 /**
  * Format an ISO date string (e.g. "2025-02-14T10:30:00Z") into a user-friendly display.
+ * Uses locale-aware formatting so dates adapt to the user's device locale.
  *
- * Examples:
- *  - "Feb 14, 2025"
- *  - "Jan 3"  (short form)
+ * Examples (en_KE / en_GB):
+ *  - "14 Feb 2025"
+ *  - "14/02/2025"
  */
 object DateUtils {
 
@@ -21,12 +23,16 @@ object DateUtils {
         SimpleDateFormat("yyyy-MM-dd", Locale.US),
     )
 
-    private val displayFull = SimpleDateFormat("dd/MM/yyyy", Locale.UK)
-    private val displayShort = SimpleDateFormat("dd MMM yyyy", Locale.UK)
+    /** Locale-aware medium date format (e.g. "14 Feb 2025" or "Feb 14, 2025") */
+    private val displayFull: DateFormat get() = DateFormat.getDateInstance(DateFormat.MEDIUM)
+
+    /** Locale-aware short date format (e.g. "14/02/2025" or "2/14/25") */
+    private val displayShort: DateFormat get() = DateFormat.getDateInstance(DateFormat.SHORT)
+
     private val displayDate = SimpleDateFormat("yyyy-MM-dd", Locale.US)
 
     /**
-     * "2025-02-14T10:30:00Z" → "14/02/2025"
+     * "2025-02-14T10:30:00Z" → locale-aware medium date (e.g. "14 Feb 2025")
      */
     fun formatFull(iso: String?): String {
         if (iso.isNullOrBlank()) return ""
@@ -34,7 +40,7 @@ object DateUtils {
     }
 
     /**
-     * "2025-02-14T10:30:00Z" → "14 Feb"
+     * "2025-02-14T10:30:00Z" → locale-aware short date (e.g. "14/02/2025")
      */
     fun formatShort(iso: String?): String {
         if (iso.isNullOrBlank()) return ""

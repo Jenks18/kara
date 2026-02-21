@@ -1,15 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@supabase/supabase-js'
+import { verifyAndExtractUser } from '@/lib/auth/mobile-auth'
+import { rateLimit } from '@/lib/auth/rate-limit'
+
+const MAX_DESCRIPTION_LENGTH = 5000
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = await auth()
+    // 1. Try Clerk session auth (webapp cookies)
+    let userId: string | null = null
+    try {
+      const authResult = await auth()
+      userId = authResult.userId
+    } catch {}
+
+    // 2. Try verified mobile JWT (Authorization: Bearer <token>)
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      const mobileUser = await verifyAndExtractUser(req)
+      if (mobileUser) {
+        userId = mobileUser.userId
+      }
     }
 
-    const { activityTypes, description, userEmail } = await req.json()
+    // 3. Rate limit: 5 suspicious activity reports per minute per user/IP
+    const limited = rateLimit(req, userId, { limit: 5, windowMs: 60_000 })
+    if (limited) return limited
+
+    const { activityTypes, description, userEmail, userId: bodyUserId, platform } = await req.json()
+    
+    // Fall back to body userId for unauthenticated ticket creation (low risk)
+    const resolvedUserId = userId || bodyUserId || 'anonymous'
 
     if (!activityTypes || activityTypes.length === 0) {
       return NextResponse.json({ error: 'At least one activity type is required' }, { status: 400 })
@@ -19,60 +40,38 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Description is required' }, { status: 400 })
     }
 
+    const sanitizedDescription = description.trim().slice(0, MAX_DESCRIPTION_LENGTH)
+
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
     const ticketData = {
-      user_id: userId,
+      user_id: resolvedUserId,
       user_email: userEmail || '',
-      ticket_type: 'suspicious_activity',
+      ticket_type: 'suspicious_activity' as const,
       title: `Suspicious Activity: ${activityTypes.join(', ')}`,
-      description: description.trim(),
+      description: sanitizedDescription,
       activity_types: activityTypes,
-      status: 'open',
-      priority: 'high',
+      status: 'open' as const,
+      priority: 'high' as const,
+      metadata: platform ? { platform } : {},
     }
 
-    // Try support_tickets table first, fall back to security_reports
-    let inserted = false
-    
     const { error: ticketError } = await supabase
       .from('support_tickets')
       .insert(ticketData)
 
-    if (!ticketError) {
-      inserted = true
-    } else {
-      // Try legacy table
-      const { error: legacyError } = await supabase
-        .from('security_reports')
-        .insert({
-          user_id: userId,
-          user_email: userEmail || '',
-          report_type: 'suspicious_activity',
-          activity_types: activityTypes,
-          description: description.trim(),
-          status: 'pending',
-          created_at: new Date().toISOString(),
-        })
-
-      if (!legacyError) {
-        inserted = true
-      } else {
-        // Both tables failed — log to server console as last resort
-        console.error('[SECURITY REPORT] All table inserts failed:', ticketError.message, legacyError.message)
-        console.log('[SECURITY REPORT] Data:', JSON.stringify(ticketData, null, 2))
-        // Still return success — user experience not blocked
-        inserted = true
-      }
+    if (ticketError) {
+      console.error('[SECURITY REPORT] Insert failed:', ticketError.message)
+      console.log('[SECURITY REPORT] Data:', JSON.stringify(ticketData, null, 2))
     }
 
     return NextResponse.json({ 
       success: true, 
       message: 'Report submitted successfully',
-      stored: inserted 
+      stored: !ticketError 
     })
   } catch (error) {
     console.error('Error processing suspicious activity report:', error)

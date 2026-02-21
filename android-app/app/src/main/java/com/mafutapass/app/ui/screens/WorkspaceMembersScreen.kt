@@ -17,6 +17,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -60,10 +61,13 @@ fun WorkspaceMembersScreen(
         return
     }
 
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(brush = AppTheme.colors.backgroundGradient)
+            .nestedScroll(scrollBehavior.nestedScrollConnection)
     ) {
         // Header
         TopAppBar(
@@ -81,8 +85,11 @@ fun WorkspaceMembersScreen(
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
                 }
             },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
-            windowInsets = WindowInsets(0, 0, 0, 0)
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+                scrolledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
+            ),
+            scrollBehavior = scrollBehavior
         )
 
         LazyColumn(

@@ -4,9 +4,10 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
 import BottomNav from '@/components/navigation/BottomNav'
-import { Briefcase, Plus, MoreVertical, Trash2, Copy, ChevronRight, Users } from 'lucide-react'
+import { Building2, Plus, MoreVertical, Trash2, Copy, ChevronRight, Users } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import { getCurrencySymbol } from '@/lib/currency'
+import { webCache, CacheKey } from '@/lib/webCache'
 
 export const dynamic = 'force-dynamic'
 
@@ -51,21 +52,33 @@ export default function WorkspacesPage() {
 
   /* ── Fetch workspaces ───────────────────────────────── */
   const fetchWorkspaces = useCallback(async () => {
-    setLoading(true)
+    if (!user) return
     try {
       const res = await fetch('/api/workspaces')
       if (res.ok) {
         const data = await res.json()
-        setWorkspaces(data.workspaces || [])
+        const list: Workspace[] = data.workspaces || []
+        setWorkspaces(list)
+        webCache(user.id).set(CacheKey.workspaces, list)
       }
     } catch {
       // Silent — skeleton already communicates loading
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [user?.id])
 
-  useEffect(() => { fetchWorkspaces() }, [fetchWorkspaces])
+  // Seed from userId-namespaced cache instantly, then refresh from network.
+  // Different userId → automatic cache miss — no clearAll() needed between accounts.
+  useEffect(() => {
+    if (!isLoaded || !user) return
+    const cached = webCache(user.id).get<Workspace[]>(CacheKey.workspaces)
+    if (cached) {
+      setWorkspaces(cached)
+      setLoading(false)
+    }
+    fetchWorkspaces()
+  }, [isLoaded, user?.id, fetchWorkspaces])
 
   /* ── Actions ────────────────────────────────────────── */
   const handleDeleteWorkspace = async () => {
@@ -74,7 +87,9 @@ export default function WorkspacesPage() {
     try {
       const res = await fetch(`/api/workspaces/${deleteTarget.id}`, { method: 'DELETE' })
       if (res.ok) {
-        setWorkspaces((prev) => prev.filter((w) => w.id !== deleteTarget.id))
+        const updated = workspaces.filter((w) => w.id !== deleteTarget.id)
+        setWorkspaces(updated)
+        if (user) webCache(user.id).set(CacheKey.workspaces, updated)
         showToast('Workspace deleted', 'success')
       } else {
         showToast('Failed to delete workspace', 'error')
@@ -102,7 +117,9 @@ export default function WorkspacesPage() {
       })
       if (res.ok) {
         const data = await res.json()
-        setWorkspaces((prev) => [...prev, data.workspace])
+        const updated = [...workspaces, data.workspace]
+        setWorkspaces(updated)
+        if (user) webCache(user.id).set(CacheKey.workspaces, updated)
         showToast('Workspace duplicated', 'success')
       } else {
         showToast('Failed to duplicate workspace', 'error')
@@ -142,7 +159,7 @@ export default function WorkspacesPage() {
           /* ── Empty state ──────────────────────────────── */
           <div className="flex flex-col items-center text-center pt-16">
             <div className="w-20 h-20 rounded-2xl bg-blue-100 flex items-center justify-center mb-6">
-              <Briefcase size={36} className="text-[#0066FF]" />
+              <Building2 size={36} className="text-[#0066FF]" />
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">No workspaces yet</h2>
             <p className="text-gray-500 mb-8 max-w-xs">
@@ -214,7 +231,7 @@ export default function WorkspacesPage() {
                         onClick={() => goTo(ws.id)}
                         className="w-full px-4 py-3.5 flex items-center gap-3 text-left text-gray-900 hover:bg-gray-50 transition-colors"
                       >
-                        <Briefcase size={18} className="text-gray-500" />
+                        <Building2 size={18} className="text-gray-500" />
                         <span className="font-medium text-sm">Open workspace</span>
                       </button>
                       <button
@@ -238,6 +255,14 @@ export default function WorkspacesPage() {
             ))}
           </div>
         )}
+
+        {/* What are Workspaces? info card */}
+        <div className="mt-4 p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+          <h3 className="text-base font-bold text-gray-900 mb-1">What are Workspaces?</h3>
+          <p className="text-sm text-gray-500 leading-relaxed">
+            Workspaces help you organize expenses by team, project, or department. Invite team members and collaborate on expense tracking.
+          </p>
+        </div>
       </div>
 
       {/* ── Delete confirmation modal ─────────────────── */}

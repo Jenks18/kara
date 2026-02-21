@@ -16,7 +16,11 @@ cp -f "$KARA_IOS/Models/Models.swift" "$XCODE_PROJECT/Models/"
 
 # Sync Services
 echo "🔌 Syncing Services..."
-cp -f "$KARA_IOS/Services/API.swift" "$XCODE_PROJECT/Services/"
+cp -f "$KARA_IOS/Services/"*.swift "$XCODE_PROJECT/Services/"
+
+# Sync MafutaPassApp.swift (root app file)
+echo "📱 Syncing MafutaPassApp.swift..."
+cp -f "$KARA_IOS/MafutaPassApp.swift" "$XCODE_PROJECT/"
 
 # Sync Components
 echo "🧩 Syncing Components..."

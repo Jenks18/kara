@@ -7,6 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
@@ -69,11 +70,7 @@ class MainActivity : ComponentActivity() {
 fun MafutaPassApp(themeViewModel: ThemeViewModel, avatarManager: AvatarManager) {
     val authViewModel: AuthViewModel = hiltViewModel()
     val authState by authViewModel.authState.collectAsState()
-    val navController = rememberNavController()
-
-    // Refresh triggers — incremented when returning from sub-screens after saves
-    var profileRefreshKey by remember { mutableIntStateOf(0) }
-    var accountRefreshKey by remember { mutableIntStateOf(0) }
+    val sessionKey by authViewModel.sessionKey.collectAsState()
 
     when (authState) {
         AuthState.Loading -> {
@@ -83,12 +80,27 @@ fun MafutaPassApp(themeViewModel: ThemeViewModel, avatarManager: AvatarManager) 
             key(authState) { SignInOrUpScreen() }
         }
         AuthState.SignedIn -> {
-            Scaffold(bottomBar = { BottomNavBar(navController, avatarManager) }) { paddingValues ->
+            // key(sessionKey) guarantees Compose fully destroys and recreates the
+            // entire signed-in UI subtree — NavController, all NavBackStackEntries,
+            // all hiltViewModel() instances — for every distinct login session.
+            // This is the Compose equivalent of SwiftUI rebuilding MainAppView
+            // when clerk.user changes: deterministic, no remembered-state leakage.
+            key(sessionKey) {
+            val navController = rememberNavController()
+            var profileRefreshKey by remember { mutableIntStateOf(0) }
+            var accountRefreshKey by remember { mutableIntStateOf(0) }
+            Scaffold(
+                bottomBar = { BottomNavBar(navController, avatarManager) },
+                contentWindowInsets = WindowInsets(0, 0, 0, 0)
+            ) { paddingValues ->
                 NavHost(navController = navController, startDestination = Screen.Home.route,
                     modifier = Modifier.padding(paddingValues)) {
 
                     composable(Screen.Home.route) {
-                        HomeScreen()
+                        HomeScreen(
+                            onViewAllExpenses = { navController.navigate(Screen.Reports.route) },
+                            onViewAllReports = { navController.navigate(Screen.Reports.route) }
+                        )
                     }
                     composable(Screen.Reports.route) {
                         ReportsScreen(
@@ -102,7 +114,10 @@ fun MafutaPassApp(themeViewModel: ThemeViewModel, avatarManager: AvatarManager) 
                         )
                     }
                     composable(Screen.Workspaces.route) {
-                        WorkspacesScreen()
+                        WorkspacesScreen(
+                            onNavigateToDetail = { id -> navController.navigate("workspaces/$id") },
+                            onNavigateToCreate = { navController.navigate("workspaces/new") }
+                        )
                     }
                     composable(Screen.Account.route) {
                         AccountScreen(
@@ -144,6 +159,20 @@ fun MafutaPassApp(themeViewModel: ThemeViewModel, avatarManager: AvatarManager) 
                     composable("preferences") {
                         PreferencesScreen(
                             onBack = { navController.popBackStack() },
+                            onNavigateToTheme = { navController.navigate("preferences/theme") },
+                            onThemeChanged = { theme ->
+                                val mode = when (theme) {
+                                    "Light" -> ThemeViewModel.ThemeMode.Light
+                                    "Dark" -> ThemeViewModel.ThemeMode.Dark
+                                    else -> ThemeViewModel.ThemeMode.System
+                                }
+                                themeViewModel.setThemeMode(mode)
+                            }
+                        )
+                    }
+                    composable("preferences/theme") {
+                        ThemeScreen(
+                            onBack = { navController.popBackStack() },
                             onThemeChanged = { theme ->
                                 val mode = when (theme) {
                                     "Light" -> ThemeViewModel.ThemeMode.Light
@@ -155,10 +184,29 @@ fun MafutaPassApp(themeViewModel: ThemeViewModel, avatarManager: AvatarManager) 
                         )
                     }
                     composable("security") {
-                        SecurityScreen(onBack = { navController.popBackStack() })
+                        SecurityScreen(
+                            onBack = { navController.popBackStack() },
+                            onNavigateToReportActivity = { navController.navigate("security/report-activity") },
+                            onNavigateToCloseAccount = { navController.navigate("security/close-account") }
+                        )
+                    }
+                    composable("security/report-activity") {
+                        ReportSuspiciousActivityScreen(onBack = { navController.popBackStack() })
+                    }
+                    composable("security/close-account") {
+                        CloseAccountScreen(
+                            onBack = { navController.popBackStack() },
+                            onAccountDeleted = { authViewModel.signOut() }
+                        )
                     }
                     composable("about") {
-                        AboutScreen(onBack = { navController.popBackStack() })
+                        AboutScreen(
+                            onBack = { navController.popBackStack() },
+                            onNavigateToReportBug = { navController.navigate("about/report-bug") }
+                        )
+                    }
+                    composable("about/report-bug") {
+                        ReportBugScreen(onBack = { navController.popBackStack() })
                     }
                     composable("expenses/{expenseId}") { entry ->
                         val eid = entry.arguments?.getString("expenseId") ?: return@composable
@@ -172,8 +220,41 @@ fun MafutaPassApp(themeViewModel: ThemeViewModel, avatarManager: AvatarManager) 
                             onNavigateToExpense = { id -> navController.navigate("expenses/$id") }
                         )
                     }
+
+                    // ── Workspace Detail Flows ──
+
+                    composable("workspaces/new") {
+                        CreateWorkspaceScreen(
+                            onBack = { navController.popBackStack() },
+                            onCreated = { navController.popBackStack() }
+                        )
+                    }
+                    composable("workspaces/{workspaceId}") { entry ->
+                        val wid = entry.arguments?.getString("workspaceId") ?: return@composable
+                        WorkspaceDetailScreen(
+                            workspaceId = wid,
+                            onBack = { navController.popBackStack() },
+                            onNavigateToOverview = { id -> navController.navigate("workspaces/$id/overview") },
+                            onNavigateToMembers = { id -> navController.navigate("workspaces/$id/members") }
+                        )
+                    }
+                    composable("workspaces/{workspaceId}/overview") { entry ->
+                        val wid = entry.arguments?.getString("workspaceId") ?: return@composable
+                        WorkspaceOverviewScreen(
+                            workspaceId = wid,
+                            onBack = { navController.popBackStack() }
+                        )
+                    }
+                    composable("workspaces/{workspaceId}/members") { entry ->
+                        val wid = entry.arguments?.getString("workspaceId") ?: return@composable
+                        WorkspaceMembersScreen(
+                            workspaceId = wid,
+                            onBack = { navController.popBackStack() }
+                        )
+                    }
                 }
             }
+            } // key(sessionKey)
         }
     }
 }

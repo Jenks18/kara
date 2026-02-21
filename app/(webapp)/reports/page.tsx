@@ -1,4 +1,4 @@
-import { auth, currentUser } from '@clerk/nextjs/server'
+import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { createServerClient } from '@/lib/supabase/server-client'
 import { DEFAULT_CURRENCY } from '@/lib/currency'
@@ -31,60 +31,45 @@ interface ExpenseReport {
 export default async function ReportsPage() {
   // Get authenticated user
   const { userId } = await auth()
-  const user = await currentUser()
   
-  // Redirect if not authenticated or missing email
-  if (!userId || !user?.emailAddresses?.[0]?.emailAddress) {
+  // Redirect if not authenticated
+  if (!userId) {
     redirect('/sign-in')
   }
   
   // Create Supabase client with Clerk JWT - RLS auto-filters by user!
   const supabase = await createServerClient()
   
-  // Fetch all expense items for "Expenses" view - RLS handles user filtering
-  const { data: expenseItems } = await supabase
-    .from('expense_items')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(50)
+  // Parallel fetch — RLS handles user filtering
+  const [expenseItemsRes, reportsRes, workspacesRes] = await Promise.all([
+    supabase
+      .from('expense_items')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(50),
+    // Fetch reports WITH items in a single query (no N+1)
+    supabase
+      .from('expense_reports')
+      .select('*, expense_items(*)')
+      .order('created_at', { ascending: false })
+      .limit(20),
+    supabase
+      .from('workspaces')
+      .select('currency')
+      .eq('is_active', true)
+      .order('created_at', { ascending: true })
+      .limit(1),
+  ])
 
+  const expenseItems = expenseItemsRes.data || []
+  const rawReports = reportsRes.data || []
+  const userCurrency = workspacesRes.data?.[0]?.currency || DEFAULT_CURRENCY
 
-  // Fetch expense reports with their items for "Reports" view - RLS handles user filtering
-  const { data: reports } = await supabase
-    .from('expense_reports')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(20)
+  // Map the joined data to the expected shape
+  const reportsWithItems: ExpenseReport[] = rawReports.map((report: any) => ({
+    ...report,
+    items: report.expense_items || [],
+  }))
 
-
-  // For each report, fetch its items
-  const reportsWithItems: ExpenseReport[] = []
-  if (reports) {
-    for (const report of reports) {
-      const { data: items } = await supabase
-        .from('expense_items')
-        .select('*')
-        .eq('report_id', report.id)
-        .order('created_at', { ascending: true })
-      
-      
-      reportsWithItems.push({
-        ...report,
-        items: items || []
-      })
-    }
-  }
-
-
-  // Get user's preferred currency from their primary workspace
-  const { data: workspaces } = await supabase
-    .from('workspaces')
-    .select('currency')
-    .eq('is_active', true)
-    .order('created_at', { ascending: true })
-    .limit(1)
-
-  const userCurrency = workspaces?.[0]?.currency || DEFAULT_CURRENCY
-
-  return <ReportsClient initialItems={expenseItems || []} initialReports={reportsWithItems} currency={userCurrency} />
+  return <ReportsClient initialItems={expenseItems} initialReports={reportsWithItems} currency={userCurrency} />
 }

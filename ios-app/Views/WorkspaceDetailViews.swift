@@ -11,17 +11,7 @@ struct WorkspaceDetailView: View {
     
     var body: some View {
         ZStack {
-            // Background gradient
-            LinearGradient(
-                colors: [
-                    AppTheme.Colors.blue50,
-                    Color(hex: "#E8F0FE"),
-                    AppTheme.Colors.blue50
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            AppTheme.backgroundView()
             
             if isLoading {
                 ProgressView("Loading...")
@@ -43,7 +33,7 @@ struct WorkspaceDetailView: View {
                 }
             } else {
                 Text("Workspace not found")
-                    .foregroundColor(.secondary)
+                    .foregroundColor(AppTheme.Colors.textSecondary)
             }
         }
         .navigationTitle(workspace?.name ?? "Workspace")
@@ -77,13 +67,13 @@ struct WorkspaceMenuRow: View {
             
             Text(label)
                 .font(.system(size: 18, weight: .medium))
-                .foregroundColor(.primary)
+                .foregroundColor(AppTheme.Colors.textPrimary)
             
             Spacer()
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 16)
-        .background(Color.white)
+        .background(AppTheme.Colors.cardSurface)
         .cornerRadius(12)
         .overlay(
             RoundedRectangle(cornerRadius: 12)
@@ -111,17 +101,7 @@ struct WorkspaceOverviewView: View {
     
     var body: some View {
         ZStack {
-            // Background gradient
-            LinearGradient(
-                colors: [
-                    AppTheme.Colors.blue50,
-                    Color(hex: "#E8F0FE"),
-                    AppTheme.Colors.blue50
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            AppTheme.backgroundView()
             
             if isLoading {
                 ProgressView("Loading...")
@@ -165,10 +145,10 @@ struct WorkspaceOverviewView: View {
                                     Image(systemName: "chevron.down")
                                         .font(.system(size: 14))
                                 }
-                                .foregroundColor(.secondary)
+                                .foregroundColor(AppTheme.Colors.textSecondary)
                                 .padding(.horizontal, 24)
                                 .padding(.vertical, 12)
-                                .background(Color.white)
+                                .background(AppTheme.Colors.cardSurface)
                                 .cornerRadius(12)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 12)
@@ -222,7 +202,7 @@ struct WorkspaceOverviewView: View {
                                     showAvatarMenu = true
                                 }) {
                                     Circle()
-                                        .fill(Color.white)
+                                        .fill(AppTheme.Colors.cardSurface)
                                         .frame(width: 32, height: 32)
                                         .overlay(
                                             Circle()
@@ -255,21 +235,21 @@ struct WorkspaceOverviewView: View {
                             }
                             
                             // Default currency
-                            NavigationLink(destination: EditWorkspaceCurrencyView(workspaceId: workspaceId, currentCurrency: workspace.currency)) {
+                            NavigationLink(destination: EditWorkspaceCurrencyView(workspaceId: workspaceId, currentCurrency: workspace.safeCurrency)) {
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text("Default currency")
                                         .font(.system(size: 12))
-                                        .foregroundColor(.secondary)
-                                    Text("\(workspace.currency) - \(workspace.displayCurrencySymbol)")
+                                        .foregroundColor(AppTheme.Colors.textSecondary)
+                                    Text("\(workspace.safeCurrency) - \(workspace.displayCurrencySymbol)")
                                         .font(.system(size: 16, weight: .semibold))
-                                        .foregroundColor(.primary)
+                                        .foregroundColor(AppTheme.Colors.textPrimary)
                                     Text("All expenses on this workspace will be converted to this currency.")
                                         .font(.system(size: 12))
-                                        .foregroundColor(.secondary)
+                                        .foregroundColor(AppTheme.Colors.textSecondary)
                                 }
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(16)
-                                .background(Color.white)
+                                .background(AppTheme.Colors.cardSurface)
                                 .cornerRadius(12)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 12)
@@ -278,7 +258,7 @@ struct WorkspaceOverviewView: View {
                                 .overlay(
                                     Image(systemName: "chevron.right")
                                         .font(.system(size: 20))
-                                        .foregroundColor(.secondary)
+                                        .foregroundColor(AppTheme.Colors.textSecondary)
                                         .padding(.trailing, 16),
                                     alignment: .trailing
                                 )
@@ -418,14 +398,14 @@ struct OverviewFieldRow: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(label)
                 .font(.system(size: 12))
-                .foregroundColor(.secondary)
+                .foregroundColor(AppTheme.Colors.textSecondary)
             Text(value)
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.primary)
+                .foregroundColor(AppTheme.Colors.textPrimary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(Color.white)
+        .background(AppTheme.Colors.cardSurface)
         .cornerRadius(12)
         .overlay(
             RoundedRectangle(cornerRadius: 12)
@@ -434,7 +414,7 @@ struct OverviewFieldRow: View {
         .overlay(
             Image(systemName: "chevron.right")
                 .font(.system(size: 20))
-                .foregroundColor(.secondary)
+                .foregroundColor(AppTheme.Colors.textSecondary)
                 .padding(.trailing, 16),
             alignment: .trailing
         )
@@ -457,17 +437,7 @@ struct WorkspaceMembersView: View {
     
     var body: some View {
         ZStack {
-            // Background gradient
-            LinearGradient(
-                colors: [
-                    AppTheme.Colors.blue50,
-                    Color(hex: "#E8F0FE"),
-                    AppTheme.Colors.blue50
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            AppTheme.backgroundView()
             
             if isLoading {
                 ProgressView("Loading...")
@@ -511,10 +481,10 @@ struct WorkspaceMembersView: View {
                                     Image(systemName: "chevron.down")
                                         .font(.system(size: 14))
                                 }
-                                .foregroundColor(.secondary)
+                                .foregroundColor(AppTheme.Colors.textSecondary)
                                 .padding(.horizontal, 24)
                                 .padding(.vertical, 12)
-                                .background(Color.white)
+                                .background(AppTheme.Colors.cardSurface)
                                 .cornerRadius(12)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 12)
@@ -528,7 +498,7 @@ struct WorkspaceMembersView: View {
                         // Total members count
                         Text("Total workspace members: \(members.count)")
                             .font(.system(size: 14))
-                            .foregroundColor(.secondary)
+                            .foregroundColor(AppTheme.Colors.textSecondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 16)
                         
@@ -536,11 +506,11 @@ struct WorkspaceMembersView: View {
                         HStack {
                             Text("Member")
                                 .font(.system(size: 12))
-                                .foregroundColor(.secondary)
+                                .foregroundColor(AppTheme.Colors.textSecondary)
                             Spacer()
                             Text("Role")
                                 .font(.system(size: 12))
-                                .foregroundColor(.secondary)
+                                .foregroundColor(AppTheme.Colors.textSecondary)
                         }
                         .padding(.horizontal, 32)
                         
@@ -645,12 +615,12 @@ struct MemberRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(member.displayName ?? member.email)
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.primary)
+                    .foregroundColor(AppTheme.Colors.textPrimary)
                 
                 if member.displayName != nil {
                     Text(member.email)
                         .font(.system(size: 14))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.Colors.textSecondary)
                 }
             }
             
@@ -684,10 +654,10 @@ struct MemberRow: View {
             
             Image(systemName: "chevron.right")
                 .font(.system(size: 20))
-                .foregroundColor(.secondary)
+                .foregroundColor(AppTheme.Colors.textSecondary)
         }
         .padding(16)
-        .background(Color.white)
+        .background(AppTheme.Colors.cardSurface)
         .cornerRadius(12)
         .overlay(
             RoundedRectangle(cornerRadius: 12)
@@ -706,15 +676,17 @@ struct InviteModal: View {
     
     var body: some View {
         NavigationStack {
-            VStack(spacing: 24) {
-                Text(workspaceName)
+            ZStack {
+                AppTheme.backgroundView()
+                VStack(spacing: 24) {
+                    Text(workspaceName)
                     .font(.system(size: 14))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(AppTheme.Colors.textSecondary)
                 
                 TextField("Name, email, or phone number", text: $inviteInput)
                     .font(.system(size: 16))
                     .padding(16)
-                    .background(Color.white)
+                    .background(AppTheme.Colors.cardSurface)
                     .cornerRadius(12)
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
@@ -749,6 +721,7 @@ struct InviteModal: View {
                     }
                 }
             }
+            } // ZStack
         }
     }
 }
@@ -765,8 +738,10 @@ struct ShareWorkspaceModal: View {
     
     var body: some View {
         NavigationStack {
-            VStack(spacing: 24) {
-                // QR Code placeholder
+            ZStack {
+                AppTheme.backgroundView()
+                VStack(spacing: 24) {
+                    // QR Code placeholder
                 RoundedRectangle(cornerRadius: 16)
                     .fill(Color.white)
                     .frame(width: 200, height: 200)
@@ -776,7 +751,7 @@ struct ShareWorkspaceModal: View {
                     )
                     .overlay(
                         Text("QR Code")
-                            .foregroundColor(.secondary)
+                            .foregroundColor(AppTheme.Colors.textSecondary)
                     )
                     .padding(.vertical, 32)
                 
@@ -784,14 +759,14 @@ struct ShareWorkspaceModal: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Share link")
                         .font(.system(size: 12))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.Colors.textSecondary)
                     Text(shareUrl)
                         .font(.system(size: 14, design: .monospaced))
-                        .foregroundColor(.primary)
+                        .foregroundColor(AppTheme.Colors.textPrimary)
                 }
                 .padding(16)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(AppTheme.Colors.blue50)
+                .background(AppTheme.Colors.cardSurface)
                 .cornerRadius(12)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
@@ -826,7 +801,7 @@ struct ShareWorkspaceModal: View {
                         .foregroundColor(AppTheme.Colors.primary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
-                        .background(Color.white)
+                        .background(AppTheme.Colors.cardSurface)
                         .cornerRadius(12)
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
@@ -848,6 +823,7 @@ struct ShareWorkspaceModal: View {
                     }
                 }
             }
+            } // ZStack
         }
     }
 }
