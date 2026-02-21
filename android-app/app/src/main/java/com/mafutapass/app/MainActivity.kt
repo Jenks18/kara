@@ -99,11 +99,17 @@ fun MafutaPassApp(themeViewModel: ThemeViewModel, avatarManager: AvatarManager) 
                     composable(Screen.Home.route) {
                         HomeScreen(
                             onViewAllExpenses = { navController.navigate(Screen.Reports.route) },
-                            onViewAllReports = { navController.navigate(Screen.Reports.route) }
+                            onViewAllReports = { navController.navigate("${Screen.Reports.route}?initialTab=1") }
                         )
                     }
-                    composable(Screen.Reports.route) {
+                    composable("${Screen.Reports.route}?initialTab={initialTab}",
+                        arguments = listOf(androidx.navigation.navArgument("initialTab") {
+                            type = androidx.navigation.NavType.IntType; defaultValue = 0
+                        })
+                    ) { backStackEntry ->
+                        val initialTab = backStackEntry.arguments?.getInt("initialTab") ?: 0
                         ReportsScreen(
+                            initialTab = initialTab,
                             onNavigateToExpenseDetail = { id -> navController.navigate("expenses/$id") },
                             onNavigateToReportDetail = { id -> navController.navigate("reports/$id") }
                         )

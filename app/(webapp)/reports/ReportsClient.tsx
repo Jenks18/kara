@@ -184,9 +184,19 @@ export default function ReportsClient({ initialItems, initialReports, currency }
                   >
                     {/* Main row: icon · merchant+meta · amount+KRA */}
                     <div className="flex items-start gap-3">
-                      {/* Category icon */}
-                      <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
-                        <FileText className="w-[18px] h-[18px] text-blue-600" />
+                      {/* Receipt thumbnail */}
+                      <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        {item.image_url ? (
+                          <Image
+                            src={item.image_url}
+                            alt="Receipt"
+                            width={36}
+                            height={36}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <FileText className="w-[18px] h-[18px] text-blue-600" />
+                        )}
                       </div>
 
                       {/* Merchant + category/date */}
@@ -197,8 +207,7 @@ export default function ReportsClient({ initialItems, initialReports, currency }
                         <p className="text-xs text-gray-500 mt-0.5">
                           {item.category}
                           {' · '}
-                          {new Date(item.transaction_date || item.created_at).toLocaleDateString('en-US', {
-                            year: 'numeric',
+                          {new Date(item.transaction_date || item.created_at).toLocaleDateString(undefined, {
                             month: 'short',
                             day: 'numeric'
                           })}
@@ -270,18 +279,21 @@ export default function ReportsClient({ initialItems, initialReports, currency }
                           <h3 className="text-gray-900 font-semibold">{report.title}</h3>
                         </div>
                         <div className="flex items-center gap-2 text-xs text-gray-600">
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full font-medium ${
-                            report.status === 'draft' ? 'bg-gray-500/20 text-gray-700' :
-                            report.status === 'submitted' ? 'bg-amber-500/20 text-amber-700' :
-                            report.status === 'approved' ? 'bg-blue-500/20 text-blue-700' :
-                            'bg-red-500/20 text-red-700'
-                          }`}>
-                            {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
-                          </span>
-                          <span>•</span>
+                          {report.status !== 'draft' && (
+                            <>
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full font-medium ${
+                                report.status === 'submitted' ? 'bg-amber-500/20 text-amber-700' :
+                                report.status === 'approved' ? 'bg-blue-500/20 text-blue-700' :
+                                'bg-red-500/20 text-red-700'
+                              }`}>
+                                {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
+                              </span>
+                              <span>•</span>
+                            </>
+                          )}
                           <span>{report.items.length} expense{report.items.length !== 1 ? 's' : ''}</span>
                           <span>•</span>
-                          <span>{new Date(report.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                          <span>{new Date(report.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
                         </div>
                       </div>
                     </div>

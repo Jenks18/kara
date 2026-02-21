@@ -127,7 +127,7 @@ private fun ReportDetailContent(
     onNavigateToExpense: (String) -> Unit
 ) {
     val context = LocalContext.current
-    val displayDate = DateUtils.formatShort(report.createdAt)
+    val displayDate = DateUtils.formatMedium(report.createdAt)
 
     LazyColumn(
         contentPadding = PaddingValues(16.dp),
@@ -155,16 +155,14 @@ private fun ReportDetailContent(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                         }
+                    if (report.status != "draft") {
                         val statusColor = when (report.status) {
                             "approved" -> MaterialTheme.colorScheme.primary
                             "submitted" -> Color(0xFF2563EB)
                             "rejected" -> MaterialTheme.colorScheme.error
-                            else -> Color(0xFFE6A817) // amber for draft / needs review
+                            else -> Color(0xFFE6A817)
                         }
-                        val statusLabel = when (report.status) {
-                            "draft" -> "Needs Review"
-                            else -> report.status.replaceFirstChar { it.uppercase() }
-                        }
+                        val statusLabel = report.status.replaceFirstChar { it.uppercase() }
                         Surface(
                             shape = RoundedCornerShape(12.dp),
                             color = statusColor.copy(alpha = 0.12f)
@@ -177,6 +175,7 @@ private fun ReportDetailContent(
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                             )
                         }
+                    }
                     }
 
                     Spacer(Modifier.height(16.dp))
@@ -210,7 +209,7 @@ private fun ReportDetailContent(
 
         // Receipt items
         items(report.items) { item ->
-            val itemDate = DateUtils.formatShort(item.transactionDate ?: item.createdAt)
+            val itemDate = DateUtils.formatMedium(item.transactionDate ?: item.createdAt)
             Surface(
                 shape = RoundedCornerShape(12.dp),
                 color = MaterialTheme.colorScheme.surface,

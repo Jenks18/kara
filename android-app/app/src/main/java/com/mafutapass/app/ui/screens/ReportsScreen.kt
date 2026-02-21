@@ -45,9 +45,10 @@ import com.mafutapass.app.viewmodel.ReportsViewModel
 fun ReportsScreen(
     onNavigateToExpenseDetail: (String) -> Unit = {},
     onNavigateToReportDetail: (String) -> Unit = {},
+    initialTab: Int = 0,
     viewModel: ReportsViewModel = hiltViewModel()
 ) {
-    var selectedTab by remember { mutableStateOf(0) }
+    var selectedTab by remember { mutableStateOf(initialTab) }
     val tabs = listOf("Expenses", "Reports")
 
     val expenses by viewModel.expenseItems.collectAsState()
@@ -208,7 +209,7 @@ fun ReportsTab(reports: List<ExpenseReport>, onNavigateToDetail: (String) -> Uni
 
 @Composable
 fun ExpenseCard(expense: ExpenseItem, onNavigateToDetail: (String) -> Unit = {}) {
-    val displayDate = DateUtils.formatFull(expense.transactionDate ?: expense.createdAt)
+    val displayDate = DateUtils.formatMedium(expense.transactionDate ?: expense.createdAt)
 
     val needsReview = expense.processingStatus == "error" || expense.processingStatus == "needs_review"
     val isScanning = expense.processingStatus == "scanning"
@@ -229,25 +230,41 @@ fun ExpenseCard(expense: ExpenseItem, onNavigateToDetail: (String) -> Unit = {})
             .clickable { onNavigateToDetail(expense.id) }
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
-            // ── Main row: icon · merchant+meta · amount+KRA ──────
+            // ── Main row: receipt thumbnail · merchant+meta · amount+KRA ──────
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.Top
             ) {
-                // Category icon (matches iOS)
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.primaryContainer),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Receipt,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(18.dp)
+                // Receipt thumbnail or category icon
+                val imageUrl = expense.imageUrl
+                if (!imageUrl.isNullOrBlank() && imageUrl.startsWith("http")) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(imageUrl)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "Receipt",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(MaterialTheme.colorScheme.primaryContainer)
                     )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(MaterialTheme.colorScheme.primaryContainer),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Receipt,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.width(12.dp))
@@ -406,7 +423,7 @@ fun ExpenseCard(expense: ExpenseItem, onNavigateToDetail: (String) -> Unit = {})
 @Composable
 fun ReportCard(report: ExpenseReport, onNavigateToDetail: (String) -> Unit = {}) {
     val context = LocalContext.current
-    val displayDate = DateUtils.formatShort(report.createdAt)
+    val displayDate = DateUtils.formatMedium(report.createdAt)
 
     Surface(
         shape = RoundedCornerShape(12.dp),
@@ -477,28 +494,43 @@ fun ReportCard(report: ExpenseReport, onNavigateToDetail: (String) -> Unit = {})
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Status badge
-                val statusColor = when (report.status) {
-                    "approved" -> MaterialTheme.colorScheme.primary
-                    "submitted" -> Color(0xFF2563EB) // blue
-                    "rejected" -> MaterialTheme.colorScheme.error
-                    else -> Color(0xFFE6A817) // amber for draft / needs review
+                // Status badge - hide draft
+                if (report.status != "draft") {
+                    val statusColor = when (report.status) {
+                        "approved" -> MaterialTheme.colorScheme.primary
+                        "submitted" -> Color(0xFF2563EB) // blue
+                        "rejected" -> MaterialTheme.colorScheme.error
+                        else -> Color(0xFFE6A817) // amber
+                    }
+                    val statusLabel = report.status.replaceFirstChar { it.uppercase() }
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = statusColor.copy(alpha = 0.12f)
+                    ) {
+                        Text(
+                            text = statusLabel,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Medium,
+                            color = statusColor,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                        )
+                    }
                 }
-                val statusLabel = when (report.status) {
-                    "draft" -> "Needs Review"
-                    else -> report.status.replaceFirstChar { it.uppercase() }
-                }
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = statusColor.copy(alpha = 0.12f)
-                ) {
-                    Text(
-                        text = statusLabel,
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Medium,
-                        color = statusColor,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
-                    )
+
+                // Workspace name
+                if (report.workspaceName.isNotBlank()) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer
+                    ) {
+                        Text(
+                            text = report.workspaceName,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                        )
+                    }
                 }
 
                 Text(

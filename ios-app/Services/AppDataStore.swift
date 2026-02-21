@@ -34,6 +34,8 @@ final class AppDataStore: ObservableObject {
     @Published var monthOverMonthTrend: Double = 0
     @Published var receiptCountThisMonth: Int = 0
     @Published var submittedReportsCount: Int = 0
+    /// Set from HomePage before tab-switch to deep-link into a specific ReportsPage subtab (0=Expenses, 1=Reports).
+    @Published var reportsDeepLinkSubTab: Int? = nil
 
     // MARK: - Debounce
 
@@ -160,13 +162,14 @@ final class AppDataStore: ObservableObject {
         let now = Date()
         let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: now))!
         let startOfLastMonth = calendar.date(byAdding: .month, value: -1, to: startOfMonth)!
-        let iso = ISO8601DateFormatter()
 
+        // Prefer transaction_date (when purchase happened) over created_at (when scanned)
         let thisMonthItems = expenses.filter {
-            (iso.date(from: $0.created_at) ?? .distantPast) >= startOfMonth
+            let d = Self.parseISO($0.transaction_date ?? $0.created_at) ?? .distantPast
+            return d >= startOfMonth
         }
         let lastMonthItems = expenses.filter {
-            let d = iso.date(from: $0.created_at) ?? .distantPast
+            let d = Self.parseISO($0.transaction_date ?? $0.created_at) ?? .distantPast
             return d >= startOfLastMonth && d < startOfMonth
         }
 
@@ -177,6 +180,16 @@ final class AppDataStore: ObservableObject {
         totalAllTime          = expenses.reduce(0.0) { $0 + $1.amount }
         monthOverMonthTrend   = lastTotal > 0 ? ((thisTotal - lastTotal) / lastTotal) * 100 : 0
         receiptCountThisMonth = thisMonthItems.count
-        submittedReportsCount = reports.filter { $0.status == "submitted" }.count
+        submittedReportsCount = reports.count  // Show total reports, not just submitted
+    }
+
+    /// Parse ISO8601 strings from Supabase (handles microsecond precision like `2026-02-21T10:30:00.123456+00:00`).
+    static func parseISO(_ s: String) -> Date? {
+        let withFrac = ISO8601DateFormatter()
+        withFrac.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let d = withFrac.date(from: s) { return d }
+        let plain = ISO8601DateFormatter()
+        plain.formatOptions = [.withInternetDateTime]
+        return plain.date(from: s)
     }
 }

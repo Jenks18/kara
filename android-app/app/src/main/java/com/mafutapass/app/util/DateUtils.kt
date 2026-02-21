@@ -29,6 +29,9 @@ object DateUtils {
     /** Locale-aware short date format (e.g. "14/02/2025" or "2/14/25") */
     private val displayShort: DateFormat get() = DateFormat.getDateInstance(DateFormat.SHORT)
 
+    /** Locale-aware medium date format — same as full but explicit for card displays */
+    private val displayMedium: DateFormat get() = DateFormat.getDateInstance(DateFormat.MEDIUM)
+
     private val displayDate = SimpleDateFormat("yyyy-MM-dd", Locale.US)
 
     /**
@@ -45,6 +48,15 @@ object DateUtils {
     fun formatShort(iso: String?): String {
         if (iso.isNullOrBlank()) return ""
         return parse(iso)?.let { displayShort.format(it) } ?: iso.take(10)
+    }
+
+    /**
+     * "2025-02-14T10:30:00Z" → locale-aware medium date (e.g. "Feb 14, 2025")
+     * Used for card displays — no time component.
+     */
+    fun formatMedium(iso: String?): String {
+        if (iso.isNullOrBlank()) return ""
+        return parse(iso)?.let { displayMedium.format(it) } ?: iso.take(10)
     }
 
     /**

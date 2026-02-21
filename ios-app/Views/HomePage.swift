@@ -66,7 +66,7 @@ struct HomePage: View {
                                     iconColor: AppTheme.Colors.primary,
                                     iconBg: AppTheme.Colors.blueBadgeBg,
                                     value: "\(dataStore.submittedReportsCount)",
-                                    label: "Reports Submitted"
+                                    label: "Total Reports"
                                 )
                                 StatPill(
                                     icon: "tray.full.fill",
@@ -84,7 +84,7 @@ struct HomePage: View {
                                         .font(.system(size: 18, weight: .bold))
                                         .foregroundColor(AppTheme.Colors.textPrimary)
                                     Spacer()
-                                    Button { selectedTab = 1 } label: {
+                                    Button { dataStore.reportsDeepLinkSubTab = 0; selectedTab = 1 } label: {
                                         HStack(spacing: 2) {
                                             Text("View All")
                                                 .font(.system(size: 14, weight: .medium))
@@ -164,7 +164,7 @@ struct HomePage: View {
                                         .font(.system(size: 18, weight: .bold))
                                         .foregroundColor(AppTheme.Colors.textPrimary)
                                     Spacer()
-                                    Button { selectedTab = 1 } label: {
+                                    Button { dataStore.reportsDeepLinkSubTab = 1; selectedTab = 1 } label: {
                                         HStack(spacing: 2) {
                                             Text("View All")
                                                 .font(.system(size: 14, weight: .medium))
@@ -200,7 +200,12 @@ struct HomePage: View {
                                                     Text(report.title)
                                                         .font(.system(size: 14, weight: .semibold))
                                                         .foregroundColor(AppTheme.Colors.textPrimary)
-                                                    reportStatusBadge(report.status)
+                                                    Text(shortDate(report.created_at))
+                                                        .font(.system(size: 11))
+                                                        .foregroundColor(AppTheme.Colors.textSecondary)
+                                                    if report.status != "draft" {
+                                                        reportStatusBadge(report.status)
+                                                    }
                                                 }
                                                 Spacer()
                                                 Text(formatCurrency(report.total_amount))
@@ -255,59 +260,86 @@ struct HomePage: View {
     func formatCurrency(_ amount: Double) -> String { CurrencyFormatter.shared.formatSimple(amount) }
 
     func shortDate(_ iso: String) -> String {
-        let f = ISO8601DateFormatter()
-        guard let d = f.date(from: iso) else { return iso }
-        let diff = Calendar.current.dateComponents([.day], from: d, to: Date()).day ?? 0
+        guard let d = AppDataStore.parseISO(iso) else { return "" }
+        let cal = Calendar.current
+        let startD   = cal.startOfDay(for: d)
+        let startNow = cal.startOfDay(for: Date())
+        let diff = cal.dateComponents([.day], from: startD, to: startNow).day ?? 0
         if diff == 0 { return "Today" }
         if diff == 1 { return "Yesterday" }
-        if diff < 7  { return "\(diff)d ago" }
-        let df = DateFormatter(); df.dateFormat = "MMM d"; return df.string(from: d)
+        let df = DateFormatter()
+        df.locale = .current
+        let sameYear = cal.component(.year, from: d) == cal.component(.year, from: Date())
+        df.dateFormat = sameYear ? "MMM d" : "MMM d, yyyy"
+        return df.string(from: d)
     }
 
     func categoryColor(_ category: String) -> Color {
+        let palette: [Color] = [
+            Color(hex: "#3B82F6"), // blue
+            Color(hex: "#8B5CF6"), // purple
+            Color(hex: "#F59E0B"), // amber
+            Color(hex: "#10B981"), // green
+            Color(hex: "#EC4899")  // pink
+        ]
         switch category.lowercased() {
-        case "fuel", "transport": return AppTheme.Colors.primary
-        case "food", "meals":     return Color(hex: "#F59E0B")
-        case "office":            return Color(hex: "#10B981")
-        case "travel":            return Color(hex: "#EC4899")
-        default:                  return Color(hex: "#6B7280")
+        case "fuel", "transport", "transportation", "commute": return palette[0]
+        case "food", "meals", "dining", "groceries":           return palette[2]
+        case "office", "supplies", "stationery", "equipment": return palette[3]
+        case "travel", "accommodation", "hotel":               return palette[4]
+        case "entertainment", "recreation", "subscriptions":  return palette[1]
+        default:
+            let idx = abs(category.lowercased().hashValue) % palette.count
+            return palette[idx]
         }
     }
 
     @ViewBuilder
     func expenseStatusBadge(_ status: String) -> some View {
-        let (label, fg, bg): (String, Color, Color) = {
-            switch status {
-            case "needs_review", "scanning": return ("Pending",   Color(hex: "#B45309"), Color(hex: "#FEF3C7"))
-            case "processed", "approved":    return ("Processed", Color(hex: "#065F46"), Color(hex: "#D1FAE5"))
-            default:                          return ("Draft",     Color(hex: "#374151"), Color(hex: "#F3F4F6"))
-            }
-        }()
-        Text(label)
-            .font(.system(size: 10, weight: .semibold))
-            .foregroundColor(fg)
-            .padding(.horizontal, 7)
-            .padding(.vertical, 3)
-            .background(bg)
-            .cornerRadius(6)
+        switch status {
+        case "needs_review", "error":
+            Text("Please Review")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(Color(hex: "#B45309"))
+                .padding(.horizontal, 7)
+                .padding(.vertical, 3)
+                .background(Color(hex: "#FEF3C7"))
+                .cornerRadius(6)
+        case "scanning":
+            Text("Scanning")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(Color(hex: "#6B7280"))
+                .padding(.horizontal, 7)
+                .padding(.vertical, 3)
+                .background(Color(hex: "#F3F4F6"))
+                .cornerRadius(6)
+        default:
+            EmptyView()
+        }
     }
 
     @ViewBuilder
     func reportStatusBadge(_ status: String) -> some View {
-        let (label, fg, bg): (String, Color, Color) = {
-            switch status {
-            case "submitted": return ("Submitted", Color(hex: "#1E40AF"), Color(hex: "#DBEAFE"))
-            case "approved":  return ("Approved",  Color(hex: "#065F46"), Color(hex: "#D1FAE5"))
-            default:          return ("Draft",     Color(hex: "#374151"), Color(hex: "#F3F4F6"))
-            }
-        }()
-        Text(label)
-            .font(.system(size: 10, weight: .semibold))
-            .foregroundColor(fg)
-            .padding(.horizontal, 7)
-            .padding(.vertical, 3)
-            .background(bg)
-            .cornerRadius(6)
+        switch status {
+        case "submitted":
+            Text("Submitted")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(Color(hex: "#1E40AF"))
+                .padding(.horizontal, 7)
+                .padding(.vertical, 3)
+                .background(Color(hex: "#DBEAFE"))
+                .cornerRadius(6)
+        case "approved":
+            Text("Approved")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(Color(hex: "#065F46"))
+                .padding(.horizontal, 7)
+                .padding(.vertical, 3)
+                .background(Color(hex: "#D1FAE5"))
+                .cornerRadius(6)
+        default:
+            EmptyView()
+        }
     }
 }
 
@@ -428,12 +460,18 @@ struct SpendingByCategoryCard: View {
     private var maxAmount: Double { categoryTotals.first?.1 ?? 1 }
 
     private func colorForCategory(_ cat: String) -> Color {
-        let colors: [Color] = [
+        let palette: [Color] = [
             Color(hex: "#3B82F6"), Color(hex: "#8B5CF6"), Color(hex: "#F59E0B"),
             Color(hex: "#10B981"), Color(hex: "#EC4899")
         ]
-        let index = abs(cat.hashValue) % colors.count
-        return colors[index]
+        switch cat.lowercased() {
+        case "fuel", "transport", "transportation", "commute": return palette[0]
+        case "food", "meals", "dining", "groceries":           return palette[2]
+        case "office", "supplies", "stationery", "equipment": return palette[3]
+        case "travel", "accommodation", "hotel":               return palette[4]
+        case "entertainment", "recreation", "subscriptions":  return palette[1]
+        default: return palette[abs(cat.lowercased().hashValue) % palette.count]
+        }
     }
 
     var body: some View {

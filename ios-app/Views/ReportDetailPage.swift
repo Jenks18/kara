@@ -88,11 +88,13 @@ struct ReportDetailContent: View {
                         
                         Spacer()
                         
-                        VStack(alignment: .trailing) {
-                            Text("Status")
-                                .font(.caption)
-                                .foregroundColor(AppTheme.Colors.textSecondary)
-                            StatusBadge(status: report.status)
+                        if report.status.lowercased() != "draft" {
+                            VStack(alignment: .trailing) {
+                                Text("Status")
+                                    .font(.caption)
+                                    .foregroundColor(AppTheme.Colors.textSecondary)
+                                StatusBadge(status: report.status)
+                            }
                         }
                     }
                     
@@ -142,6 +144,7 @@ struct ReportDetailContent: View {
         
         let displayFormatter = DateFormatter()
         displayFormatter.dateStyle = .medium
+        displayFormatter.timeStyle = .none
         return displayFormatter.string(from: date)
     }
     
@@ -223,7 +226,8 @@ struct ExpenseItemRow: View {
         }
         
         let displayFormatter = DateFormatter()
-        displayFormatter.dateStyle = .short
+        displayFormatter.dateStyle = .medium
+        displayFormatter.timeStyle = .none
         return displayFormatter.string(from: date)
     }
     
@@ -284,7 +288,8 @@ struct ExpenseItemDetailView: View {
         }
         
         let displayFormatter = DateFormatter()
-        displayFormatter.dateStyle = .long
+        displayFormatter.dateStyle = .medium
+        displayFormatter.timeStyle = .none
         return displayFormatter.string(from: date)
     }
     
@@ -312,13 +317,15 @@ struct StatusBadge: View {
     let status: String
     
     var body: some View {
-        Text(status.capitalized)
-            .font(.caption.bold())
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(statusColor.opacity(0.2))
-            .foregroundColor(statusColor)
-            .cornerRadius(6)
+        if status.lowercased() != "draft" {
+            Text(status.capitalized)
+                .font(.caption.bold())
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(statusColor.opacity(0.2))
+                .foregroundColor(statusColor)
+                .cornerRadius(6)
+        }
     }
     
     private var statusColor: Color {

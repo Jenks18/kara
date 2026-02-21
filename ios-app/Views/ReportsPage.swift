@@ -76,6 +76,13 @@ struct ReportsPage: View {
         .onChange(of: selectedTab) { _, _ in
             isScrolled = false
         }
+        .onAppear {
+            // Apply deep-link subtab set by HomePage "View All Reports" button.
+            if let tab = dataStore.reportsDeepLinkSubTab {
+                selectedTab = tab
+                dataStore.reportsDeepLinkSubTab = nil
+            }
+        }
         .task {
             // Per-screen data load — matches Android ReportsViewModel.init pattern.
             // Debounce in AppDataStore prevents redundant calls.
@@ -182,16 +189,35 @@ struct ExpenseCardView: View {
         VStack(alignment: .leading, spacing: 10) {
             // ── Main row: icon · merchant+meta · amount+KRA ──────────
             HStack(alignment: .top, spacing: 12) {
-                // Category icon
-                Image(systemName: isScanning ? "arrow.clockwise" : "doc.text")
-                    .font(.system(size: 18))
-                    .foregroundColor(isScanning ? .gray : AppTheme.Colors.primary)
+                // Receipt thumbnail or category icon
+                if let imageUrl = expense.image_url, let url = URL(string: imageUrl), !imageUrl.isEmpty {
+                    AsyncImage(url: url) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    } placeholder: {
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.2))
+                            .overlay(
+                                Image(systemName: "arrow.clockwise")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.gray)
+                            )
+                    }
                     .frame(width: 36, height: 36)
-                    .background(AppTheme.Colors.blueBadgeBg)
                     .cornerRadius(8)
-                    .rotationEffect(.degrees(isAnimating && isScanning ? 360 : 0))
-                    .animation(isScanning ? Animation.linear(duration: 1.5).repeatForever(autoreverses: false) : .default, value: isAnimating)
-                    .onAppear { if isScanning { isAnimating = true } }
+                    .clipped()
+                } else {
+                    Image(systemName: isScanning ? "arrow.clockwise" : "doc.text")
+                        .font(.system(size: 18))
+                        .foregroundColor(isScanning ? .gray : AppTheme.Colors.primary)
+                        .frame(width: 36, height: 36)
+                        .background(AppTheme.Colors.blueBadgeBg)
+                        .cornerRadius(8)
+                        .rotationEffect(.degrees(isAnimating && isScanning ? 360 : 0))
+                        .animation(isScanning ? Animation.linear(duration: 1.5).repeatForever(autoreverses: false) : .default, value: isAnimating)
+                        .onAppear { if isScanning { isAnimating = true } }
+                }
                 
                 // Merchant + category/date
                 VStack(alignment: .leading, spacing: 3) {
@@ -305,7 +331,8 @@ struct ExpenseCardView: View {
         }()
         guard let parsed = date else { return dateString.prefix(10).description }
         let fmt = DateFormatter()
-        fmt.dateFormat = "MMM d, yyyy"
+        fmt.dateStyle = .medium
+        fmt.timeStyle = .none
         return fmt.string(from: parsed)
     }
 }
@@ -353,16 +380,18 @@ struct ReportCardView: View {
                 
                 // Status and details row
                 HStack(spacing: 12) {
-                    Text(report.status.capitalized)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(statusColor(for: report.status))
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
-                        .background(statusColor(for: report.status).opacity(0.15))
-                        .cornerRadius(8)
-                    
-                    Text("•")
-                        .foregroundColor(.gray)
+                    if report.status.lowercased() != "draft" {
+                        Text(report.status.capitalized)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(statusColor(for: report.status))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(statusColor(for: report.status).opacity(0.15))
+                            .cornerRadius(8)
+                        
+                        Text("•")
+                            .foregroundColor(.gray)
+                    }
                     
                     Text("\(report.displayItemsCount) expenses")
                         .font(.system(size: 13))
@@ -455,7 +484,8 @@ struct ReportCardView: View {
         let formatter = ISO8601DateFormatter()
         if let date = formatter.date(from: dateString) {
             let displayFormatter = DateFormatter()
-            displayFormatter.dateFormat = "MMM d"
+            displayFormatter.dateStyle = .medium
+            displayFormatter.timeStyle = .none
             return displayFormatter.string(from: date)
         }
         return dateString

@@ -128,8 +128,7 @@ export default function ReportDetailPage() {
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
+    return new Date(dateString).toLocaleDateString(undefined, {
       month: 'short',
       day: 'numeric'
     })
@@ -158,9 +157,15 @@ export default function ReportDetailPage() {
         <div className="p-4 bg-white/60 border-b border-blue-200">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-xl font-bold text-gray-900">{report.title}</h2>
-            <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-              {report.status}
-            </span>
+            {report.status !== 'draft' && (
+              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                report.status === 'submitted' ? 'bg-amber-100 text-amber-700' :
+                report.status === 'approved' ? 'bg-blue-100 text-blue-700' :
+                'bg-red-100 text-red-700'
+              }`}>
+                {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
+              </span>
+            )}
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-gray-600">{formatDate(report.created_at)}</span>

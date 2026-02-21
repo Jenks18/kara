@@ -13,14 +13,13 @@ interface ExpenseReportViewProps {
 
 export default function ExpenseReportView({ images, workspace, reportId, onBack }: ExpenseReportViewProps) {
   const [message, setMessage] = useState('')
-  const currentDate = new Date().toLocaleDateString('en-US', { 
+  const currentDate = new Date().toLocaleDateString(undefined, { 
     month: 'short', 
     day: 'numeric' 
   })
-  const reportDate = new Date().toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
+  const reportDate = new Date().toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric'
   })
 
   return (
@@ -41,10 +40,10 @@ export default function ExpenseReportView({ images, workspace, reportId, onBack 
             </div>
             <div className="flex flex-col items-start">
               <div className="flex items-center gap-1">
-                <span className="text-gray-900 font-medium">injenga's expenses</span>
+                <span className="text-gray-900 font-medium">{workspace || 'Expenses'}</span>
                 <ChevronDown size={16} className="text-gray-500" />
               </div>
-              <span className="text-xs text-gray-600">My Workspace</span>
+              <span className="text-xs text-gray-600">{workspace || 'My Workspace'}</span>
             </div>
           </div>
 
@@ -79,7 +78,7 @@ export default function ExpenseReportView({ images, workspace, reportId, onBack 
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-gray-900 font-medium text-sm">You</span>
-                <span className="text-xs text-gray-500">Today at {new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
+                <span className="text-xs text-gray-500">{currentDate}</span>
               </div>
 
               {/* Expense Report Card */}
@@ -129,7 +128,7 @@ export default function ExpenseReportView({ images, workspace, reportId, onBack 
                 <div className="p-4 border-t border-gray-200">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-gray-600 text-sm">Total</span>
-                    <span className="text-gray-900 text-xl font-bold font-mono">KES 0.00</span>
+                    <span className="text-gray-900 text-xl font-bold font-mono">Calculating...</span>
                   </div>
                   <button className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 active:scale-[0.98] text-white font-semibold py-3 rounded-full transition-all duration-200 shadow-md">
                     View Report

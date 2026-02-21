@@ -65,7 +65,7 @@ fun BottomNavBar(navController: NavController, avatarManager: AvatarManager) {
         ) {
             // Left items
             leftItems.forEach { screen ->
-                val isSelected = currentRoute == screen.route
+                val isSelected = currentRoute?.substringBefore("?") == screen.route
                 NavigationBarItem(
                     icon = {
                         if (screen.icon != null) {
@@ -110,7 +110,7 @@ fun BottomNavBar(navController: NavController, avatarManager: AvatarManager) {
             
             // Right items
             rightItems.forEach { screen ->
-                val isSelected = currentRoute == screen.route
+                val isSelected = currentRoute?.substringBefore("?") == screen.route
                 NavigationBarItem(
                     icon = {
                         if (screen.isAvatar) {

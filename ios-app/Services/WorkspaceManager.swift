@@ -89,6 +89,5 @@ final class WorkspaceManager: ObservableObject {
     private func applyCurrency(_ code: String) {
         activeCurrency = code
         CurrencyFormatter.shared.defaultCurrencyCode = code
-        print("💰 WorkspaceManager: active currency → \(code)")
     }
 }

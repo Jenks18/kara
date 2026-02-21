@@ -220,7 +220,47 @@ fun ExpenseDetailScreen(
 @Composable
 private fun ExpenseDetailContent(expense: ExpenseItem, onEditClick: () -> Unit) {
     val context = LocalContext.current
-    val displayDate = DateUtils.formatShort(expense.transactionDate ?: expense.createdAt)
+    val displayDate = DateUtils.formatMedium(expense.transactionDate ?: expense.createdAt)
+    var showFullImage by remember { mutableStateOf(false) }
+
+    // Fullscreen receipt image dialog
+    if (showFullImage && expense.imageUrl.isNotBlank() && expense.imageUrl.startsWith("http")) {
+        androidx.compose.ui.window.Dialog(
+            onDismissRequest = { showFullImage = false },
+            properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black)
+                    .clickable { showFullImage = false }
+            ) {
+                AsyncImage(
+                    model = ImageRequest.Builder(context)
+                        .data(expense.imageUrl)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = "Receipt full image",
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.fillMaxSize()
+                )
+                // Close button
+                IconButton(
+                    onClick = { showFullImage = false },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(16.dp)
+                        .statusBarsPadding()
+                ) {
+                    Icon(
+                        Icons.Filled.Close, "Close",
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -271,7 +311,9 @@ private fun ExpenseDetailContent(expense: ExpenseItem, onEditClick: () -> Unit) 
             Surface(
                 shape = RoundedCornerShape(16.dp),
                 shadowElevation = 2.dp,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showFullImage = true }
             ) {
                 AsyncImage(
                     model = ImageRequest.Builder(context)

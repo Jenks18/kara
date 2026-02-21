@@ -69,9 +69,7 @@ fun HomeScreen(
     val momTrend       = remember(totalThisMonth, lastMonthTotal) {
         if (lastMonthTotal > 0) ((totalThisMonth - lastMonthTotal) / lastMonthTotal * 100).toFloat() else 0f
     }
-    val submittedReportsCount = remember(reports) {
-        reports.count { it.status.equals("submitted", ignoreCase = true) }
-    }
+    val submittedReportsCount = remember(reports) { reports.size }
 
     LaunchedEffect(Unit) { viewModel.refresh() }
 
@@ -146,7 +144,7 @@ fun HomeScreen(
                         iconColor = Blue500,
                         iconBackground = Blue50,
                         value = submittedReportsCount.toString(),
-                        label = "Reports Submitted"
+                        label = "Total Reports"
                     )
                     StatPillCard(
                         modifier = Modifier.weight(1f),
@@ -242,6 +240,22 @@ fun HomeScreen(
                                             )
                                             Spacer(modifier = Modifier.height(4.dp))
                                             ExpenseStatusBadge(expense.processingStatus)
+                                            if (expense.kraVerified == true) {
+                                                Spacer(modifier = Modifier.height(3.dp))
+                                                Surface(
+                                                    shape = RoundedCornerShape(5.dp),
+                                                    color = Blue50
+                                                ) {
+                                                    Row(
+                                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                                                    ) {
+                                                        Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = Blue500, modifier = Modifier.size(8.dp))
+                                                        Text("KRA", style = MaterialTheme.typography.labelSmall, color = Blue500, fontSize = 9.sp)
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                     if (index < minOf(expenses.size, 5) - 1) {
@@ -308,14 +322,23 @@ fun HomeScreen(
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.Top
                                         ) {
-                                            Text(
-                                                text = report.title.ifBlank { "Untitled Report" },
-                                                style = MaterialTheme.typography.bodyLarge,
-                                                fontWeight = FontWeight.SemiBold,
-                                                modifier = Modifier.weight(1f),
-                                                maxLines = 1, overflow = TextOverflow.Ellipsis
-                                            )
-                                            ReportStatusBadge(report.status)
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = report.title.ifBlank { "Untitled Report" },
+                                                    style = MaterialTheme.typography.bodyLarge,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    maxLines = 1, overflow = TextOverflow.Ellipsis
+                                                )
+                                                Text(
+                                                    text = shortDate(report.createdAt),
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                                if (!report.status.equals("draft", ignoreCase = true)) {
+                                                    Spacer(modifier = Modifier.height(2.dp))
+                                                    ReportStatusBadge(report.status)
+                                                }
+                                            }
                                         }
                                         Spacer(modifier = Modifier.height(8.dp))
                                         Row(
@@ -375,10 +398,18 @@ fun HomeScreen(
                                 .mapValues { (_, list) -> list.sumOf { it.amount } }
                                 .toList().sortedByDescending { it.second }.take(5)
                             val maxAmount = categoryTotals.maxOfOrNull { it.second } ?: 1.0
-                            val barColors = listOf(Blue500, Color(0xFF8B5CF6), Color(0xFFF59E0B), Color(0xFF10B981), Color(0xFFEC4899))
+                            val barColors = listOf(Color(0xFF3B82F6), Color(0xFF8B5CF6), Color(0xFFF59E0B), Color(0xFF10B981), Color(0xFFEC4899))
+                            fun categoryColor(cat: String): Color = when (cat.lowercase()) {
+                                "fuel", "transport", "transportation", "commute" -> barColors[0]
+                                "food", "meals", "dining", "groceries"          -> barColors[2]
+                                "office", "supplies", "stationery", "equipment" -> barColors[3]
+                                "travel", "accommodation", "hotel"              -> barColors[4]
+                                "entertainment", "recreation", "subscriptions" -> barColors[1]
+                                else -> barColors[Math.abs(cat.lowercase().hashCode()) % barColors.size]
+                            }
 
-                            categoryTotals.forEachIndexed { idx, (category, amount) ->
-                                val barColor = barColors[idx % barColors.size]
+                            categoryTotals.forEach { (category, amount) ->
+                                val barColor = categoryColor(category)
                                 Column(modifier = Modifier.padding(vertical = 8.dp)) {
                                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -509,27 +540,31 @@ fun StatPillCard(
 
 @Composable
 fun ExpenseStatusBadge(status: String) {
-    val (label, fg, bg) = when (status.lowercase()) {
-        "needs_review", "scanning" -> Triple("Pending",   Color(0xFFB45309), Color(0xFFFEF3C7))
-        "processed", "approved"    -> Triple("Processed", Color(0xFF065F46), Color(0xFFD1FAE5))
-        else                       -> Triple("Draft",     Color(0xFF374151), Color(0xFFF3F4F6))
-    }
-    Surface(shape = RoundedCornerShape(6.dp), color = bg) {
-        Text(label, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = fg,
-            modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp))
+    when (status.lowercase()) {
+        "needs_review", "error" -> Surface(shape = RoundedCornerShape(6.dp), color = Color(0xFFFEF3C7)) {
+            Text("Please Review", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = Color(0xFFB45309),
+                modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp))
+        }
+        "scanning" -> Surface(shape = RoundedCornerShape(6.dp), color = Color(0xFFF3F4F6)) {
+            Text("Scanning", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = Color(0xFF6B7280),
+                modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp))
+        }
+        else -> {} // processed/approved — show nothing
     }
 }
 
 @Composable
 fun ReportStatusBadge(status: String) {
-    val (label, fg, bg) = when (status.lowercase()) {
-        "submitted" -> Triple("Submitted", Color(0xFF1E40AF), Color(0xFFDBEAFE))
-        "approved"  -> Triple("Approved",  Color(0xFF065F46), Color(0xFFD1FAE5))
-        else        -> Triple("Draft",     Color(0xFF374151), Color(0xFFF3F4F6))
-    }
-    Surface(shape = RoundedCornerShape(6.dp), color = bg) {
-        Text(label, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = fg,
-            modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp))
+    when (status.lowercase()) {
+        "submitted" -> Surface(shape = RoundedCornerShape(6.dp), color = Color(0xFFDBEAFE)) {
+            Text("Submitted", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = Color(0xFF1E40AF),
+                modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp))
+        }
+        "approved" -> Surface(shape = RoundedCornerShape(6.dp), color = Color(0xFFD1FAE5)) {
+            Text("Approved", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = Color(0xFF065F46),
+                modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp))
+        }
+        else -> {} // draft — show nothing
     }
 }
 
@@ -551,12 +586,24 @@ fun shortDate(isoStr: String): String {
         val d = ZonedDateTime.parse(isoStr, DateTimeFormatter.ISO_OFFSET_DATE_TIME).toLocalDate()
         val today = LocalDate.now()
         when {
-            d == today          -> "Today"
-            d == today.minusDays(1) -> "Yesterday"
-            d.isAfter(today.minusDays(7)) -> "${today.toEpochDay() - d.toEpochDay()}d ago"
-            else -> d.format(DateTimeFormatter.ofPattern("MMM d"))
+            d == today               -> "Today"
+            d == today.minusDays(1)  -> "Yesterday"
+            d.year == today.year     -> d.format(DateTimeFormatter.ofPattern("MMM d"))
+            else                     -> d.format(DateTimeFormatter.ofPattern("MMM d, yyyy"))
         }
-    } catch (e: Exception) { "" }
+    } catch (e: Exception) {
+        // Fallback for timestamps without timezone (e.g. "2026-02-21T10:30:00")
+        try {
+            val d = java.time.LocalDateTime.parse(isoStr).toLocalDate()
+            val today = LocalDate.now()
+            when {
+                d == today              -> "Today"
+                d == today.minusDays(1) -> "Yesterday"
+                d.year == today.year    -> d.format(DateTimeFormatter.ofPattern("MMM d"))
+                else                    -> d.format(DateTimeFormatter.ofPattern("MMM d, yyyy"))
+            }
+        } catch (e2: Exception) { "" }
+    }
 }
 
 // Old StatCard kept for compilation safety — not used on Home any more
