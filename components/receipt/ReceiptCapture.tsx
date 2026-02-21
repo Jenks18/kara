@@ -252,7 +252,7 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
     return (
       <ExpenseReportView
         images={submittedImages}
-        workspace="Terpmail's Workspace"
+        workspace="My Workspace"
         reportId={submittedImages[0]} // Pass a temp ID
         onBack={() => {
           // In production, this would navigate to the inbox/home

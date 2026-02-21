@@ -128,7 +128,7 @@ export default function NewWorkspacePage() {
             type="text"
             value={workspaceName}
             onChange={(e) => setWorkspaceName(e.target.value)}
-            placeholder="Terpmail's Workspace"
+            placeholder="My Workspace"
             className="
               w-full px-4 py-4
               bg-white

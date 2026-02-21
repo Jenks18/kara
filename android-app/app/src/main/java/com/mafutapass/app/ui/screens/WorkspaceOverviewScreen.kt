@@ -3,7 +3,12 @@ package com.mafutapass.app.ui.screens
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
+import android.graphics.Bitmap
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -21,6 +26,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -29,6 +36,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.qrcode.QRCodeWriter
 import com.mafutapass.app.data.Workspace
 import com.mafutapass.app.ui.theme.*
 import com.mafutapass.app.viewmodel.WorkspaceOverviewViewModel
@@ -52,9 +61,21 @@ fun WorkspaceOverviewScreen(
     var showEditDescDialog by remember { mutableStateOf(false) }
     var showEditCurrencyDialog by remember { mutableStateOf(false) }
     var showEditAddressDialog by remember { mutableStateOf(false) }
+    var showAvatarMenu by remember { mutableStateOf(false) }
 
-    var inviteInput by remember { mutableStateOf("") }
     val shareUrl = "https://web.kachalabs.com/workspaces/$workspaceId/join"
+    val inviteMessage = "Hey! Join me on Kacha — we're using it to track expenses and manage receipts. Join my workspace \"${workspace?.name ?: ""}\" here: $shareUrl"
+
+    // Image picker for workspace avatar
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let {
+            // For now, update avatar to the URI string — full upload would need multipart API
+            viewModel.updateField(workspaceId, "avatar", it.toString())
+            Toast.makeText(context, "Avatar updated", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     LaunchedEffect(workspaceId) {
         viewModel.loadWorkspace(workspaceId)
@@ -158,37 +179,60 @@ fun WorkspaceOverviewScreen(
                 }
             }
 
-            // Workspace Avatar
+            // Workspace Avatar with edit button
             Box(
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(96.dp)
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(
-                            Brush.linearGradient(
-                                colors = listOf(Blue500, Blue700)
+                Box {
+                    Box(
+                        modifier = Modifier
+                            .size(96.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(
+                                Brush.linearGradient(
+                                    colors = listOf(Blue500, Blue700)
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        val avatarUrl = ws.avatar
+                        if (avatarUrl != null && avatarUrl.startsWith("http")) {
+                            AsyncImage(
+                                model = avatarUrl,
+                                contentDescription = ws.name,
+                                modifier = Modifier
+                                    .size(96.dp)
+                                    .clip(RoundedCornerShape(20.dp))
                             )
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    val avatarUrl = ws.avatar
-                    if (avatarUrl != null && avatarUrl.startsWith("http")) {
-                        AsyncImage(
-                            model = avatarUrl,
-                            contentDescription = ws.name,
-                            modifier = Modifier
-                                .size(96.dp)
-                                .clip(RoundedCornerShape(20.dp))
-                        )
-                    } else {
-                        Text(
-                            text = ws.initials,
-                            style = MaterialTheme.typography.headlineLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = androidx.compose.ui.graphics.Color.White
+                        } else {
+                            Text(
+                                text = ws.initials,
+                                style = MaterialTheme.typography.headlineLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = androidx.compose.ui.graphics.Color.White
+                            )
+                        }
+                    }
+                    
+                    // Edit avatar button
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .offset(x = 4.dp, y = 4.dp)
+                            .size(32.dp)
+                            .background(
+                                MaterialTheme.colorScheme.surface,
+                                CircleShape
+                            )
+                            .clickable { showAvatarMenu = true },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Filled.Edit,
+                            contentDescription = "Change avatar",
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -275,63 +319,95 @@ fun WorkspaceOverviewScreen(
         )
     }
 
-    // ── Invite Dialog ──
+    // ── Invite via native share ──
     if (showInviteDialog) {
-        Dialog(onDismissRequest = { showInviteDialog = false }) {
+        LaunchedEffect(Unit) {
+            val sendIntent = Intent().apply {
+                action = Intent.ACTION_SEND
+                putExtra(Intent.EXTRA_TEXT, inviteMessage)
+                putExtra(Intent.EXTRA_SUBJECT, "Join ${workspace?.name ?: "my workspace"} on Kacha")
+                type = "text/plain"
+            }
+            val shareIntent = Intent.createChooser(sendIntent, "Invite to workspace")
+            context.startActivity(shareIntent)
+            showInviteDialog = false
+        }
+    }
+
+    // ── Avatar Menu Dialog ──
+    if (showAvatarMenu) {
+        Dialog(onDismissRequest = { showAvatarMenu = false }) {
             Surface(
                 shape = RoundedCornerShape(24.dp),
                 color = MaterialTheme.colorScheme.surface,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(24.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    Text(
+                        "Change workspace image",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                showAvatarMenu = false
+                                imagePickerLauncher.launch("image/*")
+                            },
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surface
                     ) {
-                        Text(
-                            "Invite new members",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        IconButton(onClick = { showInviteDialog = false }) {
-                            Icon(Icons.Filled.Close, "Close")
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Icon(Icons.Filled.Photo, null, tint = MaterialTheme.colorScheme.primary)
+                            Text("Choose from gallery", style = MaterialTheme.typography.bodyLarge)
                         }
                     }
-                    Text(
-                        "Add members to this workspace",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    
+                    if (workspace?.avatar?.startsWith("http") == true) {
+                        Spacer(Modifier.height(8.dp))
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    viewModel.updateField(workspaceId, "avatar", "")
+                                    showAvatarMenu = false
+                                    Toast.makeText(context, "Image removed", Toast.LENGTH_SHORT).show()
+                                },
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Icon(Icons.Filled.Delete, null, tint = MaterialTheme.colorScheme.error)
+                                Text("Remove image", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyLarge)
+                            }
+                        }
+                    }
+                    
                     Spacer(Modifier.height(16.dp))
-                    OutlinedTextField(
-                        value = inviteInput,
-                        onValueChange = { inviteInput = it },
-                        placeholder = { Text("Name, email, or phone number") },
+                    OutlinedButton(
+                        onClick = { showAvatarMenu = false },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
-                    )
-                    Spacer(Modifier.height(16.dp))
-                    Button(
-                        onClick = {
-                            if (inviteInput.isNotBlank()) {
-                                Toast.makeText(context, "Invite sent to: $inviteInput", Toast.LENGTH_SHORT).show()
-                                inviteInput = ""
-                                showInviteDialog = false
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                        shape = RoundedCornerShape(16.dp)
                     ) {
-                        Text("Next", fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(vertical = 8.dp))
+                        Text("Cancel")
                     }
                 }
             }
         }
     }
 
-    // ── Share Dialog ──
+    // ── Share Dialog with QR Code ──
     if (showShareDialog) {
         Dialog(onDismissRequest = { showShareDialog = false }) {
             Surface(
@@ -359,6 +435,26 @@ fun WorkspaceOverviewScreen(
                     }
                     Spacer(Modifier.height(16.dp))
 
+                    // QR Code
+                    val qrBitmap = remember(shareUrl) { generateQRCode(shareUrl) }
+                    if (qrBitmap != null) {
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = MaterialTheme.colorScheme.surface,
+                            border = androidx.compose.foundation.BorderStroke(4.dp, MaterialTheme.colorScheme.primary)
+                        ) {
+                            Image(
+                                bitmap = qrBitmap.asImageBitmap(),
+                                contentDescription = "QR Code",
+                                modifier = Modifier
+                                    .size(200.dp)
+                                    .padding(12.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+
                     Surface(
                         shape = RoundedCornerShape(12.dp),
                         color = MaterialTheme.colorScheme.primaryContainer
@@ -372,19 +468,42 @@ fun WorkspaceOverviewScreen(
 
                     Spacer(Modifier.height(16.dp))
 
-                    Button(
-                        onClick = {
-                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                            clipboard.setPrimaryClip(ClipData.newPlainText("Share URL", shareUrl))
-                            Toast.makeText(context, "Link copied to clipboard!", Toast.LENGTH_SHORT).show()
-                        },
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                        shape = RoundedCornerShape(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Icon(Icons.Filled.Share, null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text("Copy Link", fontWeight = FontWeight.SemiBold)
+                        Button(
+                            onClick = {
+                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                clipboard.setPrimaryClip(ClipData.newPlainText("Share URL", shareUrl))
+                                Toast.makeText(context, "Link copied to clipboard!", Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Filled.Share, null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("Copy Link", fontWeight = FontWeight.SemiBold)
+                        }
+                        
+                        OutlinedButton(
+                            onClick = {
+                                // Share via system share sheet
+                                val sendIntent = Intent().apply {
+                                    action = Intent.ACTION_SEND
+                                    putExtra(Intent.EXTRA_TEXT, shareUrl)
+                                    type = "text/plain"
+                                }
+                                context.startActivity(Intent.createChooser(sendIntent, "Share workspace"))
+                            },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Filled.Share, null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Share", fontWeight = FontWeight.SemiBold)
+                        }
                     }
                 }
             }

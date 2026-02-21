@@ -145,7 +145,8 @@ struct Workspace: Identifiable, Codable {
     }
     
     var avatarURL: URL? {
-        guard let avatarUrl = avatarUrl else { return nil }
+        guard let avatarUrl = avatarUrl,
+              avatarUrl.hasPrefix("http") else { return nil }
         return URL(string: avatarUrl)
     }
     

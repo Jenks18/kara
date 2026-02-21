@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import BottomNav from '@/components/navigation/BottomNav'
 import ExpenseItemCard from '@/components/expense/ExpenseItemCard'
 import CategoryPill from '@/components/ui/CategoryPill'
-import { FileText, RefreshCw, BadgeCheck } from 'lucide-react'
+import { FileText, RefreshCw, BadgeCheck, AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { formatCurrency } from '@/lib/currency'
 import Image from 'next/image'
@@ -171,60 +171,79 @@ export default function ReportsClient({ initialItems, initialReports, currency }
                 <p className="text-sm text-gray-500 mt-2">Upload a receipt to get started</p>
               </div>
             ) : (
-              expenseItems.map((item) => (
-                <div
-                  key={item.id}
-                  onClick={() => router.push(`/reports/${item.report_id}`)}
-                  className="bg-white rounded-2xl p-4 border border-gray-200 hover:border-blue-300 transition-colors cursor-pointer shadow-sm"
-                >
-                  {/* Receipt Image */}
-                  <div className="relative w-full h-48 rounded-lg overflow-hidden bg-gray-100 mb-3">
-                    <Image
-                      src={item.image_url}
-                      alt="Receipt"
-                      fill
-                      className="object-cover"
-                    />
+              expenseItems.map((item) => {
+                const needsReview = item.processing_status === 'error'
+                const isScanning = item.processing_status === 'scanning'
+                const accentClass = isScanning ? 'text-gray-400' : needsReview ? 'text-amber-600' : 'text-blue-600'
+
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => router.push(`/reports/${item.report_id}`)}
+                    className="bg-white rounded-2xl p-4 border border-gray-200 hover:border-blue-300 transition-colors cursor-pointer shadow-sm"
+                  >
+                    {/* Main row: icon · merchant+meta · amount+KRA */}
+                    <div className="flex items-start gap-3">
+                      {/* Category icon */}
+                      <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+                        <FileText className="w-[18px] h-[18px] text-blue-600" />
+                      </div>
+
+                      {/* Merchant + category/date */}
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-semibold truncate ${accentClass}`}>
+                          {item.merchant_name || 'Unknown Merchant'}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {item.category}
+                          {' · '}
+                          {new Date(item.transaction_date || item.created_at).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </p>
+                      </div>
+
+                      {/* Amount + KRA pill */}
+                      <div className="text-right flex-shrink-0">
+                        {isScanning ? (
+                          <span className="text-sm font-bold text-gray-400">Scanning...</span>
+                        ) : (
+                          <span className={`text-sm font-bold ${accentClass}`}>
+                            {formatCurrency(item.amount, currency)}
+                          </span>
+                        )}
+                        {item.kra_verified && (
+                          <div className="mt-1 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-blue-50 float-right">
+                            <CheckCircle2 className="w-2.5 h-2.5 text-blue-600" />
+                            <span className="text-[10px] font-semibold text-blue-600">KRA</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Review warning banner */}
+                    {needsReview && (
+                      <div className="mt-3 flex items-start gap-2 p-2 rounded-lg bg-amber-50 border border-amber-200/60">
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-600 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs font-semibold text-amber-600">Please Review</p>
+                          <p className="text-[11px] text-amber-600/80">Some fields may need correction.</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Scanning indicator */}
+                    {isScanning && (
+                      <div className="mt-3 flex items-center gap-2 p-2 rounded-lg bg-green-50">
+                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                        <span className="text-[11px] text-green-600">Scanning receipt...</span>
+                      </div>
+                    )}
                   </div>
-                  
-                  {/* Receipt Details */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-600">
-                        {item.merchant_name || 'Unknown Merchant'}
-                      </span>
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                        item.processing_status === 'processed' ? 'bg-blue-500/20 text-blue-700' :
-                        item.processing_status === 'error' ? 'bg-red-500/20 text-red-700' :
-                        'bg-amber-500/20 text-amber-700'
-                      }`}>
-                        {item.processing_status === 'processed' ? 'Processed' :
-                         item.processing_status === 'error' ? 'Review Required' :
-                         'Scanning'}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-500">
-                        {new Date(item.created_at).toLocaleDateString('en-US', { 
-                          year: 'numeric', 
-                          month: 'short', 
-                          day: 'numeric' 
-                        })}
-                      </span>
-                      <span className="text-lg font-bold text-gray-900">
-                        {formatCurrency(item.amount, currency)}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                        {item.category}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))
+                )
+              })
             )
           ) : (
             // Show grouped reports with their items

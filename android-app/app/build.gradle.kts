@@ -127,6 +127,9 @@ dependencies {
     // ML Kit Barcode Scanning (eTIMS QR codes)
     implementation("com.google.mlkit:barcode-scanning:17.3.0")
 
+    // ZXing QR code generation (workspace share QR codes)
+    implementation("com.google.zxing:core:3.5.3")
+
     // ML Kit Document Scanner (receipt boundary detection)
     implementation("com.google.android.gms:play-services-mlkit-document-scanner:16.0.0")
 

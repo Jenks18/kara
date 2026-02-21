@@ -3,7 +3,10 @@ package com.mafutapass.app.ui.screens
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
+import android.graphics.Bitmap
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,6 +20,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -46,8 +50,8 @@ fun WorkspaceMembersScreen(
     var showMoreMenu by remember { mutableStateOf(false) }
     var showShareDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
-    var inviteInput by remember { mutableStateOf("") }
     val shareUrl = "https://web.kachalabs.com/workspaces/$workspaceId/join"
+    val inviteMessage = "Hey! Join my workspace on Kacha. Click here to join: $shareUrl"
 
     // Fetch workspace and members
     LaunchedEffect(workspaceId) {
@@ -268,63 +272,20 @@ fun WorkspaceMembersScreen(
         }
     }
 
-    // ── Invite Dialog ──
+    // ── Invite via native share ──
     if (showInviteDialog) {
-        Dialog(onDismissRequest = { showInviteDialog = false }) {
-            Surface(
-                shape = RoundedCornerShape(24.dp),
-                color = MaterialTheme.colorScheme.surface,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(24.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            "Invite new members",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        IconButton(onClick = { showInviteDialog = false }) {
-                            Icon(Icons.Filled.Close, "Close")
-                        }
-                    }
-                    Text(
-                        "Add members to this workspace",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(Modifier.height(16.dp))
-                    OutlinedTextField(
-                        value = inviteInput,
-                        onValueChange = { inviteInput = it },
-                        placeholder = { Text("Name, email, or phone number") },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                    Spacer(Modifier.height(16.dp))
-                    Button(
-                        onClick = {
-                            if (inviteInput.isNotBlank()) {
-                                Toast.makeText(context, "Invite sent to: $inviteInput", Toast.LENGTH_SHORT).show()
-                                inviteInput = ""
-                                showInviteDialog = false
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Text("Next", fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(vertical = 8.dp))
-                    }
-                }
+        LaunchedEffect(Unit) {
+            val sendIntent = Intent().apply {
+                action = Intent.ACTION_SEND
+                putExtra(Intent.EXTRA_TEXT, inviteMessage)
+                type = "text/plain"
             }
+            context.startActivity(Intent.createChooser(sendIntent, "Invite to workspace"))
+            showInviteDialog = false
         }
     }
 
-    // ── Share Dialog ──
+    // ── Share Dialog with QR Code ──
     if (showShareDialog) {
         Dialog(onDismissRequest = { showShareDialog = false }) {
             Surface(
@@ -352,6 +313,26 @@ fun WorkspaceMembersScreen(
                     }
                     Spacer(Modifier.height(16.dp))
 
+                    // QR Code
+                    val qrBitmap = remember(shareUrl) { generateQRCode(shareUrl) }
+                    if (qrBitmap != null) {
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = MaterialTheme.colorScheme.surface,
+                            border = androidx.compose.foundation.BorderStroke(4.dp, MaterialTheme.colorScheme.primary)
+                        ) {
+                            Image(
+                                bitmap = qrBitmap.asImageBitmap(),
+                                contentDescription = "QR Code",
+                                modifier = Modifier
+                                    .size(200.dp)
+                                    .padding(12.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+
                     Surface(
                         shape = RoundedCornerShape(12.dp),
                         color = MaterialTheme.colorScheme.primaryContainer
@@ -365,19 +346,41 @@ fun WorkspaceMembersScreen(
 
                     Spacer(Modifier.height(16.dp))
 
-                    Button(
-                        onClick = {
-                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                            clipboard.setPrimaryClip(ClipData.newPlainText("Share URL", shareUrl))
-                            Toast.makeText(context, "Link copied to clipboard!", Toast.LENGTH_SHORT).show()
-                        },
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                        shape = RoundedCornerShape(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Icon(Icons.Filled.Share, null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text("Copy Link", fontWeight = FontWeight.SemiBold)
+                        Button(
+                            onClick = {
+                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                clipboard.setPrimaryClip(ClipData.newPlainText("Share URL", shareUrl))
+                                Toast.makeText(context, "Link copied to clipboard!", Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Filled.Share, null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("Copy Link", fontWeight = FontWeight.SemiBold)
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                val sendIntent = Intent().apply {
+                                    action = Intent.ACTION_SEND
+                                    putExtra(Intent.EXTRA_TEXT, shareUrl)
+                                    type = "text/plain"
+                                }
+                                context.startActivity(Intent.createChooser(sendIntent, "Share workspace"))
+                            },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Filled.Share, null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Share", fontWeight = FontWeight.SemiBold)
+                        }
                     }
                 }
             }

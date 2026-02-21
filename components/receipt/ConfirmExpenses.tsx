@@ -256,8 +256,8 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
                     T
                   </div>
                   <div className="text-left">
-                    <div className="text-gray-900 font-medium">Terpmail's Workspace</div>
-                    <div className="text-sm text-gray-600">Submits to injenga@terpmail.umd.edu</div>
+                    <div className="text-gray-900 font-medium">My Workspace</div>
+                    <div className="text-sm text-gray-600">Submit expenses to this workspace</div>
                   </div>
                 </div>
                 <ChevronRight size={20} className="text-gray-500" />

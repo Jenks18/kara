@@ -71,6 +71,8 @@ export async function POST(request: NextRequest) {
     }
 
     const { supabase, userId } = mobileClient;
+    
+    // Step 1: Insert the workspace
     const { data: workspace, error } = await supabase
       .from('workspaces')
       .insert({
@@ -86,6 +88,22 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('Error creating workspace:', error instanceof Error ? error.message : String(error));
+      
+      // If the error is with SELECT after INSERT (RLS timing), try fetching it
+      if (error.code === 'PGRST116' || error.message?.includes('rows')) {
+        const { data: workspaces } = await supabase
+          .from('workspaces')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('name', name)
+          .order('created_at', { ascending: false })
+          .limit(1);
+        
+        if (workspaces && workspaces.length > 0) {
+          return NextResponse.json({ workspace: workspaces[0] }, { status: 201, headers: corsHeaders });
+        }
+      }
+      
       return NextResponse.json(
         { error: 'Failed to create workspace', detail: error.message },
         { status: 500, headers: corsHeaders }

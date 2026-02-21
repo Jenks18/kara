@@ -31,6 +31,8 @@ export async function createWorkspace(
 ): Promise<{ success: boolean; workspace?: Workspace; error?: string }> {
   try {
     const supabase = await createServerClient()
+    
+    // Step 1: Insert the workspace
     const { data: workspace, error } = await supabase
       .from('workspaces')
       .insert({
@@ -46,6 +48,23 @@ export async function createWorkspace(
 
     if (error) {
       console.error('Error creating workspace:', error)
+      
+      // If the error is with SELECT after INSERT (RLS timing issue),
+      // the workspace was likely created. Try fetching all workspaces.
+      if (error.code === 'PGRST116' || error.message?.includes('rows')) {
+        const { data: workspaces } = await supabase
+          .from('workspaces')
+          .select('*')
+          .eq('user_id', data.userId)
+          .eq('name', data.name)
+          .order('created_at', { ascending: false })
+          .limit(1)
+        
+        if (workspaces && workspaces.length > 0) {
+          return { success: true, workspace: workspaces[0] }
+        }
+      }
+      
       return { success: false, error: error.message }
     }
 

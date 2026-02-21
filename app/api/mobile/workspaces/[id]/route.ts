@@ -114,11 +114,22 @@ export async function PATCH(
     const { supabase } = mobileClient;
 
     // Only allow specific fields to be updated
-    const allowedFields = ['name', 'avatar', 'avatar_url', 'currency', 'currency_symbol', 'description', 'address'];
+    // Accept both snake_case and camelCase from clients
+    const fieldMap: Record<string, string> = {
+      name: 'name',
+      avatar: 'avatar',
+      avatar_url: 'avatar_url',
+      currency: 'currency',
+      currency_symbol: 'currency_symbol',
+      currencySymbol: 'currency_symbol',
+      description: 'description',
+      address: 'address',
+    };
     const updates: Record<string, any> = {};
-    for (const field of allowedFields) {
-      if (field in body) {
-        updates[field] = body[field];
+    for (const [key, value] of Object.entries(body)) {
+      const dbField = fieldMap[key];
+      if (dbField) {
+        updates[dbField] = value;
       }
     }
 

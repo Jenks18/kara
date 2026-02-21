@@ -1,5 +1,6 @@
 import SwiftUI
 import PhotosUI
+import CoreImage.CIFilterBuiltins
 
 // MARK: - Workspace Detail View
 
@@ -671,46 +672,64 @@ struct MemberRow: View {
 
 struct InviteModal: View {
     let workspaceName: String
-    @State private var inviteInput = ""
     @Environment(\.dismiss) var dismiss
+    
+    private var shareMessage: String {
+        "Hey! Join me on Kacha — we're using it to track expenses and manage receipts. Join my workspace \"\(workspaceName)\" here: https://web.kachalabs.com"
+    }
     
     var body: some View {
         NavigationStack {
             ZStack {
                 AppTheme.backgroundView()
                 VStack(spacing: 24) {
-                    Text(workspaceName)
-                    .font(.system(size: 14))
-                    .foregroundColor(AppTheme.Colors.textSecondary)
-                
-                TextField("Name, email, or phone number", text: $inviteInput)
-                    .font(.system(size: 16))
-                    .padding(16)
-                    .background(AppTheme.Colors.cardSurface)
-                    .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(AppTheme.Colors.primary, lineWidth: 2)
-                    )
-                
-                Button(action: {
-                    // Send invite
-                    dismiss()
-                }) {
-                    Text("Next")
-                        .font(.system(size: 18, weight: .semibold))
+                    Text("Share an invite to \"\(workspaceName)\"")
+                        .font(.system(size: 16))
+                        .foregroundColor(AppTheme.Colors.textSecondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.top, 16)
+                    
+                    // Preview of the message
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Message preview")
+                            .font(.system(size: 12))
+                            .foregroundColor(AppTheme.Colors.textSecondary)
+                        Text(shareMessage)
+                            .font(.system(size: 14))
+                            .foregroundColor(AppTheme.Colors.textPrimary)
+                            .padding(16)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(AppTheme.Colors.cardSurface)
+                            .cornerRadius(12)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(AppTheme.Colors.primary.opacity(0.2), lineWidth: 1)
+                            )
+                    }
+                    
+                    // Share button that opens native share sheet
+                    ShareLink(
+                        item: shareMessage,
+                        subject: Text("Join \(workspaceName) on Kacha"),
+                        message: Text("Workspace invite")
+                    ) {
+                        HStack {
+                            Image(systemName: "square.and.arrow.up")
+                                .font(.system(size: 20))
+                            Text("Share Invite")
+                                .font(.system(size: 18, weight: .semibold))
+                        }
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
                         .background(AppTheme.Colors.primary)
                         .cornerRadius(16)
+                    }
+                    
+                    Spacer()
                 }
-                .disabled(inviteInput.isEmpty)
-                .opacity(inviteInput.isEmpty ? 0.5 : 1.0)
-                
-                Spacer()
+                .padding(24)
             }
-            .padding(24)
             .navigationTitle("Invite new members")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -721,7 +740,6 @@ struct InviteModal: View {
                     }
                 }
             }
-            } // ZStack
         }
     }
 }
@@ -730,10 +748,41 @@ struct ShareWorkspaceModal: View {
     let workspaceId: String
     let workspaceName: String
     @Environment(\.dismiss) var dismiss
+    @State private var copiedLink = false
     
     private var shareUrl: String {
-        // In production, use actual URL
         "https://web.kachalabs.com/workspaces/\(workspaceId)/join"
+    }
+    
+    /// Generate a QR code image from a string
+    private func generateQRCode(from string: String) -> UIImage {
+        let context = CIContext()
+        let filter = CIFilter.qrCodeGenerator()
+        filter.message = Data(string.utf8)
+        filter.correctionLevel = "M"
+        
+        if let outputImage = filter.outputImage {
+            // Scale up for crisp rendering
+            let transform = CGAffineTransform(scaleX: 10, y: 10)
+            let scaledImage = outputImage.transformed(by: transform)
+            
+            // Tint the QR code blue
+            let colorFilter = CIFilter.falseColor()
+            colorFilter.inputImage = scaledImage
+            colorFilter.color0 = CIColor(color: UIColor(red: 0, green: 0.4, blue: 1, alpha: 1)) // Blue
+            colorFilter.color1 = CIColor.white
+            
+            if let tintedImage = colorFilter.outputImage,
+               let cgImage = context.createCGImage(tintedImage, from: tintedImage.extent) {
+                return UIImage(cgImage: cgImage)
+            }
+            
+            if let cgImage = context.createCGImage(scaledImage, from: scaledImage.extent) {
+                return UIImage(cgImage: cgImage)
+            }
+        }
+        
+        return UIImage(systemName: "qrcode") ?? UIImage()
     }
     
     var body: some View {
@@ -741,78 +790,86 @@ struct ShareWorkspaceModal: View {
             ZStack {
                 AppTheme.backgroundView()
                 VStack(spacing: 24) {
-                    // QR Code placeholder
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.white)
-                    .frame(width: 200, height: 200)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(AppTheme.Colors.primary, lineWidth: 4)
-                    )
-                    .overlay(
-                        Text("QR Code")
+                    // QR Code
+                    let qrImage = generateQRCode(from: shareUrl)
+                    Image(uiImage: qrImage)
+                        .interpolation(.none)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 200, height: 200)
+                        .padding(16)
+                        .background(Color.white)
+                        .cornerRadius(16)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(AppTheme.Colors.primary, lineWidth: 4)
+                        )
+                        .padding(.vertical, 16)
+                    
+                    // Share URL
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Share link")
+                            .font(.system(size: 12))
                             .foregroundColor(AppTheme.Colors.textSecondary)
+                        Text(shareUrl)
+                            .font(.system(size: 14, design: .monospaced))
+                            .foregroundColor(AppTheme.Colors.textPrimary)
+                    }
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(AppTheme.Colors.cardSurface)
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(AppTheme.Colors.primary.opacity(0.2), lineWidth: 1)
                     )
-                    .padding(.vertical, 32)
-                
-                // Share URL
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Share link")
-                        .font(.system(size: 12))
-                        .foregroundColor(AppTheme.Colors.textSecondary)
-                    Text(shareUrl)
-                        .font(.system(size: 14, design: .monospaced))
-                        .foregroundColor(AppTheme.Colors.textPrimary)
-                }
-                .padding(16)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(AppTheme.Colors.cardSurface)
-                .cornerRadius(12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(AppTheme.Colors.primary.opacity(0.2), lineWidth: 1)
-                )
-                
-                // Action Buttons
-                HStack(spacing: 12) {
-                    Button(action: {
-                        UIPasteboard.general.string = shareUrl
-                    }) {
-                        HStack {
-                            Image(systemName: "square.and.arrow.up")
-                            Text("Copy Link")
+                    
+                    // Action Buttons
+                    HStack(spacing: 12) {
+                        Button(action: {
+                            UIPasteboard.general.string = shareUrl
+                            copiedLink = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                copiedLink = false
+                            }
+                        }) {
+                            HStack {
+                                Image(systemName: copiedLink ? "checkmark" : "square.and.arrow.up")
+                                Text(copiedLink ? "Copied!" : "Copy Link")
+                            }
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(AppTheme.Colors.primary)
+                            .cornerRadius(12)
                         }
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(AppTheme.Colors.primary)
-                        .cornerRadius(12)
+                        
+                        // Save QR to Photos
+                        Button(action: {
+                            UIImageWriteToSavedPhotosAlbum(qrImage, nil, nil, nil)
+                        }) {
+                            HStack {
+                                Image(systemName: "arrow.down")
+                                Text("Save QR")
+                            }
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(AppTheme.Colors.primary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(AppTheme.Colors.cardSurface)
+                            .cornerRadius(12)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(AppTheme.Colors.primary, lineWidth: 2)
+                            )
+                        }
                     }
                     
-                    Button(action: {
-                        // Download QR
-                    }) {
-                        HStack {
-                            Image(systemName: "arrow.down")
-                            Text("Download QR")
-                        }
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(AppTheme.Colors.primary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(AppTheme.Colors.cardSurface)
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(AppTheme.Colors.primary, lineWidth: 2)
-                        )
-                    }
+                    Spacer()
                 }
-                
-                Spacer()
+                .padding(24)
             }
-            .padding(24)
             .navigationTitle("Share workspace")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -823,7 +880,6 @@ struct ShareWorkspaceModal: View {
                     }
                 }
             }
-            } // ZStack
         }
     }
 }
@@ -899,29 +955,52 @@ struct EditWorkspaceDescriptionView: View {
     }
     
     var body: some View {
-        Form {
-            Section {
-                TextEditor(text: $description)
-                    .frame(minHeight: 100)
-            }
+        ZStack {
+            AppTheme.backgroundView()
             
-            Section {
+            VStack(spacing: 16) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Workspace description")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(AppTheme.Colors.textSecondary)
+                    
+                    TextEditor(text: $description)
+                        .font(.system(size: 16))
+                        .frame(minHeight: 120)
+                        .padding(12)
+                        .background(AppTheme.Colors.cardSurface)
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(AppTheme.Colors.primary, lineWidth: 2)
+                        )
+                        .shadow(color: .black.opacity(0.03), radius: 2, y: 1)
+                }
+                .padding(16)
+                
                 Button(action: {
-                    Task {
-                        await saveChanges()
-                    }
+                    Task { await saveChanges() }
                 }) {
-                    if isSaving {
-                        HStack {
-                            Spacer()
+                    Group {
+                        if isSaving {
                             ProgressView()
-                            Spacer()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        } else {
+                            Text("Save")
+                                .font(.system(size: 18, weight: .semibold))
                         }
-                    } else {
-                        Text("Save")
                     }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(AppTheme.Colors.primary)
+                    .cornerRadius(16)
                 }
                 .disabled(isSaving)
+                .opacity(isSaving ? 0.5 : 1.0)
+                .padding(.horizontal, 16)
+                
+                Spacer()
             }
         }
         .navigationTitle("Description")
@@ -1015,29 +1094,52 @@ struct EditWorkspaceAddressView: View {
     }
     
     var body: some View {
-        Form {
-            Section {
-                TextEditor(text: $address)
-                    .frame(minHeight: 100)
-            }
+        ZStack {
+            AppTheme.backgroundView()
             
-            Section {
+            VStack(spacing: 16) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Company address")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(AppTheme.Colors.textSecondary)
+                    
+                    TextEditor(text: $address)
+                        .font(.system(size: 16))
+                        .frame(minHeight: 120)
+                        .padding(12)
+                        .background(AppTheme.Colors.cardSurface)
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(AppTheme.Colors.primary, lineWidth: 2)
+                        )
+                        .shadow(color: .black.opacity(0.03), radius: 2, y: 1)
+                }
+                .padding(16)
+                
                 Button(action: {
-                    Task {
-                        await saveChanges()
-                    }
+                    Task { await saveChanges() }
                 }) {
-                    if isSaving {
-                        HStack {
-                            Spacer()
+                    Group {
+                        if isSaving {
                             ProgressView()
-                            Spacer()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        } else {
+                            Text("Save")
+                                .font(.system(size: 18, weight: .semibold))
                         }
-                    } else {
-                        Text("Save")
                     }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(AppTheme.Colors.primary)
+                    .cornerRadius(16)
                 }
                 .disabled(isSaving)
+                .opacity(isSaving ? 0.5 : 1.0)
+                .padding(.horizontal, 16)
+                
+                Spacer()
             }
         }
         .navigationTitle("Company Address")

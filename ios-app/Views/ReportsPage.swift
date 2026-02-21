@@ -162,197 +162,151 @@ struct ExpenseCardView: View {
     let expense: ExpenseItem
     @State private var isAnimating = false
     
-    var statusColor: Color {
-        switch expense.processing_status {
-        case "processed": return AppTheme.Colors.green500
-        case "scanning": return .gray
-        case "needs_review": return .orange
-        case "error": return .red
-        default: return .gray
-        }
+    /// Whether this item needs user attention
+    private var needsReview: Bool {
+        expense.processing_status == "needs_review" || expense.processing_status == "error"
     }
     
-    var statusIcon: String {
-        switch expense.processing_status {
-        case "processed": return "checkmark.circle.fill"
-        case "scanning": return "arrow.clockwise.circle.fill"
-        case "needs_review": return "exclamationmark.triangle.fill"
-        case "error": return "xmark.circle.fill"
-        default: return "circle.fill"
-        }
+    private var isScanning: Bool {
+        expense.processing_status == "scanning"
+    }
+    
+    /// Merchant/amount colour: blue normally, orange when review needed, gray when scanning
+    private var accentColor: Color {
+        if isScanning { return .gray.opacity(0.6) }
+        if needsReview { return .orange }
+        return AppTheme.Colors.primary
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Top row: Icon, Description, Amount
-            HStack(alignment: .top) {
-                Image(systemName: expense.processing_status == "scanning" ? "arrow.clockwise" : "doc.text")
-                    .font(.system(size: 20))
-                    .foregroundColor(expense.processing_status == "scanning" ? .gray : AppTheme.Colors.primary)
-                    .frame(width: 40, height: 40)
-                    .rotationEffect(.degrees(isAnimating && expense.processing_status == "scanning" ? 360 : 0))
-                    .animation(expense.processing_status == "scanning" ? Animation.linear(duration: 1.5).repeatForever(autoreverses: false) : .default, value: isAnimating)
-                    .onAppear {
-                        if expense.processing_status == "scanning" {
-                            isAnimating = true
-                        }
-                    }
+        VStack(alignment: .leading, spacing: 10) {
+            // ── Main row: icon · merchant+meta · amount+KRA ──────────
+            HStack(alignment: .top, spacing: 12) {
+                // Category icon
+                Image(systemName: isScanning ? "arrow.clockwise" : "doc.text")
+                    .font(.system(size: 18))
+                    .foregroundColor(isScanning ? .gray : AppTheme.Colors.primary)
+                    .frame(width: 36, height: 36)
                     .background(AppTheme.Colors.blueBadgeBg)
                     .cornerRadius(8)
+                    .rotationEffect(.degrees(isAnimating && isScanning ? 360 : 0))
+                    .animation(isScanning ? Animation.linear(duration: 1.5).repeatForever(autoreverses: false) : .default, value: isAnimating)
+                    .onAppear { if isScanning { isAnimating = true } }
                 
-                VStack(alignment: .leading, spacing: 4) {
+                // Merchant + category/date
+                VStack(alignment: .leading, spacing: 3) {
                     Text(expense.merchant_name ?? expense.description ?? "Expense")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(expense.processing_status == "scanning" ? .gray.opacity(0.6) : (expense.processing_status == "needs_review" ? Color.orange : .black))
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(accentColor)
+                        .lineLimit(1)
                     
-                    HStack(spacing: 8) {
+                    HStack(spacing: 6) {
                         Text(expense.category.capitalized)
-                            .font(.system(size: 13))
-                            .foregroundColor(.gray)
+                            .font(.system(size: 12))
+                            .foregroundColor(AppTheme.Colors.textSecondary)
                         
-                        Text("•")
-                            .foregroundColor(.gray)
+                        Text("·")
+                            .font(.system(size: 12))
+                            .foregroundColor(AppTheme.Colors.textSecondary)
                         
-                        Text(formatDate(expense.created_at))
-                            .font(.system(size: 13))
-                            .foregroundColor(.gray)
+                        Text(formatDate(expense.transaction_date ?? expense.created_at))
+                            .font(.system(size: 12))
+                            .foregroundColor(AppTheme.Colors.textSecondary)
                     }
                 }
                 
                 Spacer()
                 
+                // Amount + KRA pill
                 VStack(alignment: .trailing, spacing: 4) {
-                    if expense.processing_status == "scanning" {
+                    if isScanning {
                         Text("Scanning...")
-                            .font(.system(size: 17, weight: .bold))
-                            .foregroundColor(.gray.opacity(0.6))
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundColor(.gray.opacity(0.5))
                             .opacity(isAnimating ? 0.4 : 1.0)
                             .animation(Animation.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: isAnimating)
                     } else {
                         Text(CurrencyFormatter.shared.formatSimple(expense.amount))
-                            .font(.system(size: 17, weight: .bold))
-                            .foregroundColor(expense.processing_status == "needs_review" ? Color.orange : AppTheme.Colors.primary)
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundColor(accentColor)
                     }
                     
-                    // KRA Verified Pill (keep this!)
                     if expense.kra_verified == true {
-                        HStack(spacing: 4) {
+                        HStack(spacing: 3) {
                             Image(systemName: "checkmark.seal.fill")
-                                .font(.system(size: 10))
+                                .font(.system(size: 9))
                             Text("KRA")
-                                .font(.system(size: 11, weight: .medium))
+                                .font(.system(size: 10, weight: .semibold))
                         }
                         .foregroundColor(AppTheme.Colors.primary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
                         .background(AppTheme.Colors.blueBadgeBg)
-                        .cornerRadius(8)
+                        .cornerRadius(6)
                     }
                 }
             }
             
-            // Receipt image if available
-            if let imageUrl = expense.image_url, !imageUrl.isEmpty {
-                AsyncImage(url: URL(string: imageUrl)) { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                } placeholder: {
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.2))
-                }
-                .frame(height: 120)
-                .cornerRadius(8)
-                .clipped()
-            }
-            
-            // Status badge (show for non-processed items)
-            if expense.processing_status != "processed" {
-                HStack(spacing: 4) {
-                    Image(systemName: statusIcon)
-                        .font(.system(size: 10))
-                    Text(statusText)
-                        .font(.system(size: 12, weight: .medium))
-                }
-                .foregroundColor(.white)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
-                .background(statusColor)
-                .cornerRadius(8)
-            }
-            
-            // Review warning for needs_review status
-            if expense.processing_status == "needs_review" {
+            // ── Review warning banner ────────────────────────────────
+            if needsReview {
                 HStack(alignment: .top, spacing: 8) {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundColor(.orange)
-                        .font(.system(size: 14))
-                    VStack(alignment: .leading, spacing: 2) {
+                        .font(.system(size: 13))
+                    VStack(alignment: .leading, spacing: 1) {
                         Text("Please Review")
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(.orange)
-                        Text("Some fields were unclear. Tap to edit if incorrect.")
+                        Text("Some fields may need correction.")
                             .font(.system(size: 11))
                             .foregroundColor(.orange.opacity(0.8))
                     }
                     Spacer()
                 }
-                .padding(10)
-                .background(Color.orange.opacity(0.1))
+                .padding(8)
+                .background(Color.orange.opacity(0.08))
                 .cornerRadius(8)
                 .overlay(
                     RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+                        .stroke(Color.orange.opacity(0.25), lineWidth: 1)
                 )
             }
             
-            // Scanning indicator
-            if expense.processing_status == "scanning" {
-                HStack(spacing: 8) {
+            // ── Scanning indicator ───────────────────────────────────
+            if isScanning {
+                HStack(spacing: 6) {
                     Circle()
                         .fill(AppTheme.Colors.green500)
-                        .frame(width: 8, height: 8)
+                        .frame(width: 6, height: 6)
                         .opacity(isAnimating ? 0.3 : 1.0)
                         .animation(Animation.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: isAnimating)
                     Text("Scanning receipt...")
-                        .font(.system(size: 12))
+                        .font(.system(size: 11))
                         .foregroundColor(AppTheme.Colors.green500)
-                    Spacer()
                 }
-                .padding(10)
-                .background(AppTheme.Colors.green500.opacity(0.1))
+                .padding(8)
+                .background(AppTheme.Colors.green500.opacity(0.08))
                 .cornerRadius(8)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(AppTheme.Colors.green500.opacity(0.3), lineWidth: 1)
-                )
             }
         }
-        .padding(16)
+        .padding(14)
         .background(AppTheme.Colors.cardSurface)
         .cornerRadius(12)
-        .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
-    }
-    
-    var statusText: String {
-        switch expense.processing_status {
-        case "processed": return "Processed"
-        case "scanning": return "Scanning"
-        case "needs_review": return "Review"
-        case "error": return "Error"
-        default: return expense.processing_status
-        }
+        .shadow(color: .black.opacity(0.06), radius: 3, y: 1)
     }
     
     private func formatDate(_ dateString: String?) -> String {
-        guard let dateString = dateString else { return "N/A" }
-        let formatter = ISO8601DateFormatter()
-        if let date = formatter.date(from: dateString) {
-            let displayFormatter = DateFormatter()
-            displayFormatter.dateFormat = "MMM d"
-            return displayFormatter.string(from: date)
-        }
-        return dateString
+        guard let dateString = dateString else { return "" }
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let date = iso.date(from: dateString) ?? {
+            let basic = ISO8601DateFormatter()
+            return basic.date(from: dateString)
+        }()
+        guard let parsed = date else { return dateString.prefix(10).description }
+        let fmt = DateFormatter()
+        fmt.dateFormat = "MMM d, yyyy"
+        return fmt.string(from: parsed)
     }
 }
 

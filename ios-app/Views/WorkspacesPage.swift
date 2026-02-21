@@ -495,7 +495,7 @@ struct NewWorkspaceView: View {
                                     .font(.system(size: 14, weight: .medium))
                                     .foregroundColor(AppTheme.Colors.textSecondary)
                                 
-                                TextField("Terpmail's Workspace", text: $workspaceName)
+                                TextField("My Workspace", text: $workspaceName)
                                     .font(.system(size: 16))
                                     .padding(16)
                                     .background(AppTheme.Colors.cardSurface)

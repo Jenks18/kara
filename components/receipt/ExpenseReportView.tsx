@@ -44,7 +44,7 @@ export default function ExpenseReportView({ images, workspace, reportId, onBack 
                 <span className="text-gray-900 font-medium">injenga's expenses</span>
                 <ChevronDown size={16} className="text-gray-500" />
               </div>
-              <span className="text-xs text-gray-600">Terpmail's Workspace</span>
+              <span className="text-xs text-gray-600">My Workspace</span>
             </div>
           </div>
 
@@ -57,11 +57,11 @@ export default function ExpenseReportView({ images, workspace, reportId, onBack 
         <div className="flex-1 overflow-y-auto px-4 py-6">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Welcome to Terpmail's Workspace!
+              Welcome to your Workspace!
             </h1>
             <p className="text-gray-600 text-sm">
-              This is where <span className="text-gray-900 font-medium">injenga@terpmail.umd.edu</span> will
-              submit expenses to <span className="text-gray-900 font-medium">Terpmail's Workspace</span>. Just
+              This is where you will
+              submit expenses to <span className="text-gray-900 font-medium">your workspace</span>. Just
               use the + button.
             </p>
           </div>
@@ -78,7 +78,7 @@ export default function ExpenseReportView({ images, workspace, reportId, onBack 
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-gray-900 font-medium text-sm">injenga@terpmail.umd.edu</span>
+                <span className="text-gray-900 font-medium text-sm">You</span>
                 <span className="text-xs text-gray-500">Today at {new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
               </div>
 

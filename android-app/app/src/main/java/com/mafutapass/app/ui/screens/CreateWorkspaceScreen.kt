@@ -139,7 +139,7 @@ fun CreateWorkspaceScreen(
                 OutlinedTextField(
                     value = workspaceName,
                     onValueChange = { workspaceName = it },
-                    placeholder = { Text("Terpmail's Workspace") },
+                    placeholder = { Text("My Workspace") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),

@@ -320,59 +320,58 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
         </div>
       </div>
 
-      {/* Invite Modal */}
+      {/* Invite Modal — uses Web Share API with fallback */}
       {showInviteModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
           <div className="w-full max-w-md bg-white rounded-3xl p-6 space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">Invite via SMS</h2>
+              <h2 className="text-xl font-bold text-gray-900">Invite Members</h2>
               <button onClick={() => { setShowInviteModal(false); setInviteLink(''); setInviteInput('') }} className="p-2 hover:bg-gray-100 rounded-full">
                 <X size={20} className="text-gray-600" />
               </button>
             </div>
-            <p className="text-sm text-gray-600">Enter a phone number — we&apos;ll open your messaging app with the invite link.</p>
+            <p className="text-sm text-gray-600">Share a link to invite people to this workspace.</p>
 
             {!inviteLink ? (
-              <>
-                <input
-                  type="tel"
-                  value={inviteInput}
-                  onChange={(e) => setInviteInput(e.target.value)}
-                  placeholder="+254 712 345 678"
-                  className="w-full px-4 py-3 border-2 border-blue-500 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-blue-600"
-                />
-                <button
-                  disabled={inviteSending || !inviteInput.trim()}
-                  onClick={async () => {
-                    setInviteSending(true)
-                    try {
-                      const res = await fetch(`/api/workspaces/${workspaceId}/invites`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ contact: inviteInput.trim() }),
-                      })
-                      const data = await res.json()
-                      if (!res.ok) { showToast(data.error || 'Failed to create invite', 'error'); return }
-                      const url = data.inviteUrl as string
-                      setInviteLink(url)
-                      const smsBody = encodeURIComponent(`Join my workspace "${data.workspaceName || 'Kacha'}" on Kacha:\n${url}`)
-                      const phone = inviteInput.trim().replace(/\s+/g, '')
-                      window.open(`sms:${phone}?&body=${smsBody}`, '_self')
-                      showToast('SMS composer opened', 'success')
-                    } catch {
-                      showToast('Something went wrong', 'error')
-                    } finally {
-                      setInviteSending(false)
+              <button
+                disabled={inviteSending}
+                onClick={async () => {
+                  setInviteSending(true)
+                  try {
+                    const res = await fetch(`/api/workspaces/${workspaceId}/invites`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ contact: 'share' }),
+                    })
+                    const data = await res.json()
+                    if (!res.ok) { showToast(data.error || 'Failed to create invite', 'error'); return }
+                    const url = data.inviteUrl as string
+                    setInviteLink(url)
+                    const shareText = `Join my workspace "${data.workspaceName || 'Kacha'}" on Kacha:\n${url}`
+                    if (typeof navigator !== 'undefined' && navigator.share) {
+                      try {
+                        await navigator.share({ title: 'Join my workspace on Kacha', text: shareText, url })
+                        showToast('Shared successfully!', 'success')
+                      } catch {
+                        // User cancelled share — still show the link
+                      }
+                    } else {
+                      await navigator.clipboard.writeText(url)
+                      showToast('Invite link copied to clipboard!', 'success')
                     }
-                  }}
-                  className="w-full py-4 bg-[#0066FF] disabled:opacity-50 text-white font-semibold rounded-2xl active:scale-[0.98] transition-all"
-                >
-                  {inviteSending ? 'Creating invite...' : 'Send via SMS'}
-                </button>
-              </>
+                  } catch {
+                    showToast('Something went wrong', 'error')
+                  } finally {
+                    setInviteSending(false)
+                  }
+                }}
+                className="w-full py-4 bg-[#0066FF] disabled:opacity-50 text-white font-semibold rounded-2xl active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+              >
+                <Share2 size={18} />
+                {inviteSending ? 'Creating invite...' : 'Share Invite Link'}
+              </button>
             ) : (
               <div className="space-y-4">
-                <p className="text-sm text-gray-600">If the messaging app didn&apos;t open, copy the link below and send it manually:</p>
                 <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl">
                   <input readOnly value={inviteLink} className="flex-1 bg-transparent text-sm text-gray-700 outline-none truncate" />
                   <button
@@ -380,6 +379,18 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
                     className="px-3 py-1.5 bg-[#0066FF] text-white text-xs font-semibold rounded-lg flex-shrink-0"
                   >Copy</button>
                 </div>
+                {typeof navigator !== 'undefined' && navigator.share && (
+                  <button
+                    onClick={async () => {
+                      try {
+                        await navigator.share({ title: 'Join my workspace on Kacha', text: `Join my workspace on Kacha:\n${inviteLink}`, url: inviteLink })
+                      } catch { /* cancelled */ }
+                    }}
+                    className="w-full py-3 bg-gray-100 text-gray-700 font-medium rounded-2xl active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                  >
+                    <Share2 size={16} /> Share Again
+                  </button>
+                )}
                 <button
                   onClick={() => { setInviteLink(''); setInviteInput(''); setShowInviteModal(false) }}
                   className="w-full py-3 border border-gray-200 text-gray-700 font-medium rounded-2xl active:scale-[0.98] transition-all"
