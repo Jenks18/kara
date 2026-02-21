@@ -33,23 +33,36 @@ export async function verifyAndExtractUser(
     return mobileResult;
   }
 
-  // Secondary: Clerk-issued JWT (backward compat for existing sessions)
-  try {
-    const secretKey = process.env.CLERK_SECRET_KEY;
-    if (secretKey) {
-      const payload = await verifyToken(token, { secretKey });
-      const userId = payload.sub;
-      if (!userId) return null;
+  // Secondary: Clerk-issued JWT (iOS SDK sends RS256 session tokens)
+  const secretKey = process.env.CLERK_SECRET_KEY;
+  if (secretKey) {
+    // Step 1: Verify Clerk JWT signature via JWKS
+    let payload: any;
+    try {
+      payload = await verifyToken(token, { secretKey });
+    } catch (verifyErr: any) {
+      console.error('❌ Clerk verifyToken failed:', verifyErr?.message || verifyErr);
+      // Token is not valid — fall through to final rejection
+    }
 
-      const clerk = await clerkClient();
-      const user = await clerk.users.getUser(userId);
-      const email = user.emailAddresses?.[0]?.emailAddress;
-      if (!email) return null;
+    if (payload?.sub) {
+      const userId = payload.sub as string;
+
+      // Step 2: Get email — try Clerk API, fall back to empty string
+      // (RLS only needs sub, not email — don't fail auth over email lookup)
+      let email = '';
+      try {
+        const clerk = await clerkClient();
+        const user = await clerk.users.getUser(userId);
+        email = user.emailAddresses?.[0]?.emailAddress || '';
+      } catch (userErr: any) {
+        console.warn('⚠️ Clerk getUser lookup failed (non-fatal):', userErr?.message || userErr);
+      }
 
       return { userId, email };
     }
-  } catch {
-    // Not a Clerk JWT either
+  } else {
+    console.error('❌ CLERK_SECRET_KEY not configured — cannot verify Clerk iOS tokens');
   }
 
   console.warn('❌ Token verification failed: not a valid mobile or Clerk JWT');
