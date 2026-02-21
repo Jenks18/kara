@@ -19,12 +19,13 @@ class API {
         return tokenResource.jwt
     }
     
-    private func makeAuthenticatedRequest(url: URL, method: String = "GET", body: Data? = nil, _retryCount: Int = 0) async throws -> Data {
+    private func makeAuthenticatedRequest(url: URL, method: String = "GET", body: Data? = nil) async throws -> Data {
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        // Add Clerk JWT token
+        // Clerk iOS SDK handles token refresh internally.
+        // getToken() returns a valid, fresh JWT every time the session is active.
         let token = try await getClerkToken()
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         
@@ -36,17 +37,6 @@ class API {
         
         guard let httpResponse = response as? HTTPURLResponse else {
             throw APIError.invalidResponse
-        }
-        
-        // Retry once on 401 — Clerk session token may still be warming up
-        // (race between MafutaPassApp.task session validation and first API call).
-        if httpResponse.statusCode == 401, _retryCount < 2 {
-            #if DEBUG
-            print("⚠️ API 401 on \(url.path), retry #\(_retryCount + 1) after brief delay...")
-            #endif
-            try? await Task.sleep(nanoseconds: 600_000_000) // 0.6s
-            guard !Task.isCancelled else { throw CancellationError() }
-            return try await makeAuthenticatedRequest(url: url, method: method, body: body, _retryCount: _retryCount + 1)
         }
         
         guard (200...299).contains(httpResponse.statusCode) else {

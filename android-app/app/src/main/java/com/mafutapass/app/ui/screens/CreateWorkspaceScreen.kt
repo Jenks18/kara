@@ -33,14 +33,45 @@ fun CreateWorkspaceScreen(
     var workspaceName by remember { mutableStateOf("") }
     var currencyCode by remember { mutableStateOf("KES") }
     var currencySymbol by remember { mutableStateOf("KSh") }
-    var isCreating by remember { mutableStateOf(false) }
     var showCurrencyPicker by remember { mutableStateOf(false) }
 
+    val createState by viewModel.createState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Navigate on success, show error on failure
+    LaunchedEffect(createState) {
+        when (val state = createState) {
+            is WorkspacesViewModel.CreateState.Success -> {
+                viewModel.resetCreateState()
+                onCreated()
+            }
+            is WorkspacesViewModel.CreateState.Error -> {
+                snackbarHostState.showSnackbar(
+                    message = state.message,
+                    duration = SnackbarDuration.Long
+                )
+                viewModel.resetCreateState()
+            }
+            else -> {}
+        }
+    }
+
+    // Reset creation state when leaving the screen
+    DisposableEffect(Unit) {
+        onDispose { viewModel.resetCreateState() }
+    }
+
+    val isCreating = createState is WorkspacesViewModel.CreateState.Loading
     val displayAvatar = workspaceName.firstOrNull()?.uppercase() ?: "W"
 
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = androidx.compose.ui.graphics.Color.Transparent
+    ) { innerPadding ->
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .padding(innerPadding)
             .background(AppTheme.colors.backgroundGradient)
     ) {
         // Header
@@ -167,9 +198,7 @@ fun CreateWorkspaceScreen(
             Button(
                 onClick = {
                     if (workspaceName.isNotBlank() && !isCreating) {
-                        isCreating = true
                         viewModel.createWorkspace(workspaceName.trim(), currencyCode, currencySymbol)
-                        onCreated()
                     }
                 },
                 modifier = Modifier
@@ -181,6 +210,14 @@ fun CreateWorkspaceScreen(
                     containerColor = MaterialTheme.colorScheme.primary
                 )
             ) {
+                if (isCreating) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                    Spacer(Modifier.width(8.dp))
+                }
                 Text(
                     text = if (isCreating) "Creating..." else "Confirm",
                     fontWeight = FontWeight.SemiBold,
@@ -190,6 +227,7 @@ fun CreateWorkspaceScreen(
             }
         }
     }
+    } // Scaffold
 
     // Currency Picker Dialog
     if (showCurrencyPicker) {

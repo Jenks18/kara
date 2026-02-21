@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mafutapass.app.data.ApiService
+import com.mafutapass.app.data.CreateWorkspaceRequest
 import com.mafutapass.app.data.Workspace
 import com.mafutapass.app.data.WorkspaceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -11,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
 import javax.inject.Inject
 
 @HiltViewModel
@@ -24,15 +26,22 @@ class WorkspacesViewModel @Inject constructor(
     val isLoaded: StateFlow<Boolean> = workspaceRepository.isLoaded
 
     init {
-        // Always trigger a fresh fetch on ViewModel creation.  Because Hilt
-        // scopes this VM to the NavBackStackEntry AND AuthViewModel wraps the
-        // entire SignedIn branch with key(sessionKey), a new instance is
-        // created on every login session — guaranteeing fresh data per user.
         workspaceRepository.refresh()
     }
 
     private val _isDeleting = MutableStateFlow<String?>(null)
     val isDeleting: StateFlow<String?> = _isDeleting.asStateFlow()
+
+    // ── Workspace creation state ──
+    sealed class CreateState {
+        data object Idle : CreateState()
+        data object Loading : CreateState()
+        data class Success(val workspace: Workspace) : CreateState()
+        data class Error(val message: String) : CreateState()
+    }
+
+    private val _createState = MutableStateFlow<CreateState>(CreateState.Idle)
+    val createState: StateFlow<CreateState> = _createState.asStateFlow()
 
     fun refresh() {
         workspaceRepository.refresh()
@@ -45,7 +54,7 @@ class WorkspacesViewModel @Inject constructor(
                 apiService.deleteWorkspace(id)
                 workspaceRepository.refresh()
             } catch (e: Exception) {
-                // Silent failure — could add error state
+                Log.e(TAG, "❌ Failed to delete workspace: ${e.message}", e)
             } finally {
                 _isDeleting.value = null
             }
@@ -54,9 +63,10 @@ class WorkspacesViewModel @Inject constructor(
 
     fun createWorkspace(name: String, currency: String = "KES", currencySymbol: String = "KSh") {
         viewModelScope.launch {
+            _createState.value = CreateState.Loading
             try {
                 val response = apiService.createWorkspace(
-                    com.mafutapass.app.data.CreateWorkspaceRequest(
+                    CreateWorkspaceRequest(
                         name = name,
                         currency = currency,
                         currencySymbol = currencySymbol
@@ -64,9 +74,25 @@ class WorkspacesViewModel @Inject constructor(
                 )
                 Log.d(TAG, "✅ Created workspace: ${response.workspace.name}")
                 workspaceRepository.refresh()
+                _createState.value = CreateState.Success(response.workspace)
+            } catch (e: HttpException) {
+                val errorBody = e.response()?.errorBody()?.string() ?: "No details"
+                Log.e(TAG, "❌ Create workspace HTTP ${e.code()}: $errorBody", e)
+                _createState.value = CreateState.Error(
+                    when (e.code()) {
+                        401 -> "Authentication failed. Please sign out and sign in again."
+                        400 -> "Invalid workspace data: $errorBody"
+                        else -> "Server error (${e.code()}). Please try again."
+                    }
+                )
             } catch (e: Exception) {
                 Log.e(TAG, "❌ Failed to create workspace: ${e.message}", e)
+                _createState.value = CreateState.Error(e.message ?: "Failed to create workspace")
             }
         }
+    }
+
+    fun resetCreateState() {
+        _createState.value = CreateState.Idle
     }
 }
