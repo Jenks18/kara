@@ -79,7 +79,7 @@ fun AboutScreen(onBack: () -> Unit, onNavigateToReportBug: () -> Unit = {}) {
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
                         textDecoration = TextDecoration.Underline,
-                        modifier = Modifier.clickable { uriHandler.openUri("https://www.kachalabs.com/terms-of-service") }
+                        modifier = Modifier.clickable { uriHandler.openUri("https://kachalabs.com/terms-of-service") }
                     )
                     Text(" and ", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(
@@ -87,7 +87,7 @@ fun AboutScreen(onBack: () -> Unit, onNavigateToReportBug: () -> Unit = {}) {
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
                         textDecoration = TextDecoration.Underline,
-                        modifier = Modifier.clickable { uriHandler.openUri("https://www.kachalabs.com/privacy-policy") }
+                        modifier = Modifier.clickable { uriHandler.openUri("https://kachalabs.com/privacy-policy") }
                     )
                     Text(".", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }

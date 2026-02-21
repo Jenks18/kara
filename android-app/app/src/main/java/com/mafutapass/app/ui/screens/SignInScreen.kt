@@ -653,7 +653,7 @@ fun KachaLandingScreen(
                     color = Color.White.copy(alpha = 0.65f),
                     textDecoration = TextDecoration.Underline,
                     modifier = Modifier.clickable {
-                        uriHandler.openUri("https://www.kachalabs.com/terms-of-service")
+                        uriHandler.openUri("https://kachalabs.com/terms-of-service")
                     }
                 )
                 Text(
@@ -667,7 +667,7 @@ fun KachaLandingScreen(
                     color = Color.White.copy(alpha = 0.65f),
                     textDecoration = TextDecoration.Underline,
                     modifier = Modifier.clickable {
-                        uriHandler.openUri("https://www.kachalabs.com/privacy-policy")
+                        uriHandler.openUri("https://kachalabs.com/privacy-policy")
                     }
                 )
             }

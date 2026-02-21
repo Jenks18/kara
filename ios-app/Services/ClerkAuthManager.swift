@@ -5,7 +5,7 @@ import Clerk
 // MARK: - Configuration
 struct ClerkConfig {
     static let publishableKey = "pk_live_Y2xlcmsua2FjaGFsYWJzLmNvbSQ"
-    static let baseAPIURL     = "https://www.kachalabs.com/api"
+    static let baseAPIURL     = "https://web.kachalabs.com/api"
     /// Called after sign-up to create the Supabase profile row (same as Android Step 2)
     static let profileURL     = "\(baseAPIURL)/auth/create-profile"
 }

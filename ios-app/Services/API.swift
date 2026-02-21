@@ -8,12 +8,26 @@ import Clerk
 // the backend which mints Supabase-compatible JWTs from the Clerk token.
 class API {
     static let shared = API()
-    private let baseURL = "https://www.kachalabs.com/api"
+    private let baseURL = "https://web.kachalabs.com/api"
     
     // MARK: - Helper to get Clerk JWT token
     
     private func getClerkToken() async throws -> String {
-        // Use the Clerk iOS SDK — handles TLS, token refresh, and session management
+        // Wait for Clerk session to become available (covers cold-start where
+        // clerk.load() hasn't finished yet). Polls every 200ms for up to 5s.
+        // After that, throws notAuthenticated so callers surface an error
+        // instead of hanging forever.
+        let maxWait: TimeInterval = 5.0
+        let pollInterval: UInt64 = 200_000_000 // 200ms
+        let start = Date()
+        
+        while Clerk.shared.session == nil {
+            if Date().timeIntervalSince(start) > maxWait {
+                throw APIError.notAuthenticated
+            }
+            try await Task.sleep(nanoseconds: pollInterval)
+        }
+        
         guard let session = Clerk.shared.session else { throw APIError.notAuthenticated }
         guard let tokenResource = try await session.getToken() else { throw APIError.notAuthenticated }
         return tokenResource.jwt

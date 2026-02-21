@@ -54,7 +54,7 @@ fun WorkspaceOverviewScreen(
     var showEditAddressDialog by remember { mutableStateOf(false) }
 
     var inviteInput by remember { mutableStateOf("") }
-    val shareUrl = "https://www.kachalabs.com/workspaces/$workspaceId/join"
+    val shareUrl = "https://web.kachalabs.com/workspaces/$workspaceId/join"
 
     LaunchedEffect(workspaceId) {
         viewModel.loadWorkspace(workspaceId)

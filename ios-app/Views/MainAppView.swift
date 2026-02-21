@@ -53,11 +53,8 @@ struct MainAppView: View {
             dataStore.seed()
         }
         .task {
-            // Structured async refresh — SwiftUI manages cancellation properly.
-            // Brief delay lets Clerk finish session validation (MafutaPassApp.task)
-            // so API calls use a valid, non-stale token.
-            try? await Task.sleep(nanoseconds: 300_000_000)
-            guard !Task.isCancelled else { return }
+            // Refresh data on launch. API.getClerkToken() internally waits
+            // for Clerk session readiness, so no sleep hack needed.
             await dataStore.refreshAll()
         }
         // Presentations at root level — guaranteed UIViewController context

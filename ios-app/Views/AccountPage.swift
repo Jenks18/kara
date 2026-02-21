@@ -1596,7 +1596,7 @@ struct AboutPage: View {
                             .font(.system(size: 14))
                             .foregroundColor(AppTheme.Colors.textSecondary)
                         Button(action: {
-                            if let url = URL(string: "https://www.kachalabs.com/terms-of-service") {
+                            if let url = URL(string: "https://kachalabs.com/terms-of-service") {
                                 UIApplication.shared.open(url)
                             }
                         }) {
@@ -1609,7 +1609,7 @@ struct AboutPage: View {
                             .font(.system(size: 14))
                             .foregroundColor(AppTheme.Colors.textSecondary)
                         Button(action: {
-                            if let url = URL(string: "https://www.kachalabs.com/privacy-policy") {
+                            if let url = URL(string: "https://kachalabs.com/privacy-policy") {
                                 UIApplication.shared.open(url)
                             }
                         }) {

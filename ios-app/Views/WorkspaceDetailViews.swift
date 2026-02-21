@@ -733,7 +733,7 @@ struct ShareWorkspaceModal: View {
     
     private var shareUrl: String {
         // In production, use actual URL
-        "https://www.kachalabs.com/workspaces/\(workspaceId)/join"
+        "https://web.kachalabs.com/workspaces/\(workspaceId)/join"
     }
     
     var body: some View {

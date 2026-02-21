@@ -111,7 +111,7 @@ class SignUpViewModel @Inject constructor(
 
         val requestBody = json.toString().toRequestBody("application/json".toMediaType())
         val request = Request.Builder()
-            .url("https://www.kachalabs.com/api/auth/mobile-signup")
+            .url("https://web.kachalabs.com/api/auth/mobile-signup")
             .post(requestBody)
             .build()
 
@@ -162,7 +162,7 @@ class SignUpViewModel @Inject constructor(
                 .toRequestBody("application/json".toMediaType())
 
             val request = Request.Builder()
-                .url("https://www.kachalabs.com/api/auth/create-profile")
+                .url("https://web.kachalabs.com/api/auth/create-profile")
                 .post(requestBody)
                 .addHeader("Content-Type", "application/json")
                 .build()

@@ -176,10 +176,7 @@ struct ClerkContentView: View {
                     .task(id: clerkUser.id) {
                         // Async profile fetch — .task(id:) ties lifecycle to the
                         // view and auto-cancels if user changes.
-                        // Brief delay lets Clerk's .task in MafutaPassApp finish
-                        // session validation so getToken() returns a fresh JWT.
-                        try? await Task.sleep(nanoseconds: 300_000_000)
-                        guard !Task.isCancelled else { return }
+                        // API.getClerkToken() waits for session readiness internally.
                         ClerkAuthManager.shared.syncUser()
                         if let user = ClerkAuthManager.shared.currentUser {
                             await ProfileManager.shared.loadProfile(
@@ -1020,7 +1017,7 @@ struct WelcomeView: View {
                                 .font(.system(size: 12))
                                 .foregroundColor(.white.opacity(0.38))
                             Button(action: {
-                                if let url = URL(string: "https://www.kachalabs.com/terms-of-service") {
+                                                if let url = URL(string: "https://kachalabs.com/terms-of-service") {
                                     UIApplication.shared.open(url)
                                 }
                             }) {
@@ -1033,7 +1030,7 @@ struct WelcomeView: View {
                                 .font(.system(size: 12))
                                 .foregroundColor(.white.opacity(0.38))
                             Button(action: {
-                                if let url = URL(string: "https://www.kachalabs.com/privacy-policy") {
+                                                if let url = URL(string: "https://kachalabs.com/privacy-policy") {
                                     UIApplication.shared.open(url)
                                 }
                             }) {

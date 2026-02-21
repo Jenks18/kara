@@ -133,6 +133,9 @@ struct WorkspacesPage: View {
                         } action: { _, scrolled in
                             isScrolled = scrolled
                         }
+                        .refreshable {
+                            await dataStore.refreshWorkspaces(force: true)
+                        }
                     } else {
                         // Workspaces List
                         ScrollView {
@@ -207,11 +210,19 @@ struct WorkspacesPage: View {
                         } action: { _, scrolled in
                             isScrolled = scrolled
                         }
+                        .refreshable {
+                            await dataStore.refreshWorkspaces(force: true)
+                        }
                     }
                 }
             }
             .background(AppTheme.backgroundView())
             .navigationBarHidden(true)
+            .task {
+                // Per-screen data load — matches Android WorkspacesViewModel.init pattern.
+                // Debounce in AppDataStore prevents redundant calls.
+                await dataStore.refreshWorkspaces()
+            }
             .sheet(isPresented: $showCreateSheet) {
                 NewWorkspaceView(onComplete: {
                     Task {

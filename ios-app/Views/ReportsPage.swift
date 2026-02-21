@@ -76,6 +76,12 @@ struct ReportsPage: View {
         .onChange(of: selectedTab) { _, _ in
             isScrolled = false
         }
+        .task {
+            // Per-screen data load — matches Android ReportsViewModel.init pattern.
+            // Debounce in AppDataStore prevents redundant calls.
+            await dataStore.refreshExpenses()
+            await dataStore.refreshReports()
+        }
     }
 }
 

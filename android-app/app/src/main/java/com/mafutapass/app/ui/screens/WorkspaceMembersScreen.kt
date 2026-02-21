@@ -47,7 +47,7 @@ fun WorkspaceMembersScreen(
     var showShareDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var inviteInput by remember { mutableStateOf("") }
-    val shareUrl = "https://www.kachalabs.com/workspaces/$workspaceId/join"
+    val shareUrl = "https://web.kachalabs.com/workspaces/$workspaceId/join"
 
     // Fetch workspace and members
     LaunchedEffect(workspaceId) {

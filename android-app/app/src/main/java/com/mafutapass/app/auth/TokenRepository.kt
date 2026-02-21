@@ -305,7 +305,7 @@ class TokenRepository private constructor(context: Context) {
     private suspend fun refreshTokenImmediate(oldToken: String): String? {
         return try {
             val request = Request.Builder()
-                .url("https://www.kachalabs.com/api/auth/mobile-refresh")
+                .url("https://web.kachalabs.com/api/auth/mobile-refresh")
                 .post("{}".toRequestBody("application/json".toMediaType()))
                 .addHeader("Authorization", "Bearer $oldToken")
                 .build()

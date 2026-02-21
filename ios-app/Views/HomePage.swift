@@ -57,6 +57,7 @@ struct HomePage: View {
                                 receiptCountThisMonth: dataStore.receiptCountThisMonth,
                                 totalAllTime: dataStore.totalAllTime
                             )
+                        
 
                             // ── Stat pills row ───────────────────────
                             HStack(spacing: 12) {
@@ -236,8 +237,16 @@ struct HomePage: View {
                     } action: { _, scrolled in
                         isScrolled = scrolled
                     }
+                    .refreshable {
+                        await dataStore.refreshAll(force: true)
+                    }
                 }
             }
+        }
+        .task {
+            // Ensures data loads even if MainAppView's initial refreshAll() raced
+            // with Clerk session init. Debounce prevents redundant calls.
+            await dataStore.refreshAll()
         }
     }
 
