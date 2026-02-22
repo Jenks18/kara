@@ -42,7 +42,8 @@ function flattenItems(data: any[]) {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
+    const rawLimit = parseInt(searchParams.get('limit') || '50', 10);
+    const limit = Math.min(Number.isFinite(rawLimit) ? rawLimit : 50, 100);
     const cursor = searchParams.get('cursor'); // ISO timestamp — fetch items before this
 
     const mobileClient = await createMobileClient(request);
@@ -55,14 +56,17 @@ export async function GET(request: NextRequest) {
 
     const { supabase } = mobileClient;
 
-    // Fetch limit+1 rows — extra row tells us whether a next page exists
+    // Fetch limit+1 rows — extra row tells us whether a next page exists.
+    // Use a LEFT JOIN on expense_reports (not !inner) so expense_items that
+    // have no report (report_id IS NULL) or point to a deleted report are
+    // still returned rather than silently dropped.
     let query = supabase
       .from('expense_items')
       .select(`
         id, image_url, amount, category, merchant_name,
         transaction_date, created_at, kra_verified, description,
         processing_status, report_id,
-        expense_reports!inner ( user_id, workspace_name )
+        expense_reports ( user_id, workspace_name )
       `)
       .order('created_at', { ascending: false })
       .limit(limit + 1);

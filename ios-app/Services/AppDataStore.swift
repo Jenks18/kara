@@ -88,10 +88,13 @@ final class AppDataStore: ObservableObject {
 
     /// Parallel refresh of all data. Safe to call on every tab appear — debounced.
     func refreshAll(force: Bool = false) async {
-        async let _ = refreshExpenses(force: force)
-        async let _ = refreshReports(force: force)
-        async let _ = refreshWorkspaces(force: force)
-        async let _ = refreshStats()
+        // NOTE: `async let _ =` implicitly cancels child tasks because the
+        // result is never awaited.  We must bind real names and await them.
+        async let a: () = refreshExpenses(force: force)
+        async let b: () = refreshReports(force: force)
+        async let c: () = refreshWorkspaces(force: force)
+        async let d: () = refreshStats()
+        _ = await (a, b, c, d)
     }
 
     func refreshExpenses(force: Bool = false) async {
@@ -250,12 +253,21 @@ final class AppDataStore: ObservableObject {
     }
 
     /// Parse ISO8601 strings from Supabase (handles microsecond precision like `2026-02-21T10:30:00.123456+00:00`).
+    /// Formatters are reused across calls — `ISO8601DateFormatter` construction is expensive.
     static func parseISO(_ s: String) -> Date? {
-        let withFrac = ISO8601DateFormatter()
-        withFrac.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        if let d = withFrac.date(from: s) { return d }
-        let plain = ISO8601DateFormatter()
-        plain.formatOptions = [.withInternetDateTime]
-        return plain.date(from: s)
+        if let d = _isoWithFrac.date(from: s) { return d }
+        return _isoPlain.date(from: s)
     }
+
+    private static let _isoWithFrac: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
+    }()
+
+    private static let _isoPlain: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        return f
+    }()
 }

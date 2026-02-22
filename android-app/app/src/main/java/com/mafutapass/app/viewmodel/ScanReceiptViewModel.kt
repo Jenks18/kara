@@ -46,6 +46,10 @@ class ScanReceiptViewModel @Inject constructor(
     private val _detectedQrUrl = MutableStateFlow<String?>(null)
     val detectedQrUrl: StateFlow<String?> = _detectedQrUrl.asStateFlow()
 
+    /** Device location at time of scan (lat, lng) */
+    private val _location = MutableStateFlow<Pair<Double, Double>?>(null)
+    val location: StateFlow<Pair<Double, Double>?> = _location.asStateFlow()
+
     /** Workspaces for the picker — comes from the repository (already cached) */
     val workspaces = workspaceRepository.workspaces
 
@@ -101,6 +105,10 @@ class ScanReceiptViewModel @Inject constructor(
             _detectedQrUrl.value = url
         }
     }
+
+    fun setLocation(lat: Double, lng: Double) {
+        _location.value = Pair(lat, lng)
+    }
     
     fun goToReview() {
         if (_selectedImages.value.isNotEmpty()) {
@@ -120,6 +128,7 @@ class ScanReceiptViewModel @Inject constructor(
             var sharedReportId: String? = null
             val results = mutableListOf<ReceiptUploadResponse>()
             val qrUrl = _detectedQrUrl.value
+            val loc = _location.value
 
             // Build workspace parts from the selected workspace
             val wsId = _selectedWorkspaceId.value.takeIf { it.isNotBlank() }
@@ -127,6 +136,8 @@ class ScanReceiptViewModel @Inject constructor(
                 .firstOrNull { it.id == wsId }?.name ?: "Personal"
             val wsIdPart = wsId?.toRequestBody("text/plain".toMediaType())
             val wsNamePart = wsName.toRequestBody("text/plain".toMediaType())
+            val latPart = loc?.first?.toString()?.toRequestBody("text/plain".toMediaType())
+            val lngPart = loc?.second?.toString()?.toRequestBody("text/plain".toMediaType())
 
             for ((index, imageBytes) in images.withIndex()) {
                 _currentUploadIndex.value = index
@@ -146,6 +157,8 @@ class ScanReceiptViewModel @Inject constructor(
                         reportId = reportIdPart,
                         workspaceId = wsIdPart,
                         workspaceName = wsNamePart,
+                        latitude = latPart,
+                        longitude = lngPart,
                         qrUrl = qrUrlPart
                     )
 
@@ -187,6 +200,7 @@ class ScanReceiptViewModel @Inject constructor(
         _uploadResults.value = emptyList()
         _currentUploadIndex.value = 0
         _detectedQrUrl.value = null
+        _location.value = null
         _selectedWorkspaceId.value = workspaceRepository.activeWorkspace.value?.id ?: ""
         _uiState.value = ScanState.ChooseMethod
     }

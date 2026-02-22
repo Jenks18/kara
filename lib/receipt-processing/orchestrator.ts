@@ -127,7 +127,7 @@ export class ReceiptProcessor {
       // STAGE 1: UPLOAD & RAW STORAGE
       // ==========================================
       
-      const imageUrl = await this.uploadImage(imageBuffer, imageFile.name, supabase, options.userEmail);
+      const imageUrl = await this.uploadImage(imageBuffer, imageFile.name, supabase, options.userEmail, imageFile.type);
       result.imageUrl = imageUrl;
       
       // Check for duplicates
@@ -475,12 +475,28 @@ export class ReceiptProcessor {
         merchantName = lines[0]?.trim() || 'Unknown Merchant';
       }
       
-      // Extract total amount - KRA receipts show TOTAL followed by amount
+      // Extract total amount — wide pattern set for Kenyan receipt formats
       const amountPatterns = [
-        /TOTAL\s+(\d+(?:,\d{3})*(?:\.\d{2})?)/i,  // "TOTAL 1,000.00"
-        /(?:Sum|Amount)\s+(\d+(?:,\d{3})*(?:\.\d{2})?)/i,  // "Sum 1,000.00"
-        /CASH\s+(\d+(?:,\d{3})*(?:\.\d{2})?)/i,  // "CASH 1,000.00"
-        /(\d+(?:,\d{3})*\.\d{2})\s*(?:KES|Ksh)/i,  // "1,000.00 KES"
+        // "TOTAL 1,000.00" or "TOTAL: 1,000.00" or "TOTAL :1000"
+        /TOTAL\s*[:\-]?\s*(?:KES|KSH|Ksh)?\s*(\d+(?:,\d{3})*(?:\.\d{1,2})?)/i,
+        // "Grand Total   5,700.00"
+        /GRAND\s+TOTAL\s*[:\-]?\s*(?:KES|KSH|Ksh)?\s*(\d+(?:,\d{3})*(?:\.\d{1,2})?)/i,
+        // "Net Total 5700"
+        /NET\s+TOTAL\s*[:\-]?\s*(?:KES|KSH|Ksh)?\s*(\d+(?:,\d{3})*(?:\.\d{1,2})?)/i,
+        // "Total Amount: 5,700.00"
+        /TOTAL\s+AMOUNT\s*[:\-]?\s*(?:KES|KSH|Ksh)?\s*(\d+(?:,\d{3})*(?:\.\d{1,2})?)/i,
+        // "Amount Due: 5700"
+        /AMOUNT\s+DUE\s*[:\-]?\s*(?:KES|KSH|Ksh)?\s*(\d+(?:,\d{3})*(?:\.\d{1,2})?)/i,
+        // "CASH 5,700.00" or "MPESA 1,234"
+        /(?:CASH|MPESA|M-PESA|CARD)\s*[:\-]?\s*(?:KES|KSH|Ksh)?\s*(\d+(?:,\d{3})*(?:\.\d{1,2})?)/i,
+        // Currency before amount: "KES 5,700.00" or "Ksh 1,000" or "KSh. 5700"
+        /(?:KES|KSH|Ksh)\.?\s*(\d+(?:,\d{3})*(?:\.\d{1,2})?)/i,
+        // Amount then currency: "5,700.00 KES"
+        /(\d+(?:,\d{3})*\.\d{1,2})\s*(?:KES|KSH|Ksh)/i,
+        // "/=" Kenyan shillings symbol: "5,700/="
+        /(\d+(?:,\d{3})*(?:\.\d{1,2})?)\s*\/=/,
+        // "Sum 1,000.00"
+        /(?:Sum|Sub\s*Total|Subtotal)\s*[:\-]?\s*(?:KES|KSH|Ksh)?\s*(\d+(?:,\d{3})*(?:\.\d{1,2})?)/i,
       ];
       
       let totalAmount = 0;
@@ -559,7 +575,7 @@ export class ReceiptProcessor {
         totalAmount: totalAmount,
         invoiceDate: parsedDate,
         invoiceNumber: invoiceMatch ? invoiceMatch[1] : null,
-        fullText: fullText,
+        rawText: fullText,  // Keep as rawText — downstream code expects this key
         // Metadata for confidence tracking
         dateNeedsReview: dateNeedsReview,
         originalDateOCR: originalDateOCR,
@@ -576,9 +592,43 @@ export class ReceiptProcessor {
    */
   private async extractOCRData(imageBuffer: Buffer): Promise<any> {
     try {
-      // Tesseract.js causes worker issues in Vercel serverless
-      // Use Google Vision as primary OCR
-      return await this.extractWithGoogleVision(imageBuffer);
+      // Primary: Google Vision OCR with regex extraction
+      const visionResult = await this.extractWithGoogleVision(imageBuffer);
+
+      // If Vision returned text but regex couldn't extract amount/merchant,
+      // fall back to Gemini Vision to re-extract structured data from the image.
+      const hasUsableData = visionResult &&
+        (visionResult.totalAmount > 0 || (visionResult.merchantName && visionResult.merchantName !== 'Unknown Merchant'));
+
+      if (visionResult && !hasUsableData && process.env.GEMINI_API_KEY) {
+        console.log('Vision OCR regex returned zeros — falling back to Gemini for structured extraction');
+        try {
+          const geminiResult = await extractReceiptWithGemini(imageBuffer);
+          if (geminiResult) {
+            // Merge: keep Vision raw text, override structured fields with Gemini
+            return {
+              merchantName: geminiResult.merchantName || visionResult.merchantName,
+              totalAmount: geminiResult.totalAmount || visionResult.totalAmount,
+              invoiceDate: geminiResult.invoiceDate || visionResult.invoiceDate,
+              invoiceNumber: geminiResult.invoiceNumber || visionResult.invoiceNumber,
+              rawText: visionResult.rawText,  // Keep Vision's raw text
+              category: geminiResult.category,
+              items: geminiResult.items,
+              hasEtimsQR: geminiResult.hasEtimsQR,
+              metadata: geminiResult.metadata,
+              confidence: geminiResult.confidence,
+              fieldConfidence: geminiResult.fieldConfidence,
+              dateNeedsReview: visionResult.dateNeedsReview,
+              originalDateOCR: visionResult.originalDateOCR,
+              source: 'vision+gemini_fallback',
+            };
+          }
+        } catch (geminiError: any) {
+          console.warn('Gemini fallback failed:', geminiError.message);
+        }
+      }
+
+      return visionResult;
     } catch (error) {
       console.error('OCR extraction failed:', error);
       return null;
@@ -747,7 +797,7 @@ export class ReceiptProcessor {
   /**
    * Upload image to storage
    */
-  private async uploadImage(buffer: Buffer, filename: string, supabase: SupabaseClient, userEmail?: string): Promise<string> {
+  private async uploadImage(buffer: Buffer, filename: string, supabase: SupabaseClient, userEmail?: string, mimeType?: string): Promise<string> {
     // Upload to Supabase Storage using REQUIRED authenticated client
     // This maintains user context for RLS and audit trails
     const timestamp = Date.now();
@@ -757,11 +807,16 @@ export class ReceiptProcessor {
     const path = userEmail 
       ? `${userEmail}/${timestamp}-${sanitizedFilename}`
       : `receipts/${timestamp}-${sanitizedFilename}`;
+
+    // Use the actual file MIME type so Supabase serves the correct Content-Type.
+    // Validate it's an allowed image type; fall back to jpeg if unknown/absent.
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+    const contentType = (mimeType && allowedTypes.includes(mimeType)) ? mimeType : 'image/jpeg';
     
     const { data, error } = await supabase.storage
       .from('receipts')
       .upload(path, buffer, {
-        contentType: 'image/jpeg',
+        contentType,
         upsert: false,
       });
     

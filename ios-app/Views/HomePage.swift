@@ -1,5 +1,30 @@
 import SwiftUI
 
+// MARK: - Shared category color helper
+// Single source of truth used by both HomePage and SpendingByCategoryCard.
+// DJB2 hash ensures deterministic colors across app launches (Swift's built-in
+// hashValue is seeded per-process and must NOT be used for stable UX colors).
+func categoryColorFor(_ category: String) -> Color {
+    let palette: [Color] = [
+        Color(hex: "#3B82F6"), // blue
+        Color(hex: "#8B5CF6"), // purple
+        Color(hex: "#F59E0B"), // amber
+        Color(hex: "#10B981"), // green
+        Color(hex: "#EC4899")  // pink
+    ]
+    switch category.lowercased() {
+    case "fuel", "transport", "transportation", "commute": return palette[0]
+    case "food", "meals", "dining", "groceries":           return palette[2]
+    case "office", "supplies", "stationery", "equipment": return palette[3]
+    case "travel", "accommodation", "hotel":               return palette[4]
+    case "entertainment", "recreation", "subscriptions":  return palette[1]
+    default:
+        var h: UInt32 = 5381
+        for byte in category.lowercased().utf8 { h = (h &* 33) &+ UInt32(byte) }
+        return Color(hue: Double(h % 360) / 360.0, saturation: 0.65, brightness: 0.85)
+    }
+}
+
 struct HomePage: View {
     @Binding var selectedTab: Int
     @ObservedObject var dataStore: AppDataStore
@@ -282,26 +307,7 @@ struct HomePage: View {
     }
 
     func categoryColor(_ category: String) -> Color {
-        let palette: [Color] = [
-            Color(hex: "#3B82F6"), // blue
-            Color(hex: "#8B5CF6"), // purple
-            Color(hex: "#F59E0B"), // amber
-            Color(hex: "#10B981"), // green
-            Color(hex: "#EC4899")  // pink
-        ]
-        switch category.lowercased() {
-        case "fuel", "transport", "transportation", "commute": return palette[0]
-        case "food", "meals", "dining", "groceries":           return palette[2]
-        case "office", "supplies", "stationery", "equipment": return palette[3]
-        case "travel", "accommodation", "hotel":               return palette[4]
-        case "entertainment", "recreation", "subscriptions":  return palette[1]
-        default:
-            // DJB2 hash (deterministic across launches — Swift's hashValue is seeded per-process).
-            // Maps any unknown category name to a unique hue in [0°, 360°) with no palette collisions.
-            var h: UInt32 = 5381
-            for byte in category.lowercased().utf8 { h = (h &* 33) &+ UInt32(byte) }
-            return Color(hue: Double(h % 360) / 360.0, saturation: 0.65, brightness: 0.85)
-        }
+        categoryColorFor(category)
     }
 
     @ViewBuilder
@@ -470,21 +476,7 @@ struct SpendingByCategoryCard: View {
     private var maxAmount: Double { categoryTotals.first?.1 ?? 1 }
 
     private func colorForCategory(_ cat: String) -> Color {
-        let palette: [Color] = [
-            Color(hex: "#3B82F6"), Color(hex: "#8B5CF6"), Color(hex: "#F59E0B"),
-            Color(hex: "#10B981"), Color(hex: "#EC4899")
-        ]
-        switch cat.lowercased() {
-        case "fuel", "transport", "transportation", "commute": return palette[0]
-        case "food", "meals", "dining", "groceries":           return palette[2]
-        case "office", "supplies", "stationery", "equipment": return palette[3]
-        case "travel", "accommodation", "hotel":               return palette[4]
-        case "entertainment", "recreation", "subscriptions":  return palette[1]
-        default:
-            var h: UInt32 = 5381
-            for byte in cat.lowercased().utf8 { h = (h &* 33) &+ UInt32(byte) }
-            return Color(hue: Double(h % 360) / 360.0, saturation: 0.65, brightness: 0.85)
-        }
+        categoryColorFor(cat)
     }
 
     var body: some View {

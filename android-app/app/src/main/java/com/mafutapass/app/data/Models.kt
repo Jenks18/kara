@@ -43,6 +43,8 @@ data class ExpenseReport(
     val totalAmount: Double = 0.0,
     @SerializedName("workspace_name")
     val workspaceName: String = "",
+    @SerializedName("workspace_avatar")
+    val workspaceAvatar: String? = null,
     val thumbnails: List<String> = emptyList(),
     @SerializedName("created_at")
     val createdAt: String = ""

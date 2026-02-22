@@ -45,6 +45,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
@@ -146,6 +148,7 @@ fun AddReceiptScreen(
 
     // Camera permission + state (for fallback multi-capture camera)
     var showCamera by remember { mutableStateOf(false) }
+    var showQrScanner by remember { mutableStateOf(false) }
     var hasCameraPermission by remember { mutableStateOf(false) }
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -153,6 +156,53 @@ fun AddReceiptScreen(
         hasCameraPermission = granted
         if (granted) showCamera = true
         else Toast.makeText(context, "Camera permission required to scan receipts", Toast.LENGTH_SHORT).show()
+    }
+    val qrPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        hasCameraPermission = granted
+        if (granted) showQrScanner = true
+        else Toast.makeText(context, "Camera permission required for QR scanner", Toast.LENGTH_SHORT).show()
+    }
+
+    // Request location once when the screen appears (best-effort, non-blocking)
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        if (permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+            permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true) {
+            try {
+                val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+                fusedLocationClient.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, null)
+                    .addOnSuccessListener { location ->
+                        if (location != null) {
+                            viewModel.setLocation(location.latitude, location.longitude)
+                        }
+                    }
+            } catch (e: SecurityException) {
+                Log.e(TAG, "Location permission revoked: ${e.message}")
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        locationPermissionLauncher.launch(
+            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
+        )
+    }
+
+    // Full-screen QR-only scanner — scans QR code, then prompts user to also capture the receipt image
+    if (showQrScanner && hasCameraPermission) {
+        QrCodeScanner(
+            onQrCodeDetected = { url ->
+                viewModel.setDetectedQrUrl(url)
+            },
+            onCaptureReceipt = { bytes ->
+                viewModel.addImageBytes(bytes)
+            },
+            onDone = { showQrScanner = false }
+        )
+        return
     }
 
     // Full-screen fallback camera — used only if Document Scanner fails to start
@@ -213,6 +263,9 @@ fun AddReceiptScreen(
                             }
                     }
                 },
+                onScanQrCode = {
+                    qrPermissionLauncher.launch(Manifest.permission.CAMERA)
+                },
                 onChooseFromGallery = { galleryLauncher.launch("image/*") }
             )
             is ScanState.ReviewImages -> ReviewImagesSection(
@@ -257,6 +310,7 @@ fun AddReceiptScreen(
 @Composable
 private fun ChooseMethodSection(
     onScanReceipt: () -> Unit,
+    onScanQrCode: () -> Unit,
     onChooseFromGallery: () -> Unit
 ) {
     Column(
@@ -310,7 +364,28 @@ private fun ChooseMethodSection(
 
         Spacer(Modifier.height(16.dp))
 
-        // Secondary: Gallery
+        // Secondary: QR Scanner — dedicated barcode scanner for eTIMS QR codes
+        OutlinedButton(
+            onClick = onScanQrCode,
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            shape = RoundedCornerShape(16.dp),
+            border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+        ) {
+            Icon(Icons.Filled.QrCodeScanner, null, modifier = Modifier.size(22.dp), tint = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.width(12.dp))
+            Text("Scan QR Code", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.primary)
+        }
+        Spacer(Modifier.height(4.dp))
+        Text(
+            "Scan the eTIMS/KRA QR code on your receipt",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        // Tertiary: Gallery
         OutlinedButton(
             onClick = onChooseFromGallery,
             modifier = Modifier.fillMaxWidth().height(56.dp),

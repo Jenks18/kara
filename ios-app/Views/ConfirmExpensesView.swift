@@ -8,7 +8,12 @@ struct ConfirmExpensesView: View {
     @State var images: [UIImage]
     
     @State private var currentImageIndex = 0
-    @State private var selectedWorkspace: String = ""
+    // Pre-seed from WorkspaceManager so the upload is never blocked by an empty workspace.
+    // If the user has no workspace, we pass an empty ID and the backend auto-resolves
+    // (or auto-creates a "Personal" workspace) — same behaviour as Android.
+    @State private var selectedWorkspace: String = WorkspaceManager.shared.activeWorkspace?.id
+        ?? WorkspaceManager.shared.workspaces.first?.id
+        ?? ""
     @State private var description: String = ""
     @State private var selectedCategory: String = "fuel"
     @State private var isSubmitting = false
@@ -172,7 +177,8 @@ struct ConfirmExpensesView: View {
                                 
                                 Menu {
                                     if workspaces.isEmpty {
-                                        Text("No workspaces — create one first")
+                                        // No workspace yet — upload still works; backend will auto-create "Personal"
+                                        Button("Personal (auto)") { selectedWorkspace = "" }
                                     } else {
                                         ForEach(workspaces) { workspace in
                                             Button(workspace.name) {
@@ -182,8 +188,11 @@ struct ConfirmExpensesView: View {
                                     }
                                 } label: {
                                     HStack {
-                                        Text(selectedWorkspace.isEmpty ? "Select workspace" : (workspaces.first(where: { $0.id == selectedWorkspace })?.name ?? "Select workspace"))
-                                            .foregroundColor(selectedWorkspace.isEmpty ? .secondary : .primary)
+                                        Text(
+                                            workspaces.isEmpty ? "Personal (auto-created)" :
+                                            workspaces.first(where: { $0.id == selectedWorkspace })?.name ?? "Personal (auto-created)"
+                                        )
+                                        .foregroundColor(AppTheme.Colors.textPrimary)
                                         Spacer()
                                         Image(systemName: "chevron.down")
                                             .font(.system(size: 14))
@@ -272,14 +281,10 @@ struct ConfirmExpensesView: View {
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(
-                                selectedWorkspace.isEmpty || isSubmitting ?
-                                    Color.gray :
-                                    AppTheme.Colors.primary
-                            )
+                            .background(isSubmitting ? Color.gray : AppTheme.Colors.primary)
                             .cornerRadius(12)
                         }
-                        .disabled(selectedWorkspace.isEmpty || isSubmitting)
+                        .disabled(isSubmitting)
                         .padding(.horizontal)
                         .padding(.bottom, 8)
                     }

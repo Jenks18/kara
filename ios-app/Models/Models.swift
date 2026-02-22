@@ -312,6 +312,7 @@ struct MobileStats: Codable {
     let monthOverMonthTrend: Double
     let receiptCountThisMonth: Int
     let totalReports: Int
+    let totalReceipts: Int?
 }
 
 // MARK: - Workspace Member

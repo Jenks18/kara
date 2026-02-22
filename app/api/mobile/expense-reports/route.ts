@@ -8,38 +8,49 @@ export async function OPTIONS() {
 
 /**
  * Fetch report details (items count, thumbnails, total) for a list of reports.
+ * Single batched query replaces the prior N+1 pattern.
  */
 async function enrichReports(supabase: any, reports: any[]) {
-  return Promise.all(
-    reports.map(async (report: any) => {
-      const { data: items } = await supabase
-        .from('expense_items')
-        .select('id, image_url, amount')
-        .eq('report_id', report.id)
-        .order('created_at', { ascending: true });
+  if (reports.length === 0) return [];
 
-      const itemsList = items || [];
-      const totalAmount = itemsList.reduce((sum: number, item: any) => sum + (item.amount || 0), 0);
-      const thumbnails = itemsList
-        .filter((item: any) => item.image_url)
-        .slice(0, 3)
-        .map((item: any) => item.image_url);
+  const reportIds = reports.map((r: any) => r.id);
 
-      return {
-        id: report.id,
-        created_at: report.created_at,
-        user_id: report.user_id || '',
-        user_email: report.user_email || '',
-        workspace_name: report.workspace_name || '',
-        workspace_avatar: report.workspace_avatar || '',
-        title: report.title || 'Untitled Report',
-        status: report.status || 'draft',
-        total_amount: totalAmount || report.total_amount || 0,
-        items_count: itemsList.length,
-        thumbnails,
-      };
-    })
-  );
+  // One query for all items across all reports in this page.
+  const { data: allItems } = await supabase
+    .from('expense_items')
+    .select('id, report_id, image_url, amount')
+    .in('report_id', reportIds)
+    .order('created_at', { ascending: true });
+
+  const itemsByReport = new Map<string, any[]>();
+  for (const item of allItems || []) {
+    const list = itemsByReport.get(item.report_id) ?? [];
+    list.push(item);
+    itemsByReport.set(item.report_id, list);
+  }
+
+  return reports.map((report: any) => {
+    const itemsList = itemsByReport.get(report.id) ?? [];
+    const totalAmount = itemsList.reduce((sum: number, item: any) => sum + (item.amount || 0), 0);
+    const thumbnails = itemsList
+      .filter((item: any) => item.image_url)
+      .slice(0, 3)
+      .map((item: any) => item.image_url);
+
+    return {
+      id: report.id,
+      created_at: report.created_at,
+      user_id: report.user_id || '',
+      user_email: report.user_email || '',
+      workspace_name: report.workspace_name || '',
+      workspace_avatar: report.workspace_avatar || '',
+      title: report.title || 'Untitled Report',
+      status: report.status || 'draft',
+      total_amount: totalAmount || report.total_amount || 0,
+      items_count: itemsList.length,
+      thumbnails,
+    };
+  });
 }
 
 /**
@@ -61,7 +72,8 @@ async function enrichReports(supabase: any, reports: any[]) {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
+    const rawLimit = parseInt(searchParams.get('limit') || '50', 10);
+    const limit = Math.min(Number.isFinite(rawLimit) ? rawLimit : 50, 100);
     const cursor = searchParams.get('cursor');
 
     const mobileClient = await createMobileClient(request);
@@ -156,7 +168,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ reportId: report.id, ...report }, { status: 201, headers: corsHeaders });
+    return NextResponse.json({
+      reportId: report.id,
+      id: report.id,
+      title: report.title,
+      status: report.status,
+      workspace_name: report.workspace_name || '',
+      workspace_avatar: report.workspace_avatar || '',
+      user_id: report.user_id || '',
+      user_email: report.user_email || '',
+      total_amount: report.total_amount || 0,
+      items_count: 0,
+      thumbnails: [],
+      created_at: report.created_at,
+    }, { status: 201, headers: corsHeaders });
   } catch (error: any) {
     console.error('Error in mobile create report:', error instanceof Error ? error.message : String(error));
     return NextResponse.json(

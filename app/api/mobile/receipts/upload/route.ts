@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { corsHeaders, verifyAndExtractUser } from '@/lib/auth/mobile-auth';
+import { corsHeaders } from '@/lib/auth/mobile-auth';
 import { createMobileClient } from '@/lib/supabase/mobile-client';
 import { receiptProcessor } from '@/lib/receipt-processing/orchestrator';
 
@@ -15,24 +15,17 @@ export async function OPTIONS() {
 
 /**
  * POST /api/mobile/receipts/upload
- * Upload a receipt image from the Android app.
- * Authenticates via Bearer JWT (mobile auth).
- * Processes the image through the same pipeline as the web app.
+ * Upload a receipt image from the Android/iOS app.
+ * Authenticates via Bearer JWT (mobile auth) — single auth pass via createMobileClient.
  */
 export async function POST(request: NextRequest) {
   try {
-    const user = await verifyAndExtractUser(request);
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401, headers: corsHeaders }
-      );
-    }
-
+    // Single authentication pass — createMobileClient verifies the Clerk JWT
+    // and mints a Supabase client with the user's identity.
     const mobileClient = await createMobileClient(request);
     if (!mobileClient) {
       return NextResponse.json(
-        { error: 'Authentication failed' },
+        { error: 'Unauthorized' },
         { status: 401, headers: corsHeaders }
       );
     }
@@ -48,6 +41,9 @@ export async function POST(request: NextRequest) {
     const latitude = formData.get('latitude') as string;
     const longitude = formData.get('longitude') as string;
     const qrUrl = formData.get('qrUrl') as string;
+    // User-supplied overrides (optional) — take precedence over AI extraction
+    const userDescription = (formData.get('description') as string | null) || null;
+    const userCategory    = (formData.get('category')    as string | null) || null;
 
     if (!imageFile) {
       return NextResponse.json(
@@ -113,6 +109,18 @@ export async function POST(request: NextRequest) {
       mobileQrUrl: qrUrl || undefined,
     });
 
+    // Diagnostic log — helps debug "all zeros" receipts in Vercel logs
+    console.log('[receipt-upload] Pipeline result:', {
+      imageUrl: !!result.imageUrl,
+      kraData: result.kraData ? { merchant: result.kraData.merchantName, amount: result.kraData.totalAmount } : null,
+      ocrData: result.ocrData ? { merchant: result.ocrData.merchantName, amount: result.ocrData.totalAmount, hasText: !!result.ocrData.rawText } : null,
+      parsedData: result.parsedData ? { merchant: result.parsedData.merchantName, amount: result.parsedData.totalAmount } : null,
+      qrData: !!result.qrData,
+      confidence: result.confidence,
+      warnings: result.warnings,
+      errors: result.errors,
+    });
+
     // uploadSucceeded only requires the image to have been stored.
     // raw_receipts save failures are non-fatal — the expense_item is still created.
     const uploadSucceeded = !!result.imageUrl;
@@ -138,6 +146,28 @@ export async function POST(request: NextRequest) {
             if (userWorkspace) {
               resolvedWorkspaceId = userWorkspace.id;
               resolvedWorkspaceName = userWorkspace.name;
+            } else {
+              // New user with no workspace yet — auto-create "Personal" so the
+              // receipt isn't orphaned.  Mirrors the web upload route behaviour
+              // and Android WorkspaceRepository which always resolves a workspace.
+              console.warn(`Mobile: user ${userId} has no workspace — auto-creating Personal`);
+              const { data: newWs } = await supabase
+                .from('workspaces')
+                .insert({
+                  user_id: userId,
+                  owner_id: userId,
+                  name: 'Personal',
+                  avatar: '💼',
+                  currency: 'KES',
+                  currency_symbol: 'KSh',
+                  is_active: true,
+                })
+                .select('id, name')
+                .maybeSingle();
+              if (newWs) {
+                resolvedWorkspaceId = newWs.id;
+                resolvedWorkspaceName = newWs.name;
+              }
             }
           }
           
@@ -198,8 +228,8 @@ export async function POST(request: NextRequest) {
             result.fieldConfidence?.date?.needsReview;
           const initialStatus = hasExtractedData ? (needsReview ? 'needs_review' : 'processed') : 'needs_review';
 
-          // Use AI-detected category, or fall back to 'Other' (no fuel-specific bias)
-          const category = result.aiEnhanced?.category || result.parsedData?.category || 'Other';
+          // User-supplied category takes precedence; fall back to AI, then 'Other'.
+          const category = userCategory || result.aiEnhanced?.category || result.parsedData?.category || 'Other';
 
           // Compute overall confidence score (0-100)
           const confidenceScore = result.fieldConfidence
@@ -242,9 +272,11 @@ export async function POST(request: NextRequest) {
               has_etims_qr: hasEtimsQR, // NEW: Flag for KRA Verified badge
               receipt_details: Object.keys(receiptDetails).length > 0 ? receiptDetails : null, // NEW: Store items and metadata
               receipt_full_text: result.ocrData?.rawText || '', // NEW: Full OCR text for search
-              description: initialStatus === 'needs_review'
-                ? 'Some details could not be verified — please review and update'
-                : null,
+              // User-supplied description takes precedence; fall back to auto-generated review prompt.
+              description: userDescription
+                || (initialStatus === 'needs_review'
+                  ? 'Some details could not be verified — please review and update'
+                  : null),
             });
 
           if (!itemError && amount > 0) {

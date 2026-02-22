@@ -190,6 +190,8 @@ class API {
             if let latitude  = latitude  { addField("latitude",  "\(latitude)") }
             if let longitude = longitude { addField("longitude", "\(longitude)") }
             if let qrUrl     = qrUrl     { addField("qrUrl",     qrUrl) }
+            if let description = description, !description.isEmpty { addField("description", description) }
+            if let category    = category,    !category.isEmpty    { addField("category",    category) }
             
             body.append("--\(boundary)--\r\n".data(using: .utf8)!)
             

@@ -298,8 +298,14 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
                       {expenseData.workspaceName ? expenseData.workspaceName.charAt(0).toUpperCase() : 'W'}
                     </div>
                     <div className="text-left">
-                      <div className="text-gray-900 font-medium">{expenseData.workspaceName || 'Select workspace'}</div>
-                      <div className="text-sm text-gray-600">Submit expenses to this workspace</div>
+                      <div className="text-gray-900 font-medium">
+                        {expenseData.workspaceName || (workspaces.length === 0 ? 'Personal (auto-created)' : 'Select workspace')}
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        {workspaces.length === 0
+                          ? 'A workspace will be created automatically'
+                          : 'Submit expenses to this workspace'}
+                      </div>
                     </div>
                   </div>
                   <ChevronDown size={20} className="text-gray-500" />
