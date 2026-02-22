@@ -222,6 +222,26 @@ export class ReceiptProcessor {
           confidence: storeMatch.confidence,
         };
       }
+
+      // Record store encounter for ML training dataset (non-blocking, best-effort)
+      // Captures merchant name + location + KRA PIN every time we process a receipt
+      const encounterMerchant =
+        kraData?.merchantName ||
+        ocrData?.merchantName ||
+        effectiveQrData?.merchantName ||
+        storeMatch.storeName;
+      if (encounterMerchant) {
+        storeRecognizer.recordEncounter({
+          merchantName: encounterMerchant,
+          category: ocrData?.category,
+          kraPin: kraData?.merchantPIN || effectiveQrData?.merchantPIN,
+          tillNumber: effectiveQrData?.tillNumber || kraData?.tillNumber,
+          latitude: options.latitude,
+          longitude: options.longitude,
+        }, supabase).catch((err: unknown) =>
+          console.warn('[orchestrator] store encounter record failed:', err)
+        );
+      }
       
       // ==========================================
       // STAGE 4: RAW STORAGE (if enabled)

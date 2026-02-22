@@ -734,6 +734,203 @@ private fun ReceiptResultCard(index: Int, result: ReceiptUploadResponse) {
 // ── Multi-Capture Camera with QR Detection ────────────────────────────────────
 
 /**
+ * Dedicated QR code scanner — full-screen camera that:
+ * 1. Scans frames for eTIMS/KRA QR codes via ML Kit
+ * 2. Once detected, shows a success banner and prompts user to also capture the receipt image
+ * 3. User taps "Capture Receipt" to take a photo, then "Done"
+ */
+@Composable
+private fun QrCodeScanner(
+    onQrCodeDetected: (String) -> Unit,
+    onCaptureReceipt: (ByteArray) -> Unit,
+    onDone: () -> Unit
+) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val imageCapture = remember { ImageCapture.Builder().build() }
+    var detectedQr by remember { mutableStateOf<String?>(null) }
+    var hasCaptured by remember { mutableStateOf(false) }
+    var isCapturing by remember { mutableStateOf(false) }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        AndroidView(
+            factory = { ctx ->
+                PreviewView(ctx).also { previewView ->
+                    val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
+                    cameraProviderFuture.addListener({
+                        val cameraProvider = cameraProviderFuture.get()
+                        val preview = Preview.Builder().build().also {
+                            it.setSurfaceProvider(previewView.surfaceProvider)
+                        }
+
+                        val barcodeScanner = BarcodeScanning.getClient()
+                        val analysisExecutor = Executors.newSingleThreadExecutor()
+                        val imageAnalysis = ImageAnalysis.Builder()
+                            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                            .build()
+                            .also { analysis ->
+                                analysis.setAnalyzer(analysisExecutor) { imageProxy ->
+                                    processQrFrame(imageProxy, barcodeScanner) { qrUrl ->
+                                        // Accept any URL-like QR (eTIMS + others)
+                                        if (detectedQr == null) {
+                                            detectedQr = qrUrl
+                                            onQrCodeDetected(qrUrl)
+                                        }
+                                    }
+                                }
+                            }
+
+                        try {
+                            cameraProvider.unbindAll()
+                            cameraProvider.bindToLifecycle(
+                                lifecycleOwner,
+                                CameraSelector.DEFAULT_BACK_CAMERA,
+                                preview,
+                                imageCapture,
+                                imageAnalysis
+                            )
+                        } catch (e: Exception) {
+                            Log.e(TAG, "QR Camera bind failed", e)
+                        }
+                    }, ContextCompat.getMainExecutor(ctx))
+                }
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+
+        // QR scanning overlay — crosshair / guide
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(48.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(250.dp)
+                    .border(3.dp, if (detectedQr != null) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+            )
+        }
+
+        // Close button
+        IconButton(
+            onClick = onDone,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(16.dp)
+                .size(48.dp)
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f), CircleShape)
+        ) {
+            Icon(Icons.Filled.Close, "Close", tint = MaterialTheme.colorScheme.onSurface)
+        }
+
+        // Status banner
+        val bannerInfo = when {
+            detectedQr != null && hasCaptured -> "QR captured + Receipt photo taken!"
+            detectedQr != null -> "QR Code Detected! Now capture the full receipt."
+            else -> "Point camera at the eTIMS QR code on your receipt"
+        }
+        val bannerColor = if (detectedQr != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
+        val bannerTextColor = if (detectedQr != null) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = bannerColor,
+            shadowElevation = 4.dp,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 80.dp, start = 24.dp, end = 24.dp)
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    if (detectedQr != null) Icons.Filled.CheckCircle else Icons.Filled.QrCodeScanner,
+                    null,
+                    tint = bannerTextColor,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    bannerInfo,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = bannerTextColor
+                )
+            }
+        }
+
+        // Bottom controls
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 48.dp, start = 24.dp, end = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            if (detectedQr != null && !hasCaptured) {
+                // QR detected → show capture button for the full receipt
+                Button(
+                    onClick = {
+                        if (isCapturing) return@Button
+                        isCapturing = true
+                        val outputFile = File(context.cacheDir, "qr_receipt_${System.currentTimeMillis()}.jpg")
+                        val outputOptions = ImageCapture.OutputFileOptions.Builder(outputFile).build()
+                        imageCapture.takePicture(
+                            outputOptions,
+                            ContextCompat.getMainExecutor(context),
+                            object : ImageCapture.OnImageSavedCallback {
+                                override fun onImageSaved(output: ImageCapture.OutputFileResults) {
+                                    val bytes = outputFile.readBytes()
+                                    outputFile.delete()
+                                    onCaptureReceipt(bytes)
+                                    hasCaptured = true
+                                    isCapturing = false
+                                }
+                                override fun onError(e: ImageCaptureException) {
+                                    Log.e(TAG, "QR receipt capture failed: ${e.message}")
+                                    Toast.makeText(context, "Capture failed", Toast.LENGTH_SHORT).show()
+                                    isCapturing = false
+                                }
+                            }
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    enabled = !isCapturing
+                ) {
+                    Icon(Icons.Filled.CameraAlt, null, modifier = Modifier.size(22.dp))
+                    Spacer(Modifier.width(12.dp))
+                    Text("Capture Receipt Photo", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            if (hasCaptured) {
+                Spacer(Modifier.height(8.dp))
+                Button(
+                    onClick = onDone,
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Icon(Icons.Filled.Check, null, modifier = Modifier.size(22.dp))
+                    Spacer(Modifier.width(12.dp))
+                    Text("Done — Review & Process", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            if (detectedQr != null && !hasCaptured) {
+                Spacer(Modifier.height(8.dp))
+                TextButton(onClick = onDone) {
+                    Text("Skip photo — process QR only", color = Color.White.copy(alpha = 0.8f))
+                }
+            }
+        }
+    }
+}
+
+// ── Multi-Capture Camera with QR Detection ────────────────────────────────────
+
+/**
  * Full-screen camera that stays open between captures.
  * While the camera is live, ML Kit barcode scanning runs on each frame
  * to detect eTIMS QR codes. When one is found, it's highlighted briefly.

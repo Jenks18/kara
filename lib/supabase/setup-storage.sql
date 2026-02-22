@@ -103,7 +103,21 @@ CREATE POLICY "Allow users to update own profile pictures" ON storage.objects
 FOR UPDATE TO authenticated
 USING (
   bucket_id = 'profile-pictures' AND
-  
+  (storage.foldername(name))[1] = (auth.jwt()->>'email')::text
+)
+WITH CHECK (
+  bucket_id = 'profile-pictures' AND
+  (storage.foldername(name))[1] = (auth.jwt()->>'email')::text
+);
+
+-- Allow users to delete their own profile pictures
+-- Checks that the file path contains their email
+CREATE POLICY "Allow users to delete own profile pictures" ON storage.objects
+FOR DELETE TO authenticated
+USING (
+  bucket_id = 'profile-pictures' AND
+  (storage.foldername(name))[1] = (auth.jwt()->>'email')::text
+);
 
 -- ==========================================
 -- WORKSPACE AVATARS POLICIES
@@ -120,7 +134,7 @@ FOR SELECT TO public
 USING (bucket_id = 'workspace-avatars');
 
 -- Allow authenticated users to update workspace avatars
-CREATE POLICY "Allow users to update workspace avatars" ON storage.object, 'workspace-avatars's
+CREATE POLICY "Allow users to update workspace avatars" ON storage.objects
 FOR UPDATE TO authenticated
 USING (bucket_id = 'workspace-avatars')
 WITH CHECK (bucket_id = 'workspace-avatars');
@@ -128,17 +142,7 @@ WITH CHECK (bucket_id = 'workspace-avatars');
 -- Allow authenticated users to delete workspace avatars
 CREATE POLICY "Allow users to delete workspace avatars" ON storage.objects
 FOR DELETE TO authenticated
-USING (bucket_id = 'workspace-avatars');(storage.foldername(name))[1] = (auth.jwt()->>'email')::text
-);
-
--- Allow users to delete their own profile pictures
--- Checks that the file path contains their email
-CREATE POLICY "Allow users to delete own profile pictures" ON storage.objects
-FOR DELETE TO authenticated
-USING (
-  bucket_id = 'profile-pictures' AND
-  (storage.foldername(name))[1] = (auth.jwt()->>'email')::text
-);
+USING (bucket_id = 'workspace-avatars');
 
 -- ==========================================
 -- VERIFY SETUP

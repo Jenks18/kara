@@ -262,6 +262,117 @@ export class StoreRecognizer {
     // e.g., itax.kra.go.ke/KRA-Portal/... -> look for KRA PIN in URL
     return undefined; // Implement based on your QR patterns
   }
+
+  /**
+   * Record a store encounter from a scanned receipt.
+   *
+   * This method upserts a row in the `stores` table every time we process
+   * a receipt.  It builds up a training dataset over time (merchant name,
+   * location, KRA PIN, category) without touching the `verified` flag.
+   *
+   * Upsert key priority:
+   *   1. kra_pin  (unique — highest signal)
+   *   2. name only (falls back to INSERT if no KRA PIN)
+   */
+  async recordEncounter(params: {
+    merchantName: string;
+    category?: string;
+    kraPin?: string;
+    tillNumber?: string;
+    latitude?: number;
+    longitude?: number;
+    address?: string;
+  }, supabase: SupabaseClient): Promise<void> {
+    if (!params.merchantName?.trim()) return;
+
+    const now = new Date().toISOString();
+    const name = params.merchantName.trim();
+    const category = params.category?.trim() || 'uncategorized';
+
+    try {
+      if (params.kraPin) {
+        // Upsert by KRA PIN — most reliable identifier
+        const { data: existing } = await supabase
+          .from('stores')
+          .select('id, receipt_count')
+          .eq('kra_pin', params.kraPin)
+          .maybeSingle();
+
+        if (existing) {
+          await supabase
+            .from('stores')
+            .update({
+              last_seen_at: now,
+              receipt_count: (existing.receipt_count ?? 0) + 1,
+              // Enrich fields if we have better data now
+              ...(params.latitude != null ? { latitude: params.latitude } : {}),
+              ...(params.longitude != null ? { longitude: params.longitude } : {}),
+              ...(params.tillNumber ? { till_number: params.tillNumber } : {}),
+              ...(params.address ? { address: params.address } : {}),
+            })
+            .eq('id', existing.id);
+        } else {
+          await supabase
+            .from('stores')
+            .insert({
+              name,
+              category,
+              kra_pin: params.kraPin,
+              till_number: params.tillNumber ?? null,
+              latitude: params.latitude ?? null,
+              longitude: params.longitude ?? null,
+              address: params.address ?? null,
+              first_seen_at: now,
+              last_seen_at: now,
+              receipt_count: 1,
+              verified: false,
+            });
+        }
+      } else {
+        // No KRA PIN — try to find by name and upsert
+        const { data: existing } = await supabase
+          .from('stores')
+          .select('id, receipt_count')
+          .ilike('name', name)
+          .limit(1)
+          .maybeSingle();
+
+        if (existing) {
+          await supabase
+            .from('stores')
+            .update({
+              last_seen_at: now,
+              receipt_count: (existing.receipt_count ?? 0) + 1,
+              // Enrich location if missing
+              ...(params.latitude != null ? { latitude: params.latitude } : {}),
+              ...(params.longitude != null ? { longitude: params.longitude } : {}),
+              ...(params.tillNumber ? { till_number: params.tillNumber } : {}),
+            })
+            .eq('id', existing.id);
+        } else {
+          // Brand-new store — insert
+          await supabase
+            .from('stores')
+            .insert({
+              name,
+              category,
+              kra_pin: null,
+              till_number: params.tillNumber ?? null,
+              latitude: params.latitude ?? null,
+              longitude: params.longitude ?? null,
+              address: params.address ?? null,
+              first_seen_at: now,
+              last_seen_at: now,
+              receipt_count: 1,
+              verified: false,
+            });
+        }
+      }
+    } catch (err) {
+      // Non-fatal — log and continue; ML data collection should never block processing
+      console.warn('[store-recognition] recordEncounter failed (non-fatal):', err);
+    }
+  }
   
   /**
    * Get suggested templates for a store
