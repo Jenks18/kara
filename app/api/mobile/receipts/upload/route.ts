@@ -288,8 +288,10 @@ export async function POST(request: NextRequest) {
     }, { status: uploadSucceeded ? 200 : 500, headers: corsHeaders });
 
   } catch (error: any) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error('Error in mobile receipt upload:', msg, error instanceof Error ? error.stack : '');
     return NextResponse.json(
-      { success: false, error: error.message || 'Processing failed' },
+      { success: false, error: msg },
       { status: 500, headers: corsHeaders }
     );
   }

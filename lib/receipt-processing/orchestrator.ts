@@ -769,8 +769,8 @@ export class ReceiptProcessor {
       });
     
     if (error) {
-      console.error('Upload error:', error);
-      throw new Error(`Failed to upload image: ${error.message}`);
+      console.error('Storage upload error — bucket=receipts, path=', path, 'error:', JSON.stringify(error));
+      throw new Error(`Failed to upload image to storage: ${error.message} (code=${error.statusCode ?? error.status ?? 'unknown'})`);
     }
     
     // Get public URL
