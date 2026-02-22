@@ -8,17 +8,18 @@
 import { decodeQRFromImage } from './qr-decoder';
 import { scrapeKRAInvoice } from './kra-scraper';
 // import { extractWithTesseract } from './ocr-free'; // Disabled: causes worker issues in Vercel
-import { extractWithGemini, extractReceiptWithGemini } from './ocr-ai';
+import { extractReceiptWithGemini } from './ocr-ai';
 import { rawReceiptStorage, type RawReceiptData } from './raw-storage';
 import { storeRecognizer } from './store-recognition';
 import { templateRegistry } from './template-registry';
 import { aiReceiptEnhancer } from './ai-enhancement';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-// Use Web Crypto API instead of Node crypto for Vercel compatibility
+import { createHash } from 'crypto';
+
+// SHA-256 hash for reliable duplicate detection
 function calculateHash(buffer: Buffer): string {
-  // Use simple hash for Vercel serverless
-  return Buffer.from(buffer).toString('base64').substring(0, 64);
+  return createHash('sha256').update(buffer).digest('hex');
 }
 
 export interface ProcessingOptions {
@@ -307,37 +308,20 @@ export class ReceiptProcessor {
           template,
           imageBuffer: !effectiveQrData ? imageBuffer : undefined,
         }).then(async (enhanced) => {
-          // AI completed successfully - update BOTH tables in background
-          
+          // AI completed — update raw_receipts with the full AI response
           if (result.rawReceiptId && options.supabaseClient) {
-            // Update raw_receipts with AI response
             const { error: rawError } = await options.supabaseClient
               .from('raw_receipts')
-              .update({
-                ai_response: enhanced,
-              })
+              .update({ ai_response: enhanced })
               .eq('id', result.rawReceiptId);
             
             if (rawError) {
               console.error('Failed to save AI results to raw_receipts:', rawError);
-            } else {
-            }
-            
-            // Update expense_items with better AI category (if confidence is high enough)
-            if (enhanced.confidence >= 60) {
-              const { error: itemError } = await options.supabaseClient
-                .from('expense_items')
-                .update({
-                  category: enhanced.category,
-                })
-                .eq('raw_receipt_id', result.rawReceiptId);
-              
-              if (itemError) {
-                console.error('Failed to update expense_items with AI results:', itemError);
-              } else {
-              }
             }
           }
+          // NOTE: expense_items category update is handled in upload/route.ts
+          // after the expense_item row has been inserted. Do NOT update
+          // expense_items here — the row may not exist yet (race condition).
         }).catch((error: any) => {
           console.warn('⚠️ AI enhancement failed (non-blocking):', error.message);
         });
@@ -445,9 +429,14 @@ export class ReceiptProcessor {
       const base64Image = imageBuffer.toString('base64');
       const VISION_API_URL = `https://vision.googleapis.com/v1/images:annotate?key=${process.env.GOOGLE_VISION_API_KEY}`;
       
+      // 20-second timeout to avoid Vercel function hanging until maxDuration
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 20_000);
+
       const visionResponse = await fetch(VISION_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           requests: [{
             image: { content: base64Image },
@@ -457,6 +446,8 @@ export class ReceiptProcessor {
           }]
         })
       });
+
+      clearTimeout(timeout);
       
       if (!visionResponse.ok) {
         console.error('Google Vision API error:', visionResponse.status);

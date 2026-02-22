@@ -474,7 +474,7 @@ private fun ReviewImagesSection(
 
         Button(
             onClick = onSubmit,
-            enabled = selectedWorkspaceId.isNotBlank(),
+            enabled = images.isNotEmpty(),
             modifier = Modifier.fillMaxWidth().height(56.dp),
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)

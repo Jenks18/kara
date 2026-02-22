@@ -4,10 +4,11 @@
 -- ==========================================
 
 -- Create storage bucket for receipts
+-- NOTE: Standardized to 'receipts' to match orchestrator.ts and setup-storage.sql
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES (
-  'receipt-images',
-  'receipt-images',
+  'receipts',
+  'receipts',
   true,
   10485760, -- 10MB limit
   ARRAY['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
@@ -47,7 +48,7 @@ DROP POLICY IF EXISTS "Allow users to delete own profile pictures" ON storage.ob
 CREATE POLICY "Allow authenticated uploads" ON storage.objects
 FOR INSERT TO authenticated
 WITH CHECK (
-  bucket_id = 'receipt-images' AND
+  bucket_id = 'receipts' AND
   (storage.foldername(name))[1] = 'receipts' AND
   (auth.jwt()->>'email') IS NOT NULL
 );
@@ -55,14 +56,14 @@ WITH CHECK (
 -- Allow public read access to receipts
 CREATE POLICY "Allow public read" ON storage.objects
 FOR SELECT TO public
-USING (bucket_id = 'receipt-images');
+USING (bucket_id = 'receipts');
 
 -- Allow users to delete receipts from their own folders
 -- Folder structure: receipts/{user_email}/{filename}
 CREATE POLICY "Allow users to delete own receipts" ON storage.objects
 FOR DELETE TO authenticated
 USING (
-  bucket_id = 'receipt-images' AND
+  bucket_id = 'receipts' AND
   (storage.foldername(name))[1] = 'receipts' AND
   (storage.foldername(name))[2] = (auth.jwt()->>'email')::text
 );
@@ -109,7 +110,7 @@ USING (
 -- ==========================================
 
 -- Check buckets exist
-SELECT * FROM storage.buckets WHERE id IN ('receipt-images', 'profile-pictures');
+SELECT * FROM storage.buckets WHERE id IN ('receipts', 'profile-pictures');
 
 -- Check policies
 SELECT 
@@ -134,7 +135,7 @@ Upload receipt (store in user's folder):
   const fileName = `receipts/${userEmail}/${Date.now()}.jpg`;
   
   const { data, error } = await supabase.storage
-    .from('receipt-images')
+    .from('receipts')
     .upload(fileName, file);
 
 Upload profile picture:
@@ -147,12 +148,12 @@ Upload profile picture:
 
 Get public URL:
   const { data } = supabase.storage
-    .from('receipt-images')
+    .from('receipts')
     .getPublicUrl(`receipts/${userEmail}/123.jpg`);
 
 Delete file:
   await supabase.storage
-    .from('receipt-images')
+    .from('receipts')
     .remove([`receipts/${userEmail}/123.jpg`]);
 */
 

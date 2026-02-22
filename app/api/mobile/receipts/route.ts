@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { corsHeaders } from '@/lib/auth/mobile-auth';
 import { createMobileClient } from '@/lib/supabase/mobile-client';
 
+export const maxDuration = 30;
+
 export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders });
 }

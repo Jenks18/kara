@@ -69,7 +69,8 @@ data class MobileStats(
     val totalAllTime: Double = 0.0,
     val monthOverMonthTrend: Double = 0.0,
     val receiptCountThisMonth: Int = 0,
-    val totalReports: Int = 0
+    val totalReports: Int = 0,
+    val totalReceipts: Int = 0
 )
 
 data class Workspace(
@@ -214,8 +215,12 @@ data class ReceiptUploadResponse(
     val merchant: String? = null,
     val amount: Double = 0.0,
     val date: String? = null,
+    val category: String? = null,
     val kraVerified: Boolean = false,
+    val hasEtimsQR: Boolean = false,
+    val confidence: Map<String, Int>? = null,
     val processingTimeMs: Long = 0,
+    val warning: String? = null,
     val error: String? = null
 ) {
     /** Filter garbage merchant names from AI extraction */

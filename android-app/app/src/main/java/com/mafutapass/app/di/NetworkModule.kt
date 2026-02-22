@@ -42,9 +42,9 @@ object NetworkModule {
     fun provideLoggingInterceptor(): HttpLoggingInterceptor {
         return HttpLoggingInterceptor().apply {
             level = if (BuildConfig.DEBUG) {
-                HttpLoggingInterceptor.Level.BODY
+                HttpLoggingInterceptor.Level.HEADERS  // HEADERS avoids multi-MB image dumps in Logcat
             } else {
-                HttpLoggingInterceptor.Level.BASIC   // Never log full bodies in release — leaks tokens
+                HttpLoggingInterceptor.Level.BASIC    // Never log full bodies in release — leaks tokens
             }
         }
     }

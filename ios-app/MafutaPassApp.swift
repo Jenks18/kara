@@ -66,7 +66,20 @@ struct MafutaPassApp: App {
                 .environmentObject(themeManager)
                 .preferredColorScheme(themeManager.mode.colorScheme)
                 .task {
-                    clerk.configure(publishableKey: "pk_live_Y2xlcmsua2FjaGFsYWJzLmNvbSQ")
+                    // RedirectConfig must match the authorised redirect URL
+                    // in the Clerk dashboard (xanes.MafutaPass://callback).
+                    // The SDK default uses Bundle.main.bundleIdentifier which
+                    // is com.mafutapass.app — that does NOT match, so we
+                    // override explicitly.
+                    clerk.configure(
+                        publishableKey: "pk_live_Y2xlcmsua2FjaGFsYWJzLmNvbSQ",
+                        settings: .init(
+                            redirectConfig: .init(
+                                redirectUrl: "xanes.MafutaPass://callback",
+                                callbackUrlScheme: "xanes.MafutaPass"
+                            )
+                        )
+                    )
                     do {
                         try await clerk.load()
                         // Validate that loaded session is still valid

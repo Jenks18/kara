@@ -48,13 +48,26 @@ export interface CategoryRule {
 /**
  * AI-powered receipt enhancement
  */
+/** Title-case a category name for consistent storage */
+function normalizeCategory(cat: string): string {
+  if (!cat) return 'Other';
+  return cat.charAt(0).toUpperCase() + cat.slice(1).toLowerCase();
+}
+
 export class AIReceiptEnhancer {
-  private genAI: GoogleGenerativeAI;
+  private _genAI: GoogleGenerativeAI | null = null;
   private categoryRules: CategoryRule[];
   
   constructor() {
-    this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
     this.categoryRules = this.buildCategoryRules();
+  }
+
+  /** Lazy-init: only create the client when an API call is actually needed */
+  private get genAI(): GoogleGenerativeAI {
+    if (!this._genAI) {
+      this._genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+    }
+    return this._genAI;
   }
   
   /**
@@ -120,9 +133,9 @@ export class AIReceiptEnhancer {
         }
       }
       
-      // If strong match, assign category
+      // If strong match, assign category (normalized to Title Case)
       if (matches >= 2) {
-        result.category = rule.name;
+        result.category = normalizeCategory(rule.name);
         result.confidence = Math.min(85, 50 + matches * 10);
         result.tags.push(rule.name);
         break;

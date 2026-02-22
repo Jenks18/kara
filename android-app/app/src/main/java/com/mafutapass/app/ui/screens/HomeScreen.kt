@@ -8,6 +8,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.TrendingDown
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -77,6 +79,8 @@ fun HomeScreen(
     val totalAllTime          = serverStats?.totalAllTime          ?: clientTotalAllTime
     val momTrend              = (serverStats?.monthOverMonthTrend?.toFloat()) ?: clientMomTrend
     val submittedReportsCount = serverStats?.totalReports          ?: reports.size
+    val receiptCountThisMonth = serverStats?.receiptCountThisMonth ?: thisMonthExpenses.size
+    val totalReceiptsAllTime  = serverStats?.totalReceipts         ?: expenses.size
 
     LaunchedEffect(Unit) { viewModel.refresh() }
 
@@ -136,7 +140,7 @@ fun HomeScreen(
                 HeroSpendingCard(
                     totalThisMonth = totalThisMonth,
                     momTrend = momTrend,
-                    receiptCountThisMonth = thisMonthExpenses.size,
+                    receiptCountThisMonth = receiptCountThisMonth,
                     totalAllTime = totalAllTime
                 )
 
@@ -158,7 +162,7 @@ fun HomeScreen(
                         icon = Icons.Filled.Receipt,
                         iconColor = Color(0xFF10B981),
                         iconBackground = Color(0xFFD1FAE5),
-                        value = expenses.size.toString(),
+                        value = totalReceiptsAllTime.toString(),
                         label = "All Receipts"
                     )
                 }
@@ -266,7 +270,7 @@ fun HomeScreen(
                                         }
                                     }
                                     if (index < minOf(expenses.size, 5) - 1) {
-                                        Divider(modifier = Modifier.padding(top = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
+                                        HorizontalDivider(modifier = Modifier.padding(top = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
                                     }
                                 }
                             }
@@ -486,7 +490,7 @@ fun HeroSpendingCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = if (momTrend > 0) Icons.Filled.TrendingUp else Icons.Filled.TrendingDown,
+                            imageVector = if (momTrend > 0) Icons.AutoMirrored.Filled.TrendingUp else Icons.AutoMirrored.Filled.TrendingDown,
                             contentDescription = null,
                             tint = trendColor,
                             modifier = Modifier.size(14.dp)
@@ -644,7 +648,7 @@ fun StatCard(
             }
             if (trend != null) {
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(if (trendUp) Icons.Filled.TrendingUp else Icons.Filled.TrendingDown, contentDescription = null, tint = if (trendUp) Color(0xFF10B981) else Color(0xFFEF4444), modifier = Modifier.size(16.dp))
+                    Icon(if (trendUp) Icons.AutoMirrored.Filled.TrendingUp else Icons.AutoMirrored.Filled.TrendingDown, contentDescription = null, tint = if (trendUp) Color(0xFF10B981) else Color(0xFFEF4444), modifier = Modifier.size(16.dp))
                     Text(trend, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = if (trendUp) Color(0xFF10B981) else Color(0xFFEF4444))
                 }
             }

@@ -167,18 +167,6 @@ class ScanReceiptViewModel @Inject constructor(
                     }
                     Log.e(TAG, "Upload failed (HTTP ${e.code()}) for image $index: $serverError")
                     results.add(ReceiptUploadResponse(success = false, error = msg))
-                } catch (e: HttpException) {
-                    // Read the response body to get the real server error message
-                    val serverError = try {
-                        e.response()?.errorBody()?.string()
-                    } catch (_: Exception) { null }
-                    val msg = if (!serverError.isNullOrBlank()) {
-                        "HTTP ${e.code()}: ${serverError.take(300)}"
-                    } else {
-                        "HTTP ${e.code()}: ${e.message()}"
-                    }
-                    Log.e(TAG, "Upload HTTP ${e.code()} for image $index — $serverError")
-                    results.add(ReceiptUploadResponse(success = false, error = msg))
                 } catch (e: Exception) {
                     Log.e(TAG, "Upload failed for image $index: ${e.message}")
                     results.add(ReceiptUploadResponse(success = false, error = e.message ?: "Upload failed"))

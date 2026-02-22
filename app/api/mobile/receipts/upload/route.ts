@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
 
     // Validate content type
     const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
-    if (!validTypes.some(t => imageFile.type.startsWith(t.split('/')[0]))) {
+    if (!validTypes.includes(imageFile.type)) {
       return NextResponse.json(
         { error: 'Invalid file type. Supported: JPEG, PNG, WebP, HEIC.' },
         { status: 400, headers: corsHeaders }
@@ -248,19 +248,26 @@ export async function POST(request: NextRequest) {
             });
 
           if (!itemError && amount > 0) {
-            const { data: reportItems } = await supabase
-              .from('expense_items')
-              .select('amount')
-              .eq('report_id', finalReportId);
-            const total = reportItems?.reduce((sum: number, i: any) => sum + (i.amount || 0), 0) || 0;
-            await supabase
-              .from('expense_reports')
-              .update({ total_amount: total })
-              .eq('id', finalReportId);
+            // Atomic total update — avoids read-then-write race on concurrent batch uploads
+            await supabase.rpc('update_report_total', { report_id_param: finalReportId });
           }
         }
       } catch (e: any) {
-        // Receipt saved but report creation failed — non-fatal
+        // Receipt image saved but report/expense_item creation failed
+        console.error('Failed to create expense_item/report:', e?.message || e, e?.stack);
+        // Return partial success so the Android app can inform the user
+        return NextResponse.json({
+          success: true,
+          reportId: finalReportId,
+          imageUrl: result.imageUrl,
+          merchant: null,
+          amount: 0,
+          date: null,
+          kraVerified: false,
+          processingTimeMs: result.processingTimeMs,
+          warning: 'Image uploaded but expense record creation failed — please add details manually.',
+          error: null,
+        }, { status: 200, headers: corsHeaders });
       }
     }
 
