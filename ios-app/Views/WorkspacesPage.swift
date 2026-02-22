@@ -133,20 +133,6 @@ struct WorkspacesPage: View {
                         ZStack {
                         ScrollView {
                             VStack(spacing: 12) {
-                                // Hidden NavigationLink for "Go to workspace" programmatic nav
-                                NavigationLink(
-                                    destination: Group {
-                                        if let wsId = navigateToWorkspaceId {
-                                            WorkspaceDetailView(workspaceId: wsId)
-                                        }
-                                    },
-                                    isActive: Binding(
-                                        get: { navigateToWorkspaceId != nil },
-                                        set: { if !$0 { navigateToWorkspaceId = nil } }
-                                    )
-                                ) { EmptyView() }
-                                .hidden()
-                                
                                 ForEach(dataStore.workspaces) { workspace in
                                     WorkspaceRow(
                                         workspace: workspace,
@@ -232,19 +218,15 @@ struct WorkspacesPage: View {
                         }
                         } // ZStack
 
-                        // Hidden NavigationLink for Go to workspace
-                        if let wid = navigateToWorkspaceId,
-                           let ws = dataStore.workspaces.first(where: { $0.id == wid }) {
-                            NavigationLink(
-                                destination: WorkspaceDetailView(workspaceId: wid),
-                                isActive: Binding(
-                                    get: { navigateToWorkspaceId == wid },
-                                    set: { if !$0 { navigateToWorkspaceId = nil } }
-                                )
-                            ) { EmptyView() }
-                            .hidden()
-                        }
                     }
+                }
+            }
+            .navigationDestination(isPresented: Binding(
+                get: { navigateToWorkspaceId != nil },
+                set: { if !$0 { navigateToWorkspaceId = nil } }
+            )) {
+                if let wsId = navigateToWorkspaceId {
+                    WorkspaceDetailView(workspaceId: wsId)
                 }
             }
             .background(AppTheme.backgroundView())

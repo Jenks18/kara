@@ -40,11 +40,15 @@ export async function GET(
       );
     }
 
-    const { data: items } = await supabase
+    const { data: items, error: itemsError } = await supabase
       .from('expense_items')
       .select('id, image_url, amount, category, merchant_name, transaction_date, created_at, kra_verified, processing_status, description')
       .eq('report_id', id)
       .order('created_at', { ascending: false });
+
+    if (itemsError) {
+      console.error(`[report-detail] items query failed for report ${id}:`, itemsError.message);
+    }
 
     const itemsList = items || [];
     const totalAmount = itemsList.reduce((sum: number, item: any) => sum + (item.amount || 0), 0);

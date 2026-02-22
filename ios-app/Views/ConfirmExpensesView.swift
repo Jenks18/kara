@@ -7,10 +7,12 @@ struct ConfirmExpensesView: View {
     @Environment(\.dismiss) var dismiss
     @State var images: [UIImage]
     
+    // Observe WorkspaceManager reactively — workspaces may load async after view appears
+    @ObservedObject private var workspaceManager = WorkspaceManager.shared
+
     @State private var currentImageIndex = 0
-    // Pre-seed from WorkspaceManager so the upload is never blocked by an empty workspace.
-    // If the user has no workspace, we pass an empty ID and the backend auto-resolves
-    // (or auto-creates a "Personal" workspace) — same behaviour as Android.
+    // Empty string = no explicit selection → backend auto-resolves/creates "Personal" workspace.
+    // Never block submission on workspace selection.
     @State private var selectedWorkspace: String = WorkspaceManager.shared.activeWorkspace?.id
         ?? WorkspaceManager.shared.workspaces.first?.id
         ?? ""
@@ -20,8 +22,6 @@ struct ConfirmExpensesView: View {
     @State private var showSuccess = false
     @State private var locationPermissionGranted = false
     @State private var showDocumentScanner = false
-    // Workspaces come from WorkspaceManager (already cached — no extra API call)
-    @State private var workspaces: [Workspace] = WorkspaceManager.shared.workspaces
     @State private var uploadErrorMessage: String?
     @State private var showUploadError = false
     @State private var detectedQRUrl: String? = nil
@@ -176,21 +176,18 @@ struct ConfirmExpensesView: View {
                                     .foregroundColor(AppTheme.Colors.textSecondary)
                                 
                                 Menu {
-                                    if workspaces.isEmpty {
-                                        // No workspace yet — upload still works; backend will auto-create "Personal"
-                                        Button("Personal (auto)") { selectedWorkspace = "" }
-                                    } else {
-                                        ForEach(workspaces) { workspace in
-                                            Button(workspace.name) {
-                                                selectedWorkspace = workspace.id
-                                            }
+                                    // "Personal" option always available — empty ID = backend auto-resolves
+                                    Button("Personal (auto-created)") { selectedWorkspace = "" }
+                                    ForEach(workspaceManager.workspaces) { workspace in
+                                        Button(workspace.name) {
+                                            selectedWorkspace = workspace.id
                                         }
                                     }
                                 } label: {
                                     HStack {
                                         Text(
-                                            workspaces.isEmpty ? "Personal (auto-created)" :
-                                            workspaces.first(where: { $0.id == selectedWorkspace })?.name ?? "Personal (auto-created)"
+                                            workspaceManager.workspaces.first(where: { $0.id == selectedWorkspace })?.name
+                                                ?? "Personal (auto-created)"
                                         )
                                         .foregroundColor(AppTheme.Colors.textPrimary)
                                         Spacer()
@@ -295,11 +292,17 @@ struct ConfirmExpensesView: View {
             .onAppear {
                 scanForQRCodes()
                 checkLocationPermission()
-                workspaces = WorkspaceManager.shared.workspaces
-                if selectedWorkspace.isEmpty {
-                    selectedWorkspace = WorkspaceManager.shared.activeWorkspace?.id
-                        ?? WorkspaceManager.shared.workspaces.first?.id
-                        ?? ""
+                // Auto-select active/first workspace if none chosen yet
+                if selectedWorkspace.isEmpty,
+                   let ws = workspaceManager.activeWorkspace ?? workspaceManager.workspaces.first {
+                    selectedWorkspace = ws.id
+                }
+            }
+            // React when workspaces load async (e.g. first launch, fresh sign-in)
+            .onChange(of: workspaceManager.workspaces.count) { _ in
+                guard selectedWorkspace.isEmpty else { return }
+                if let ws = workspaceManager.activeWorkspace ?? workspaceManager.workspaces.first {
+                    selectedWorkspace = ws.id
                 }
             }
             .sheet(isPresented: $showDocumentScanner) {
@@ -354,7 +357,7 @@ struct ConfirmExpensesView: View {
                 let lat = locationManager.location?.coordinate.latitude
                 let lon = locationManager.location?.coordinate.longitude
                 
-                let wsName = workspaces.first(where: { $0.id == selectedWorkspace })?.name ?? "Personal"
+                let wsName = workspaceManager.workspaces.first(where: { $0.id == selectedWorkspace })?.name ?? "Personal"
                 
                 let response = try await API.shared.uploadReceipts(
                     images: imageDataArray,

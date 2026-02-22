@@ -130,6 +130,9 @@ dependencies {
     // ZXing QR code generation (workspace share QR codes)
     implementation("com.google.zxing:core:3.5.3")
 
+    // Location Services (GPS coordinates for receipts)
+    implementation("com.google.android.gms:play-services-location:21.3.0")
+
     // ML Kit Document Scanner (receipt boundary detection)
     implementation("com.google.android.gms:play-services-mlkit-document-scanner:16.0.0")
 

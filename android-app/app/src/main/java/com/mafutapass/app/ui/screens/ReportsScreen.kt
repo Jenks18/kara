@@ -462,12 +462,22 @@ fun ReportCard(report: ExpenseReport, onNavigateToDetail: (String) -> Unit = {})
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
                 )
+                // Always show the amount — show muted dash when zero so new
+                // reports (before AI extraction completes) are clearly empty
+                // rather than invisibly missing the field.
                 if (report.totalAmount > 0) {
                     Text(
                         text = CurrencyFormatter.formatSimple(report.totalAmount),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
+                    )
+                } else {
+                    Text(
+                        text = "—",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Normal,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )
                 }
             }

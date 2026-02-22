@@ -127,7 +127,7 @@ export class ReceiptProcessor {
       // STAGE 1: UPLOAD & RAW STORAGE
       // ==========================================
       
-      const imageUrl = await this.uploadImage(imageBuffer, imageFile.name, supabase, options.userEmail, imageFile.type);
+      const imageUrl = await this.uploadImage(imageBuffer, imageFile.name, supabase, options.userEmail, imageFile.type, options.userId);
       result.imageUrl = imageUrl;
       
       // Check for duplicates
@@ -817,16 +817,19 @@ export class ReceiptProcessor {
   /**
    * Upload image to storage
    */
-  private async uploadImage(buffer: Buffer, filename: string, supabase: SupabaseClient, userEmail?: string, mimeType?: string): Promise<string> {
+  private async uploadImage(buffer: Buffer, filename: string, supabase: SupabaseClient, userEmail?: string, mimeType?: string, userId?: string): Promise<string> {
     // Upload to Supabase Storage using REQUIRED authenticated client
     // This maintains user context for RLS and audit trails
     const timestamp = Date.now();
     const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
-    
-    // CLERK RLS: Path must start with user email
-    const path = userEmail 
-      ? `${userEmail}/${timestamp}-${sanitizedFilename}`
-      : `receipts/${timestamp}-${sanitizedFilename}`;
+
+    // CLERK RLS: folder must match auth.jwt()->>'email' OR auth.jwt()->>'sub'.
+    // Prefer email (web + most mobile sessions); fall back to userId (sub) when
+    // email is absent from the JWT — matches the receipts_insert_mobile policy.
+    const folder = (userEmail && userEmail.length > 0) ? userEmail : userId;
+    const path = folder
+      ? `${folder}/${timestamp}-${sanitizedFilename}`
+      : `orphaned/${timestamp}-${sanitizedFilename}`; // should never happen
 
     // Use the actual file MIME type so Supabase serves the correct Content-Type.
     // Validate it's an allowed image type; fall back to jpeg if unknown/absent.

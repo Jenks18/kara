@@ -16,11 +16,15 @@ async function enrichReports(supabase: any, reports: any[]) {
   const reportIds = reports.map((r: any) => r.id);
 
   // One query for all items across all reports in this page.
-  const { data: allItems } = await supabase
+  const { data: allItems, error: itemsError } = await supabase
     .from('expense_items')
     .select('id, report_id, image_url, amount')
     .in('report_id', reportIds)
     .order('created_at', { ascending: true });
+
+  if (itemsError) {
+    console.error('[enrichReports] expense_items query failed:', itemsError.message, '| reportIds:', reportIds.slice(0, 3));
+  }
 
   const itemsByReport = new Map<string, any[]>();
   for (const item of allItems || []) {

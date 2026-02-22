@@ -46,7 +46,6 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.Priority
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
@@ -148,7 +147,6 @@ fun AddReceiptScreen(
 
     // Camera permission + state (for fallback multi-capture camera)
     var showCamera by remember { mutableStateOf(false) }
-    var showQrScanner by remember { mutableStateOf(false) }
     var hasCameraPermission by remember { mutableStateOf(false) }
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -157,27 +155,23 @@ fun AddReceiptScreen(
         if (granted) showCamera = true
         else Toast.makeText(context, "Camera permission required to scan receipts", Toast.LENGTH_SHORT).show()
     }
-    val qrPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        hasCameraPermission = granted
-        if (granted) showQrScanner = true
-        else Toast.makeText(context, "Camera permission required for QR scanner", Toast.LENGTH_SHORT).show()
-    }
 
     // Request location once when the screen appears (best-effort, non-blocking)
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        if (permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
-            permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true) {
+    ) { perms: Map<String, Boolean> ->
+        val locationGranted = perms[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+            perms[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (locationGranted) {
             try {
-                val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
-                fusedLocationClient.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, null)
-                    .addOnSuccessListener { location ->
-                        if (location != null) {
-                            viewModel.setLocation(location.latitude, location.longitude)
-                        }
+                // Use lastLocation to avoid Priority @IntDef cross-language type inference issues.
+                // lastLocation is sufficient for attaching approximate location to a receipt.
+                val fusedClient: com.google.android.gms.location.FusedLocationProviderClient =
+                    LocationServices.getFusedLocationProviderClient(context)
+                @Suppress("MissingPermission")
+                fusedClient.lastLocation
+                    .addOnSuccessListener { loc: android.location.Location? ->
+                        if (loc != null) viewModel.setLocation(loc.latitude, loc.longitude)
                     }
             } catch (e: SecurityException) {
                 Log.e(TAG, "Location permission revoked: ${e.message}")
@@ -191,19 +185,7 @@ fun AddReceiptScreen(
         )
     }
 
-    // Full-screen QR-only scanner — scans QR code, then prompts user to also capture the receipt image
-    if (showQrScanner && hasCameraPermission) {
-        QrCodeScanner(
-            onQrCodeDetected = { url ->
-                viewModel.setDetectedQrUrl(url)
-            },
-            onCaptureReceipt = { bytes ->
-                viewModel.addImageBytes(bytes)
-            },
-            onDone = { showQrScanner = false }
-        )
-        return
-    }
+    // QR scanning is integrated into MultiCaptureCamera via the QR mode toggle button
 
     // Full-screen fallback camera — used only if Document Scanner fails to start
     if (showCamera && hasCameraPermission) {
@@ -263,9 +245,6 @@ fun AddReceiptScreen(
                             }
                     }
                 },
-                onScanQrCode = {
-                    qrPermissionLauncher.launch(Manifest.permission.CAMERA)
-                },
                 onChooseFromGallery = { galleryLauncher.launch("image/*") }
             )
             is ScanState.ReviewImages -> ReviewImagesSection(
@@ -310,7 +289,6 @@ fun AddReceiptScreen(
 @Composable
 private fun ChooseMethodSection(
     onScanReceipt: () -> Unit,
-    onScanQrCode: () -> Unit,
     onChooseFromGallery: () -> Unit
 ) {
     Column(
@@ -364,28 +342,7 @@ private fun ChooseMethodSection(
 
         Spacer(Modifier.height(16.dp))
 
-        // Secondary: QR Scanner — dedicated barcode scanner for eTIMS QR codes
-        OutlinedButton(
-            onClick = onScanQrCode,
-            modifier = Modifier.fillMaxWidth().height(56.dp),
-            shape = RoundedCornerShape(16.dp),
-            border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
-        ) {
-            Icon(Icons.Filled.QrCodeScanner, null, modifier = Modifier.size(22.dp), tint = MaterialTheme.colorScheme.primary)
-            Spacer(Modifier.width(12.dp))
-            Text("Scan QR Code", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.primary)
-        }
-        Spacer(Modifier.height(4.dp))
-        Text(
-            "Scan the eTIMS/KRA QR code on your receipt",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(Modifier.height(16.dp))
-
-        // Tertiary: Gallery
+        // Gallery — QR scanning is available via the toggle inside the camera view
         OutlinedButton(
             onClick = onChooseFromGallery,
             modifier = Modifier.fillMaxWidth().height(56.dp),
@@ -948,10 +905,14 @@ private fun MultiCaptureCamera(
     var localCaptureCount by remember { mutableIntStateOf(captureCount) }
     var detectedQr by remember { mutableStateOf<String?>(null) }
     var isCapturing by remember { mutableStateOf(false) }
+    var qrMode by remember { mutableStateOf(false) }
+    // Stable holder for background-thread reads inside the camera analyzer
+    val qrModeHolder = remember { arrayOf(false) }
+    LaunchedEffect(qrMode) { qrModeHolder[0] = qrMode }
 
-    // QR banner auto-dismiss
+    // QR banner auto-dismiss — receipt mode only; in QR mode banner stays until user dismisses
     LaunchedEffect(detectedQr) {
-        if (detectedQr != null) {
+        if (detectedQr != null && !qrMode) {
             kotlinx.coroutines.delay(3000)
             detectedQr = null
         }
@@ -977,7 +938,13 @@ private fun MultiCaptureCamera(
                             .also { analysis ->
                                 analysis.setAnalyzer(analysisExecutor) { imageProxy ->
                                     processQrFrame(imageProxy, barcodeScanner) { qrUrl ->
-                                        if (qrUrl.contains("etims", ignoreCase = true) ||
+                                        if (qrModeHolder[0]) {
+                                            // QR mode: capture ANY QR/barcode URL
+                                            if (detectedQr == null) {
+                                                detectedQr = qrUrl
+                                                onQrCodeDetected(qrUrl)
+                                            }
+                                        } else if (qrUrl.contains("etims", ignoreCase = true) ||
                                             qrUrl.contains("kra.go.ke", ignoreCase = true) ||
                                             qrUrl.contains("itax", ignoreCase = true)) {
                                             detectedQr = qrUrl
@@ -1005,20 +972,32 @@ private fun MultiCaptureCamera(
             modifier = Modifier.fillMaxSize()
         )
 
-        // Receipt guide overlay — shows a frame where the receipt should be
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(32.dp)
-        ) {
-            // Semi-transparent border to guide receipt placement
+        // Overlay: receipt guide in normal mode, QR crosshair in QR mode
+        if (!qrMode) {
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight(0.75f)
-                    .align(Alignment.Center)
-                    .border(2.dp, Color.White.copy(alpha = 0.6f), RoundedCornerShape(12.dp))
-            )
+                    .fillMaxSize()
+                    .padding(32.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(0.75f)
+                        .align(Alignment.Center)
+                        .border(2.dp, Color.White.copy(alpha = 0.6f), RoundedCornerShape(12.dp))
+                )
+            }
+        } else {
+            Box(
+                modifier = Modifier.fillMaxSize().padding(48.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(250.dp)
+                        .border(3.dp, if (detectedQr != null) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+                )
+            }
         }
 
         // QR detection banner
@@ -1046,13 +1025,13 @@ private fun MultiCaptureCamera(
                     Spacer(Modifier.width(12.dp))
                     Column {
                         Text(
-                            "eTIMS QR Detected!",
+                            if (qrMode) "QR Code Captured!" else "eTIMS QR Detected!",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimary
                         )
                         Text(
-                            "KRA link captured for verification",
+                            if (qrMode) "Capture receipt photo too — tap ✓ when done" else "KRA link captured for verification",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
                         )
@@ -1101,14 +1080,24 @@ private fun MultiCaptureCamera(
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Gallery shortcut
+            // QR mode toggle — tap to switch between receipt capture and QR scanning
             IconButton(
-                onClick = onDone,
+                onClick = {
+                    qrMode = !qrMode
+                    detectedQr = null // clear stale banner on mode switch
+                },
                 modifier = Modifier
                     .size(48.dp)
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f), CircleShape)
+                    .background(
+                        if (qrMode) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                        CircleShape
+                    )
             ) {
-                Icon(Icons.Filled.Image, "Gallery", tint = MaterialTheme.colorScheme.onSurface)
+                Icon(
+                    Icons.Filled.QrCodeScanner, "Toggle QR mode",
+                    tint = if (qrMode) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                )
             }
 
             // Capture button

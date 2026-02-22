@@ -10,9 +10,9 @@ VALUES (
   'receipts',
   true,
   10485760, -- 10MB limit
-  ARRAY['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+  ARRAY['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif']
 )
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET allowed_mime_types = EXCLUDED.allowed_mime_types;
 
 -- Create storage bucket for profile pictures
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
@@ -21,9 +21,9 @@ VALUES (
   'profile-pictures',
   true,
   5242880, -- 5MB limit
-  ARRAY['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+  ARRAY['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif']
 )
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET allowed_mime_types = EXCLUDED.allowed_mime_types;
 
 -- Create storage bucket for workspace avatars
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
@@ -32,9 +32,9 @@ VALUES (
   'workspace-avatars',
   true,
   5242880, -- 5MB limit
-  ARRAY['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+  ARRAY['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif']
 )
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET allowed_mime_types = EXCLUDED.allowed_mime_types;
 
 -- ==========================================
 -- STORAGE POLICIES (Row Level Security)
