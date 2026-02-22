@@ -113,7 +113,9 @@ export async function POST(request: NextRequest) {
       mobileQrUrl: qrUrl || undefined,
     });
 
-    const uploadSucceeded = !!result.rawReceiptId && !!result.imageUrl;
+    // uploadSucceeded only requires the image to have been stored.
+    // raw_receipts save failures are non-fatal — the expense_item is still created.
+    const uploadSucceeded = !!result.imageUrl;
     let finalReportId: string | undefined = reportId || undefined;
 
     if (uploadSucceeded) {
@@ -228,7 +230,7 @@ export async function POST(request: NextRequest) {
             .from('expense_items')
             .insert({
               report_id: finalReportId,
-              raw_receipt_id: result.rawReceiptId,
+              raw_receipt_id: result.rawReceiptId || null,
               image_url: result.imageUrl,
               category,
               amount,

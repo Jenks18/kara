@@ -256,7 +256,13 @@ export class ReceiptProcessor {
           recognitionConfidence: storeMatch.confidence / 100,
         };
         
-        result.rawReceiptId = await rawReceiptStorage.save(rawData, supabase);
+        try {
+          result.rawReceiptId = await rawReceiptStorage.save(rawData, supabase);
+        } catch (rawSaveErr: any) {
+          // Non-fatal: raw_receipts save failed (e.g. RLS policy). Processing continues.
+          console.warn('⚠️ raw_receipts save failed (non-fatal):', rawSaveErr?.message);
+          result.warnings.push('Raw receipt record not saved — processing continues');
+        }
       }
       
       // ==========================================
@@ -770,7 +776,8 @@ export class ReceiptProcessor {
     
     if (error) {
       console.error('Storage upload error — bucket=receipts, path=', path, 'error:', JSON.stringify(error));
-      throw new Error(`Failed to upload image to storage: ${error.message} (code=${error.statusCode ?? error.status ?? 'unknown'})`);
+      const code = (error as any).statusCode ?? (error as any).status ?? 'unknown';
+      throw new Error(`Failed to upload image to storage: ${error.message} (code=${code})`);
     }
     
     // Get public URL
