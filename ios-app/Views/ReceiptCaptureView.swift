@@ -9,6 +9,7 @@ struct ReceiptCaptureView: View {
     @State private var showPhotosPicker = false
     @State private var showConfirmExpenses = false
     @State private var showDocumentScanner = false
+    @State private var showManualCamera = false
     
     var body: some View {
         ZStack {
@@ -76,8 +77,31 @@ struct ReceiptCaptureView: View {
                             .background(AppTheme.Colors.primary)
                             .cornerRadius(16)
                         }
-                        
-                        // Secondary: Gallery
+
+                        // Secondary: Manual Camera (with QR toggle)
+                        Button(action: { showManualCamera = true }) {
+                            HStack {
+                                Image(systemName: "camera")
+                                    .font(.system(size: 20))
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Manual Camera")
+                                        .font(.system(size: 17, weight: .medium))
+                                    Text("Tap QR icon to detect eTIMS codes")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.white.opacity(0.6))
+                                }
+                            }
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 14)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(Color.white.opacity(0.4), lineWidth: 1.5)
+                            )
+                        }
+
+                        // Tertiary: Gallery
                         Button(action: { showPhotosPicker = true }) {
                             HStack {
                                 Image(systemName: "photo.on.rectangle")
@@ -93,7 +117,7 @@ struct ReceiptCaptureView: View {
                                     .stroke(Color.white.opacity(0.4), lineWidth: 1.5)
                             )
                         }
-                        
+
                         Text("Gallery: up to 10 images")
                             .font(.system(size: 13))
                             .foregroundColor(.white.opacity(0.5))
@@ -131,6 +155,15 @@ struct ReceiptCaptureView: View {
         .sheet(isPresented: $showDocumentScanner) {
             DocumentScannerView { scannedImages in
                 capturedImages.append(contentsOf: scannedImages)
+                if !capturedImages.isEmpty {
+                    showConfirmExpenses = true
+                }
+            }
+        }
+        .fullScreenCover(isPresented: $showManualCamera) {
+            ManualCameraView { images in
+                capturedImages.append(contentsOf: images)
+                showManualCamera = false
                 if !capturedImages.isEmpty {
                     showConfirmExpenses = true
                 }

@@ -20,6 +20,7 @@ struct ConfirmExpensesView: View {
     @State private var selectedCategory: String = "fuel"
     @State private var isSubmitting = false
     @State private var showSuccess = false
+    @State private var successReportId: String? = nil
     @State private var locationPermissionGranted = false
     @State private var showDocumentScanner = false
     @State private var uploadErrorMessage: String?
@@ -317,6 +318,14 @@ struct ConfirmExpensesView: View {
             } message: {
                 Text("Receipts submitted successfully!")
             }
+            .navigationDestination(isPresented: Binding(
+                get: { successReportId != nil },
+                set: { if !$0 { successReportId = nil; dismiss() } }
+            )) {
+                if let rid = successReportId {
+                    ReportDetailPage(reportId: rid)
+                }
+            }
             .alert("Upload Failed", isPresented: $showUploadError) {
                 Button("OK", role: .cancel) { }
             } message: {
@@ -373,8 +382,15 @@ struct ConfirmExpensesView: View {
                 await MainActor.run {
                     isSubmitting = false
                     if response.success {
-                        showSuccess = true
+                        if let rid = response.reportId {
+                            successReportId = rid
+                        } else {
+                            showSuccess = true
+                        }
                     }
+                }
+                if response.success {
+                    await AppDataStore.shared.refreshAll(force: true)
                 }
             } catch {
                 await MainActor.run {

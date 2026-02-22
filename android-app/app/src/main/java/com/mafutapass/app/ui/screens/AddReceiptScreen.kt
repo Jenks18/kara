@@ -233,17 +233,8 @@ fun AddReceiptScreen(
         when (val state = uiState) {
             is ScanState.ChooseMethod -> ChooseMethodSection(
                 onScanReceipt = {
-                    if (activity != null) {
-                        scanner.getStartScanIntent(activity)
-                            .addOnSuccessListener { intentSender ->
-                                scannerLauncher.launch(IntentSenderRequest.Builder(intentSender).build())
-                            }
-                            .addOnFailureListener { e ->
-                                Log.e(TAG, "Document scanner failed to start: ${e.message}")
-                                // Fall back to multi-capture camera
-                                permissionLauncher.launch(Manifest.permission.CAMERA)
-                            }
-                    }
+                    // Open MultiCaptureCamera directly so QR toggle is always accessible
+                    permissionLauncher.launch(Manifest.permission.CAMERA)
                 },
                 onChooseFromGallery = { galleryLauncher.launch("image/*") }
             )
@@ -255,18 +246,8 @@ fun AddReceiptScreen(
                 onRemoveImage = { viewModel.removeImage(it) },
                 onAddMore = { galleryLauncher.launch("image/*") },
                 onTakeAnother = {
-                    // Launch Document Scanner (same as main scan) — NOT the fallback CameraX
-                    if (activity != null) {
-                        scanner.getStartScanIntent(activity)
-                            .addOnSuccessListener { intentSender ->
-                                scannerLauncher.launch(IntentSenderRequest.Builder(intentSender).build())
-                            }
-                            .addOnFailureListener { e ->
-                                Log.e(TAG, "Document scanner failed to start: ${e.message}")
-                                // Fall back to multi-capture camera only if doc scanner unavailable
-                                permissionLauncher.launch(Manifest.permission.CAMERA)
-                            }
-                    }
+                    // Open MultiCaptureCamera directly so QR toggle is always accessible
+                    permissionLauncher.launch(Manifest.permission.CAMERA)
                 },
                 onSubmit = { viewModel.uploadAll() }
             )

@@ -41,6 +41,25 @@ export async function GET(request: NextRequest) {
     const startOfMonth    = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
     const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
 
+    // Helper: direct-query fallback when an RPC is unavailable (migration not yet run).
+    const sumAmounts = async (from: string, to: string): Promise<number> => {
+      const { data } = await supabase
+        .from('expense_items')
+        .select('amount')
+        .gte('created_at', from)
+        .lt('created_at', to);
+      return (data ?? []).reduce((acc: number, row: { amount?: number | null }) => acc + (row.amount ?? 0), 0);
+    };
+
+    const countItems = async (from: string, to: string): Promise<number> => {
+      const { count } = await supabase
+        .from('expense_items')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', from)
+        .lt('created_at', to);
+      return count ?? 0;
+    };
+
     // Parallel server-side aggregations (RPC) + lightweight counts.
     const [thisMonthTotalRes, lastMonthTotalRes, thisMonthCountRes, allTimeTotalRes, reportsRes, totalReceiptsRes] = await Promise.all([
       supabase.rpc('get_user_month_total', {
@@ -64,10 +83,22 @@ export async function GET(request: NextRequest) {
         .select('id', { count: 'exact', head: true }),
     ]);
 
-    const totalThisMonth = Number(thisMonthTotalRes.data || 0);
-    const totalLastMonth = Number(lastMonthTotalRes.data || 0);
-    const totalAllTime = Number(allTimeTotalRes.data || 0);
-    const receiptCountThisMonth = Number(thisMonthCountRes.data || 0);
+    // Use RPC result if available; fall back to direct queries when migration 024 hasn't run.
+    const totalThisMonth = thisMonthTotalRes.error
+      ? await sumAmounts(startOfMonth, now.toISOString())
+      : Number(thisMonthTotalRes.data ?? 0);
+
+    const totalLastMonth = lastMonthTotalRes.error
+      ? await sumAmounts(startOfLastMonth, startOfMonth)
+      : Number(lastMonthTotalRes.data ?? 0);
+
+    const receiptCountThisMonth = thisMonthCountRes.error
+      ? await countItems(startOfMonth, now.toISOString())
+      : Number(thisMonthCountRes.data ?? 0);
+
+    const totalAllTime = allTimeTotalRes.error
+      ? await sumAmounts('1970-01-01T00:00:00.000Z', new Date(Date.now() + 86400000).toISOString())
+      : Number(allTimeTotalRes.data ?? 0);
     const monthOverMonthTrend = totalLastMonth > 0
       ? ((totalThisMonth - totalLastMonth) / totalLastMonth) * 100
       : 0;
