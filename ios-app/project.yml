@@ -43,7 +43,7 @@ targets:
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: false
     settings:
-      PRODUCT_BUNDLE_IDENTIFIER: com.kachalabs.app
+      PRODUCT_BUNDLE_IDENTIFIER: com.mafutapass.app
       SWIFT_VERSION: "5.9"
       INFOPLIST_FILE: Info.plist
       CODE_SIGN_ENTITLEMENTS: MafutaPass.entitlements
