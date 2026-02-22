@@ -1,10 +1,11 @@
 import SwiftUI
 import CoreLocation
+import VisionKit
 import Combine
 
 struct ConfirmExpensesView: View {
     @Environment(\.dismiss) var dismiss
-    let images: [UIImage]
+    @State var images: [UIImage]
     
     @State private var currentImageIndex = 0
     @State private var selectedWorkspace: String = ""
@@ -13,24 +14,24 @@ struct ConfirmExpensesView: View {
     @State private var isSubmitting = false
     @State private var showSuccess = false
     @State private var locationPermissionGranted = false
+    @State private var showDocumentScanner = false
     // Workspaces come from WorkspaceManager (already cached — no extra API call)
     @State private var workspaces: [Workspace] = WorkspaceManager.shared.workspaces
     @State private var uploadErrorMessage: String?
     @State private var showUploadError = false
-    @State private var detectedQRUrl: String? = nil // NEW: Detected eTIMS QR code
-    @State private var scanningQR = false // NEW: QR scan progress
+    @State private var detectedQRUrl: String? = nil
+    @State private var scanningQR = false
     @StateObject private var locationManager = LocationManager()
     
-    let categories = ["fuel", "food", "transport", "shopping", "entertainment", "utilities", "health", "other"]
+    let categories = ["fuel", "food", "transport", "accommodation", "office supplies", "communication", "maintenance", "shopping", "entertainment", "utilities", "health", "other"]
     
     var body: some View {
         NavigationStack {
             ZStack {
-                // Background
                 AppTheme.backgroundView()
                 
                 VStack(spacing: 0) {
-                    // Header
+                    // Header with navigation
                     HStack {
                         Button(action: { dismiss() }) {
                             HStack(spacing: 4) {
@@ -48,251 +49,257 @@ struct ConfirmExpensesView: View {
                         
                         Spacer()
                         
-                        // Placeholder for balance
-                        Text("")
-                            .frame(width: 60)
+                        // X button — dismisses back to capture screen
+                        Button(action: { dismiss() }) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(.gray)
+                                .frame(width: 32, height: 32)
+                                .background(Color.gray.opacity(0.15))
+                                .clipShape(Circle())
+                        }
                     }
                     .padding()
                     .background(AppTheme.Colors.cardSurface)
                     
                     ScrollView {
                         VStack(spacing: 20) {
-                            // Image viewer with chevrons
-                            ZStack {
-                                // Receipt image
-                                if currentImageIndex < images.count {
+                            // Image counter + navigation
+                            if images.count > 1 {
+                                HStack {
+                                    Button(action: goToPrevImage) {
+                                        Image(systemName: "chevron.left")
+                                            .font(.system(size: 16, weight: .bold))
+                                            .foregroundColor(.white)
+                                            .frame(width: 32, height: 32)
+                                            .background(currentImageIndex == 0 ? Color.gray.opacity(0.3) : AppTheme.Colors.primary)
+                                            .cornerRadius(16)
+                                    }
+                                    .disabled(currentImageIndex == 0)
+                                    .opacity(currentImageIndex == 0 ? 0.5 : 1.0)
+                                    
+                                    Spacer()
+                                    
+                                    Text("\(currentImageIndex + 1) of \(images.count)")
+                                        .font(.system(size: 15, weight: .semibold))
+                                        .foregroundColor(AppTheme.Colors.textSecondary)
+                                    
+                                    Spacer()
+                                    
+                                    Button(action: goToNextImage) {
+                                        Image(systemName: "chevron.right")
+                                            .font(.system(size: 16, weight: .bold))
+                                            .foregroundColor(.white)
+                                            .frame(width: 32, height: 32)
+                                            .background(currentImageIndex == images.count - 1 ? Color.gray.opacity(0.3) : AppTheme.Colors.primary)
+                                            .cornerRadius(16)
+                                    }
+                                    .disabled(currentImageIndex == images.count - 1)
+                                    .opacity(currentImageIndex == images.count - 1 ? 0.5 : 1.0)
+                                }
+                                .padding(.horizontal)
+                            }
+                            
+                            // Receipt image — properly separated from controls
+                            if currentImageIndex < images.count {
+                                ZStack(alignment: .topTrailing) {
                                     Image(uiImage: images[currentImageIndex])
                                         .resizable()
                                         .scaledToFit()
                                         .frame(maxWidth: .infinity)
-                                        .frame(height: 400)
+                                        .frame(maxHeight: 350)
                                         .background(Color.black)
                                         .cornerRadius(12)
+                                    
+                                    // QR badge overlay (small, top-right of image only)
+                                    if detectedQRUrl != nil {
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "qrcode")
+                                                .font(.system(size: 12))
+                                            Text("eTIMS QR")
+                                                .font(.system(size: 12, weight: .medium))
+                                        }
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 5)
+                                        .background(AppTheme.Colors.primary.opacity(0.9))
+                                        .cornerRadius(12)
+                                        .padding(8)
+                                    } else if scanningQR {
+                                        HStack(spacing: 4) {
+                                            ProgressView()
+                                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                                .scaleEffect(0.7)
+                                            Text("Scanning...")
+                                                .font(.system(size: 12, weight: .medium))
+                                        }
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 5)
+                                        .background(Color.gray.opacity(0.8))
+                                        .cornerRadius(12)
+                                        .padding(8)
+                                    }
                                 }
-                                
-                                // Image counter badge
-                                VStack {
+                                .padding(.horizontal)
+                            }
+                            
+                            // Add more images button (uses Document Scanner)
+                            HStack(spacing: 12) {
+                                Button(action: { showDocumentScanner = true }) {
                                     HStack {
-                                        Spacer()
-                                        Text("\(currentImageIndex + 1)/\(images.count)")
-                                            .font(.system(size: 14, weight: .semibold))
-                                            .foregroundColor(.white)
-                                            .padding(.horizontal, 12)
-                                            .padding(.vertical, 6)
-                                            .background(Color.black.opacity(0.7))
-                                            .cornerRadius(16)
-                                            .padding()
+                                        Image(systemName: "doc.viewfinder")
+                                            .font(.system(size: 15))
+                                        Text("Add More")
+                                            .font(.system(size: 15, weight: .medium))
                                     }
-                                    Spacer()
-                                }
-                                
-                                // Chevron navigation
-                                if images.count > 1 {
-                                    HStack {
-                                        // Left chevron
-                                        Button(action: goToPrevImage) {
-                                            Image(systemName: "chevron.left")
-                                                .font(.system(size: 20, weight: .bold))
-                                                .foregroundColor(.white)
-                                                .frame(width: 36, height: 36)
-                                                .background(currentImageIndex == 0 ?
-                                                    Color.gray.opacity(0.3) :
-                                                    AppTheme.Colors.primary)
-                                                .cornerRadius(18)
-                                                .overlay(
-                                                    RoundedRectangle(cornerRadius: 18)
-                                                        .stroke(currentImageIndex == 0 ? Color.clear :
-                                                            AppTheme.Colors.primary, lineWidth: 2)
-                                                )
-                                                .shadow(color: .black.opacity(0.3), radius: 8)
-                                        }
-                                        .disabled(currentImageIndex == 0)
-                                        .opacity(currentImageIndex == 0 ? 0.5 : 1.0)
-                                        .padding(.leading, 20)
-                                        
-                                        Spacer()
-                                        
-                                        // Right chevron
-                                        Button(action: goToNextImage) {
-                                            Image(systemName: "chevron.right")
-                                                .font(.system(size: 20, weight: .bold))
-                                                .foregroundColor(.white)
-                                                .frame(width: 36, height: 36)
-                                                .background(currentImageIndex == images.count - 1 ?
-                                                    Color.gray.opacity(0.3) :
-                                                    AppTheme.Colors.primary)
-                                                .cornerRadius(18)
-                                                .overlay(
-                                                    RoundedRectangle(cornerRadius: 18)
-                                                        .stroke(currentImageIndex == images.count - 1 ? Color.clear :
-                                                            AppTheme.Colors.primary, lineWidth: 2)
-                                                )
-                                                .shadow(color: .black.opacity(0.3), radius: 8)
-                                        }
-                                        .disabled(currentImageIndex == images.count - 1)
-                                        .opacity(currentImageIndex == images.count - 1 ? 0.5 : 1.0)
-                                        .padding(.trailing, 20)
-                                    }
-                                }
-                
-                // QR Scan Badge (if detected)
-                if detectedQRUrl != nil {
-                    VStack {
-                        Spacer()
-                        HStack {
-                            Image(systemName: "qrcode")
-                                .font(.system(size: 14))
-                            Text("eTIMS QR Detected")
-                                .font(.system(size: 14, weight: .medium))
-                        }
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(AppTheme.Colors.primary.opacity(0.9))
-                        .cornerRadius(16)
-                        .padding(.bottom, 8)
-                    }
-                } else if scanningQR {
-                    VStack {
-                        Spacer()
-                        HStack {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            Text("Scanning for QR...")
-                                .font(.system(size: 14, weight: .medium))
-                        }
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.gray.opacity(0.8))
-                        .cornerRadius(16)
-                        .padding(.bottom, 8)
-                    }
-                }
-                                    Text("Workspace")
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(AppTheme.Colors.textSecondary)
-                                    
-                                    Menu {
-                                        if workspaces.isEmpty {
-                                            Text("No workspaces — create one first")
-                                        } else {
-                                            ForEach(workspaces) { workspace in
-                                                Button(workspace.name) {
-                                                    selectedWorkspace = workspace.id
-                                                }
-                                            }
-                                        }
-                                    } label: {
-                                        HStack {
-                                            Text(selectedWorkspace.isEmpty ? "Select workspace" : (workspaces.first(where: { $0.id == selectedWorkspace })?.name ?? "Select workspace"))
-                                                .foregroundColor(selectedWorkspace.isEmpty ? .secondary : .primary)
-                                            Spacer()
-                                            Image(systemName: "chevron.down")
-                                                .font(.system(size: 14))
-                                                .foregroundColor(AppTheme.Colors.textSecondary)
-                                        }
-                                        .padding()
-                                        .background(AppTheme.Colors.cardSurface)
-                                        .cornerRadius(10)
-                                    }
-                                }
-                                
-                                // Description
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text("Description")
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(AppTheme.Colors.textSecondary)
-                                    
-                                    TextField("Add description", text: $description)
-                                        .padding()
-                                        .background(AppTheme.Colors.cardSurface)
-                                        .cornerRadius(10)
-                                }
-                                
-                                // Category
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text("Category")
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(AppTheme.Colors.textSecondary)
-                                    
-                                    Menu {
-                                        ForEach(categories, id: \.self) { category in
-                                            Button(category.capitalized) {
-                                                selectedCategory = category
-                                            }
-                                        }
-                                    } label: {
-                                        HStack {
-                                            Text(selectedCategory.capitalized)
-                                            Spacer()
-                                            Image(systemName: "chevron.down")
-                                                .font(.system(size: 14))
-                                                .foregroundColor(AppTheme.Colors.textSecondary)
-                                        }
-                                        .padding()
-                                        .background(AppTheme.Colors.cardSurface)
-                                        .cornerRadius(10)
-                                    }
-                                }
-                                
-                                // Location info
-                                if locationPermissionGranted, let location = locationManager.location {
-                                    HStack(spacing: 8) {
-                                        Image(systemName: "location.fill")
-                                            .font(.system(size: 14))
-                                            .foregroundColor(AppTheme.Colors.primary)
-                                        
-                                        Text("Location: \(String(format: "%.4f, %.4f", location.coordinate.latitude, location.coordinate.longitude))")
-                                            .font(.system(size: 13))
-                                            .foregroundColor(AppTheme.Colors.textSecondary)
-                                        
-                                        Spacer()
-                                    }
-                                    .padding(.vertical, 8)
+                                    .foregroundColor(AppTheme.Colors.primary)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 12)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(AppTheme.Colors.primary, lineWidth: 1.5)
+                                    )
                                 }
                             }
                             .padding(.horizontal)
                             
-                            // Submit button
-                            Button(action: submitExpenses) {
-                                HStack {
-                                    if isSubmitting {
-                                        ProgressView()
-                                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            // Workspace picker — below image, not overlapping
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Workspace")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(AppTheme.Colors.textSecondary)
+                                
+                                Menu {
+                                    if workspaces.isEmpty {
+                                        Text("No workspaces — create one first")
                                     } else {
-                                        Text("Submit \(images.count) Receipt\(images.count == 1 ? "" : "s")")
-                                            .font(.system(size: 17, weight: .semibold))
+                                        ForEach(workspaces) { workspace in
+                                            Button(workspace.name) {
+                                                selectedWorkspace = workspace.id
+                                            }
+                                        }
                                     }
+                                } label: {
+                                    HStack {
+                                        Text(selectedWorkspace.isEmpty ? "Select workspace" : (workspaces.first(where: { $0.id == selectedWorkspace })?.name ?? "Select workspace"))
+                                            .foregroundColor(selectedWorkspace.isEmpty ? .secondary : .primary)
+                                        Spacer()
+                                        Image(systemName: "chevron.down")
+                                            .font(.system(size: 14))
+                                            .foregroundColor(AppTheme.Colors.textSecondary)
+                                    }
+                                    .padding()
+                                    .background(AppTheme.Colors.cardSurface)
+                                    .cornerRadius(10)
                                 }
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(
-                                    selectedWorkspace.isEmpty || isSubmitting ?
-                                        Color.gray :
-                                        AppTheme.Colors.primary
-                                )
-                                .cornerRadius(12)
                             }
-                            .disabled(selectedWorkspace.isEmpty || isSubmitting)
                             .padding(.horizontal)
-                            .padding(.bottom, 30)
+                            
+                            // Category picker (matches Android)
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Category")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(AppTheme.Colors.textSecondary)
+                                
+                                Menu {
+                                    ForEach(categories, id: \.self) { category in
+                                        Button(category.capitalized) {
+                                            selectedCategory = category
+                                        }
+                                    }
+                                } label: {
+                                    HStack {
+                                        Text(selectedCategory.capitalized)
+                                        Spacer()
+                                        Image(systemName: "chevron.down")
+                                            .font(.system(size: 14))
+                                            .foregroundColor(AppTheme.Colors.textSecondary)
+                                    }
+                                    .padding()
+                                    .background(AppTheme.Colors.cardSurface)
+                                    .cornerRadius(10)
+                                }
+                            }
+                            .padding(.horizontal)
+                            
+                            // Description / Notes
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Notes")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(AppTheme.Colors.textSecondary)
+                                
+                                TextField("Add description or notes", text: $description)
+                                    .padding()
+                                    .background(AppTheme.Colors.cardSurface)
+                                    .cornerRadius(10)
+                            }
+                            .padding(.horizontal)
+                            
+                            // Location info
+                            if locationPermissionGranted, let location = locationManager.location {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "location.fill")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(AppTheme.Colors.primary)
+                                    
+                                    Text("Location: \(String(format: "%.4f, %.4f", location.coordinate.latitude, location.coordinate.longitude))")
+                                        .font(.system(size: 13))
+                                        .foregroundColor(AppTheme.Colors.textSecondary)
+                                    
+                                    Spacer()
+                                }
+                                .padding(.horizontal)
+                                .padding(.vertical, 8)
+                            }
                         }
                         .padding(.top)
+                        .padding(.bottom, 100) // Space for fixed submit button
                     }
+                    
+                    // Fixed submit button at bottom
+                    VStack {
+                        Button(action: submitExpenses) {
+                            HStack {
+                                if isSubmitting {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                } else {
+                                    Text("Submit \(images.count) Receipt\(images.count == 1 ? "" : "s")")
+                                        .font(.system(size: 17, weight: .semibold))
+                                }
+                            }
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(
+                                selectedWorkspace.isEmpty || isSubmitting ?
+                                    Color.gray :
+                                    AppTheme.Colors.primary
+                            )
+                            .cornerRadius(12)
+                        }
+                        .disabled(selectedWorkspace.isEmpty || isSubmitting)
+                        .padding(.horizontal)
+                        .padding(.bottom, 8)
+                    }
+                    .padding(.top, 8)
+                    .background(AppTheme.Colors.cardSurface.opacity(0.95))
                 }
+            }
             .onAppear {
-                // Auto-scan for QR codes when view appears (like Android)
                 scanForQRCodes()
                 checkLocationPermission()
-                // Seed workspaces from WorkspaceManager cache — no network round-trip
                 workspaces = WorkspaceManager.shared.workspaces
-                // Auto-select the is_active workspace, fall back to first
                 if selectedWorkspace.isEmpty {
                     selectedWorkspace = WorkspaceManager.shared.activeWorkspace?.id
                         ?? WorkspaceManager.shared.workspaces.first?.id
                         ?? ""
+                }
+            }
+            .sheet(isPresented: $showDocumentScanner) {
+                DocumentScannerView { scannedImages in
+                    images.append(contentsOf: scannedImages)
                 }
             }
             .alert("Success", isPresented: $showSuccess) {
@@ -337,17 +344,13 @@ struct ConfirmExpensesView: View {
         
         Task {
             do {
-                // Convert images to Data
                 let imageDataArray = images.compactMap { $0.jpegData(compressionQuality: 0.8) }
                 
-                // Prepare location
                 let lat = locationManager.location?.coordinate.latitude
                 let lon = locationManager.location?.coordinate.longitude
                 
-                // Resolve workspace name for the report label
-                let wsName = workspaces.first(where: { $0.id == selectedWorkspace })?.name ?? "Default Workspace"
+                let wsName = workspaces.first(where: { $0.id == selectedWorkspace })?.name ?? "Personal"
                 
-                // Upload receipts
                 let response = try await API.shared.uploadReceipts(
                     images: imageDataArray,
                     workspaceId: selectedWorkspace,
@@ -356,7 +359,7 @@ struct ConfirmExpensesView: View {
                     category: selectedCategory,
                     latitude: lat,
                     longitude: lon,
-                    qrUrl: detectedQRUrl // NEW: Pass detected QR URL
+                    qrUrl: detectedQRUrl
                 )
                 
                 await MainActor.run {
@@ -380,7 +383,6 @@ struct ConfirmExpensesView: View {
         scanningQR = true
         Task {
             do {
-                // Scan all images for QR codes
                 if let qrUrl = try await QRScannerService.shared.scanImagesForQR(images: images) {
                     await MainActor.run {
                         detectedQRUrl = qrUrl

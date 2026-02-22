@@ -93,17 +93,6 @@ export default function WorkspaceDetailPage({ params }: { params: Promise<{ id: 
             <ChevronLeft size={24} className="text-gray-700" />
           </button>
           <div className="flex items-center gap-3 flex-1">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center flex-shrink-0 overflow-hidden">
-              {workspace.avatar?.startsWith('http') ? (
-                <img 
-                  src={workspace.avatar} 
-                  alt={workspace.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span className="text-xl font-bold text-white">{workspace.avatar || workspace.name?.charAt(0) || 'W'}</span>
-              )}
-            </div>
             <h1 className="text-xl font-bold text-gray-900">{workspace.name}</h1>
           </div>
         </div>

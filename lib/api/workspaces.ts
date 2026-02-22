@@ -94,6 +94,28 @@ export async function getWorkspaces(
       return []
     }
 
+    // Safety net: If user has zero workspaces, auto-create a "Personal" one.
+    // This handles edge cases where the init trigger failed or migration
+    // wasn't applied, ensuring users always have at least one workspace.
+    if (!data || data.length === 0) {
+      console.warn(`User ${userId} has no workspaces — auto-creating Personal workspace`)
+      try {
+        const created = await createWorkspace({
+          userId,
+          name: 'Personal',
+          avatar: '💼',
+          currency: 'KES',
+          currencySymbol: 'KSh',
+        })
+        if (created.workspace) {
+          return [created.workspace as Workspace]
+        }
+      } catch (autoCreateErr) {
+        console.error('Failed to auto-create workspace:', autoCreateErr)
+      }
+      return []
+    }
+
     return data || []
   } catch (error) {
     console.error('Error getting workspaces:', error)

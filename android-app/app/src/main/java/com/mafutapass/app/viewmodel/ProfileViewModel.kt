@@ -1,7 +1,10 @@
 package com.mafutapass.app.viewmodel
 
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mafutapass.app.data.ApiService
 import com.mafutapass.app.data.AvatarManager
 import com.mafutapass.app.data.UpdateProfileRequest
 import com.mafutapass.app.data.UserSession
@@ -9,10 +12,15 @@ import com.mafutapass.app.data.User
 import com.mafutapass.app.data.network.NetworkResult
 import com.mafutapass.app.data.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.ByteArrayOutputStream
 import javax.inject.Inject
 
 /**
@@ -27,7 +35,9 @@ import javax.inject.Inject
 class ProfileViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val avatarManager: AvatarManager,
-    private val userSession: UserSession
+    private val userSession: UserSession,
+    private val apiService: ApiService,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
     
     // Profile state
@@ -228,6 +238,68 @@ class ProfileViewModel @Inject constructor(
         }
     }
     
+    /**
+     * Upload a profile photo from a URI (gallery or camera).
+     * Reads the image bytes, POSTs to /api/upload-avatar, then patches the profile.
+     */
+    fun uploadProfilePhoto(uri: Uri, onSuccess: () -> Unit = {}) {
+        viewModelScope.launch {
+            _updateState.value = UpdateState.Loading
+            try {
+                val inputStream = context.contentResolver.openInputStream(uri)
+                val buffer = ByteArrayOutputStream()
+                inputStream?.use { it.copyTo(buffer) }
+                val imageBytes = buffer.toByteArray()
+                if (imageBytes.isEmpty()) {
+                    _updateState.value = UpdateState.Error("Could not read image")
+                    return@launch
+                }
+                val requestBody = imageBytes.toRequestBody("image/jpeg".toMediaType())
+                val filePart = MultipartBody.Part.createFormData("file", "avatar.jpg", requestBody)
+                val uploadResponse = apiService.uploadAvatar(filePart)
+                val imageUrl = uploadResponse.url
+                // Update the profile with the new avatar_image_url
+                when (val result = userRepository.updateProfile(UpdateProfileRequest(avatarImageUrl = imageUrl))) {
+                    is NetworkResult.Success -> {
+                        _updateState.value = UpdateState.Success("Photo updated")
+                        _profileState.value = NetworkResult.Success(result.data)
+                        onSuccess()
+                    }
+                    is NetworkResult.Error -> _updateState.value = UpdateState.Error(result.message)
+                    else -> {}
+                }
+            } catch (e: Exception) {
+                _updateState.value = UpdateState.Error(e.message ?: "Upload failed")
+            }
+        }
+    }
+
+    /**
+     * Upload a profile photo from raw bytes (e.g. camera preview bitmap).
+     */
+    fun uploadProfilePhotoBytes(bytes: ByteArray, onSuccess: () -> Unit = {}) {
+        viewModelScope.launch {
+            _updateState.value = UpdateState.Loading
+            try {
+                val requestBody = bytes.toRequestBody("image/jpeg".toMediaType())
+                val filePart = MultipartBody.Part.createFormData("file", "avatar.jpg", requestBody)
+                val uploadResponse = apiService.uploadAvatar(filePart)
+                val imageUrl = uploadResponse.url
+                when (val result = userRepository.updateProfile(UpdateProfileRequest(avatarImageUrl = imageUrl))) {
+                    is NetworkResult.Success -> {
+                        _updateState.value = UpdateState.Success("Photo updated")
+                        _profileState.value = NetworkResult.Success(result.data)
+                        onSuccess()
+                    }
+                    is NetworkResult.Error -> _updateState.value = UpdateState.Error(result.message)
+                    else -> {}
+                }
+            } catch (e: Exception) {
+                _updateState.value = UpdateState.Error(e.message ?: "Upload failed")
+            }
+        }
+    }
+
     /**
      * Reset update state to idle.
      */

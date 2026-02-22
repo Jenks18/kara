@@ -5,6 +5,8 @@ struct WorkspacesPage: View {
     @State private var activeMenuId: String? = nil
     @State private var showCreateSheet = false
     @State private var isScrolled = false
+    // Programmatic navigation for "Go to workspace" menu action
+    @State private var navigateToWorkspaceId: String? = nil
 
     init(dataStore: AppDataStore) {
         self.dataStore = dataStore
@@ -18,17 +20,7 @@ struct WorkspacesPage: View {
                         Text("Workspaces")
                             .font(.system(size: 28, weight: .bold))
                             .foregroundColor(AppTheme.Colors.textPrimary)
-                        
                         Spacer()
-                        
-                        Button(action: {
-                            // Search functionality
-                        }) {
-                            Image(systemName: "magnifyingglass")
-                                .font(.system(size: 24))
-                                .foregroundColor(.gray)
-                        }
-                        .frame(minWidth: 44, minHeight: 44)
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
@@ -138,18 +130,35 @@ struct WorkspacesPage: View {
                         }
                     } else {
                         // Workspaces List
+                        ZStack {
                         ScrollView {
                             VStack(spacing: 12) {
+                                // Hidden NavigationLink for "Go to workspace" programmatic nav
+                                NavigationLink(
+                                    destination: Group {
+                                        if let wsId = navigateToWorkspaceId {
+                                            WorkspaceDetailView(workspaceId: wsId)
+                                        }
+                                    },
+                                    isActive: Binding(
+                                        get: { navigateToWorkspaceId != nil },
+                                        set: { if !$0 { navigateToWorkspaceId = nil } }
+                                    )
+                                ) { EmptyView() }
+                                .hidden()
+                                
                                 ForEach(dataStore.workspaces) { workspace in
                                     WorkspaceRow(
                                         workspace: workspace,
                                         isMenuActive: activeMenuId == workspace.id,
                                         onMenuToggle: {
-                                            activeMenuId = activeMenuId == workspace.id ? nil : workspace.id
+                                            withAnimation(.easeInOut(duration: 0.15)) {
+                                                activeMenuId = activeMenuId == workspace.id ? nil : workspace.id
+                                            }
                                         },
                                         onGoToWorkspace: {
-                                            // Navigate to workspace
                                             activeMenuId = nil
+                                            navigateToWorkspaceId = workspace.id
                                         },
                                         onDuplicate: {
                                             Task {
@@ -213,15 +222,56 @@ struct WorkspacesPage: View {
                         .refreshable {
                             await dataStore.refreshWorkspaces(force: true)
                         }
+
+                        // Transparent overlay — tapping anywhere outside a menu row dismisses it
+                        if activeMenuId != nil {
+                            Color.clear
+                                .contentShape(Rectangle())
+                                .onTapGesture { activeMenuId = nil }
+                                .ignoresSafeArea()
+                        }
+                        } // ZStack
+
+                        // Hidden NavigationLink for Go to workspace
+                        if let wid = navigateToWorkspaceId,
+                           let ws = dataStore.workspaces.first(where: { $0.id == wid }) {
+                            NavigationLink(
+                                destination: WorkspaceDetailView(workspaceId: wid),
+                                isActive: Binding(
+                                    get: { navigateToWorkspaceId == wid },
+                                    set: { if !$0 { navigateToWorkspaceId = nil } }
+                                )
+                            ) { EmptyView() }
+                            .hidden()
+                        }
                     }
                 }
             }
             .background(AppTheme.backgroundView())
             .navigationBarHidden(true)
+            // Tap-outside: dismiss any open 3-dot menu when tapping backdrop
+            .overlay(
+                Group {
+                    if activeMenuId != nil {
+                        Color.clear
+                            .contentShape(Rectangle())
+                            .ignoresSafeArea()
+                            .onTapGesture {
+                                withAnimation(.easeInOut(duration: 0.15)) {
+                                    activeMenuId = nil
+                                }
+                            }
+                            .zIndex(1)
+                    }
+                }
+            )
             .task {
-                // Per-screen data load — matches Android WorkspacesViewModel.init pattern.
-                // Debounce in AppDataStore prevents redundant calls.
                 await dataStore.refreshWorkspaces()
+            }
+            // Re-fetch on return so currency/name changes made in workspace
+            // overview are reflected in the list immediately.
+            .onAppear {
+                Task { await dataStore.refreshWorkspaces(force: true) }
             }
             .sheet(isPresented: $showCreateSheet) {
                 NewWorkspaceView(onComplete: {

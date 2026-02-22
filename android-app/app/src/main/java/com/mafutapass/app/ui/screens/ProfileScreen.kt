@@ -1,5 +1,8 @@
 package com.mafutapass.app.ui.screens
 
+import android.graphics.Bitmap
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -20,16 +23,20 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.mafutapass.app.data.network.NetworkResult
 import com.mafutapass.app.ui.components.EmojiImage
 import com.mafutapass.app.ui.theme.*
 import com.mafutapass.app.util.DateUtils
 import com.mafutapass.app.viewmodel.ProfileViewModel
+import java.io.ByteArrayOutputStream
 
 data class AvatarOption(val emoji: String, val gradient: List<Color>, val label: String)
 
@@ -76,8 +83,10 @@ fun ProfileScreen(
     onNavigateToEditAddress: () -> Unit = {},
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     var showAvatarPicker by remember { mutableStateOf(false) }
     var selectedAvatar by remember { mutableStateOf(AVATAR_OPTIONS[0]) }
+    var uploadedAvatarUrl by remember { mutableStateOf<String?>(null) }
 
     val profileState by viewModel.profileState.collectAsState()
 
@@ -105,10 +114,31 @@ fun ProfileScreen(
             AVATAR_OPTIONS.find { it.emoji == emoji }?.let { selectedAvatar = it }
         }
     }
+    LaunchedEffect(user?.avatarImageUrl) {
+        uploadedAvatarUrl = user?.avatarImageUrl?.takeIf { it.startsWith("http") }
+    }
 
     // Re-fetch when navigating back from edit screens
     LaunchedEffect(refreshTrigger) {
         if (refreshTrigger > 0) viewModel.loadProfile()
+    }
+
+    // Gallery picker
+    val galleryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) {
+            showAvatarPicker = false
+            viewModel.uploadProfilePhoto(uri) { }
+        }
+    }
+
+    // Camera preview (no FileProvider needed)
+    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap ->
+        if (bitmap != null) {
+            showAvatarPicker = false
+            val baos = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, baos)
+            viewModel.uploadProfilePhotoBytes(baos.toByteArray())
+        }
     }
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
@@ -154,7 +184,7 @@ fun ProfileScreen(
                 }
             }
 
-            // Avatar — large centered, no label text
+            // Avatar — large centered, shows uploaded photo or emoji
             item {
                 Box(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
                     Box(contentAlignment = Alignment.BottomEnd) {
@@ -163,7 +193,17 @@ fun ProfileScreen(
                                 .background(brush = Brush.verticalGradient(selectedAvatar.gradient))
                                 .clickable { showAvatarPicker = true },
                             contentAlignment = Alignment.Center
-                        ) { EmojiImage(selectedAvatar.emoji, size = 56.dp, contentDescription = selectedAvatar.label) }
+                        ) {
+                            if (uploadedAvatarUrl != null) {
+                                AsyncImage(
+                                    model = uploadedAvatarUrl,
+                                    contentDescription = "Profile photo",
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            } else {
+                                EmojiImage(selectedAvatar.emoji, size = 56.dp, contentDescription = selectedAvatar.label)
+                            }
+                        }
                         Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primary, shadowElevation = 4.dp,
                             modifier = Modifier.size(36.dp).clickable { showAvatarPicker = true }) {
                             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
@@ -202,21 +242,71 @@ fun ProfileScreen(
                         Text("Edit profile picture", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                         IconButton(onClick = { showAvatarPicker = false }) { Icon(Icons.Filled.Close, "Close") }
                     }
-                    Text("Choose a custom avatar", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(12.dp))
+
+                    // Camera + gallery row
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        OutlinedButton(
+                            onClick = { cameraLauncher.launch(null) },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Filled.PhotoCamera, null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Camera", fontWeight = FontWeight.SemiBold)
+                        }
+                        OutlinedButton(
+                            onClick = { galleryLauncher.launch("image/*") },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Filled.Image, null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Gallery", fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+
                     Spacer(Modifier.height(16.dp))
-                    LazyVerticalGrid(columns = GridCells.Fixed(5), horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.height(340.dp)) {
+                    Text("Or choose an avatar", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(12.dp))
+
+                    // Emoji grid with labels
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(4),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.height(340.dp)
+                    ) {
                         items(AVATAR_OPTIONS) { option ->
-                            Box(
-                                modifier = Modifier.aspectRatio(1f).clip(CircleShape)
-                                    .background(brush = Brush.verticalGradient(option.gradient))
-                                    .then(if (selectedAvatar.emoji == option.emoji) Modifier.padding(3.dp) else Modifier)
-                                    .clickable {
-                                        selectedAvatar = option; showAvatarPicker = false
-                                        viewModel.updateAvatar(option.emoji)
-                                    },
-                                contentAlignment = Alignment.Center
-                            ) { EmojiImage(option.emoji, size = 28.dp, contentDescription = option.label) }
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.clickable {
+                                    selectedAvatar = option
+                                    uploadedAvatarUrl = null
+                                    showAvatarPicker = false
+                                    viewModel.updateAvatar(option.emoji)
+                                }
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(56.dp)
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(brush = Brush.verticalGradient(option.gradient))
+                                        .then(if (selectedAvatar.emoji == option.emoji && uploadedAvatarUrl == null)
+                                            Modifier.padding(2.dp) else Modifier),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    EmojiImage(option.emoji, size = 28.dp, contentDescription = option.label)
+                                }
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    text = option.label,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
                         }
                     }
                 }

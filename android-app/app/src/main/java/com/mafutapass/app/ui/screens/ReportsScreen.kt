@@ -416,6 +416,18 @@ fun ExpenseCard(expense: ExpenseItem, onNavigateToDetail: (String) -> Unit = {})
                     }
                 }
             }
+
+            // ── Notes preview ────────────────────────────────────
+            if (!expense.description.isNullOrBlank() && !expense.description.startsWith("AI confidence")) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "\uD83D\uDCDD ${expense.description}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
     }
 }

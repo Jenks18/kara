@@ -69,4 +69,18 @@ class WorkspaceMembersViewModel @Inject constructor(
             }
         }
     }
+
+    /**
+     * Creates a real workspace invite link via the API.
+     * Falls back to a generic join URL on failure.
+     */
+    suspend fun createInviteLink(workspaceId: String): String {
+        return try {
+            val response = apiService.createWorkspaceInvite(workspaceId, mapOf("contact" to "share"))
+            response.inviteUrl ?: "https://web.kachalabs.com/workspaces/$workspaceId/join"
+        } catch (e: Exception) {
+            Log.e(TAG, "⚠️ Failed to create invite link, using fallback: ${e.message}")
+            "https://web.kachalabs.com/workspaces/$workspaceId/join"
+        }
+    }
 }

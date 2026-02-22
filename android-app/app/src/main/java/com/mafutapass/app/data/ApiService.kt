@@ -37,7 +37,10 @@ interface ApiService {
     // ============= Expense Reports =============
     
     @GET("api/mobile/expense-reports")
-    suspend fun getExpenseReports(@Query("workspaceId") workspaceId: String? = null): List<ExpenseReport>
+    suspend fun getExpenseReports(
+        @Query("cursor") cursor: String? = null,
+        @Query("limit") limit: Int = 50
+    ): PagedReports
     
     @POST("api/mobile/expense-reports")
     suspend fun createExpenseReport(@Body body: Map<String, String>): ExpenseReport
@@ -45,10 +48,18 @@ interface ApiService {
     // ============= Receipts =============
     
     @GET("api/mobile/receipts")
-    suspend fun getReceipts(@Query("workspaceId") workspaceId: String? = null): List<ExpenseItem>
-    
+    suspend fun getReceipts(
+        @Query("cursor") cursor: String? = null,
+        @Query("limit") limit: Int = 50
+    ): PagedExpenses
+
     @GET("api/mobile/receipts/{id}")
     suspend fun getReceipt(@Path("id") id: String): ExpenseItem
+
+    // ============= Stats =============
+
+    @GET("api/mobile/stats")
+    suspend fun getStats(): MobileStats
     
     @PATCH("api/mobile/receipts/{id}")
     suspend fun updateReceipt(
@@ -84,6 +95,15 @@ interface ApiService {
     @PATCH("api/auth/mobile-profile")
     suspend fun updateUserProfile(@Body request: UpdateProfileRequest): UpdateProfileResponse
 
+    @Multipart
+    @POST("api/upload-avatar")
+    suspend fun uploadAvatar(@Part file: okhttp3.MultipartBody.Part): UploadAvatarResponse
+
+    // ============= Workspace Invites =============
+
+    @POST("api/workspaces/{id}/invites")
+    suspend fun createWorkspaceInvite(@Path("id") workspaceId: String, @Body body: Map<String, String>): WorkspaceInviteResponse
+
     // ============= Account Management =============
 
     @POST("api/account/delete-request")
@@ -101,6 +121,11 @@ data class WorkspaceDetailResponse(val workspace: Workspace)
 data class CreateWorkspaceRequest(val name: String, val currency: String = "KES", val currencySymbol: String = "KSh")
 data class CreateWorkspaceResponse(val workspace: Workspace)
 data class WorkspaceMembersResponse(val members: List<WorkspaceMember>)
+data class UploadAvatarResponse(val url: String)
+data class WorkspaceInviteResponse(
+    @SerializedName("inviteUrl") val inviteUrl: String? = null,
+    @SerializedName("workspaceName") val workspaceName: String? = null
+)
 data class WorkspaceMember(
     val id: String = "",
     @SerializedName("user_id") val userId: String = "",

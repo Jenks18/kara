@@ -314,6 +314,14 @@ struct ExpenseCardView: View {
                 .background(AppTheme.Colors.green500.opacity(0.08))
                 .cornerRadius(8)
             }
+            
+            // ── Notes preview ────────────────────────────────────────
+            if let notes = expense.description, !notes.isEmpty, !notes.hasPrefix("AI confidence") {
+                Text("\u{1F4DD} \(notes)")
+                    .font(.system(size: 11))
+                    .foregroundColor(AppTheme.Colors.textSecondary)
+                    .lineLimit(1)
+            }
         }
         .padding(14)
         .background(AppTheme.Colors.cardSurface)

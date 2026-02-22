@@ -167,9 +167,12 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
     const files = e.target.files
     if (!files || files.length === 0) return
     
+    // Enforce max 10 images from gallery (consistent with iOS/Android)
+    const filesToProcess = Array.from(files).slice(0, 10)
+    
     // Handle multiple files selected from gallery
-    if (files.length > 1) {
-      const imagePromises = Array.from(files).map(file => {
+    if (filesToProcess.length > 1) {
+      const imagePromises = filesToProcess.map(file => {
         return new Promise<string>((resolve) => {
           const reader = new FileReader()
           reader.onloadend = () => {
@@ -310,8 +313,12 @@ export default function ReceiptCapture({ onCapture, onCancel }: ReceiptCapturePr
             if (longitude) formData.append('longitude', longitude.toString())
             if (sharedReportId) {
               formData.append('reportId', sharedReportId) // Batch into same report
-            } else {
             }
+            // Pass workspace selection so the report is linked to the correct workspace
+            if (exp.workspace) formData.append('workspaceId', exp.workspace)
+            if (exp.workspaceName) formData.append('workspaceName', exp.workspaceName)
+            // Pass user-provided description/notes as an override
+            if (exp.description?.trim()) formData.append('userDescription', exp.description.trim())
             
             try {
               const response = await fetch('/api/receipts/upload', {

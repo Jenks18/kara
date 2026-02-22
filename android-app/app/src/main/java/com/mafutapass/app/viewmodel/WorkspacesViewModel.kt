@@ -95,4 +95,26 @@ class WorkspacesViewModel @Inject constructor(
     fun resetCreateState() {
         _createState.value = CreateState.Idle
     }
+
+    /** Duplicate an existing workspace under a new name ("Copy of …"). */
+    fun duplicateWorkspace(workspace: Workspace) {
+        viewModelScope.launch {
+            _createState.value = CreateState.Loading
+            try {
+                val response = apiService.createWorkspace(
+                    CreateWorkspaceRequest(
+                        name = "Copy of ${workspace.name}",
+                        currency = workspace.currency,
+                        currencySymbol = workspace.currencySymbol
+                    )
+                )
+                Log.d(TAG, "✅ Duplicated workspace: ${response.workspace.name}")
+                workspaceRepository.refresh()
+                _createState.value = CreateState.Success(response.workspace)
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Failed to duplicate workspace: ${e.message}", e)
+                _createState.value = CreateState.Error(e.message ?: "Failed to duplicate workspace")
+            }
+        }
+    }
 }

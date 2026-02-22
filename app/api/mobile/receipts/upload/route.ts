@@ -56,20 +56,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify the caller actually owns the supplied workspaceId before trusting it
+    // Verify the caller actually owns or is a member of the supplied workspace
     if (workspaceId) {
+      // First try owner_id (the canonical ownership column from migration 014),
+      // then fall back to user_id (the original column from migration 002),
+      // then check workspace_members for collaborators.
       const { data: ownedWorkspace, error: wsCheckError } = await supabase
         .from('workspaces')
         .select('id')
         .eq('id', workspaceId)
-        .eq('user_id', userId)
         .maybeSingle();
 
       if (wsCheckError || !ownedWorkspace) {
-        return NextResponse.json(
-          { error: 'Workspace not found or access denied' },
-          { status: 403, headers: corsHeaders }
-        );
+        // Also check if user is a member of the workspace
+        const { data: memberCheck } = await supabase
+          .from('workspace_members')
+          .select('workspace_id')
+          .eq('workspace_id', workspaceId)
+          .eq('user_id', userId)
+          .eq('status', 'active')
+          .maybeSingle();
+
+        if (!memberCheck) {
+          return NextResponse.json(
+            { error: 'Workspace not found or access denied' },
+            { status: 403, headers: corsHeaders }
+          );
+        }
       }
     }
 
@@ -107,13 +120,32 @@ export async function POST(request: NextRequest) {
       try {
         // Create a report if none provided
         if (!finalReportId) {
+          // Look up workspace if client didn't send one
+          let resolvedWorkspaceId: string | null = workspaceId || null;
+          let resolvedWorkspaceName = workspaceName || 'Personal';
+          
+          if (!resolvedWorkspaceId) {
+            const { data: userWorkspace } = await supabase
+              .from('workspaces')
+              .select('id, name')
+              .eq('is_active', true)
+              .order('created_at', { ascending: true })
+              .limit(1)
+              .maybeSingle();
+            
+            if (userWorkspace) {
+              resolvedWorkspaceId = userWorkspace.id;
+              resolvedWorkspaceName = userWorkspace.name;
+            }
+          }
+          
           const { data: newReport, error: reportError } = await supabase
             .from('expense_reports')
             .insert({
               user_id: userId,
               user_email: userEmail,
-              workspace_name: workspaceName || 'Default Workspace',
-              ...(workspaceId ? { workspace_id: workspaceId } : {}),
+              workspace_name: resolvedWorkspaceName,
+              ...(resolvedWorkspaceId ? { workspace_id: resolvedWorkspaceId } : {}),
               title: `Receipt - ${new Date().toLocaleDateString('en-GB')}`,
               status: 'draft',
               total_amount: 0,

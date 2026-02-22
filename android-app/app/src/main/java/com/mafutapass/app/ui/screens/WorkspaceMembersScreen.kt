@@ -50,8 +50,8 @@ fun WorkspaceMembersScreen(
     var showMoreMenu by remember { mutableStateOf(false) }
     var showShareDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
-    val shareUrl = "https://web.kachalabs.com/workspaces/$workspaceId/join"
-    val inviteMessage = "Hey! Join my workspace on Kacha. Click here to join: $shareUrl"
+    val fallbackShareUrl = "https://web.kachalabs.com/workspaces/$workspaceId/join"
+    var dynamicShareUrl by remember { mutableStateOf("") }
 
     // Fetch workspace and members
     LaunchedEffect(workspaceId) {
@@ -275,6 +275,9 @@ fun WorkspaceMembersScreen(
     // ── Invite via native share ──
     if (showInviteDialog) {
         LaunchedEffect(Unit) {
+            val inviteUrl = viewModel.createInviteLink(workspaceId)
+            dynamicShareUrl = inviteUrl
+            val inviteMessage = "Hey! Join my workspace on Kacha. Click here to join: $inviteUrl"
             val sendIntent = Intent().apply {
                 action = Intent.ACTION_SEND
                 putExtra(Intent.EXTRA_TEXT, inviteMessage)
@@ -287,6 +290,13 @@ fun WorkspaceMembersScreen(
 
     // ── Share Dialog with QR Code ──
     if (showShareDialog) {
+        // Preload the invite URL when share dialog opens
+        LaunchedEffect(Unit) {
+            if (dynamicShareUrl.isEmpty()) {
+                dynamicShareUrl = viewModel.createInviteLink(workspaceId)
+            }
+        }
+        val shareUrl = dynamicShareUrl.ifEmpty { fallbackShareUrl }
         Dialog(onDismissRequest = { showShareDialog = false }) {
             Surface(
                 shape = RoundedCornerShape(24.dp),

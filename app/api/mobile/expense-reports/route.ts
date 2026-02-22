@@ -47,10 +47,22 @@ async function enrichReports(supabase: any, reports: any[]) {
  * List expense reports for the authenticated mobile user.
  * RLS auto-filters by user_id — no manual filtering needed.
  */
+/**
+ * GET /api/mobile/expense-reports
+ * List expense reports with cursor-based pagination.
+ * RLS auto-filters by user_id — no manual filtering needed.
+ *
+ * Query params:
+ *   limit  — page size, max 100, default 50
+ *   cursor — created_at ISO timestamp; returns items older than this value
+ *
+ * Response: { items, hasMore, nextCursor }
+ */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
+    const cursor = searchParams.get('cursor');
 
     const mobileClient = await createMobileClient(request);
     if (!mobileClient) {
@@ -62,11 +74,17 @@ export async function GET(request: NextRequest) {
 
     const { supabase } = mobileClient;
 
-    const { data: reports, error } = await supabase
+    let query = supabase
       .from('expense_reports')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(limit);
+      .limit(limit + 1);
+
+    if (cursor) {
+      query = query.lt('created_at', cursor);
+    }
+
+    const { data: reports, error } = await query;
 
     if (error) {
       console.error('Error fetching reports:', error instanceof Error ? error.message : String(error));
@@ -76,12 +94,20 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (!reports || reports.length === 0) {
-      return NextResponse.json([], { headers: corsHeaders });
+    const rows = reports || [];
+    const hasMore = rows.length > limit;
+    const page = hasMore ? rows.slice(0, limit) : rows;
+    const nextCursor = hasMore ? page[page.length - 1].created_at : null;
+
+    if (page.length === 0) {
+      return NextResponse.json({ items: [], hasMore: false, nextCursor: null }, { headers: corsHeaders });
     }
 
-    const reportsWithDetails = await enrichReports(supabase, reports);
-    return NextResponse.json(reportsWithDetails, { headers: corsHeaders });
+    const reportsWithDetails = await enrichReports(supabase, page);
+    return NextResponse.json(
+      { items: reportsWithDetails, hasMore, nextCursor },
+      { headers: corsHeaders }
+    );
   } catch (error: any) {
     console.error('Error in mobile expense-reports:', error instanceof Error ? error.message : String(error));
     return NextResponse.json(

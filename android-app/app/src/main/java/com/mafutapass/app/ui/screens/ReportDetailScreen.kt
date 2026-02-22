@@ -198,7 +198,7 @@ private fun ReportDetailContent(
         if (report.items.isNotEmpty()) {
             item {
                 Text(
-                    "Receipts",
+                    "Expenses",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,

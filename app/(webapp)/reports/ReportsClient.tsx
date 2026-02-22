@@ -21,6 +21,7 @@ interface ExpenseItem {
   transaction_date: string | null
   report_id: string
   kra_verified?: boolean
+  description?: string | null
 }
 
 interface ExpenseReport {
@@ -179,7 +180,7 @@ export default function ReportsClient({ initialItems, initialReports, currency }
                 return (
                   <div
                     key={item.id}
-                    onClick={() => router.push(`/reports/${item.report_id}`)}
+                    onClick={() => router.push(`/expense/${item.id}`)}
                     className="bg-white rounded-2xl p-4 border border-gray-200 hover:border-blue-300 transition-colors cursor-pointer shadow-sm"
                   >
                     {/* Main row: icon · merchant+meta · amount+KRA */}
@@ -241,6 +242,13 @@ export default function ReportsClient({ initialItems, initialReports, currency }
                           <p className="text-[11px] text-amber-600/80">Some fields may need correction.</p>
                         </div>
                       </div>
+                    )}
+
+                    {/* Notes preview */}
+                    {item.description && !item.description.startsWith('AI confidence') && (
+                      <p className="mt-2 text-xs text-gray-500 truncate">
+                        📝 {item.description}
+                      </p>
                     )}
 
                     {/* Scanning indicator */}

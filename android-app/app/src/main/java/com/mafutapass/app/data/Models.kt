@@ -48,6 +48,30 @@ data class ExpenseReport(
     val createdAt: String = ""
 )
 
+// ============= Pagination & Stats =============
+
+/** Paginated response wrapper returned by /api/mobile/receipts and /api/mobile/expense-reports. */
+data class PagedExpenses(
+    val items: List<ExpenseItem> = emptyList(),
+    val hasMore: Boolean = false,
+    val nextCursor: String? = null
+)
+
+data class PagedReports(
+    val items: List<ExpenseReport> = emptyList(),
+    val hasMore: Boolean = false,
+    val nextCursor: String? = null
+)
+
+/** Server-side aggregate stats from /api/mobile/stats. Accurate across full history. */
+data class MobileStats(
+    val totalThisMonth: Double = 0.0,
+    val totalAllTime: Double = 0.0,
+    val monthOverMonthTrend: Double = 0.0,
+    val receiptCountThisMonth: Int = 0,
+    val totalReports: Int = 0
+)
+
 data class Workspace(
     val id: String = "",
     val name: String = "",
@@ -144,7 +168,8 @@ data class User(
     val country: String? = null,
     val postalCode: String? = null,
     val avatarEmoji: String? = null,
-    val avatarColor: String? = null
+    val avatarColor: String? = null,
+    val avatarImageUrl: String? = null
 )
 
 /**
@@ -165,7 +190,8 @@ data class UpdateProfileRequest(
     val state: String? = null,
     val country: String? = null,
     @SerializedName("zip_code") val postalCode: String? = null,
-    @SerializedName("avatar_emoji") val avatarEmoji: String? = null
+    @SerializedName("avatar_emoji") val avatarEmoji: String? = null,
+    @SerializedName("avatar_image_url") val avatarImageUrl: String? = null
 )
 
 /**

@@ -1,6 +1,7 @@
 import SwiftUI
 import UserNotifications
 import Clerk
+import PhotosUI
 
 struct AccountPage: View {
     @EnvironmentObject var authManager: ClerkAuthManager
@@ -161,7 +162,9 @@ struct ProfilePage: View {
     @EnvironmentObject var authManager: ClerkAuthManager
     @EnvironmentObject var profileManager: ProfileManager
     @State private var userProfile: UserProfile?
-    @State private var isLoading = true
+    // Never block the full page — content renders immediately from cache.
+    // Private fields fill in as the background fetch completes.
+    @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var displayName = ""
     @State private var phoneNumber = ""
@@ -172,36 +175,75 @@ struct ProfilePage: View {
     
     var body: some View {
         ZStack {
-            // Background gradient
             AppTheme.backgroundView()
-            
-            if isLoading {
-                ProgressView("Loading profile...")
-            } else if let error = errorMessage {
-                VStack(spacing: 16) {
-                    Image(systemName: "exclamationmark.triangle")
-                        .font(.system(size: 48))
-                        .foregroundColor(.orange)
-                    Text(error)
-                        .multilineTextAlignment(.center)
-                        .foregroundColor(AppTheme.Colors.textSecondary)
-                    Button("Retry") {
-                        Task { await loadProfile() }
+            // Always render content — ProfileManager provides instant data from cache.
+            // Private fields refine as the background fetch completes.
+            profileContent
+
+            // Non-blocking error banner at bottom
+            if let error = errorMessage {
+                VStack {
+                    Spacer()
+                    HStack(spacing: 8) {
+                        Image(systemName: "exclamationmark.circle")
+                        Text(error)
+                            .font(.system(size: 13))
                     }
-                    .buttonStyle(.borderedProminent)
+                    .foregroundColor(.red)
+                    .padding(12)
+                    .background(Color.red.opacity(0.06))
+                    .cornerRadius(8)
+                    .padding(16)
                 }
-                .padding()
-            } else {
-                profileContent
             }
         }
         .navigationTitle("Profile")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            // Seed public fields immediately from ProfileManager
+            if displayName.isEmpty {
+                displayName = profileManager.displayName
+            }
+        }
         .task {
             await loadProfile()
         }
     }
     
+    /// Extract display fields from a UserProfile into local state.
+    @MainActor
+    private func applyProfile(_ p: UserProfile) {
+        userProfile = p
+        profileManager.update(p)
+        displayName = p.display_name ?? authManager.currentUser?.name ?? ""
+        phoneNumber = p.phone_number ?? ""
+        // Parse DOB
+        if let rawDob = p.date_of_birth, !rawDob.isEmpty {
+            let isoFmt = ISO8601DateFormatter()
+            isoFmt.formatOptions = [.withFullDate]
+            let plainFmt = DateFormatter()
+            plainFmt.dateFormat = "yyyy-MM-dd"
+            plainFmt.locale = Locale(identifier: "en_US_POSIX")
+            if let parsed = isoFmt.date(from: rawDob) ?? plainFmt.date(from: rawDob) {
+                let displayFmt = DateFormatter()
+                displayFmt.dateStyle = .medium
+                displayFmt.locale = Locale.current
+                dateOfBirth = displayFmt.string(from: parsed)
+            } else {
+                dateOfBirth = rawDob
+            }
+        } else {
+            dateOfBirth = ""
+        }
+        let lf = p.legal_first_name ?? ""
+        let ll = p.legal_last_name ?? ""
+        legalName = "\(lf) \(ll)".trimmingCharacters(in: .whitespaces)
+        let parts = [p.address_line1, p.city, p.state, p.zip_code]
+            .compactMap { $0 }.filter { !$0.isEmpty }
+        address = parts.joined(separator: ", ")
+        _ = isLoading // suppress unused warning
+    }
+
     private var profileContent: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
@@ -224,8 +266,21 @@ struct ProfilePage: View {
                                 .fill(Color.white)
                                 .frame(width: 128, height: 128)
                                 .overlay(
-                                    Text(profileManager.avatarEmoji)
-                                        .font(.system(size: 60))
+                                    Group {
+                                        if let imgUrl = profileManager.profile?.avatar_image_url,
+                                           !imgUrl.isEmpty, let url = URL(string: imgUrl) {
+                                            AsyncImage(url: url) { image in
+                                                image.resizable().scaledToFill()
+                                            } placeholder: {
+                                                Text(profileManager.avatarEmoji).font(.system(size: 60))
+                                            }
+                                            .frame(width: 128, height: 128)
+                                            .clipShape(Circle())
+                                        } else {
+                                            Text(profileManager.avatarEmoji)
+                                                .font(.system(size: 60))
+                                        }
+                                    }
                                 )
                                 .overlay(
                                     Circle()
@@ -307,68 +362,33 @@ struct ProfilePage: View {
     }
     
     private func loadProfile() async {
-        isLoading = true
-        errorMessage = nil
-        
         guard let userId = authManager.currentUser?.id else {
             errorMessage = "Not authenticated"
             isLoading = false
             return
         }
         
+        // ── Cache-then-network (stale-while-revalidate) ────────────────────────
+        // Seed public fields instantly from ProfileManager (zero latency, already loaded).
+        await MainActor.run {
+            if displayName.isEmpty { displayName = profileManager.displayName }
+            if let cached = profileManager.profile { applyProfile(cached) }
+        }
+
+        // Always fetch fresh in background — fills in private fields silently.
+        errorMessage = nil
         do {
-            userProfile = try await API.shared.getUserProfile(userId: userId)
-            await MainActor.run {
-                // Sync to ProfileManager so all views stay in sync
-                profileManager.update(userProfile)
-                
-                displayName = userProfile?.display_name ?? authManager.currentUser?.name ?? ""
-                phoneNumber = userProfile?.phone_number ?? ""
-                // Format DOB using device locale (e.g. dd/MM/yyyy for Kenya)
-                if let rawDob = userProfile?.date_of_birth, !rawDob.isEmpty {
-                    let isoFormatter = ISO8601DateFormatter()
-                    isoFormatter.formatOptions = [.withFullDate]
-                    // Also try plain yyyy-MM-dd
-                    let plainFormatter = DateFormatter()
-                    plainFormatter.dateFormat = "yyyy-MM-dd"
-                    plainFormatter.locale = Locale(identifier: "en_US_POSIX")
-                    
-                    if let parsed = isoFormatter.date(from: rawDob) ?? plainFormatter.date(from: rawDob) {
-                        let displayFormatter = DateFormatter()
-                        displayFormatter.dateStyle = .medium
-                        displayFormatter.locale = Locale.current
-                        dateOfBirth = displayFormatter.string(from: parsed)
-                    } else {
-                        dateOfBirth = rawDob
-                    }
-                } else {
-                    dateOfBirth = ""
-                }
-                
-                // Legal name
-                let legalFirst = userProfile?.legal_first_name ?? ""
-                let legalLast = userProfile?.legal_last_name ?? ""
-                if !legalFirst.isEmpty || !legalLast.isEmpty {
-                    legalName = "\(legalFirst) \(legalLast)".trimmingCharacters(in: .whitespaces)
-                }
-                
-                // Address
-                let addressParts = [
-                    userProfile?.address_line1,
-                    userProfile?.city,
-                    userProfile?.state,
-                    userProfile?.zip_code
-                ].compactMap { $0 }.filter { !$0.isEmpty }
-                
-                if !addressParts.isEmpty {
-                    address = addressParts.joined(separator: ", ")
-                }
-                
-                isLoading = false
+            let fetched = try await API.shared.getUserProfile(userId: userId)
+            if let fetched {
+                await MainActor.run { applyProfile(fetched) }
             }
         } catch {
-            errorMessage = "Failed to load profile: \(error.localizedDescription)"
-            isLoading = false
+            await MainActor.run {
+                // Only show error if we have no data at all
+                if userProfile == nil {
+                    errorMessage = "Could not load profile details."
+                }
+            }
         }
     }
 }
@@ -448,13 +468,54 @@ private let avatarOptions: [AvatarOptionItem] = [
     AvatarOptionItem(emoji: "🦚", label: "Peacock"),
 ]
 
+// MARK: - Camera picker (UIViewControllerRepresentable wrapper)
+
+struct CameraPickerView: UIViewControllerRepresentable {
+    @Environment(\.dismiss) var dismiss
+    var onCapture: (Data) -> Void
+    
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.sourceType = .camera
+        picker.allowsEditing = true
+        picker.delegate = context.coordinator
+        return picker
+    }
+    
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+    
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+    
+    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let parent: CameraPickerView
+        init(_ parent: CameraPickerView) { self.parent = parent }
+        
+        func imagePickerController(_ picker: UIImagePickerController,
+                                   didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
+            let image = (info[.editedImage] ?? info[.originalImage]) as? UIImage
+            if let data = image?.jpegData(compressionQuality: 0.85) {
+                parent.onCapture(data)
+            }
+            parent.dismiss()
+        }
+        
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            parent.dismiss()
+        }
+    }
+}
+
 struct AvatarPickerView: View {
     @EnvironmentObject var authManager: ClerkAuthManager
     @EnvironmentObject var profileManager: ProfileManager
     @Environment(\.dismiss) var dismiss
     @State private var selectedEmoji: String = ""
     @State private var isSaving = false
+    @State private var isUploadingPhoto = false
     @State private var errorMessage: String?
+    @State private var showCamera = false
+    @State private var showGallery = false
+    @State private var selectedPhotoItem: PhotosPickerItem?
     
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 12), count: 5)
     
@@ -463,12 +524,8 @@ struct AvatarPickerView: View {
             VStack(spacing: 0) {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
-                        Text("Choose an animal avatar for your profile")
-                            .font(.system(size: 14))
-                            .foregroundColor(AppTheme.Colors.textSecondary)
-                            .padding(.horizontal, 16)
                         
-                        // Current avatar preview
+                        // ── Current avatar preview ──────────────────────────
                         HStack {
                             Spacer()
                             ZStack {
@@ -476,20 +533,80 @@ struct AvatarPickerView: View {
                                     .fill(Color.white)
                                     .frame(width: 80, height: 80)
                                     .overlay(
-                                        Text(selectedEmoji.isEmpty ? profileManager.avatarEmoji : selectedEmoji)
-                                            .font(.system(size: 40))
+                                        Group {
+                                            if isUploadingPhoto {
+                                                ProgressView().scaleEffect(1.2)
+                                            } else if let imgUrl = profileManager.profile?.avatar_image_url,
+                                                      !imgUrl.isEmpty, let url = URL(string: imgUrl) {
+                                                AsyncImage(url: url) { img in
+                                                    img.resizable().scaledToFill()
+                                                } placeholder: {
+                                                    Text(profileManager.avatarEmoji).font(.system(size: 40))
+                                                }
+                                                .frame(width: 80, height: 80)
+                                                .clipShape(Circle())
+                                            } else {
+                                                Text(selectedEmoji.isEmpty ? profileManager.avatarEmoji : selectedEmoji)
+                                                    .font(.system(size: 40))
+                                            }
+                                        }
                                     )
-                                    .overlay(
-                                        Circle()
-                                            .stroke(AppTheme.Colors.primary, lineWidth: 3)
-                                    )
+                                    .overlay(Circle().stroke(AppTheme.Colors.primary, lineWidth: 3))
                                     .shadow(color: .black.opacity(0.15), radius: 6)
                             }
                             Spacer()
                         }
-                        .padding(.vertical, 8)
+                        .padding(.top, 8)
                         
-                        // Emoji grid — 5 columns matching webapp & Android
+                        // ── Photo options ────────────────────────────────────
+                        VStack(spacing: 0) {
+                            // Take photo
+                            Button(action: { showCamera = true }) {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "camera.fill")
+                                        .font(.system(size: 20))
+                                        .foregroundColor(AppTheme.Colors.primary)
+                                        .frame(width: 24)
+                                    Text("Take photo")
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundColor(AppTheme.Colors.textPrimary)
+                                    Spacer()
+                                }
+                                .padding(16)
+                            }
+                            Divider().padding(.leading, 52)
+                            // Choose from gallery
+                            PhotosPicker(
+                                selection: $selectedPhotoItem,
+                                matching: .images,
+                                photoLibrary: .shared()
+                            ) {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "photo.on.rectangle")
+                                        .font(.system(size: 20))
+                                        .foregroundColor(AppTheme.Colors.primary)
+                                        .frame(width: 24)
+                                    Text("Choose from gallery")
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundColor(AppTheme.Colors.textPrimary)
+                                    Spacer()
+                                }
+                                .padding(16)
+                            }
+                        }
+                        .background(AppTheme.Colors.cardSurface)
+                        .cornerRadius(12)
+                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppTheme.Colors.primary.opacity(0.2), lineWidth: 1))
+                        .shadow(color: .black.opacity(0.03), radius: 2, y: 1)
+                        .padding(.horizontal, 16)
+                        
+                        // ── Divider / label ──────────────────────────────────
+                        Text("Or choose a custom avatar")
+                            .font(.system(size: 13))
+                            .foregroundColor(AppTheme.Colors.textSecondary)
+                            .padding(.horizontal, 16)
+                        
+                        // ── Emoji grid — 5 cols with labels ─────────────────
                         LazyVGrid(columns: columns, spacing: 12) {
                             ForEach(avatarOptions) { option in
                                 Button(action: {
@@ -502,15 +619,13 @@ struct AvatarPickerView: View {
                                                 .fill(Color.white)
                                                 .frame(width: 56, height: 56)
                                                 .overlay(
-                                                    Text(option.emoji)
-                                                        .font(.system(size: 28))
+                                                    Text(option.emoji).font(.system(size: 28))
                                                 )
                                                 .overlay(
-                                                    Circle()
-                                                        .stroke(
-                                                            isSelected(option.emoji) ? AppTheme.Colors.primary : Color.gray.opacity(0.2),
-                                                            lineWidth: isSelected(option.emoji) ? 3 : 1
-                                                        )
+                                                    Circle().stroke(
+                                                        isSelected(option.emoji) ? AppTheme.Colors.primary : Color.gray.opacity(0.2),
+                                                        lineWidth: isSelected(option.emoji) ? 3 : 1
+                                                    )
                                                 )
                                                 .shadow(color: isSelected(option.emoji) ? AppTheme.Colors.primary.opacity(0.3) : .clear, radius: 4)
                                         }
@@ -539,7 +654,7 @@ struct AvatarPickerView: View {
                     .padding(.vertical, 16)
                 }
                 
-                // Save button — fixed at bottom
+                // ── Save button (emoji only; photo saves immediately) ────────
                 VStack(spacing: 0) {
                     Divider()
                     Button(action: saveAvatar) {
@@ -565,26 +680,63 @@ struct AvatarPickerView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Close") {
-                        dismiss()
-                    }
+                    Button("Close") { dismiss() }
                 }
             }
             .onAppear {
                 selectedEmoji = profileManager.avatarEmoji
             }
+            // Camera sheet
+            .fullScreenCover(isPresented: $showCamera) {
+                CameraPickerView { imageData in
+                    Task { await uploadProfilePhoto(imageData) }
+                }
+                .ignoresSafeArea()
+            }
+            // Gallery photo handler
+            .onChange(of: selectedPhotoItem) {
+                Task {
+                    if let data = try? await selectedPhotoItem?.loadTransferable(type: Data.self) {
+                        await uploadProfilePhoto(data)
+                    }
+                }
+            }
         }
     }
     
     private var canSave: Bool {
-        !isSaving && !selectedEmoji.isEmpty && selectedEmoji != profileManager.avatarEmoji
+        !isSaving && !isUploadingPhoto && !selectedEmoji.isEmpty && selectedEmoji != profileManager.avatarEmoji
     }
     
     private func isSelected(_ emoji: String) -> Bool {
-        if selectedEmoji.isEmpty {
-            return emoji == profileManager.avatarEmoji
+        selectedEmoji.isEmpty ? emoji == profileManager.avatarEmoji : emoji == selectedEmoji
+    }
+    
+    // Upload photo to /api/upload-avatar, then update profile
+    private func uploadProfilePhoto(_ imageData: Data) async {
+        guard let userId = authManager.currentUser?.id else { return }
+        isUploadingPhoto = true
+        errorMessage = nil
+        do {
+            let uploadedUrl = try await API.shared.uploadProfilePhoto(imageData: imageData)
+            let _ = try await API.shared.updateUserProfile(
+                userId: userId,
+                updates: ["avatar_image_url": uploadedUrl]
+            )
+            await MainActor.run {
+                // Update ProfileManager avatar_image_url
+                var updated = profileManager.profile
+                updated?.avatar_image_url = uploadedUrl
+                if let updated { profileManager.update(updated) }
+                isUploadingPhoto = false
+                dismiss()
+            }
+        } catch {
+            await MainActor.run {
+                errorMessage = "Failed to upload photo. Please try again."
+                isUploadingPhoto = false
+            }
         }
-        return emoji == selectedEmoji
     }
     
     private func saveAvatar() {
@@ -592,10 +744,8 @@ struct AvatarPickerView: View {
             errorMessage = "Not authenticated"
             return
         }
-        
         isSaving = true
         errorMessage = nil
-        
         Task {
             do {
                 let _ = try await API.shared.updateUserProfile(

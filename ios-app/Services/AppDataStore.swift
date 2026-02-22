@@ -24,7 +24,11 @@ final class AppDataStore: ObservableObject {
     @Published var workspaces: [Workspace] = []
 
     @Published var isLoadingExpenses = false
+    @Published var isLoadingMoreExpenses = false
+    @Published var expensesHasMore = false
     @Published var isLoadingReports = false
+    @Published var isLoadingMoreReports = false
+    @Published var reportsHasMore = false
     @Published var isLoadingWorkspaces = false
 
     // MARK: - Computed Stats (Home page)
@@ -36,6 +40,11 @@ final class AppDataStore: ObservableObject {
     @Published var submittedReportsCount: Int = 0
     /// Set from HomePage before tab-switch to deep-link into a specific ReportsPage subtab (0=Expenses, 1=Reports).
     @Published var reportsDeepLinkSubTab: Int? = nil
+
+    // MARK: - Pagination Cursors (private)
+
+    private var nextExpenseCursor: String? = nil
+    private var nextReportCursor: String? = nil
 
     // MARK: - Debounce
 
@@ -82,15 +91,18 @@ final class AppDataStore: ObservableObject {
         async let _ = refreshExpenses(force: force)
         async let _ = refreshReports(force: force)
         async let _ = refreshWorkspaces(force: force)
+        async let _ = refreshStats()
     }
 
     func refreshExpenses(force: Bool = false) async {
         guard force || Date().timeIntervalSince(lastExpenseFetch) > debounceInterval else { return }
         if expenses.isEmpty { isLoadingExpenses = true }
         do {
-            let fetched = try await API.shared.fetchExpenses()
-            DataCache.shared.save(fetched, key: CacheKey.expenses)
-            expenses = fetched
+            let paged = try await API.shared.fetchExpenses()
+            DataCache.shared.save(paged.items, key: CacheKey.expenses)
+            expenses = paged.items
+            expensesHasMore = paged.hasMore
+            nextExpenseCursor = paged.nextCursor
             lastExpenseFetch = Date()
             recomputeStats()
         } catch is CancellationError {
@@ -103,13 +115,33 @@ final class AppDataStore: ObservableObject {
         isLoadingExpenses = false
     }
 
+    /// Append the next page of expenses.  Called from InfiniteScroll or "Load More" button.
+    func loadMoreExpenses() async {
+        guard expensesHasMore, !isLoadingMoreExpenses, let cursor = nextExpenseCursor else { return }
+        isLoadingMoreExpenses = true
+        do {
+            let paged = try await API.shared.fetchExpenses(cursor: cursor)
+            let merged = expenses + paged.items
+            DataCache.shared.save(merged, key: CacheKey.expenses)
+            expenses = merged
+            expensesHasMore = paged.hasMore
+            nextExpenseCursor = paged.nextCursor
+            recomputeStats()
+        } catch is CancellationError {}
+        catch let urlError as URLError where urlError.code == .cancelled {}
+        catch { print("❌ Load-more expenses error: \(error)") }
+        isLoadingMoreExpenses = false
+    }
+
     func refreshReports(force: Bool = false) async {
         guard force || Date().timeIntervalSince(lastReportFetch) > debounceInterval else { return }
         if reports.isEmpty { isLoadingReports = true }
         do {
-            let fetched = try await API.shared.fetchReports()
-            DataCache.shared.save(fetched, key: CacheKey.reports)
-            reports = fetched
+            let paged = try await API.shared.fetchReports()
+            DataCache.shared.save(paged.items, key: CacheKey.reports)
+            reports = paged.items
+            reportsHasMore = paged.hasMore
+            nextReportCursor = paged.nextCursor
             lastReportFetch = Date()
             recomputeStats()
         } catch is CancellationError {
@@ -120,6 +152,40 @@ final class AppDataStore: ObservableObject {
             print("❌ Reports fetch error: \(error)")
         }
         isLoadingReports = false
+    }
+
+    /// Append the next page of reports.
+    func loadMoreReports() async {
+        guard reportsHasMore, !isLoadingMoreReports, let cursor = nextReportCursor else { return }
+        isLoadingMoreReports = true
+        do {
+            let paged = try await API.shared.fetchReports(cursor: cursor)
+            let merged = reports + paged.items
+            DataCache.shared.save(merged, key: CacheKey.reports)
+            reports = merged
+            reportsHasMore = paged.hasMore
+            nextReportCursor = paged.nextCursor
+            recomputeStats()
+        } catch is CancellationError {}
+        catch let urlError as URLError where urlError.code == .cancelled {}
+        catch { print("❌ Load-more reports error: \(error)") }
+        isLoadingMoreReports = false
+    }
+
+    /// Fetch server-side aggregated stats.  More accurate than client-side
+    /// recomputeStats() because it counts expenses across ALL pages, not just
+    /// the currently-loaded page.
+    func refreshStats() async {
+        do {
+            let stats = try await API.shared.fetchStats()
+            totalThisMonth        = stats.totalThisMonth
+            totalAllTime          = stats.totalAllTime
+            monthOverMonthTrend   = stats.monthOverMonthTrend
+            receiptCountThisMonth = stats.receiptCountThisMonth
+            submittedReportsCount = stats.totalReports
+        } catch is CancellationError {}
+        catch let urlError as URLError where urlError.code == .cancelled {}
+        catch { /* silent — cached stats from recomputeStats() remain visible */ }
     }
 
     func refreshWorkspaces(force: Bool = false) async {

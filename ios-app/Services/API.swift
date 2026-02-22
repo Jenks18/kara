@@ -21,14 +21,14 @@ class API {
         let pollInterval: UInt64 = 200_000_000 // 200ms
         let start = Date()
         
-        while Clerk.shared.session == nil {
+        while await MainActor.run(body: { Clerk.shared.session }) == nil {
             if Date().timeIntervalSince(start) > maxWait {
                 throw APIError.notAuthenticated
             }
             try await Task.sleep(nanoseconds: pollInterval)
         }
         
-        guard let session = Clerk.shared.session else { throw APIError.notAuthenticated }
+        guard let session = await MainActor.run(body: { Clerk.shared.session }) else { throw APIError.notAuthenticated }
         guard let tokenResource = try await session.getToken() else { throw APIError.notAuthenticated }
         return tokenResource.jwt
     }
@@ -65,15 +65,18 @@ class API {
     }
     
     // MARK: - Expense Reports
-    
-    func fetchReports() async throws -> [ExpenseReport] {
-        let url = URL(string: "\(baseURL)/mobile/expense-reports")!
-        let data = try await makeAuthenticatedRequest(url: url)
+
+    func fetchReports(cursor: String? = nil) async throws -> PagedResponse<ExpenseReport> {
+        var components = URLComponents(string: "\(baseURL)/mobile/expense-reports")!
+        var queryItems = [URLQueryItem(name: "limit", value: "50")]
+        if let cursor { queryItems.append(URLQueryItem(name: "cursor", value: cursor)) }
+        components.queryItems = queryItems
+        let data = try await makeAuthenticatedRequest(url: components.url!)
         do {
-            return try JSONDecoder().decode([ExpenseReport].self, from: data)
+            return try JSONDecoder().decode(PagedResponse<ExpenseReport>.self, from: data)
         } catch {
             #if DEBUG
-            print("❌ Decode [ExpenseReport] failed: \(error)")
+            print("❌ Decode PagedResponse<ExpenseReport> failed: \(error)")
             print("   Response: \(String(data: data.prefix(500), encoding: .utf8) ?? "<binary>")")
             #endif
             throw error
@@ -95,15 +98,34 @@ class API {
     }
     
     // MARK: - Expense Items
-    
-    func fetchExpenses() async throws -> [ExpenseItem] {
-        let url = URL(string: "\(baseURL)/mobile/receipts?limit=100")!
-        let data = try await makeAuthenticatedRequest(url: url)
+
+    func fetchExpenses(cursor: String? = nil) async throws -> PagedResponse<ExpenseItem> {
+        var components = URLComponents(string: "\(baseURL)/mobile/receipts")!
+        var queryItems = [URLQueryItem(name: "limit", value: "50")]
+        if let cursor { queryItems.append(URLQueryItem(name: "cursor", value: cursor)) }
+        components.queryItems = queryItems
+        let data = try await makeAuthenticatedRequest(url: components.url!)
         do {
-            return try JSONDecoder().decode([ExpenseItem].self, from: data)
+            return try JSONDecoder().decode(PagedResponse<ExpenseItem>.self, from: data)
         } catch {
             #if DEBUG
-            print("❌ Decode [ExpenseItem] failed: \(error)")
+            print("❌ Decode PagedResponse<ExpenseItem> failed: \(error)")
+            print("   Response: \(String(data: data.prefix(500), encoding: .utf8) ?? "<binary>")")
+            #endif
+            throw error
+        }
+    }
+
+    // MARK: - Stats
+
+    func fetchStats() async throws -> MobileStats {
+        let url = URL(string: "\(baseURL)/mobile/stats")!
+        let data = try await makeAuthenticatedRequest(url: url)
+        do {
+            return try JSONDecoder().decode(MobileStats.self, from: data)
+        } catch {
+            #if DEBUG
+            print("❌ Decode MobileStats failed: \(error)")
             print("   Response: \(String(data: data.prefix(500), encoding: .utf8) ?? "<binary>")")
             #endif
             throw error
@@ -395,12 +417,31 @@ class API {
     }
     
     func uploadWorkspaceAvatar(workspaceId: String, imageData: Data) async throws -> String {
-        // Upload image and get URL
         let imageUrl = try await uploadAvatar(imageData: imageData)
-        
-        // Update workspace with new avatar URL
         _ = try await updateWorkspace(id: workspaceId, updates: ["avatar": imageUrl])
         return imageUrl
+    }
+    
+    /// Upload a photo for the current user's profile picture.
+    /// Returns the public URL of the uploaded image.
+    func uploadProfilePhoto(imageData: Data) async throws -> String {
+        return try await uploadAvatar(imageData: imageData)
+    }
+    
+    // MARK: - Workspace Invites
+    
+    /// Creates a workspace invite link via the API and returns the invite URL.
+    func createWorkspaceInvite(workspaceId: String) async throws -> String {
+        let url = URL(string: "\(baseURL)/workspaces/\(workspaceId)/invites")!
+        let body = try JSONSerialization.data(withJSONObject: ["contact": "share"])
+        let data = try await makeAuthenticatedRequest(url: url, method: "POST", body: body)
+        struct InviteResponse: Codable { let inviteUrl: String? }
+        if let resp = try? JSONDecoder().decode(InviteResponse.self, from: data),
+           let inviteUrl = resp.inviteUrl {
+            return inviteUrl
+        }
+        // Fallback: return a direct join URL
+        return "https://web.kachalabs.com/workspaces/\(workspaceId)/join"
     }
 }
 

@@ -49,6 +49,14 @@ struct HomePage: View {
                 } else {
                     ScrollView {
                         VStack(spacing: 16) {
+                            // Scroll offset probe (iOS 17-compatible)
+                            GeometryReader { geo in
+                                Color.clear.preference(
+                                    key: ScrollOffsetPreferenceKey.self,
+                                    value: geo.frame(in: .named("homeScroll")).minY
+                                )
+                            }
+                            .frame(height: 0)
 
                             // ── Hero spending card ───────────────────
                             HeroSpendingCard(
@@ -237,10 +245,9 @@ struct HomePage: View {
                         .padding(16)
                         .padding(.bottom, 100)
                     }
-                    .onScrollGeometryChange(for: Bool.self) { geo in
-                        geo.contentOffset.y > 8
-                    } action: { _, scrolled in
-                        isScrolled = scrolled
+                    .coordinateSpace(name: "homeScroll")
+                    .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                        isScrolled = value < -8
                     }
                     .refreshable {
                         await dataStore.refreshAll(force: true)
@@ -289,8 +296,11 @@ struct HomePage: View {
         case "travel", "accommodation", "hotel":               return palette[4]
         case "entertainment", "recreation", "subscriptions":  return palette[1]
         default:
-            let idx = abs(category.lowercased().hashValue) % palette.count
-            return palette[idx]
+            // DJB2 hash (deterministic across launches — Swift's hashValue is seeded per-process).
+            // Maps any unknown category name to a unique hue in [0°, 360°) with no palette collisions.
+            var h: UInt32 = 5381
+            for byte in category.lowercased().utf8 { h = (h &* 33) &+ UInt32(byte) }
+            return Color(hue: Double(h % 360) / 360.0, saturation: 0.65, brightness: 0.85)
         }
     }
 
@@ -470,7 +480,10 @@ struct SpendingByCategoryCard: View {
         case "office", "supplies", "stationery", "equipment": return palette[3]
         case "travel", "accommodation", "hotel":               return palette[4]
         case "entertainment", "recreation", "subscriptions":  return palette[1]
-        default: return palette[abs(cat.lowercased().hashValue) % palette.count]
+        default:
+            var h: UInt32 = 5381
+            for byte in cat.lowercased().utf8 { h = (h &* 33) &+ UInt32(byte) }
+            return Color(hue: Double(h % 360) / 360.0, saturation: 0.65, brightness: 0.85)
         }
     }
 
@@ -605,6 +618,12 @@ struct StatCardView: View {
         .cornerRadius(16)
         .shadow(color: Color.black.opacity(0.05), radius: 1, y: 1)
     }
+}
+
+// MARK: - Scroll detection (iOS 17-compatible via PreferenceKey)
+private struct ScrollOffsetPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
 }
 
 #Preview {

@@ -89,9 +89,13 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const imageFile = formData.get('image') as File;
     const workspaceId = formData.get('workspaceId') as string;
+    const workspaceNameOverride = formData.get('workspaceName') as string | null;
     
     // Optional reportId for batching multiple receipts into one report
     const reportId = formData.get('reportId') as string;
+    
+    // Optional user-provided description/notes (applied when AI description is absent)
+    const userDescription = (formData.get('userDescription') as string | null)?.trim() || null;
     
     // Optional location data (from device GPS or photo EXIF)
     const latitude = formData.get('latitude') as string;
@@ -149,12 +153,54 @@ export async function POST(request: NextRequest) {
         if (!finalReportId) {
           // Create a NEW report only if reportId not provided
           
+          // Look up the user's active workspace to properly link the receipt
+          let resolvedWorkspaceId: string | null = workspaceId || null;
+          let resolvedWorkspaceName = 'Personal';
+          
+          if (!resolvedWorkspaceId) {
+            const { data: userWorkspace } = await supabase
+              .from('workspaces')
+              .select('id, name')
+              .eq('is_active', true)
+              .order('created_at', { ascending: true })
+              .limit(1)
+              .maybeSingle();
+            
+            if (userWorkspace) {
+              resolvedWorkspaceId = userWorkspace.id;
+              resolvedWorkspaceName = userWorkspace.name;
+            } else {
+              // Race condition safety: user has no workspace yet (init hasn't completed).
+              // Auto-create a "Personal" workspace so the receipt isn't orphaned.
+              console.warn(`User ${userId} has no workspace at upload time — auto-creating`);
+              const { data: newWs } = await supabase
+                .from('workspaces')
+                .insert({
+                  user_id: userId,
+                  owner_id: userId,
+                  name: 'Personal',
+                  avatar: '💼',
+                  currency: 'KES',
+                  currency_symbol: 'KSh',
+                  is_active: true,
+                })
+                .select('id, name')
+                .maybeSingle();
+              
+              if (newWs) {
+                resolvedWorkspaceId = newWs.id;
+                resolvedWorkspaceName = newWs.name;
+              }
+            }
+          }
+          
           const { data: newReport, error: reportError } = await supabase
             .from('expense_reports')
             .insert({
               user_id: userId,
               user_email: userEmail,
-              workspace_name: 'Default Workspace',
+              workspace_name: workspaceNameOverride || resolvedWorkspaceName,
+              ...(resolvedWorkspaceId ? { workspace_id: resolvedWorkspaceId } : {}),
               title: `Receipt - ${new Date().toLocaleString()}`,
               status: 'draft',
               total_amount: 0,
@@ -247,6 +293,7 @@ export async function POST(request: NextRequest) {
               raw_receipt_id: result.rawReceiptId, // 🔗 Link to raw_receipts table!
               image_url: result.imageUrl,
               category: result.aiEnhanced?.category || result.parsedData?.category || 'Other', // Use AI/parsed category or default to Other
+              description: userDescription ?? undefined,  // Apply user note if provided
               amount: amount,
               processing_status: initialStatus,
               merchant_name: merchantName,

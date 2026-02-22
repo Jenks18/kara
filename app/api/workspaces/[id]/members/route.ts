@@ -22,13 +22,12 @@ export async function GET(
     const { id: workspaceId } = await context.params
     const supabase = await createServerClient()
 
-    // Check if user is a member of this workspace
+    // Check if user is a member of this workspace (any status)
     const { data: membership, error: membershipError } = await supabase
       .from('workspace_members')
       .select('role')
       .eq('workspace_id', workspaceId)
       .eq('user_id', userId)
-      .eq('status', 'active')
       .single()
 
     if (membershipError || !membership) {

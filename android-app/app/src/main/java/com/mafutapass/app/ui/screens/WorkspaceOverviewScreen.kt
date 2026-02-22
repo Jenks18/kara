@@ -64,7 +64,7 @@ fun WorkspaceOverviewScreen(
     var showAvatarMenu by remember { mutableStateOf(false) }
 
     val shareUrl = "https://web.kachalabs.com/workspaces/$workspaceId/join"
-    val inviteMessage = "Hey! Join me on Kacha — we're using it to track expenses and manage receipts. Join my workspace \"${workspace?.name ?: ""}\" here: $shareUrl"
+    var dynamicShareUrl by remember { mutableStateOf("") }
 
     // Image picker for workspace avatar
     val imagePickerLauncher = rememberLauncherForActivityResult(
@@ -322,6 +322,9 @@ fun WorkspaceOverviewScreen(
     // ── Invite via native share ──
     if (showInviteDialog) {
         LaunchedEffect(Unit) {
+            val inviteUrl = viewModel.createInviteLink(workspaceId)
+            dynamicShareUrl = inviteUrl
+            val inviteMessage = "Hey! Join me on Kacha \u2014 we're using it to track expenses and manage receipts. Join my workspace \"${workspace?.name ?: ""}\" here: $inviteUrl"
             val sendIntent = Intent().apply {
                 action = Intent.ACTION_SEND
                 putExtra(Intent.EXTRA_TEXT, inviteMessage)
@@ -409,6 +412,13 @@ fun WorkspaceOverviewScreen(
 
     // ── Share Dialog with QR Code ──
     if (showShareDialog) {
+        // Preload real invite URL when dialog opens
+        LaunchedEffect(Unit) {
+            if (dynamicShareUrl.isEmpty()) {
+                dynamicShareUrl = viewModel.createInviteLink(workspaceId)
+            }
+        }
+        val activeShareUrl = dynamicShareUrl.ifEmpty { shareUrl }
         Dialog(onDismissRequest = { showShareDialog = false }) {
             Surface(
                 shape = RoundedCornerShape(24.dp),
@@ -436,7 +446,7 @@ fun WorkspaceOverviewScreen(
                     Spacer(Modifier.height(16.dp))
 
                     // QR Code
-                    val qrBitmap = remember(shareUrl) { generateQRCode(shareUrl) }
+                    val qrBitmap = remember(activeShareUrl) { generateQRCode(activeShareUrl) }
                     if (qrBitmap != null) {
                         Surface(
                             shape = RoundedCornerShape(16.dp),
@@ -462,7 +472,7 @@ fun WorkspaceOverviewScreen(
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text("Share link", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Spacer(Modifier.height(4.dp))
-                            Text(shareUrl, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface)
+                            Text(activeShareUrl, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface)
                         }
                     }
 
@@ -475,7 +485,7 @@ fun WorkspaceOverviewScreen(
                         Button(
                             onClick = {
                                 val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                clipboard.setPrimaryClip(ClipData.newPlainText("Share URL", shareUrl))
+                                clipboard.setPrimaryClip(ClipData.newPlainText("Share URL", activeShareUrl))
                                 Toast.makeText(context, "Link copied to clipboard!", Toast.LENGTH_SHORT).show()
                             },
                             modifier = Modifier.weight(1f),
@@ -492,7 +502,7 @@ fun WorkspaceOverviewScreen(
                                 // Share via system share sheet
                                 val sendIntent = Intent().apply {
                                     action = Intent.ACTION_SEND
-                                    putExtra(Intent.EXTRA_TEXT, shareUrl)
+                                    putExtra(Intent.EXTRA_TEXT, activeShareUrl)
                                     type = "text/plain"
                                 }
                                 context.startActivity(Intent.createChooser(sendIntent, "Share workspace"))

@@ -12,6 +12,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -187,9 +191,10 @@ fun WorkspacesScreen(
                 workspaces.forEach { workspace ->
                     WorkspaceCard(
                         workspace = workspace,
-                        onClick = {
-                            onNavigateToDetail?.invoke(workspace.id)
-                        }
+                        onClick = { onNavigateToDetail?.invoke(workspace.id) },
+                        onGoToWorkspace = { onNavigateToDetail?.invoke(workspace.id) },
+                        onDuplicate = { viewModel.duplicateWorkspace(workspace) },
+                        onDelete = { viewModel.deleteWorkspace(workspace.id) }
                     )
                 }
 
@@ -249,8 +254,14 @@ fun WorkspacesScreen(
 @Composable
 private fun WorkspaceCard(
     workspace: Workspace,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onGoToWorkspace: () -> Unit = onClick,
+    onDuplicate: () -> Unit = {},
+    onDelete: () -> Unit = {}
 ) {
+    var showMenu by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -273,9 +284,7 @@ private fun WorkspaceCard(
                     .size(56.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .background(
-                        Brush.linearGradient(
-                            colors = listOf(Blue500, Blue700)
-                        )
+                        Brush.linearGradient(colors = listOf(Blue500, Blue700))
                     ),
                 contentAlignment = Alignment.Center
             ) {
@@ -284,9 +293,7 @@ private fun WorkspaceCard(
                     AsyncImage(
                         model = avatarUrl,
                         contentDescription = workspace.name,
-                        modifier = Modifier
-                            .size(56.dp)
-                            .clip(RoundedCornerShape(12.dp))
+                        modifier = Modifier.size(56.dp).clip(RoundedCornerShape(12.dp))
                     )
                 } else {
                     Text(
@@ -318,13 +325,69 @@ private fun WorkspaceCard(
                 )
             }
 
-            // Chevron
-            Icon(
-                imageVector = Icons.Filled.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                modifier = Modifier.size(20.dp)
-            )
+            // 3-dot menu
+            Box {
+                IconButton(
+                    onClick = { showMenu = true },
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        Icons.Filled.MoreVert,
+                        contentDescription = "More options",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                DropdownMenu(
+                    expanded = showMenu,
+                    onDismissRequest = { showMenu = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Go to workspace") },
+                        onClick = { showMenu = false; onGoToWorkspace() },
+                        leadingIcon = {
+                            Icon(Icons.Filled.OpenInNew, null,
+                                tint = MaterialTheme.colorScheme.primary)
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Duplicate workspace") },
+                        onClick = { showMenu = false; onDuplicate() },
+                        leadingIcon = {
+                            Icon(Icons.Filled.ContentCopy, null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    )
+                    HorizontalDivider()
+                    DropdownMenuItem(
+                        text = {
+                            Text("Delete workspace",
+                                color = MaterialTheme.colorScheme.error)
+                        },
+                        onClick = { showMenu = false; showDeleteDialog = true },
+                        leadingIcon = {
+                            Icon(Icons.Filled.Delete, null,
+                                tint = MaterialTheme.colorScheme.error)
+                        }
+                    )
+                }
+            }
         }
+    }
+    
+    // Delete confirmation
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete workspace?") },
+            text = { Text("Are you sure you want to delete \"${workspace.name}\"? This cannot be undone.") },
+            confirmButton = {
+                TextButton(onClick = { showDeleteDialog = false; onDelete() }) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") }
+            }
+        )
     }
 }

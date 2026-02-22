@@ -125,7 +125,7 @@ struct ReportDetailContent: View {
                         .padding(.horizontal)
                     
                     ForEach(report.items ?? []) { item in
-                        NavigationLink(destination: ExpenseItemDetailView(item: item)) {
+                        NavigationLink(destination: ExpenseDetailView(expense: item)) {
                             ExpenseItemRow(item: item)
                         }
                         .buttonStyle(PlainButtonStyle())

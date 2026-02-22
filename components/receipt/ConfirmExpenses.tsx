@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, ChevronLeft, ChevronRight, Trash2, MapPin, Globe } from 'lucide-react'
+import { X, ChevronLeft, ChevronRight, Trash2, MapPin, Globe, ChevronDown } from 'lucide-react'
 import Image from 'next/image'
+import { useUser } from '@clerk/nextjs'
 
 interface ConfirmExpensesProps {
   images: string[]
@@ -12,25 +13,65 @@ interface ConfirmExpensesProps {
 
 interface ExpenseData {
   workspace: string
+  workspaceName: string
   description: string
   category: string
   reimbursable: boolean
   imageData: string
 }
 
+interface WorkspaceOption {
+  id: string
+  name: string
+  avatar: string
+  is_active: boolean
+}
+
+const CATEGORIES = [
+  'Fuel', 'Food', 'Transport', 'Accommodation', 'Office Supplies',
+  'Communication', 'Maintenance', 'Shopping', 'Entertainment', 'Utilities', 'Health', 'Other'
+]
+
 export default function ConfirmExpenses({ images, onConfirm, onCancel }: ConfirmExpensesProps) {
+  const { user } = useUser()
   const [showLocationPrompt, setShowLocationPrompt] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [locationPermissionGranted, setLocationPermissionGranted] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [workspaces, setWorkspaces] = useState<WorkspaceOption[]>([])
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
+  const [showWorkspaceDropdown, setShowWorkspaceDropdown] = useState(false)
   
   // Single expense data that applies to all images
   const [expenseData, setExpenseData] = useState({
     workspace: '',
+    workspaceName: '',
     description: '',
     category: 'Fuel',
     reimbursable: false,
   })
+
+  // Fetch workspaces on mount
+  useEffect(() => {
+    const fetchWorkspaces = async () => {
+      try {
+        const res = await fetch('/api/workspaces')
+        if (res.ok) {
+          const data = await res.json()
+          const ws = data.workspaces || data || []
+          setWorkspaces(ws)
+          // Auto-select active workspace, or first
+          const active = ws.find((w: WorkspaceOption) => w.is_active) || ws[0]
+          if (active) {
+            setExpenseData(prev => ({ ...prev, workspace: active.id, workspaceName: active.name }))
+          }
+        }
+      } catch (e) {
+        console.warn('Could not fetch workspaces:', e)
+      }
+    }
+    fetchWorkspaces()
+  }, [])
 
   // Check if location permission was already granted
   useEffect(() => {
@@ -246,22 +287,49 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
           <div className="space-y-4">
             {/* Workspace Section */}
             <div>
-              <label className="block text-sm text-gray-600 font-medium mb-2">To</label>
-              <button
-                onClick={() => {/* TODO: Open workspace selector */}}
-                className="w-full bg-white hover:bg-gray-50 active:scale-[0.99] transition-all rounded-2xl p-4 flex items-center justify-between border border-gray-200 shadow-sm"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-xl shadow-md">
-                    T
+              <label className="block text-sm text-gray-600 font-medium mb-2">Workspace</label>
+              <div className="relative">
+                <button
+                  onClick={() => setShowWorkspaceDropdown(!showWorkspaceDropdown)}
+                  className="w-full bg-white hover:bg-gray-50 active:scale-[0.99] transition-all rounded-2xl p-4 flex items-center justify-between border border-gray-200 shadow-sm"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-xl shadow-md">
+                      {expenseData.workspaceName ? expenseData.workspaceName.charAt(0).toUpperCase() : 'W'}
+                    </div>
+                    <div className="text-left">
+                      <div className="text-gray-900 font-medium">{expenseData.workspaceName || 'Select workspace'}</div>
+                      <div className="text-sm text-gray-600">Submit expenses to this workspace</div>
+                    </div>
                   </div>
-                  <div className="text-left">
-                    <div className="text-gray-900 font-medium">My Workspace</div>
-                    <div className="text-sm text-gray-600">Submit expenses to this workspace</div>
+                  <ChevronDown size={20} className="text-gray-500" />
+                </button>
+                {showWorkspaceDropdown && workspaces.length > 0 && (
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                    {workspaces.map(ws => (
+                      <button
+                        key={ws.id}
+                        onClick={() => {
+                          updateField('workspace', ws.id)
+                          setExpenseData(prev => ({ ...prev, workspace: ws.id, workspaceName: ws.name }))
+                          setShowWorkspaceDropdown(false)
+                        }}
+                        className={`w-full px-4 py-3 text-left hover:bg-blue-50 flex items-center gap-3 ${
+                          expenseData.workspace === ws.id ? 'bg-blue-50' : ''
+                        }`}
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
+                          {ws.avatar || ws.name.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="text-gray-900 font-medium">{ws.name}</span>
+                        {ws.is_active && (
+                          <span className="ml-auto text-xs text-blue-600 font-medium bg-blue-100 px-2 py-0.5 rounded-full">Active</span>
+                        )}
+                      </button>
+                    ))}
                   </div>
-                </div>
-                <ChevronRight size={20} className="text-gray-500" />
-              </button>
+                )}
+              </div>
             </div>
 
             {/* Receipt Image */}
@@ -275,25 +343,49 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
             </div>
 
             {/* Description */}
-            <button
-              onClick={() => {/* TODO: Open description input */}}
-              className="w-full bg-white hover:bg-gray-50 active:scale-[0.99] transition-all rounded-2xl p-4 flex items-center justify-between border border-gray-200 shadow-sm"
-            >
-              <span className="text-gray-900">Description</span>
-              <ChevronRight size={20} className="text-gray-500" />
-            </button>
+            <div>
+              <label className="block text-sm text-gray-600 font-medium mb-2">Description / Notes</label>
+              <input
+                type="text"
+                value={expenseData.description}
+                onChange={(e) => updateField('description', e.target.value)}
+                placeholder="Add a description or notes"
+                className="w-full bg-white rounded-2xl p-4 border border-gray-200 shadow-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
+              />
+            </div>
 
             {/* Category */}
-            <button
-              onClick={() => {/* TODO: Open category selector */}}
-              className="w-full bg-white hover:bg-gray-50 active:scale-[0.99] transition-all rounded-2xl p-4 flex items-center justify-between border border-gray-200 shadow-sm"
-            >
-              <span className="text-gray-900">Category</span>
-              <div className="flex items-center gap-2">
-                <span className="text-blue-600 font-medium">Fuel</span>
-                <ChevronRight size={20} className="text-gray-500" />
-              </div>
-            </button>
+            <div className="relative">
+              <label className="block text-sm text-gray-600 font-medium mb-2">Category</label>
+              <button
+                onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
+                className="w-full bg-white hover:bg-gray-50 active:scale-[0.99] transition-all rounded-2xl p-4 flex items-center justify-between border border-gray-200 shadow-sm"
+              >
+                <span className="text-gray-900">Category</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-blue-600 font-medium">{expenseData.category}</span>
+                  <ChevronDown size={20} className="text-gray-500" />
+                </div>
+              </button>
+              {showCategoryDropdown && (
+                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                  {CATEGORIES.map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => {
+                        updateField('category', cat)
+                        setShowCategoryDropdown(false)
+                      }}
+                      className={`w-full px-4 py-3 text-left hover:bg-blue-50 text-gray-900 ${
+                        expenseData.category === cat ? 'bg-blue-50 font-medium' : ''
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* Reimbursable Toggle */}
             <div className="flex items-center justify-between py-2 bg-white rounded-2xl p-4 border border-gray-200 shadow-sm">

@@ -28,13 +28,20 @@ function flattenItems(data: any[]) {
 
 /**
  * GET /api/mobile/receipts
- * List expense items (receipts) for the authenticated mobile user.
+ * List expense items with cursor-based pagination.
  * RLS auto-filters by user_id — no manual filtering needed.
+ *
+ * Query params:
+ *   limit  — page size, max 100, default 50
+ *   cursor — created_at ISO timestamp; returns items older than this value
+ *
+ * Response: { items, hasMore, nextCursor }
  */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
+    const cursor = searchParams.get('cursor'); // ISO timestamp — fetch items before this
 
     const mobileClient = await createMobileClient(request);
     if (!mobileClient) {
@@ -46,7 +53,8 @@ export async function GET(request: NextRequest) {
 
     const { supabase } = mobileClient;
 
-    const { data, error } = await supabase
+    // Fetch limit+1 rows — extra row tells us whether a next page exists
+    let query = supabase
       .from('expense_items')
       .select(`
         id, image_url, amount, category, merchant_name,
@@ -55,7 +63,13 @@ export async function GET(request: NextRequest) {
         expense_reports!inner ( user_id, workspace_name )
       `)
       .order('created_at', { ascending: false })
-      .limit(limit);
+      .limit(limit + 1);
+
+    if (cursor) {
+      query = query.lt('created_at', cursor);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('Error fetching receipts:', error instanceof Error ? error.message : String(error));
@@ -65,7 +79,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json(flattenItems(data || []), { headers: corsHeaders });
+    const rows = data || [];
+    const hasMore = rows.length > limit;
+    const page = hasMore ? rows.slice(0, limit) : rows;
+    const nextCursor = hasMore ? page[page.length - 1].created_at : null;
+
+    return NextResponse.json(
+      { items: flattenItems(page), hasMore, nextCursor },
+      { headers: corsHeaders }
+    );
   } catch (error: any) {
     console.error('Error in mobile receipts:', error instanceof Error ? error.message : String(error));
     return NextResponse.json(

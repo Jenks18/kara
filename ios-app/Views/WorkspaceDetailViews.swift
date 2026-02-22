@@ -14,7 +14,7 @@ struct WorkspaceDetailView: View {
         ZStack {
             AppTheme.backgroundView()
             
-            if isLoading {
+            if isLoading && workspace == nil {
                 ProgressView("Loading...")
             } else if workspace != nil {
                 ScrollView {
@@ -41,6 +41,12 @@ struct WorkspaceDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task {
             await loadWorkspace()
+        }
+        .onAppear {
+            // Refresh on every appearance so edits (e.g. currency change) are reflected immediately
+            if !isLoading, workspace != nil {
+                Task { await loadWorkspace() }
+            }
         }
     }
     
@@ -283,7 +289,7 @@ struct WorkspaceOverviewView: View {
         .navigationTitle("Overview")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showInviteModal) {
-            InviteModal(workspaceName: workspace?.name ?? "")
+            InviteModal(workspaceId: workspaceId, workspaceName: workspace?.name ?? "")
         }
         .sheet(isPresented: $showShareModal) {
             ShareWorkspaceModal(workspaceId: workspaceId, workspaceName: workspace?.name ?? "")
@@ -321,6 +327,11 @@ struct WorkspaceOverviewView: View {
         }
         .task {
             await loadWorkspace()
+        }
+        // Reload when returning from currency / name edit sub-views
+        .onAppear {
+            guard workspace != nil else { return }
+            Task { await loadWorkspace() }
         }
     }
     
@@ -531,7 +542,7 @@ struct WorkspaceMembersView: View {
         .navigationTitle("Members")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showInviteModal) {
-            InviteModal(workspaceName: workspace?.name ?? "")
+            InviteModal(workspaceId: workspaceId, workspaceName: workspace?.name ?? "")
         }
         .sheet(isPresented: $showShareModal) {
             ShareWorkspaceModal(workspaceId: workspaceId, workspaceName: workspace?.name ?? "")
@@ -671,12 +682,13 @@ struct MemberRow: View {
 // MARK: - Shared Modals
 
 struct InviteModal: View {
+    let workspaceId: String
     let workspaceName: String
     @Environment(\.dismiss) var dismiss
-    
-    private var shareMessage: String {
-        "Hey! Join me on Kacha — we're using it to track expenses and manage receipts. Join my workspace \"\(workspaceName)\" here: https://web.kachalabs.com"
-    }
+    @State private var inviteLink: String = ""
+    @State private var isCreatingLink = false
+    @State private var copied = false
+    @State private var errorMsg: String?
     
     var body: some View {
         NavigationStack {
@@ -689,41 +701,84 @@ struct InviteModal: View {
                         .multilineTextAlignment(.center)
                         .padding(.top, 16)
                     
-                    // Preview of the message
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Message preview")
-                            .font(.system(size: 12))
-                            .foregroundColor(AppTheme.Colors.textSecondary)
-                        Text(shareMessage)
-                            .font(.system(size: 14))
-                            .foregroundColor(AppTheme.Colors.textPrimary)
-                            .padding(16)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(AppTheme.Colors.cardSurface)
+                    if inviteLink.isEmpty {
+                        // Generate link button
+                        Button(action: createInviteLink) {
+                            HStack {
+                                if isCreatingLink {
+                                    ProgressView().tint(.white)
+                                } else {
+                                    Image(systemName: "link.badge.plus")
+                                        .font(.system(size: 20))
+                                    Text("Create invite link")
+                                        .font(.system(size: 18, weight: .semibold))
+                                }
+                            }
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(AppTheme.Colors.primary)
+                            .cornerRadius(16)
+                        }
+                        .disabled(isCreatingLink)
+                    } else {
+                        // Link preview
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Invite link")
+                                .font(.system(size: 12))
+                                .foregroundColor(AppTheme.Colors.textSecondary)
+                            Text(inviteLink)
+                                .font(.system(size: 13, design: .monospaced))
+                                .foregroundColor(AppTheme.Colors.textPrimary)
+                                .lineLimit(nil)
+                                .padding(16)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(AppTheme.Colors.cardSurface)
+                                .cornerRadius(12)
+                                .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppTheme.Colors.primary.opacity(0.2), lineWidth: 1))
+                        }
+                        
+                        // Copy button
+                        Button(action: {
+                            UIPasteboard.general.string = inviteLink
+                            copied = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { copied = false }
+                        }) {
+                            HStack {
+                                Image(systemName: copied ? "checkmark" : "doc.on.doc")
+                                Text(copied ? "Copied!" : "Copy Link")
+                                    .font(.system(size: 16, weight: .semibold))
+                            }
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(AppTheme.Colors.primary)
                             .cornerRadius(12)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(AppTheme.Colors.primary.opacity(0.2), lineWidth: 1)
-                            )
+                        }
+                        
+                        // Native share
+                        ShareLink(
+                            item: inviteLink,
+                            subject: Text("Join \(workspaceName) on Kacha"),
+                            message: Text("Hey! Join my workspace \"\(workspaceName)\" on Kacha: \(inviteLink)")
+                        ) {
+                            HStack {
+                                Image(systemName: "square.and.arrow.up")
+                                    .font(.system(size: 20))
+                                Text("Share Invite")
+                                    .font(.system(size: 18, weight: .semibold))
+                            }
+                            .foregroundColor(AppTheme.Colors.primary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(AppTheme.Colors.cardSurface)
+                            .cornerRadius(16)
+                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppTheme.Colors.primary, lineWidth: 2))
+                        }
                     }
                     
-                    // Share button that opens native share sheet
-                    ShareLink(
-                        item: shareMessage,
-                        subject: Text("Join \(workspaceName) on Kacha"),
-                        message: Text("Workspace invite")
-                    ) {
-                        HStack {
-                            Image(systemName: "square.and.arrow.up")
-                                .font(.system(size: 20))
-                            Text("Share Invite")
-                                .font(.system(size: 18, weight: .semibold))
-                        }
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(AppTheme.Colors.primary)
-                        .cornerRadius(16)
+                    if let err = errorMsg {
+                        Text(err).font(.system(size: 13)).foregroundColor(.red)
                     }
                     
                     Spacer()
@@ -735,9 +790,28 @@ struct InviteModal: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { dismiss() }) {
-                        Image(systemName: "xmark")
-                            .foregroundColor(.gray)
+                        Image(systemName: "xmark").foregroundColor(.gray)
                     }
+                }
+            }
+        }
+    }
+    
+    private func createInviteLink() {
+        isCreatingLink = true
+        errorMsg = nil
+        Task {
+            do {
+                let url = try await API.shared.createWorkspaceInvite(workspaceId: workspaceId)
+                await MainActor.run {
+                    inviteLink = url
+                    isCreatingLink = false
+                }
+            } catch {
+                await MainActor.run {
+                    // Fallback to direct join URL if invite API fails
+                    inviteLink = "https://web.kachalabs.com/workspaces/\(workspaceId)/join"
+                    isCreatingLink = false
                 }
             }
         }

@@ -123,7 +123,7 @@ class ScanReceiptViewModel @Inject constructor(
             // Build workspace parts from the selected workspace
             val wsId = _selectedWorkspaceId.value.takeIf { it.isNotBlank() }
             val wsName = workspaceRepository.workspaces.value
-                .firstOrNull { it.id == wsId }?.name ?: "Default Workspace"
+                .firstOrNull { it.id == wsId }?.name ?: "Personal"
             val wsIdPart = wsId?.toRequestBody("text/plain".toMediaType())
             val wsNamePart = wsName.toRequestBody("text/plain".toMediaType())
 

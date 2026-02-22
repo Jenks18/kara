@@ -153,12 +153,12 @@ export default function ReportDetailPage() {
           </button>
         </div>
 
-        {/* Report Summary */}
-        <div className="p-4 bg-white/60 border-b border-blue-200">
-          <div className="flex items-center justify-between mb-2">
+        {/* Report Summary Card */}
+        <div className="mx-4 mt-4 p-5 bg-white rounded-2xl border border-gray-200 shadow-sm">
+          <div className="flex items-start justify-between mb-3">
             <h2 className="text-xl font-bold text-gray-900">{report.title}</h2>
             {report.status !== 'draft' && (
-              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+              <span className={`px-3 py-1 rounded-xl text-xs font-semibold ${
                 report.status === 'submitted' ? 'bg-amber-100 text-amber-700' :
                 report.status === 'approved' ? 'bg-blue-100 text-blue-700' :
                 'bg-red-100 text-red-700'
@@ -167,132 +167,85 @@ export default function ReportDetailPage() {
               </span>
             )}
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-600">{formatDate(report.created_at)}</span>
-            <span className="text-2xl font-bold text-blue-600">
-              {formatCurrency(report.total_amount, currency)}
-            </span>
-          </div>
-        </div>
-
-        {/* Expense Items */}
-        <div className="p-4 space-y-4">
-          {report.items.map((item) => (
-            <div
-              key={item.id}
-              className="bg-white rounded-2xl p-4 shadow-sm border border-blue-100"
-            >
-              {/* Receipt Image */}
-              {item.image_url && (
-                <div className="mb-4 relative h-48 rounded-xl overflow-hidden">
-                  <Image
-                    src={item.image_url}
-                    alt="Receipt"
-                    fill
-                    className="object-cover"
-                  />
-                  {item.kra_verified && (
-                    <div className="absolute top-2 right-2 px-2 py-1 rounded-lg bg-blue-500/90 text-white text-xs font-medium">
-                      ✓ Verified
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Item Details */}
-              <div className="space-y-3">
-                {/* Parse needs_review_fields if available */}
-                {(() => {
-                  let reviewFields: any = null;
-                  try {
-                    reviewFields = item.needs_review_fields ? JSON.parse(item.needs_review_fields) : null;
-                  } catch (e) {
-                    // Invalid JSON, ignore
-                  }
-                  
-                  return (
-                    <>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">Merchant</span>
-                        <div className="flex items-center gap-2">
-                          {reviewFields?.merchant && (
-                            <span className="text-xs text-amber-600">⚠️</span>
-                          )}
-                          <span className={`font-medium ${item.processing_status === 'scanning' ? 'text-gray-400 animate-pulse' : reviewFields?.merchant ? 'text-amber-700' : 'text-gray-900'}`}>
-                            {item.merchant_name}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">Amount</span>
-                        <div className="flex items-center gap-2">
-                          {reviewFields?.amount && (
-                            <span className="text-xs text-amber-600">⚠️</span>
-                          )}
-                          <span className={`text-lg font-bold ${item.processing_status === 'scanning' ? 'text-gray-400 animate-pulse' : reviewFields?.amount ? 'text-amber-700' : 'text-blue-600'}`}>
-                            {item.amount > 0 ? formatCurrency(item.amount, currency) : 'Scanning...'}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">Date</span>
-                        <div className="flex items-center gap-2">
-                          {reviewFields?.date && (
-                            <span className="text-xs text-amber-600" title={`OCR: ${reviewFields.dateOCR || 'none'}`}>⚠️</span>
-                          )}
-                          <span className={`font-medium ${reviewFields?.date ? 'text-amber-700' : 'text-gray-900'}`}>
-                            {formatDate(item.transaction_date)}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">Category</span>
-                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                          {item.category}
-                        </span>
-                      </div>
-                    </>
-                  );
-                })()}
-
-                {/* Review Warning */}
-                {item.processing_status === 'needs_review' && (
-                  <div className="mt-3 p-3 bg-amber-50 rounded-lg border border-amber-200">
-                    <div className="flex items-start gap-2">
-                      <span className="text-amber-600 text-lg">⚠️</span>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-amber-900">Please Review</p>
-                        <p className="text-xs text-amber-700 mt-1">
-                          Some fields were unclear. Tap to edit if incorrect.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Status Badge */}
-                {item.processing_status === 'scanning' && (
-                  <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                      <span className="text-sm text-blue-700">Scanning receipt...</span>
-                    </div>
-                  </div>
-                )}
-              </div>
+          <div className="border-t border-gray-100 pt-3 flex justify-evenly text-center">
+            <div>
+              <p className="text-xs text-gray-500">Total</p>
+              <p className="text-lg font-bold text-blue-600 mt-0.5">{formatCurrency(report.total_amount, currency)}</p>
             </div>
-          ))}
+            <div>
+              <p className="text-xs text-gray-500">Items</p>
+              <p className="text-lg font-bold text-gray-900 mt-0.5">{report.items.length}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">Created</p>
+              <p className="text-sm font-semibold text-gray-900 mt-1">{formatDate(report.created_at)}</p>
+            </div>
+          </div>
         </div>
 
-        {/* Empty State */}
-        {report.items.length === 0 && (
-          <div className="p-8 text-center">
-            <p className="text-gray-500">No expenses in this report yet</p>
+        {/* Expenses List */}
+        <div className="px-4 pt-5 pb-2">
+          {report.items.length > 0 && (
+            <h3 className="text-base font-semibold text-gray-900 mb-3">Expenses</h3>
+          )}
+          <div className="space-y-3">
+            {report.items.map((item) => (
+              <div
+                key={item.id}
+                onClick={() => router.push(`/expense/${item.id}`)}
+                className="bg-white rounded-2xl p-3.5 border border-gray-200 hover:border-blue-300 transition-colors cursor-pointer shadow-sm flex items-center gap-3"
+              >
+                {/* Receipt Thumbnail */}
+                {item.image_url ? (
+                  <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                    <Image src={item.image_url} alt="Receipt" fill className="object-cover" />
+                  </div>
+                ) : (
+                  <div className="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+                    <Search size={20} className="text-blue-600" />
+                  </div>
+                )}
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 truncate">
+                    {item.merchant_name || 'Unknown Merchant'}
+                  </p>
+                  <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-blue-50 text-blue-700">
+                      {item.category}
+                    </span>
+                    {item.kra_verified && (
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-green-50 text-green-700 flex items-center gap-0.5">
+                        ✓ KRA
+                      </span>
+                    )}
+                    {item.processing_status === 'needs_review' && (
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-50 text-amber-700">
+                        Review
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {formatDate(item.transaction_date)}
+                  </p>
+                </div>
+
+                {/* Amount */}
+                <span className="text-sm font-bold text-blue-600 flex-shrink-0">
+                  {item.amount > 0 ? formatCurrency(item.amount, currency) : 'Scanning...'}
+                </span>
+              </div>
+            ))}
           </div>
-        )}
+        </div>
+
+          {/* Empty State */}
+          {report.items.length === 0 && (
+            <div className="p-8 text-center">
+              <p className="text-gray-500">No expenses in this report yet</p>
+            </div>
+          )}
       </div>
     </div>
   )

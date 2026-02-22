@@ -292,6 +292,28 @@ struct UserProfile: Identifiable, Codable {
     }
 }
 
+// MARK: - Pagination
+
+/// Generic wrapper for all paginated mobile API responses.
+/// `T` is the item type (e.g. `ExpenseItem`, `ExpenseReport`).
+struct PagedResponse<T: Codable>: Codable {
+    let items: [T]
+    let hasMore: Bool
+    let nextCursor: String?
+}
+
+// MARK: - Server-computed Stats
+
+/// Returned by GET /api/mobile/stats.
+/// Stats are computed server-side across full history (not just page 1).
+struct MobileStats: Codable {
+    let totalThisMonth: Double
+    let totalAllTime: Double
+    let monthOverMonthTrend: Double
+    let receiptCountThisMonth: Int
+    let totalReports: Int
+}
+
 // MARK: - Workspace Member
 
 struct WorkspaceMember: Identifiable, Codable {

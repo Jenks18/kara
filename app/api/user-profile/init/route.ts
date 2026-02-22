@@ -90,8 +90,8 @@ export async function POST() {
             owner_id: userId,
             name: 'Personal',
             avatar: '💼',
-            currency: 'USD',
-            currency_symbol: '$',
+            currency: 'KES',
+            currency_symbol: 'KSh',
             is_active: true,
           })
 

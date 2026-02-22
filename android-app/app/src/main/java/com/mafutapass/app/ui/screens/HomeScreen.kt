@@ -39,8 +39,10 @@ fun HomeScreen(
     val expenses by viewModel.expenseItems.collectAsState()
     val reports by viewModel.expenseReports.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val serverStats by viewModel.stats.collectAsState()
 
-    // ── Real month-over-month stats ────────────────────────────────
+    // ── Stats: use server-side values when available (accurate across all pages),
+    //          fall back to client-side computation on the loaded page 1 data.
     val now = LocalDate.now()
     val firstOfMonth = now.withDayOfMonth(1)
     val firstOfLastMonth = firstOfMonth.minusMonths(1)
@@ -49,7 +51,7 @@ fun HomeScreen(
     val thisMonthExpenses = remember(expenses) {
         expenses.filter { e ->
             runCatching {
-                val d = ZonedDateTime.parse(e.createdAt, isoFmt).toLocalDate()
+                val d = ZonedDateTime.parse(e.transactionDate ?: e.createdAt, isoFmt).toLocalDate()
                 !d.isBefore(firstOfMonth)
             }.getOrDefault(false)
         }
@@ -57,19 +59,24 @@ fun HomeScreen(
     val lastMonthExpenses = remember(expenses) {
         expenses.filter { e ->
             runCatching {
-                val d = ZonedDateTime.parse(e.createdAt, isoFmt).toLocalDate()
+                val d = ZonedDateTime.parse(e.transactionDate ?: e.createdAt, isoFmt).toLocalDate()
                 !d.isBefore(firstOfLastMonth) && d.isBefore(firstOfMonth)
             }.getOrDefault(false)
         }
     }
 
-    val totalThisMonth = remember(thisMonthExpenses) { thisMonthExpenses.sumOf { it.amount } }
-    val totalAllTime   = remember(expenses)           { expenses.sumOf { it.amount } }
-    val lastMonthTotal = remember(lastMonthExpenses)  { lastMonthExpenses.sumOf { it.amount } }
-    val momTrend       = remember(totalThisMonth, lastMonthTotal) {
-        if (lastMonthTotal > 0) ((totalThisMonth - lastMonthTotal) / lastMonthTotal * 100).toFloat() else 0f
+    val clientTotalThisMonth = remember(thisMonthExpenses) { thisMonthExpenses.sumOf { it.amount } }
+    val clientTotalAllTime   = remember(expenses)           { expenses.sumOf { it.amount } }
+    val clientLastMonthTotal = remember(lastMonthExpenses)  { lastMonthExpenses.sumOf { it.amount } }
+    val clientMomTrend       = remember(clientTotalThisMonth, clientLastMonthTotal) {
+        if (clientLastMonthTotal > 0) ((clientTotalThisMonth - clientLastMonthTotal) / clientLastMonthTotal * 100).toFloat() else 0f
     }
-    val submittedReportsCount = remember(reports) { reports.size }
+
+    // Prefer accurate server stats; fall back to client-computed values
+    val totalThisMonth        = serverStats?.totalThisMonth        ?: clientTotalThisMonth
+    val totalAllTime          = serverStats?.totalAllTime          ?: clientTotalAllTime
+    val momTrend              = (serverStats?.monthOverMonthTrend?.toFloat()) ?: clientMomTrend
+    val submittedReportsCount = serverStats?.totalReports          ?: reports.size
 
     LaunchedEffect(Unit) { viewModel.refresh() }
 
@@ -405,7 +412,12 @@ fun HomeScreen(
                                 "office", "supplies", "stationery", "equipment" -> barColors[3]
                                 "travel", "accommodation", "hotel"              -> barColors[4]
                                 "entertainment", "recreation", "subscriptions" -> barColors[1]
-                                else -> barColors[Math.abs(cat.lowercase().hashCode()) % barColors.size]
+                                else -> {
+                                    // Derive a unique hue from category name — every unknown category
+                                    // gets its own color, no collisions from % palette.size.
+                                    val hue = (Math.abs(cat.lowercase().hashCode()) % 360).toFloat()
+                                    Color(android.graphics.Color.HSVToColor(floatArrayOf(hue, 0.65f, 0.85f)))
+                                }
                             }
 
                             categoryTotals.forEach { (category, amount) ->

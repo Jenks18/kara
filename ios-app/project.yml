@@ -1,0 +1,54 @@
+name: MafutaPass
+options:
+  bundleIdPrefix: com.mafutapass
+  deploymentTarget:
+    iOS: "17.0"
+  xcodeVersion: "15"
+  createIntermediateGroups: true
+
+packages:
+  ClerkSDK:
+    url: https://github.com/clerk/clerk-ios
+    from: "1.0.0"
+
+targets:
+  MafutaPass:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: MafutaPassApp.swift
+      - path: Models
+      - path: Services
+      - path: Views
+      - path: Components
+    resources:
+      - path: Assets.xcassets
+    entitlements:
+      path: MafutaPass.entitlements
+    info:
+      path: Info.plist
+      properties:
+        CFBundleDisplayName: Kacha
+        CFBundleShortVersionString: "1.0"
+        CFBundleVersion: "1"
+        UILaunchScreen:
+          UIColorName: ""
+        UIApplicationSupportsIndirectInputEvents: true
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        NSCameraUsageDescription: "We need camera access to scan receipts"
+        NSPhotoLibraryUsageDescription: "We need photo library access to select receipt images"
+        NSLocationWhenInUseUsageDescription: "We need your location to tag expense locations"
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: false
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.mafutapass.app
+      SWIFT_VERSION: "5.9"
+      INFOPLIST_FILE: Info.plist
+      CODE_SIGN_ENTITLEMENTS: MafutaPass.entitlements
+      DEVELOPMENT_TEAM: ""
+      TARGETED_DEVICE_FAMILY: "1"
+    dependencies:
+      - package: ClerkSDK
+        product: ClerkSDK

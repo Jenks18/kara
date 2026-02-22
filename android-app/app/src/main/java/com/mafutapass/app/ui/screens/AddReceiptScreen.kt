@@ -89,10 +89,11 @@ fun AddReceiptScreen(
     val selectedWorkspaceId by viewModel.selectedWorkspaceId.collectAsState()
 
     // Gallery picker — also scans each image for eTIMS QR codes
+    // Limit to 10 images max (consistent with iOS and webapp)
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetMultipleContents()
     ) { uris: List<Uri> ->
-        uris.forEach { uri ->
+        uris.take(10).forEach { uri ->
             viewModel.addImageFromUri(uri)
             // Scan gallery image for QR code
             try {
@@ -113,7 +114,7 @@ fun AddReceiptScreen(
     val scannerOptions = remember {
         GmsDocumentScannerOptions.Builder()
             .setGalleryImportAllowed(true)
-            .setPageLimit(5)
+            .setPageLimit(10)
             .setResultFormats(GmsDocumentScannerOptions.RESULT_FORMAT_JPEG)
             .setScannerMode(GmsDocumentScannerOptions.SCANNER_MODE_FULL)
             .build()
@@ -221,7 +222,20 @@ fun AddReceiptScreen(
                 onWorkspaceSelected = { viewModel.setWorkspaceId(it) },
                 onRemoveImage = { viewModel.removeImage(it) },
                 onAddMore = { galleryLauncher.launch("image/*") },
-                onTakeAnother = { permissionLauncher.launch(Manifest.permission.CAMERA) },
+                onTakeAnother = {
+                    // Launch Document Scanner (same as main scan) — NOT the fallback CameraX
+                    if (activity != null) {
+                        scanner.getStartScanIntent(activity)
+                            .addOnSuccessListener { intentSender ->
+                                scannerLauncher.launch(IntentSenderRequest.Builder(intentSender).build())
+                            }
+                            .addOnFailureListener { e ->
+                                Log.e(TAG, "Document scanner failed to start: ${e.message}")
+                                // Fall back to multi-capture camera only if doc scanner unavailable
+                                permissionLauncher.launch(Manifest.permission.CAMERA)
+                            }
+                    }
+                },
                 onSubmit = { viewModel.uploadAll() }
             )
             is ScanState.Uploading -> UploadingSection(

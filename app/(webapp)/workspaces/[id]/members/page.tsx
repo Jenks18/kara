@@ -74,9 +74,31 @@ export default function MembersPage({ params }: { params: Promise<{ id: string }
         const response = await fetch(`/api/workspaces/${workspaceId}/members`)
         if (response.ok) {
           const data = await response.json()
-          setMembers(data.members || [])
-        } else if (response.status === 404) {
-          // If endpoint doesn't exist, initialize with current user
+          const serverMembers = data.members || []
+          if (serverMembers.length > 0) {
+            setMembers(serverMembers)
+          } else {
+            // API returned empty list — include current user as fallback
+            const profile = await getUserProfile(user.id)
+            setMembers([
+              {
+                id: `${workspaceId}-${user.id}`,
+                user_id: user.id,
+                workspace_id: workspaceId,
+                email: user.emailAddresses[0]?.emailAddress || '',
+                role: 'admin',
+                display_name: profile?.display_name || undefined,
+                first_name: profile?.first_name || undefined,
+                last_name: profile?.last_name || undefined,
+                avatar_emoji: profile?.avatar_emoji || '💼',
+                avatar_color: profile?.avatar_color || 'from-blue-500 to-blue-600',
+                avatar_image_url: profile?.avatar_image_url || undefined,
+                joined_at: new Date().toISOString()
+              }
+            ])
+          }
+        } else {
+          // Any non-ok response (403, 404, 500) — initialize with current user
           const profile = await getUserProfile(user.id)
           setMembers([
             {

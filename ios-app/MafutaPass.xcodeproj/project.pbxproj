@@ -1,0 +1,443 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		17188C66BC449E8562CFE62E /* ExpenseDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F259A4F24331C37FA1F7031E /* ExpenseDetailView.swift */; };
+		23F5AAC2B7D1215790980F66 /* AccountPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1271BA434AD3FF0AC3C0B48E /* AccountPage.swift */; };
+		2BB899B010584201F0F0063E /* MainAppView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C2BA4BE57D9BC2A03A5DD6E /* MainAppView.swift */; };
+		357497D92E747F1045279367 /* BottomNavView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB2E2907CB2820E3292F5751 /* BottomNavView.swift */; };
+		45EB852C6BD21F80AE695B7C /* Clerk in Frameworks */ = {isa = PBXBuildFile; productRef = D290AA39B9640C3820E7EA30 /* Clerk */; };
+		58BE7629385250E124DF3FFF /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA862985E3E2A288F3BE2FFF /* AppTheme.swift */; };
+		619F013F0BAC90E7984732BE /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84CF722E31F32F8180650656 /* Models.swift */; };
+		64BDE356B0E771243AE6896C /* AppDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F45D0512FB2D225D6B21740F /* AppDataStore.swift */; };
+		7C7769F8701DA50A4F882B1A /* MafutaPassApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7AAD9B96E82C8FD875AFF26 /* MafutaPassApp.swift */; };
+		8058EED0ABDE0CF5B3167E7D /* ClerkAuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C4EE83025068E336AD56242 /* ClerkAuthManager.swift */; };
+		8BB383C79B6BB06E9B52BB69 /* CurrencyFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 503038F7D829D7E5CCA178B3 /* CurrencyFormatter.swift */; };
+		8D72A69EFD3BC9C2444E31FD /* ConfirmExpensesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C18BF5A94620E1DBD08BC169 /* ConfirmExpensesView.swift */; };
+		911F8F72B5CFF4FBCC111179 /* WorkspaceDetailViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7CAF82B6AFEEDAEBCB793C9 /* WorkspaceDetailViews.swift */; };
+		92CB13190335883DA13FEA50 /* API.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3889AF470DA4F06DD081BB1 /* API.swift */; };
+		B390F04B268C4DAA40A211F5 /* CreateExpensePage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2951C9637D019371AD745B23 /* CreateExpensePage.swift */; };
+		C18F63E0C024C97D08A456C3 /* WorkspacesPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1F7381A7FF49CCD23DC3C6 /* WorkspacesPage.swift */; };
+		CA39E7D5CBC1BE577E65145D /* HomePage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F242597443F49D70A75851F /* HomePage.swift */; };
+		CD9561F913739A389B781E15 /* QRScannerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67DCFE49CA3AD21876CEC590 /* QRScannerService.swift */; };
+		CDE0C521A86D948E8D79A507 /* WorkspaceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55B8E9285DDE795BB36B87AB /* WorkspaceManager.swift */; };
+		D525EFE46B9C94D3A1572800 /* DataCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34968EC1166496AE8995323A /* DataCache.swift */; };
+		DD574721B9280BC1701FF47C /* EmeraldTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D2E1082FE899C337881AF39 /* EmeraldTheme.swift */; };
+		EBFB2109FFE696E3A489061A /* ReportDetailPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7775EC386B72C9BEF6CA7A9 /* ReportDetailPage.swift */; };
+		F0B473F8BEBA316E455613C7 /* ReceiptCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC2896CD26F0077E965C204D /* ReceiptCaptureView.swift */; };
+		F6EACF2D3ED75317037B7078 /* ReportsPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6500202CBFA146C0904F7CBB /* ReportsPage.swift */; };
+		F9F2668AC6E8BCD9DA28C92C /* ProfileManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8E2CCCF4022EEF4EB0F7797 /* ProfileManager.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		1271BA434AD3FF0AC3C0B48E /* AccountPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountPage.swift; sourceTree = "<group>"; };
+		2951C9637D019371AD745B23 /* CreateExpensePage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateExpensePage.swift; sourceTree = "<group>"; };
+		2C4EE83025068E336AD56242 /* ClerkAuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClerkAuthManager.swift; sourceTree = "<group>"; };
+		34968EC1166496AE8995323A /* DataCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataCache.swift; sourceTree = "<group>"; };
+		4F242597443F49D70A75851F /* HomePage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomePage.swift; sourceTree = "<group>"; };
+		503038F7D829D7E5CCA178B3 /* CurrencyFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyFormatter.swift; sourceTree = "<group>"; };
+		55B8E9285DDE795BB36B87AB /* WorkspaceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceManager.swift; sourceTree = "<group>"; };
+		5C2BA4BE57D9BC2A03A5DD6E /* MainAppView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainAppView.swift; sourceTree = "<group>"; };
+		6500202CBFA146C0904F7CBB /* ReportsPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportsPage.swift; sourceTree = "<group>"; };
+		67DCFE49CA3AD21876CEC590 /* QRScannerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerService.swift; sourceTree = "<group>"; };
+		7A1F7381A7FF49CCD23DC3C6 /* WorkspacesPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspacesPage.swift; sourceTree = "<group>"; };
+		84CF722E31F32F8180650656 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		9363A8E59DFCE1A1F316C4C3 /* MafutaPass.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = MafutaPass.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9D2E1082FE899C337881AF39 /* EmeraldTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmeraldTheme.swift; sourceTree = "<group>"; };
+		AB2E2907CB2820E3292F5751 /* BottomNavView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottomNavView.swift; sourceTree = "<group>"; };
+		C18BF5A94620E1DBD08BC169 /* ConfirmExpensesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfirmExpensesView.swift; sourceTree = "<group>"; };
+		C7AAD9B96E82C8FD875AFF26 /* MafutaPassApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MafutaPassApp.swift; sourceTree = "<group>"; };
+		C7CAF82B6AFEEDAEBCB793C9 /* WorkspaceDetailViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceDetailViews.swift; sourceTree = "<group>"; };
+		CA862985E3E2A288F3BE2FFF /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
+		CC2896CD26F0077E965C204D /* ReceiptCaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiptCaptureView.swift; sourceTree = "<group>"; };
+		E7775EC386B72C9BEF6CA7A9 /* ReportDetailPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportDetailPage.swift; sourceTree = "<group>"; };
+		E8E2CCCF4022EEF4EB0F7797 /* ProfileManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileManager.swift; sourceTree = "<group>"; };
+		F259A4F24331C37FA1F7031E /* ExpenseDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseDetailView.swift; sourceTree = "<group>"; };
+		F3889AF470DA4F06DD081BB1 /* API.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = API.swift; sourceTree = "<group>"; };
+		F45D0512FB2D225D6B21740F /* AppDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDataStore.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		1493440984C90E18AFD6BE6D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				45EB852C6BD21F80AE695B7C /* Clerk in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		03D43C0127B2D988EF29A147 = {
+			isa = PBXGroup;
+			children = (
+				C7AAD9B96E82C8FD875AFF26 /* MafutaPassApp.swift */,
+				6C3BD8E26FC76C5B2953FD36 /* Components */,
+				775BFB3CE2D2CF1D33940C24 /* Models */,
+				14D67539B8F911C9A1C6DA25 /* Services */,
+				FD5BCE4947313578237118FB /* Views */,
+				923A8FF754574A0E9577D728 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		14D67539B8F911C9A1C6DA25 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				F3889AF470DA4F06DD081BB1 /* API.swift */,
+				F45D0512FB2D225D6B21740F /* AppDataStore.swift */,
+				2C4EE83025068E336AD56242 /* ClerkAuthManager.swift */,
+				503038F7D829D7E5CCA178B3 /* CurrencyFormatter.swift */,
+				34968EC1166496AE8995323A /* DataCache.swift */,
+				E8E2CCCF4022EEF4EB0F7797 /* ProfileManager.swift */,
+				67DCFE49CA3AD21876CEC590 /* QRScannerService.swift */,
+				55B8E9285DDE795BB36B87AB /* WorkspaceManager.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		6C3BD8E26FC76C5B2953FD36 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				AB2E2907CB2820E3292F5751 /* BottomNavView.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		775BFB3CE2D2CF1D33940C24 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				84CF722E31F32F8180650656 /* Models.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		923A8FF754574A0E9577D728 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				9363A8E59DFCE1A1F316C4C3 /* MafutaPass.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		FD5BCE4947313578237118FB /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				1271BA434AD3FF0AC3C0B48E /* AccountPage.swift */,
+				CA862985E3E2A288F3BE2FFF /* AppTheme.swift */,
+				C18BF5A94620E1DBD08BC169 /* ConfirmExpensesView.swift */,
+				2951C9637D019371AD745B23 /* CreateExpensePage.swift */,
+				9D2E1082FE899C337881AF39 /* EmeraldTheme.swift */,
+				F259A4F24331C37FA1F7031E /* ExpenseDetailView.swift */,
+				4F242597443F49D70A75851F /* HomePage.swift */,
+				5C2BA4BE57D9BC2A03A5DD6E /* MainAppView.swift */,
+				CC2896CD26F0077E965C204D /* ReceiptCaptureView.swift */,
+				E7775EC386B72C9BEF6CA7A9 /* ReportDetailPage.swift */,
+				6500202CBFA146C0904F7CBB /* ReportsPage.swift */,
+				C7CAF82B6AFEEDAEBCB793C9 /* WorkspaceDetailViews.swift */,
+				7A1F7381A7FF49CCD23DC3C6 /* WorkspacesPage.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		FA7031CEDE7B1ABBD72760B8 /* MafutaPass */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6F26FD369AC8D0F4F26F24E6 /* Build configuration list for PBXNativeTarget "MafutaPass" */;
+			buildPhases = (
+				28F636343331FB2B5D8201BD /* Sources */,
+				1493440984C90E18AFD6BE6D /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MafutaPass;
+			packageProductDependencies = (
+				D290AA39B9640C3820E7EA30 /* Clerk */,
+			);
+			productName = MafutaPass;
+			productReference = 9363A8E59DFCE1A1F316C4C3 /* MafutaPass.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		D79E9DEF3A82BCF089C5F589 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					FA7031CEDE7B1ABBD72760B8 = {
+						DevelopmentTeam = "";
+					};
+				};
+			};
+			buildConfigurationList = 5C4F2930FAC59F041875362D /* Build configuration list for PBXProject "MafutaPass" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 03D43C0127B2D988EF29A147;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				8B8FC4B87524AD6646E8E31F /* XCRemoteSwiftPackageReference "clerk-ios" */,
+			);
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				FA7031CEDE7B1ABBD72760B8 /* MafutaPass */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		28F636343331FB2B5D8201BD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				92CB13190335883DA13FEA50 /* API.swift in Sources */,
+				23F5AAC2B7D1215790980F66 /* AccountPage.swift in Sources */,
+				64BDE356B0E771243AE6896C /* AppDataStore.swift in Sources */,
+				58BE7629385250E124DF3FFF /* AppTheme.swift in Sources */,
+				357497D92E747F1045279367 /* BottomNavView.swift in Sources */,
+				8058EED0ABDE0CF5B3167E7D /* ClerkAuthManager.swift in Sources */,
+				8D72A69EFD3BC9C2444E31FD /* ConfirmExpensesView.swift in Sources */,
+				B390F04B268C4DAA40A211F5 /* CreateExpensePage.swift in Sources */,
+				8BB383C79B6BB06E9B52BB69 /* CurrencyFormatter.swift in Sources */,
+				D525EFE46B9C94D3A1572800 /* DataCache.swift in Sources */,
+				DD574721B9280BC1701FF47C /* EmeraldTheme.swift in Sources */,
+				17188C66BC449E8562CFE62E /* ExpenseDetailView.swift in Sources */,
+				CA39E7D5CBC1BE577E65145D /* HomePage.swift in Sources */,
+				7C7769F8701DA50A4F882B1A /* MafutaPassApp.swift in Sources */,
+				2BB899B010584201F0F0063E /* MainAppView.swift in Sources */,
+				619F013F0BAC90E7984732BE /* Models.swift in Sources */,
+				F9F2668AC6E8BCD9DA28C92C /* ProfileManager.swift in Sources */,
+				CD9561F913739A389B781E15 /* QRScannerService.swift in Sources */,
+				F0B473F8BEBA316E455613C7 /* ReceiptCaptureView.swift in Sources */,
+				EBFB2109FFE696E3A489061A /* ReportDetailPage.swift in Sources */,
+				F6EACF2D3ED75317037B7078 /* ReportsPage.swift in Sources */,
+				911F8F72B5CFF4FBCC111179 /* WorkspaceDetailViews.swift in Sources */,
+				CDE0C521A86D948E8D79A507 /* WorkspaceManager.swift in Sources */,
+				C18F63E0C024C97D08A456C3 /* WorkspacesPage.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		16173127E620FF31508DA37F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		172FD14629DE391F417516DE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		2658291CA03D37CBB471BD16 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = MafutaPass.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = "";
+				INFOPLIST_FILE = Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.mafutapass.app;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		364168B2AD7834485BB44ADB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = MafutaPass.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = "";
+				INFOPLIST_FILE = Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.mafutapass.app;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		5C4F2930FAC59F041875362D /* Build configuration list for PBXProject "MafutaPass" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				172FD14629DE391F417516DE /* Debug */,
+				16173127E620FF31508DA37F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		6F26FD369AC8D0F4F26F24E6 /* Build configuration list for PBXNativeTarget "MafutaPass" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				364168B2AD7834485BB44ADB /* Debug */,
+				2658291CA03D37CBB471BD16 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		8B8FC4B87524AD6646E8E31F /* XCRemoteSwiftPackageReference "clerk-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/clerk/clerk-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.71.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		D290AA39B9640C3820E7EA30 /* Clerk */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8B8FC4B87524AD6646E8E31F /* XCRemoteSwiftPackageReference "clerk-ios" */;
+			productName = Clerk;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = D79E9DEF3A82BCF089C5F589 /* Project object */;
+}

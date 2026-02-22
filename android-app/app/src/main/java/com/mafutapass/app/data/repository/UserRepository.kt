@@ -156,7 +156,8 @@ class UserRepository @Inject constructor(
             country = p?.country,
             postalCode = p?.zipCode,
             avatarEmoji = p?.avatarEmoji,
-            avatarColor = p?.avatarColor
+            avatarColor = p?.avatarColor,
+            avatarImageUrl = p?.avatarImageUrl
         )
     }
     
@@ -182,7 +183,8 @@ class UserRepository @Inject constructor(
             country = country,
             postalCode = zipCode,
             avatarEmoji = avatarEmoji,
-            avatarColor = avatarColor
+            avatarColor = avatarColor,
+            avatarImageUrl = avatarImageUrl
         )
     }
 }
