@@ -15,15 +15,61 @@ async function enrichReports(supabase: any, reports: any[]) {
 
   const reportIds = reports.map((r: any) => r.id);
 
-  // One query for all items across all reports in this page.
-  const { data: allItems, error: itemsError } = await supabase
-    .from('expense_items')
-    .select('id, report_id, image_url, amount')
-    .in('report_id', reportIds)
-    .order('created_at', { ascending: true });
+  // ── Primary: fetch items for all reports in a single batched query ──
+  let allItems: any[] | null = null;
+  let itemsError: any = null;
+
+  try {
+    const res = await supabase
+      .from('expense_items')
+      .select('id, report_id, image_url, amount')
+      .in('report_id', reportIds)
+      .order('created_at', { ascending: true });
+    allItems = res.data;
+    itemsError = res.error;
+  } catch (e: any) {
+    itemsError = e;
+  }
 
   if (itemsError) {
-    console.error('[enrichReports] expense_items query failed:', itemsError.message, '| reportIds:', reportIds.slice(0, 3));
+    console.error(
+      '[enrichReports] expense_items query failed:',
+      itemsError?.message || String(itemsError),
+      '| code:', itemsError?.code,
+      '| hint:', itemsError?.hint,
+      '| reportIds:', reportIds.slice(0, 5),
+    );
+  }
+
+  // ── Fallback: if items query returned nothing, try individual counts ──
+  // This catches RLS/permission issues where the batched .in() fails but
+  // individual queries might succeed.
+  if (!allItems || allItems.length === 0) {
+    if (itemsError || reports.some((r: any) => (r.total_amount || 0) > 0)) {
+      console.warn('[enrichReports] Items query empty — attempting per-report fallback');
+      try {
+        const fallbackResults = await Promise.all(
+          reportIds.map(async (rid: string) => {
+            const { data, error } = await supabase
+              .from('expense_items')
+              .select('id, report_id, image_url, amount')
+              .eq('report_id', rid)
+              .order('created_at', { ascending: true })
+              .limit(10);
+            if (error) {
+              console.warn(`[enrichReports] fallback for ${rid}:`, error.message);
+            }
+            return data || [];
+          })
+        );
+        allItems = fallbackResults.flat();
+        if (allItems.length > 0) {
+          console.log(`[enrichReports] Fallback recovered ${allItems.length} items`);
+        }
+      } catch (e: any) {
+        console.error('[enrichReports] Fallback also failed:', e?.message);
+      }
+    }
   }
 
   const itemsByReport = new Map<string, any[]>();
@@ -41,6 +87,11 @@ async function enrichReports(supabase: any, reports: any[]) {
       .slice(0, 3)
       .map((item: any) => item.image_url);
 
+    // Use computed total from items when available; fall back to the stored
+    // report total_amount (set by update_report_total RPC during upload).
+    const finalTotal = totalAmount > 0 ? totalAmount : (report.total_amount || 0);
+    const finalCount = itemsList.length > 0 ? itemsList.length : (report.items_count || 0);
+
     return {
       id: report.id,
       created_at: report.created_at,
@@ -50,8 +101,8 @@ async function enrichReports(supabase: any, reports: any[]) {
       workspace_avatar: report.workspace_avatar || '',
       title: report.title || 'Untitled Report',
       status: report.status || 'draft',
-      total_amount: totalAmount || report.total_amount || 0,
-      items_count: itemsList.length,
+      total_amount: finalTotal,
+      items_count: finalCount,
       thumbnails,
     };
   });

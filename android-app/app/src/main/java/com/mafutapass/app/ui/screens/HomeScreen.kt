@@ -50,20 +50,23 @@ fun HomeScreen(
     val firstOfLastMonth = firstOfMonth.minusMonths(1)
     val isoFmt = DateTimeFormatter.ISO_OFFSET_DATE_TIME
 
+    // Parse a date string that may be full ISO-8601 ("2026-02-21T10:00:00+00:00")
+    // OR a plain Postgres DATE ("2026-02-21").  ZonedDateTime.parse only handles
+    // the first form; LocalDate.parse handles the second.
+    fun parseDateStr(s: String): LocalDate? =
+        runCatching { ZonedDateTime.parse(s, isoFmt).toLocalDate() }
+            .getOrElse { runCatching { LocalDate.parse(s) }.getOrNull() }
+
     val thisMonthExpenses = remember(expenses) {
         expenses.filter { e ->
-            runCatching {
-                val d = ZonedDateTime.parse(e.transactionDate ?: e.createdAt, isoFmt).toLocalDate()
-                !d.isBefore(firstOfMonth)
-            }.getOrDefault(false)
+            val d = parseDateStr(e.transactionDate ?: e.createdAt)
+            d != null && !d.isBefore(firstOfMonth)
         }
     }
     val lastMonthExpenses = remember(expenses) {
         expenses.filter { e ->
-            runCatching {
-                val d = ZonedDateTime.parse(e.transactionDate ?: e.createdAt, isoFmt).toLocalDate()
-                !d.isBefore(firstOfLastMonth) && d.isBefore(firstOfMonth)
-            }.getOrDefault(false)
+            val d = parseDateStr(e.transactionDate ?: e.createdAt)
+            d != null && !d.isBefore(firstOfLastMonth) && d.isBefore(firstOfMonth)
         }
     }
 

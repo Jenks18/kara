@@ -38,33 +38,40 @@ export async function GET(request: NextRequest) {
     const { supabase } = mobileClient;
 
     const now = new Date();
-    const startOfMonth    = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const startOfMonth     = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();
     const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
 
-    // Helper: direct-query fallback when an RPC is unavailable (migration not yet run).
+    // ── Fallbacks when RPC functions are unavailable (migration 024 not yet run). ──
+    // Use transaction_date where available, falling back to created_at.
+    // RLS auto-scopes to the current user via the Supabase JWT.
     const sumAmounts = async (from: string, to: string): Promise<number> => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('expense_items')
-        .select('amount')
-        .gte('created_at', from)
-        .lt('created_at', to);
+        .select('amount, transaction_date, created_at')
+        .or(`transaction_date.gte.${from.slice(0, 10)},and(transaction_date.is.null,created_at.gte.${from})`)
+        .or(`transaction_date.lt.${to.slice(0, 10)},and(transaction_date.is.null,created_at.lt.${to})`);
+      if (error) console.error('[stats] sumAmounts fallback error:', error.message);
       return (data ?? []).reduce((acc: number, row: { amount?: number | null }) => acc + (row.amount ?? 0), 0);
     };
 
     const countItems = async (from: string, to: string): Promise<number> => {
-      const { count } = await supabase
+      const { count, error } = await supabase
         .from('expense_items')
         .select('id', { count: 'exact', head: true })
         .gte('created_at', from)
         .lt('created_at', to);
+      if (error) console.error('[stats] countItems fallback error:', error.message);
       return count ?? 0;
     };
 
-    // Parallel server-side aggregations (RPC) + lightweight counts.
+    // ── Parallel server-side aggregations (RPC) + lightweight counts ──
+    // Use start-of-next-month as the exclusive upper bound so items added
+    // any time during the current month are counted (not capped at 'now').
     const [thisMonthTotalRes, lastMonthTotalRes, thisMonthCountRes, allTimeTotalRes, reportsRes, totalReceiptsRes] = await Promise.all([
       supabase.rpc('get_user_month_total', {
         start_date: startOfMonth,
-        end_date: now.toISOString(),
+        end_date: startOfNextMonth,
       }),
       supabase.rpc('get_user_month_total', {
         start_date: startOfLastMonth,
@@ -72,7 +79,7 @@ export async function GET(request: NextRequest) {
       }),
       supabase.rpc('get_user_month_count', {
         start_date: startOfMonth,
-        end_date: now.toISOString(),
+        end_date: startOfNextMonth,
       }),
       supabase.rpc('get_user_total_amount'),
       supabase
@@ -83,9 +90,15 @@ export async function GET(request: NextRequest) {
         .select('id', { count: 'exact', head: true }),
     ]);
 
+    // ── Log RPC errors explicitly (visible in Vercel function logs) ──
+    if (thisMonthTotalRes.error) console.error('[stats] get_user_month_total (this):', thisMonthTotalRes.error.message);
+    if (lastMonthTotalRes.error) console.error('[stats] get_user_month_total (last):', lastMonthTotalRes.error.message);
+    if (thisMonthCountRes.error) console.error('[stats] get_user_month_count:', thisMonthCountRes.error.message);
+    if (allTimeTotalRes.error)   console.error('[stats] get_user_total_amount:', allTimeTotalRes.error.message);
+
     // Use RPC result if available; fall back to direct queries when migration 024 hasn't run.
     const totalThisMonth = thisMonthTotalRes.error
-      ? await sumAmounts(startOfMonth, now.toISOString())
+      ? await sumAmounts(startOfMonth, startOfNextMonth)
       : Number(thisMonthTotalRes.data ?? 0);
 
     const totalLastMonth = lastMonthTotalRes.error
@@ -93,7 +106,7 @@ export async function GET(request: NextRequest) {
       : Number(lastMonthTotalRes.data ?? 0);
 
     const receiptCountThisMonth = thisMonthCountRes.error
-      ? await countItems(startOfMonth, now.toISOString())
+      ? await countItems(startOfMonth, startOfNextMonth)
       : Number(thisMonthCountRes.data ?? 0);
 
     const totalAllTime = allTimeTotalRes.error

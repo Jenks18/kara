@@ -54,6 +54,11 @@ final class AppDataStore: ObservableObject {
     private var lastReportFetch: Date = .distantPast
     private var lastWorkspaceFetch: Date = .distantPast
 
+    /// True once the /api/mobile/stats endpoint has returned a valid response this
+    /// session. Prevents recomputeStats() (page-1 only) from overwriting accurate
+    /// server-wide totals after they have already been applied.
+    private var serverStatsLoaded = false
+
     // MARK: - Unified cache keys (no more home_ vs reports_ duplication)
 
     private enum CacheKey {
@@ -88,6 +93,8 @@ final class AppDataStore: ObservableObject {
 
     /// Parallel refresh of all data. Safe to call on every tab appear — debounced.
     func refreshAll(force: Bool = false) async {
+        // A forced refresh should re-fetch server stats from scratch.
+        if force { serverStatsLoaded = false }
         // NOTE: `async let _ =` implicitly cancels child tasks because the
         // result is never awaited.  We must bind real names and await them.
         async let a: () = refreshExpenses(force: force)
@@ -186,6 +193,9 @@ final class AppDataStore: ObservableObject {
             monthOverMonthTrend   = stats.monthOverMonthTrend
             receiptCountThisMonth = stats.receiptCountThisMonth
             submittedReportsCount = stats.totalReports
+            // Mark server stats as loaded so recomputeStats() (page-1 scope)
+            // does not overwrite these accurate all-history values.
+            serverStatsLoaded = true
         } catch is CancellationError {}
         catch let urlError as URLError where urlError.code == .cancelled {}
         catch { /* silent — cached stats from recomputeStats() remain visible */ }
@@ -227,6 +237,11 @@ final class AppDataStore: ObservableObject {
     // MARK: - Stats Computation
 
     private func recomputeStats() {
+        // Server stats (from /api/mobile/stats) count across ALL pages and are
+        // authoritative.  If they have already been applied this session, skip
+        // the page-1-only client recompute to avoid overwriting correct totals.
+        guard !serverStatsLoaded else { return }
+
         let calendar = Calendar.current
         let now = Date()
         let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: now))!
@@ -252,11 +267,25 @@ final class AppDataStore: ObservableObject {
         submittedReportsCount = reports.count  // Show total reports, not just submitted
     }
 
-    /// Parse ISO8601 strings from Supabase (handles microsecond precision like `2026-02-21T10:30:00.123456+00:00`).
-    /// Formatters are reused across calls — `ISO8601DateFormatter` construction is expensive.
+    /// Parse date strings from Supabase into `Date`.
+    ///
+    /// Handles three formats:
+    /// - Full ISO8601 with microseconds: `2026-02-21T10:30:00.123456+00:00`
+    /// - Full ISO8601 without fractions:  `2026-02-21T10:30:00+00:00`
+    /// - Plain DATE string (Postgres DATE column): `2026-02-21`  ← previously missed!
+    ///
+    /// `ISO8601DateFormatter` requires a time component and timezone — it cannot
+    /// parse bare `yyyy-MM-dd` strings.  The third formatter fills that gap and
+    /// interprets the date as midnight UTC, which matches Postgres `DATE` semantics.
+    ///
+    /// Formatters are stored as static constants so they are constructed once per
+    /// process lifetime (`ISO8601DateFormatter` / `DateFormatter` init is expensive).
     static func parseISO(_ s: String) -> Date? {
         if let d = _isoWithFrac.date(from: s) { return d }
-        return _isoPlain.date(from: s)
+        if let d = _isoPlain.date(from: s)    { return d }
+        // Plain DATE (no time, no timezone) — e.g. transaction_date from
+        // expense_items.  Interpret as midnight UTC to match Postgres behaviour.
+        return _dateOnly.date(from: s)
     }
 
     private static let _isoWithFrac: ISO8601DateFormatter = {
@@ -268,6 +297,15 @@ final class AppDataStore: ObservableObject {
     private static let _isoPlain: ISO8601DateFormatter = {
         let f = ISO8601DateFormatter()
         f.formatOptions = [.withInternetDateTime]
+        return f
+    }()
+
+    /// Parses `yyyy-MM-dd` plain date strings (Postgres DATE columns) as midnight UTC.
+    private static let _dateOnly: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        f.timeZone   = TimeZone(identifier: "UTC")
+        f.locale     = Locale(identifier: "en_US_POSIX")
         return f
     }()
 }

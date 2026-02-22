@@ -387,7 +387,7 @@ struct ReportCardView: View {
                 }
                 
                 // Status and details row
-                HStack(spacing: 12) {
+                HStack(spacing: 8) {
                     if report.status.lowercased() != "draft" {
                         Text(report.status.capitalized)
                             .font(.system(size: 13, weight: .medium))
@@ -397,21 +397,21 @@ struct ReportCardView: View {
                             .background(statusColor(for: report.status).opacity(0.15))
                             .cornerRadius(8)
                         
-                        Text("•")
+                        Text("\u{00B7}")
                             .foregroundColor(.gray)
                     }
                     
-                    Text("\(report.displayItemsCount) expenses")
+                    Text("\(report.displayItemsCount) expense\(report.displayItemsCount == 1 ? "" : "s")")
                         .font(.system(size: 13))
                         .foregroundColor(.gray)
-                
-                Text("•")
-                    .foregroundColor(.gray)
-                
-                Text(formatDate(report.created_at))
-                    .font(.system(size: 13))
-                    .foregroundColor(.gray)
-            }
+                    
+                    Text("\u{00B7}")
+                        .foregroundColor(.gray)
+                    
+                    Text(friendlyDate(report.created_at))
+                        .font(.system(size: 13))
+                        .foregroundColor(.gray)
+                }
             
             // Receipt thumbnails — prefer thumbnails from mobile endpoint,
             // fall back to items array from detail/web endpoint
@@ -488,15 +488,35 @@ struct ReportCardView: View {
         }
     }
     
-    private func formatDate(_ dateString: String) -> String {
-        let formatter = ISO8601DateFormatter()
-        if let date = formatter.date(from: dateString) {
-            let displayFormatter = DateFormatter()
-            displayFormatter.dateStyle = .medium
-            displayFormatter.timeStyle = .none
-            return displayFormatter.string(from: date)
-        }
-        return dateString
+    /// Parse Supabase timestamps (with or without fractional seconds / timezone)
+    /// and return a human-friendly short date like "Today", "Yesterday", "21 Feb".
+    private func friendlyDate(_ raw: String) -> String {
+        // Try full ISO with fractional seconds first, then plain ISO, then bare date
+        let date: Date? = {
+            let frac = ISO8601DateFormatter()
+            frac.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let d = frac.date(from: raw) { return d }
+
+            let plain = ISO8601DateFormatter()
+            plain.formatOptions = [.withInternetDateTime]
+            if let d = plain.date(from: raw) { return d }
+
+            // Bare date like "2026-02-21"
+            let df = DateFormatter()
+            df.dateFormat = "yyyy-MM-dd"
+            df.locale = Locale(identifier: "en_US_POSIX")
+            return df.date(from: String(raw.prefix(10)))
+        }()
+
+        guard let parsed = date else { return String(raw.prefix(10)) }
+
+        let cal = Calendar.current
+        if cal.isDateInToday(parsed) { return "Today" }
+        if cal.isDateInYesterday(parsed) { return "Yesterday" }
+
+        let fmt = DateFormatter()
+        fmt.dateFormat = cal.isDate(parsed, equalTo: Date(), toGranularity: .year) ? "d MMM" : "d MMM yyyy"
+        return fmt.string(from: parsed)
     }
 }
 
