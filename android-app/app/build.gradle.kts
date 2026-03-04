@@ -7,6 +7,15 @@ plugins {
     id("com.google.dagger.hilt.android")
 }
 
+import java.util.Properties
+import java.io.FileInputStream
+
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace = "com.mafutapass.app"
     compileSdk = 35
@@ -15,11 +24,20 @@ android {
         applicationId = "com.mafutapass.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 10
+        versionName = "1.0.9"
 
         vectorDrawables {
             useSupportLibrary = true
+        }
+    }
+
+    signingConfigs {
+        create("release") {
+            storeFile = file(keystoreProperties.getProperty("storeFile", "../kacha-release.jks"))
+            storePassword = keystoreProperties.getProperty("storePassword", "")
+            keyAlias = keystoreProperties.getProperty("keyAlias", "")
+            keyPassword = keystoreProperties.getProperty("keyPassword", "")
         }
     }
 
@@ -31,7 +49,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // For app signing, configure signing config here or via Android Studio
+            signingConfig = signingConfigs.getByName("release")
         }
         debug {
             isMinifyEnabled = false
@@ -50,6 +68,7 @@ android {
     kotlin {
         compilerOptions {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+            freeCompilerArgs.addAll("-Xannotation-default-target=param-property")
         }
     }
 
@@ -124,7 +143,10 @@ dependencies {
     // ML Kit Text Recognition
     implementation("com.google.mlkit:text-recognition:16.0.1")
 
-    // ML Kit Barcode Scanning (eTIMS QR codes)
+    // ML Kit Entity Extraction — on-device currency/date/address recognition
+    implementation("com.google.mlkit:entity-extraction:16.0.0-beta5")
+
+    // ML Kit Barcode Scanning (eTIMS QR codes) — bundled on-device model
     implementation("com.google.mlkit:barcode-scanning:17.3.0")
 
     // ZXing QR code generation (workspace share QR codes)
@@ -132,9 +154,6 @@ dependencies {
 
     // Location Services (GPS coordinates for receipts)
     implementation("com.google.android.gms:play-services-location:21.3.0")
-
-    // ML Kit Document Scanner (receipt boundary detection)
-    implementation("com.google.android.gms:play-services-mlkit-document-scanner:16.0.0")
 
     // Hilt Dependency Injection
     implementation("com.google.dagger:hilt-android:2.56.2")

@@ -44,6 +44,28 @@ export async function POST(request: NextRequest) {
     // User-supplied overrides (optional) — take precedence over AI extraction
     const userDescription = (formData.get('description') as string | null) || null;
     const userCategory    = (formData.get('category')    as string | null) || null;
+    const userReimbursable = formData.get('reimbursable') === 'true';
+
+    // On-device extracted values (shown to user on confirm screen, no raw OCR text)
+    // The app processes financial data entirely on-device and only sends the
+    // user-confirmed structured fields — never the raw receipt text.
+    const mobileAmount     = (formData.get('amount')          as string | null) || null;
+    const mobileMerchant   = (formData.get('merchant')        as string | null) || null;
+    const mobileDate       = (formData.get('transactionDate') as string | null) || null;
+    const mobileCurrency   = (formData.get('currency')        as string | null) || null;
+
+    // Legacy on-device fields (older app versions sent raw extracted data)
+    const extractedText     = (formData.get('extractedText')     as string | null) || null;
+    const extractedMerchant = (formData.get('extractedMerchant') as string | null) || null;
+    const extractedAmount   = (formData.get('extractedAmount')   as string | null) || null;
+    const extractedDate     = (formData.get('extractedDate')     as string | null) || null;
+    const extractedCategory = (formData.get('extractedCategory') as string | null) || null;
+    const extractedCurrency = (formData.get('extractedCurrency') as string | null) || null;
+
+    // New path: app sends amount/merchant without raw text
+    // Legacy path: app sends extractedText + extracted fields
+    const hasMobileData   = !!(mobileAmount || mobileMerchant);
+    const hasOnDeviceData = hasMobileData || !!extractedText;
 
     if (!imageFile) {
       return NextResponse.json(
@@ -99,27 +121,101 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Process through the receipt pipeline
-    const result = await receiptProcessor.process(imageFile, {
-      userEmail,
-      userId,
-      supabaseClient: supabase,
-      latitude: latitude ? parseFloat(latitude) : undefined,
-      longitude: longitude ? parseFloat(longitude) : undefined,
-      mobileQrUrl: qrUrl || undefined,
-    });
+    // ── Mobile uploads: ALL processing happens on-device ──────────────
+    // The Android/iOS app runs ML Kit Text Recognition v2 + Entity Extraction
+    // entirely on-device. The backend only stores the image and the
+    // user-confirmed structured fields. NO server-side OCR, NO Gemini,
+    // NO raw receipt text stored. Financial data never leaves the phone.
+    //
+    // Server-side pipeline (receiptProcessor) is DISABLED for mobile uploads.
+    // It remains available only for web uploads where there is no on-device ML.
+    let result: any;
 
-    // Diagnostic log — helps debug "all zeros" receipts in Vercel logs
-    console.log('[receipt-upload] Pipeline result:', {
-      imageUrl: !!result.imageUrl,
-      kraData: result.kraData ? { merchant: result.kraData.merchantName, amount: result.kraData.totalAmount } : null,
-      ocrData: result.ocrData ? { merchant: result.ocrData.merchantName, amount: result.ocrData.totalAmount, hasText: !!result.ocrData.rawText } : null,
-      parsedData: result.parsedData ? { merchant: result.parsedData.merchantName, amount: result.parsedData.totalAmount } : null,
-      qrData: !!result.qrData,
-      confidence: result.confidence,
-      warnings: result.warnings,
-      errors: result.errors,
-    });
+    // Detect whether this is a mobile app upload (has User-Agent or mobile fields)
+    const isMobileUpload = request.headers.get('x-client-platform') === 'android' ||
+      request.headers.get('x-client-platform') === 'ios' ||
+      hasMobileData || hasOnDeviceData;
+
+    if (isMobileUpload) {
+      // MOBILE PATH: Upload image to storage, use on-device extracted data only.
+      // No OCR, no Gemini, no KRA scraping, no raw text stored.
+      console.log('[receipt-upload] MOBILE: on-device data only — server-side pipeline DISABLED');
+      const imageBuffer = Buffer.from(await imageFile.arrayBuffer());
+      const fileName = `receipts/${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+      const { error: storageError } = await supabase.storage
+        .from('receipts')
+        .upload(fileName, imageBuffer, { contentType: imageFile.type, upsert: false });
+
+      let imageUrl: string | null = null;
+      if (!storageError) {
+        const { data: urlData } = supabase.storage.from('receipts').getPublicUrl(fileName);
+        imageUrl = urlData?.publicUrl || null;
+      } else {
+        console.error('[receipt-upload] Storage upload failed:', storageError.message);
+      }
+
+      // Use on-device extracted fields (new path) or legacy fields (old app versions)
+      const resolvedMerchant = mobileMerchant || extractedMerchant;
+      const resolvedAmount   = mobileAmount || extractedAmount;
+      const resolvedDate     = mobileDate || extractedDate;
+      const resolvedCategory = userCategory || extractedCategory || 'Other';
+      const resolvedCurrency = mobileCurrency || extractedCurrency || 'KES';
+
+      result = {
+        imageUrl,
+        parsedData: {
+          merchantName: resolvedMerchant,
+          totalAmount: resolvedAmount ? parseFloat(resolvedAmount) : 0,
+          transactionDate: resolvedDate || null,
+          category: resolvedCategory,
+          currency: resolvedCurrency,
+          hasEtimsQR: false,
+        },
+        // No raw text stored — financial data stays on device
+        ocrData: { rawText: '' },
+        kraData: null,
+        qrData: qrUrl ? { url: qrUrl } : null,
+        rawReceiptId: null,
+        processingTimeMs: 0,
+        confidence: null,
+        fieldConfidence: null,
+        store: null,
+        aiEnhanced: null,
+        warnings: [],
+        errors: [],
+      };
+
+      console.log('[receipt-upload] MOBILE result:', {
+        imageUrl: !!imageUrl,
+        merchant: resolvedMerchant,
+        amount: resolvedAmount,
+        date: resolvedDate,
+        category: resolvedCategory,
+        currency: resolvedCurrency,
+      });
+    } else {
+      // WEB PATH: Full server-side pipeline (web uploads only)
+      console.log('[receipt-upload] WEB: running server-side pipeline');
+      result = await receiptProcessor.process(imageFile, {
+        userEmail,
+        userId,
+        supabaseClient: supabase,
+        latitude: latitude ? parseFloat(latitude) : undefined,
+        longitude: longitude ? parseFloat(longitude) : undefined,
+        mobileQrUrl: qrUrl || undefined,
+      });
+
+      console.log('[receipt-upload] WEB pipeline result:', {
+        imageUrl: !!result.imageUrl,
+        kraData: result.kraData ? { merchant: result.kraData.merchantName, amount: result.kraData.totalAmount } : null,
+        ocrData: result.ocrData ? { merchant: result.ocrData.merchantName, amount: result.ocrData.totalAmount, hasText: !!result.ocrData.rawText } : null,
+        parsedData: result.parsedData ? { merchant: result.parsedData.merchantName, amount: result.parsedData.totalAmount } : null,
+        qrData: !!result.qrData,
+        confidence: result.confidence,
+        warnings: result.warnings,
+        errors: result.errors,
+      });
+    }
 
     // uploadSucceeded only requires the image to have been stored.
     // raw_receipts save failures are non-fatal — the expense_item is still created.
@@ -272,6 +368,7 @@ export async function POST(request: NextRequest) {
               has_etims_qr: hasEtimsQR, // NEW: Flag for KRA Verified badge
               receipt_details: Object.keys(receiptDetails).length > 0 ? receiptDetails : null, // NEW: Store items and metadata
               receipt_full_text: result.ocrData?.rawText || '', // NEW: Full OCR text for search
+              reimbursable: userReimbursable,
               // User-supplied description takes precedence; fall back to auto-generated review prompt.
               description: userDescription
                 || (initialStatus === 'needs_review'

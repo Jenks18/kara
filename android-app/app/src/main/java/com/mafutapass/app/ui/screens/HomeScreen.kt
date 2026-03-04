@@ -19,11 +19,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.mafutapass.app.ui.theme.*
 import com.mafutapass.app.util.CurrencyFormatter
 import com.mafutapass.app.viewmodel.ReportsViewModel
@@ -223,14 +227,30 @@ fun HomeScreen(
                                             modifier = Modifier.weight(1f),
                                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                                         ) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(40.dp)
-                                                    .clip(RoundedCornerShape(8.dp))
-                                                    .background(Color(0xFFF3F4F6)),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                Icon(Icons.Filled.Receipt, contentDescription = null, tint = Color(0xFF6B7280), modifier = Modifier.size(20.dp))
+                                            val imgUrl = expense.imageUrl
+                                            if (!imgUrl.isNullOrBlank() && imgUrl.startsWith("http")) {
+                                                AsyncImage(
+                                                    model = ImageRequest.Builder(LocalContext.current)
+                                                        .data(imgUrl)
+                                                        .crossfade(true)
+                                                        .build(),
+                                                    contentDescription = "Receipt",
+                                                    contentScale = ContentScale.Crop,
+                                                    modifier = Modifier
+                                                        .size(40.dp)
+                                                        .clip(RoundedCornerShape(8.dp))
+                                                        .background(Color(0xFFF3F4F6))
+                                                )
+                                            } else {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(40.dp)
+                                                        .clip(RoundedCornerShape(8.dp))
+                                                        .background(Color(0xFFF3F4F6)),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Icon(Icons.Filled.Receipt, contentDescription = null, tint = Color(0xFF6B7280), modifier = Modifier.size(20.dp))
+                                                }
                                             }
                                             Column {
                                                 Text(
@@ -240,7 +260,7 @@ fun HomeScreen(
                                                     maxLines = 1, overflow = TextOverflow.Ellipsis
                                                 )
                                                 Text(
-                                                    text = "${expense.category.ifBlank { "Uncategorized" }} · ${shortDate(expense.createdAt)}",
+                                                    text = "${expense.category.ifBlank { "Uncategorized" }} · ${shortDate(expense.transactionDate ?: expense.createdAt)}",
                                                     style = MaterialTheme.typography.bodySmall,
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                                 )

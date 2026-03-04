@@ -79,7 +79,17 @@ interface ApiService {
         @Part("workspaceName") workspaceName: okhttp3.RequestBody? = null,
         @Part("latitude") latitude: okhttp3.RequestBody? = null,
         @Part("longitude") longitude: okhttp3.RequestBody? = null,
-        @Part("qrUrl") qrUrl: okhttp3.RequestBody? = null
+        @Part("qrUrl") qrUrl: okhttp3.RequestBody? = null,
+        // User-confirmed fields from the confirm screen
+        @Part("description") description: okhttp3.RequestBody? = null,
+        @Part("category") category: okhttp3.RequestBody? = null,
+        @Part("reimbursable") reimbursable: okhttp3.RequestBody? = null,
+        // On-device extracted values (shown to user on confirm screen)
+        // No raw OCR text is sent — financial data stays on device
+        @Part("amount") amount: okhttp3.RequestBody? = null,
+        @Part("merchant") merchant: okhttp3.RequestBody? = null,
+        @Part("transactionDate") transactionDate: okhttp3.RequestBody? = null,
+        @Part("currency") currency: okhttp3.RequestBody? = null
     ): ReceiptUploadResponse
     
     // ============= Workspace Members =============
