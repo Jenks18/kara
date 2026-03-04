@@ -27,6 +27,12 @@ struct ConfirmExpensesView: View {
     @State private var showUploadError = false
     @State private var detectedQRUrl: String? = nil
     @State private var scanningQR = false
+    // On-device OCR results (mirrors Android ReceiptProcessor)
+    @State private var ocrText: String = ""
+    @State private var ocrMerchant: String? = nil
+    @State private var ocrAmount: Double? = nil
+    @State private var ocrDate: String? = nil
+    @State private var processingOCR = false
     @StateObject private var locationManager = LocationManager()
     
     let categories = ["fuel", "food", "transport", "accommodation", "office supplies", "communication", "maintenance", "shopping", "entertainment", "utilities", "health", "other"]
@@ -122,7 +128,7 @@ struct ConfirmExpensesView: View {
                                         HStack(spacing: 4) {
                                             Image(systemName: "qrcode")
                                                 .font(.system(size: 12))
-                                            Text("eTIMS QR")
+                                            Text("QR Detected")
                                                 .font(.system(size: 12, weight: .medium))
                                         }
                                         .foregroundColor(.white)
@@ -131,12 +137,12 @@ struct ConfirmExpensesView: View {
                                         .background(AppTheme.Colors.primary.opacity(0.9))
                                         .cornerRadius(12)
                                         .padding(8)
-                                    } else if scanningQR {
+                                    } else if scanningQR || processingOCR {
                                         HStack(spacing: 4) {
                                             ProgressView()
                                                 .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                                 .scaleEffect(0.7)
-                                            Text("Scanning...")
+                                            Text("Processing...")
                                                 .font(.system(size: 12, weight: .medium))
                                         }
                                         .foregroundColor(.white)
@@ -169,6 +175,71 @@ struct ConfirmExpensesView: View {
                                 }
                             }
                             .padding(.horizontal)
+                            
+                            // On-device OCR detected info (mirrors Android)
+                            if processingOCR {
+                                HStack(spacing: 8) {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle())
+                                        .scaleEffect(0.8)
+                                    Text("Analyzing receipt...")
+                                        .font(.system(size: 13))
+                                        .foregroundColor(AppTheme.Colors.textSecondary)
+                                    Spacer()
+                                }
+                                .padding(.horizontal)
+                                .padding(.vertical, 6)
+                            } else if ocrMerchant != nil || ocrAmount != nil || ocrDate != nil {
+                                VStack(alignment: .leading, spacing: 6) {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "text.viewfinder")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(AppTheme.Colors.primary)
+                                        Text("Detected Info")
+                                            .font(.system(size: 13, weight: .semibold))
+                                            .foregroundColor(AppTheme.Colors.primary)
+                                    }
+                                    
+                                    if let merchant = ocrMerchant {
+                                        HStack(spacing: 4) {
+                                            Text("Merchant:")
+                                                .font(.system(size: 12, weight: .medium))
+                                                .foregroundColor(AppTheme.Colors.textSecondary)
+                                            Text(merchant)
+                                                .font(.system(size: 12))
+                                                .foregroundColor(AppTheme.Colors.textPrimary)
+                                                .lineLimit(1)
+                                        }
+                                    }
+                                    
+                                    if let amount = ocrAmount {
+                                        HStack(spacing: 4) {
+                                            Text("Amount:")
+                                                .font(.system(size: 12, weight: .medium))
+                                                .foregroundColor(AppTheme.Colors.textSecondary)
+                                            Text(String(format: "%.2f", amount))
+                                                .font(.system(size: 12))
+                                                .foregroundColor(AppTheme.Colors.textPrimary)
+                                        }
+                                    }
+                                    
+                                    if let date = ocrDate {
+                                        HStack(spacing: 4) {
+                                            Text("Date:")
+                                                .font(.system(size: 12, weight: .medium))
+                                                .foregroundColor(AppTheme.Colors.textSecondary)
+                                            Text(date)
+                                                .font(.system(size: 12))
+                                                .foregroundColor(AppTheme.Colors.textPrimary)
+                                        }
+                                    }
+                                }
+                                .padding(12)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(AppTheme.Colors.cardSurface)
+                                .cornerRadius(10)
+                                .padding(.horizontal)
+                            }
                             
                             // Workspace picker — below image, not overlapping
                             VStack(alignment: .leading, spacing: 8) {
@@ -291,7 +362,7 @@ struct ConfirmExpensesView: View {
                 }
             }
             .onAppear {
-                scanForQRCodes()
+                processReceipts()
                 checkLocationPermission()
                 // Auto-select active/first workspace if none chosen yet
                 if selectedWorkspace.isEmpty,
@@ -376,7 +447,8 @@ struct ConfirmExpensesView: View {
                     category: selectedCategory,
                     latitude: lat,
                     longitude: lon,
-                    qrUrl: detectedQRUrl
+                    qrUrl: detectedQRUrl,
+                    ocrText: ocrText.isEmpty ? nil : ocrText
                 )
                 
                 await MainActor.run {
@@ -402,27 +474,37 @@ struct ConfirmExpensesView: View {
         }
     }
     
-    /// Scan all images for eTIMS QR codes (post-capture like Android)
-    func scanForQRCodes() {
+    /// Run on-device OCR + QR detection (two-pass, mirrors Android ReceiptProcessor)
+    func processReceipts() {
         scanningQR = true
+        processingOCR = true
         Task {
             do {
-                if let qrUrl = try await QRScannerService.shared.scanImagesForQR(images: images) {
-                    await MainActor.run {
-                        detectedQRUrl = qrUrl
-                        scanningQR = false
-                        print("✅ eTIMS QR detected: \(qrUrl)")
+                let result = try await ReceiptProcessor.shared.processImages(images)
+                await MainActor.run {
+                    // QR result
+                    detectedQRUrl = result.qrUrl
+                    scanningQR = false
+                    
+                    // OCR result
+                    ocrText = result.ocrText
+                    ocrMerchant = result.parsedData.merchantName
+                    ocrAmount = result.parsedData.totalAmount
+                    ocrDate = result.parsedData.date
+                    processingOCR = false
+                    
+                    if let qr = result.qrUrl {
+                        print("✅ QR detected (Tier \(result.qrTier ?? 0)): \(qr)")
+                    } else {
+                        print("ℹ️ No QR code found")
                     }
-                } else {
-                    await MainActor.run {
-                        scanningQR = false
-                        print("ℹ️ No eTIMS QR found")
-                    }
+                    print("📝 OCR: \(result.ocrText.count) chars, merchant=\(result.parsedData.merchantName ?? "nil"), amount=\(result.parsedData.totalAmount?.description ?? "nil")")
                 }
             } catch {
                 await MainActor.run {
                     scanningQR = false
-                    print("⚠️ QR scan failed: \(error)")
+                    processingOCR = false
+                    print("⚠️ Receipt processing failed: \(error)")
                 }
             }
         }

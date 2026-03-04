@@ -199,10 +199,12 @@ struct ManualCameraView: View {
     }
 
     private func handleQRCode(_ code: String) {
-        guard detectedQRCode != code else { return }
-        detectedQRCode = code
+        // Apply two-tier URL filtering (matches Android behavior)
+        guard let filteredUrl = QRScannerService.shared.filterLiveQR(code) else { return }
+        guard detectedQRCode != filteredUrl else { return }
+        detectedQRCode = filteredUrl
         showQRBanner = true
-        // Auto-use the QR code and advance
+        // Auto-dismiss banner after 1.5s
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             showQRBanner = false
         }

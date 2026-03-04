@@ -16,6 +16,7 @@
 		619F013F0BAC90E7984732BE /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84CF722E31F32F8180650656 /* Models.swift */; };
 		64BDE356B0E771243AE6896C /* AppDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F45D0512FB2D225D6B21740F /* AppDataStore.swift */; };
 		7C7769F8701DA50A4F882B1A /* MafutaPassApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7AAD9B96E82C8FD875AFF26 /* MafutaPassApp.swift */; };
+		B5C6D7E8F90A1B2C3D4E5F60 /* ManualCameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6F70819A2B3C4D5E6F70819 /* ManualCameraView.swift */; };
 		8058EED0ABDE0CF5B3167E7D /* ClerkAuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C4EE83025068E336AD56242 /* ClerkAuthManager.swift */; };
 		8BB383C79B6BB06E9B52BB69 /* CurrencyFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 503038F7D829D7E5CCA178B3 /* CurrencyFormatter.swift */; };
 		8D72A69EFD3BC9C2444E31FD /* ConfirmExpensesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C18BF5A94620E1DBD08BC169 /* ConfirmExpensesView.swift */; };
@@ -25,6 +26,7 @@
 		C18F63E0C024C97D08A456C3 /* WorkspacesPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1F7381A7FF49CCD23DC3C6 /* WorkspacesPage.swift */; };
 		CA39E7D5CBC1BE577E65145D /* HomePage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F242597443F49D70A75851F /* HomePage.swift */; };
 		CD9561F913739A389B781E15 /* QRScannerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67DCFE49CA3AD21876CEC590 /* QRScannerService.swift */; };
+		A1B2C3D4E5F60718192A3B4C /* ReceiptProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F60718192A3B4CA1B2C3 /* ReceiptProcessor.swift */; };
 		CDE0C521A86D948E8D79A507 /* WorkspaceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55B8E9285DDE795BB36B87AB /* WorkspaceManager.swift */; };
 		D525EFE46B9C94D3A1572800 /* DataCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34968EC1166496AE8995323A /* DataCache.swift */; };
 		DD574721B9280BC1701FF47C /* EmeraldTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D2E1082FE899C337881AF39 /* EmeraldTheme.swift */; };
@@ -43,8 +45,10 @@
 		503038F7D829D7E5CCA178B3 /* CurrencyFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyFormatter.swift; sourceTree = "<group>"; };
 		55B8E9285DDE795BB36B87AB /* WorkspaceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceManager.swift; sourceTree = "<group>"; };
 		5C2BA4BE57D9BC2A03A5DD6E /* MainAppView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainAppView.swift; sourceTree = "<group>"; };
+		E6F70819A2B3C4D5E6F70819 /* ManualCameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualCameraView.swift; sourceTree = "<group>"; };
 		6500202CBFA146C0904F7CBB /* ReportsPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportsPage.swift; sourceTree = "<group>"; };
 		67DCFE49CA3AD21876CEC590 /* QRScannerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerService.swift; sourceTree = "<group>"; };
+		D4E5F60718192A3B4CA1B2C3 /* ReceiptProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiptProcessor.swift; sourceTree = "<group>"; };
 		7A1F7381A7FF49CCD23DC3C6 /* WorkspacesPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspacesPage.swift; sourceTree = "<group>"; };
 		84CF722E31F32F8180650656 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		9363A8E59DFCE1A1F316C4C3 /* MafutaPass.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = MafutaPass.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -96,6 +100,7 @@
 				34968EC1166496AE8995323A /* DataCache.swift */,
 				E8E2CCCF4022EEF4EB0F7797 /* ProfileManager.swift */,
 				67DCFE49CA3AD21876CEC590 /* QRScannerService.swift */,
+				D4E5F60718192A3B4CA1B2C3 /* ReceiptProcessor.swift */,
 				55B8E9285DDE795BB36B87AB /* WorkspaceManager.swift */,
 			);
 			path = Services;
@@ -136,6 +141,7 @@
 				F259A4F24331C37FA1F7031E /* ExpenseDetailView.swift */,
 				4F242597443F49D70A75851F /* HomePage.swift */,
 				5C2BA4BE57D9BC2A03A5DD6E /* MainAppView.swift */,
+				E6F70819A2B3C4D5E6F70819 /* ManualCameraView.swift */,
 				CC2896CD26F0077E965C204D /* ReceiptCaptureView.swift */,
 				E7775EC386B72C9BEF6CA7A9 /* ReportDetailPage.swift */,
 				6500202CBFA146C0904F7CBB /* ReportsPage.swift */,
@@ -223,9 +229,11 @@
 				CA39E7D5CBC1BE577E65145D /* HomePage.swift in Sources */,
 				7C7769F8701DA50A4F882B1A /* MafutaPassApp.swift in Sources */,
 				2BB899B010584201F0F0063E /* MainAppView.swift in Sources */,
+				B5C6D7E8F90A1B2C3D4E5F60 /* ManualCameraView.swift in Sources */,
 				619F013F0BAC90E7984732BE /* Models.swift in Sources */,
 				F9F2668AC6E8BCD9DA28C92C /* ProfileManager.swift in Sources */,
 				CD9561F913739A389B781E15 /* QRScannerService.swift in Sources */,
+				A1B2C3D4E5F60718192A3B4C /* ReceiptProcessor.swift in Sources */,
 				F0B473F8BEBA316E455613C7 /* ReceiptCaptureView.swift in Sources */,
 				EBFB2109FFE696E3A489061A /* ReportDetailPage.swift in Sources */,
 				F6EACF2D3ED75317037B7078 /* ReportsPage.swift in Sources */,

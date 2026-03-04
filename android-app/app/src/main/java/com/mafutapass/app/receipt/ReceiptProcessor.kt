@@ -485,15 +485,23 @@ class ReceiptProcessor @Inject constructor() {
      * "TOTAL" keyword) with Entity Extraction money results.
      *
      * Strategy:
-     * BOTTOM-UP approach: on any receipt the real total (CASH / GRAND TOTAL /
-     * TOTAL) is the LAST monetary keyword line before the footer.  We:
-     *   1. Find every keyword line that could indicate a total.
-     *   2. Pair each with its associated amount (inline, same-line right, or
-     *      next-line below).
-     *   3. Sort by Y descending (bottom-first).
-     *   4. The bottom-most keyword line with an amount wins.
-     *      Tie-breaker: largest amount (handles OCR re-ordering).
-     *   5. Fallback: largest amount in the bottom 60% of the receipt.
+     * AMOUNTS-FIRST approach: instead of starting from keywords and hoping
+     * we find the right amount nearby, we start from ALL amounts, sort them
+     * largest-first, and confirm the winner has an aggregate keyword
+     * (TOTAL, CASH, AMOUNT, SUM) on the same visual row or adjacent line.
+     *
+     * On any receipt the grand total is always the LARGEST amount that sits
+     * next to an aggregate keyword.  This avoids keyword confusion where
+     * "TOTAL A-16.66%" or "ITEMS NUMBER: 2" would steal the match.
+     *
+     * Steps:
+     *   1. Parse ALL word-level amounts with bounding boxes.
+     *   2. Sort by amount DESC (largest first).
+     *   3. For each amount, check if an aggregate keyword sits on the same
+     *      visual row (within Y tolerance) or on the line immediately
+     *      above / below.
+     *   4. First confirmed match = grand total.
+     *   5. Fallback: largest amount in bottom 50% of the receipt.
      */
     private fun extractTotalSpatial(
         lines: List<PositionedText>,
@@ -504,7 +512,7 @@ class ReceiptProcessor @Inject constructor() {
 
         Log.d(TAG, "extractTotal: ${entityMoney.size} entity-extracted money amounts")
 
-        // Build word-level amounts from locale-aware parsing
+        // ── 1. Build ALL word-level amounts ──
         val wordAmounts = words.mapNotNull { word ->
             val amount = parseLocaleAmount(
                 word.text.replace(Regex("""(?i)KSh|Ksh|KES|Kes|/=|=-"""), "").trim()
@@ -519,104 +527,88 @@ class ReceiptProcessor @Inject constructor() {
                 "y=${"%.2f".format(w.normalisedY)}, x=${w.centreX}")
         }
 
-        // ── Identify ALL keyword lines that could indicate a total ──
-        // Accept: TOTAL, GRAND TOTAL, TOTAL DUE, TOTAL PAYABLE, TOTAL AMOUNT,
-        //         CASH, AMOUNT DUE, AMOUNT PAID, Sum
-        // Reject: TOTAL TAX, TOTAL VAT, TOTAL ITEMS, TOTAL QTY, TOTAL DISC,
-        //         TOTAL A-xx%, TOTAL B-xx%, TOTAL C-xx% (tax-category subtotals)
-        val rejectPattern = Regex(
-            """TOTAL\s*(TAX|VAT|ITEMS?|QTY|DISC|QUANTITY|NUMBER|[A-C][\s\-]\d)""",
-            RegexOption.IGNORE_CASE
-        )
-        val acceptPattern = Regex(
+        // ── 2. Aggregate keywords to look for near amounts ──
+        // These words indicate the number next to them is a total/sum
+        val aggregatePattern = Regex(
             """(?i)\b(GRAND\s*TOTAL|TOTAL\s*DUE|TOTAL\s*PAYABLE|TOTAL\s*AMOUNT|""" +
-            """AMOUNT\s*DUE|AMOUNT\s*PAID|TOTAL|CASH|Sum)\b"""
+            """AMOUNT\s*DUE|AMOUNT\s*PAID|TOTAL|CASH|AMOUNT|Sum|SUBTOTAL|""" +
+            """NET\s*AMOUNT|BALANCE)\b"""
+        )
+        // These are NOT aggregate keywords — they're counters/breakdowns
+        val rejectPattern = Regex(
+            """(?i)(TOTAL\s*(TAX|VAT|ITEMS?|QTY|DISC|QUANTITY|NUMBER|""" +
+            """SAVINGS|[A-C][\s\-]\d)|ITEMS\s*(NUMBER|QTY|COUNT|NO)|""" +
+            """CASH\s*(BACK|CHANGE|RETURN|RECEIVED|TENDERED)|""" +
+            """TAX\s*(AMOUNT|RATE|A\b|B\b|C\b))"""
         )
 
-        data class KeywordMatch(
-            val line: PositionedText,
-            val amount: Double,
-            val currency: String?
-        )
-
-        val keywordMatches = mutableListOf<KeywordMatch>()
-
-        val candidateLines = lines.filter { line ->
-            acceptPattern.containsMatchIn(line.text) &&
-                !rejectPattern.containsMatchIn(line.text) &&
-                // Skip CASH BACK / CASH CHANGE / CASH RETURN
-                !Regex("""CASH\s*(BACK|CHANGE|RETURN)""", RegexOption.IGNORE_CASE)
-                    .containsMatchIn(line.text)
+        fun isAggregateKeyword(text: String): Boolean {
+            return aggregatePattern.containsMatchIn(text) &&
+                !rejectPattern.containsMatchIn(text)
         }
 
-        for (keywordLine in candidateLines) {
-            // Try 1: inline amount in the keyword line itself
-            val inlineAmt = extractInlineAmount(keywordLine.text)
-            if (inlineAmt != null && inlineAmt > 0) {
-                Log.d(TAG, "extractTotal: keyword '${keywordLine.text}' " +
-                    "y=${"%.2f".format(keywordLine.normalisedY)} → inline $inlineAmt")
-                keywordMatches.add(KeywordMatch(
-                    keywordLine, inlineAmt, detectCurrencyInWord(keywordLine.text)))
-                continue
+        // ── 3. Sort amounts largest-first, confirm with nearby keyword ──
+        val candidateAmounts = wordAmounts
+            .filter { (w, amt, _) ->
+                // Only consider amounts in the bottom 70% (skip header region)
+                w.normalisedY > 0.30f && amt >= 10.0
+            }
+            .sortedByDescending { it.second } // largest first
+
+        for ((amtWord, amount, currency) in candidateAmounts) {
+            val amtBox = amtWord.boundingBox
+            val tolerance = (amtBox.height() * 0.6f).toInt().coerceAtLeast(20)
+
+            // Check: is there an aggregate keyword on the SAME visual row?
+            val sameRowKeyword = lines.firstOrNull { line ->
+                val yOverlap = line.centreY in
+                    (amtBox.top - tolerance)..(amtBox.bottom + tolerance)
+                yOverlap && isAggregateKeyword(line.text)
             }
 
-            // Try 2: word-level amount on the SAME visual row, to the RIGHT
-            val lineBox = keywordLine.boundingBox
-            val tolerance = (lineBox.height() * 0.5f).toInt().coerceAtLeast(15)
-            val sameLineAmounts = wordAmounts.filter { (w, _, _) ->
-                val yOverlap = w.centreY in
-                    (lineBox.top - tolerance)..(lineBox.bottom + tolerance)
-                val isToRight = w.centreX > lineBox.centerX()
-                yOverlap && isToRight
-            }
-            if (sameLineAmounts.isNotEmpty()) {
-                val best = sameLineAmounts.maxByOrNull { it.first.centreX }!!
-                Log.d(TAG, "extractTotal: keyword '${keywordLine.text}' " +
-                    "y=${"%.2f".format(keywordLine.normalisedY)} → same-line ${best.second}")
-                keywordMatches.add(KeywordMatch(keywordLine, best.second, best.third))
-                continue
+            if (sameRowKeyword != null) {
+                Log.d(TAG, "extractTotal: WINNER amount=${amount} " +
+                    "from '${amtWord.text}' (y=${"%.2f".format(amtWord.normalisedY)}) " +
+                    "confirmed by '${sameRowKeyword.text}' on same row")
+                return Pair(amount, currency)
             }
 
-            // Try 3: amount on the NEXT line below
-            val nextLine = lines
-                .filter { it.boundingBox.top > lineBox.bottom }
+            // Check: keyword on the line IMMEDIATELY above
+            val lineAbove = lines
+                .filter { it.boundingBox.bottom <= amtBox.top &&
+                    it.boundingBox.bottom > amtBox.top - amtBox.height() * 2 }
+                .maxByOrNull { it.boundingBox.bottom }
+
+            if (lineAbove != null && isAggregateKeyword(lineAbove.text)) {
+                Log.d(TAG, "extractTotal: WINNER amount=${amount} " +
+                    "from '${amtWord.text}' (y=${"%.2f".format(amtWord.normalisedY)}) " +
+                    "confirmed by '${lineAbove.text}' on line above")
+                return Pair(amount, currency)
+            }
+
+            // Check: keyword on the line IMMEDIATELY below
+            val lineBelow = lines
+                .filter { it.boundingBox.top >= amtBox.bottom &&
+                    it.boundingBox.top < amtBox.bottom + amtBox.height() * 2 }
                 .minByOrNull { it.boundingBox.top }
-            if (nextLine != null) {
-                val nextAmt = extractInlineAmount(nextLine.text)
-                if (nextAmt != null && nextAmt > 0) {
-                    Log.d(TAG, "extractTotal: keyword '${keywordLine.text}' " +
-                        "y=${"%.2f".format(keywordLine.normalisedY)} → next-line $nextAmt")
-                    keywordMatches.add(KeywordMatch(
-                        keywordLine, nextAmt, detectCurrencyInWord(nextLine.text)))
-                    continue
-                }
+
+            if (lineBelow != null && isAggregateKeyword(lineBelow.text)) {
+                Log.d(TAG, "extractTotal: WINNER amount=${amount} " +
+                    "from '${amtWord.text}' (y=${"%.2f".format(amtWord.normalisedY)}) " +
+                    "confirmed by '${lineBelow.text}' on line below")
+                return Pair(amount, currency)
             }
 
-            Log.d(TAG, "extractTotal: keyword '${keywordLine.text}' " +
-                "y=${"%.2f".format(keywordLine.normalisedY)} → NO amount found")
+            Log.d(TAG, "extractTotal: candidate ${amount} ('${amtWord.text}') " +
+                "y=${"%.2f".format(amtWord.normalisedY)} — no adjacent keyword, skipping")
         }
 
-        // ── Pick the winner: bottom-most keyword, tie-break by largest amount ──
-        if (keywordMatches.isNotEmpty()) {
-            // Sort: bottom first (highest Y), then largest amount
-            val winner = keywordMatches.sortedWith(
-                compareByDescending<KeywordMatch> { it.line.normalisedY }
-                    .thenByDescending { it.amount }
-            ).first()
-
-            Log.d(TAG, "extractTotal: WINNER '${winner.line.text}' " +
-                "y=${"%.2f".format(winner.line.normalisedY)} → ${winner.amount}")
-            return Pair(winner.amount, winner.currency)
-        }
-
-        // ── Fallback: largest entity-extracted amount in bottom 60% ──
+        // ── 4. Entity Extraction fallback ──
         if (entityMoney.isNotEmpty()) {
-            val bottomEntities = entityMoney.filter { money ->
-                val sourceLine = lines.firstOrNull { it.text.contains(money.sourceText) }
-                sourceLine == null || sourceLine.normalisedY > 0.30f
-            }
-            if (bottomEntities.isNotEmpty()) {
-                val largest = bottomEntities.maxByOrNull { it.amount }!!
+            val largest = entityMoney
+                .filter { it.amount >= 10.0 }
+                .maxByOrNull { it.amount }
+            if (largest != null) {
                 Log.d(TAG, "extractTotal: ENTITY-FALLBACK ${largest.amount} " +
                     "from '${largest.sourceText}'")
                 return Pair(largest.amount,
@@ -624,20 +616,27 @@ class ReceiptProcessor @Inject constructor() {
             }
         }
 
-        // ── Fallback: largest word-amount in bottom 60% ──
-        Log.d(TAG, "extractTotal: no keyword match, fallback to largest in bottom 60%")
-        val bottomAmounts = wordAmounts.filter { (w, _, _) -> w.normalisedY > 0.40f }
+        // ── 5. Last resort: largest amount in bottom 50% (no keyword needed) ──
+        Log.d(TAG, "extractTotal: no keyword-confirmed match, " +
+            "fallback to largest in bottom 50%")
+        val bottomAmounts = wordAmounts
+            .filter { (w, amt, _) -> w.normalisedY > 0.45f && amt >= 10.0 }
         if (bottomAmounts.isNotEmpty()) {
             val largest = bottomAmounts.maxByOrNull { it.second }!!
-            Log.d(TAG, "extractTotal: FALLBACK ${largest.second} from '${largest.first.text}'")
+            Log.d(TAG, "extractTotal: FALLBACK ${largest.second} " +
+                "from '${largest.first.text}'")
             return Pair(largest.second, largest.third)
         }
 
-        // ── Fallback: largest anywhere ──
+        // ── 6. Absolute last resort: largest anywhere ──
         if (wordAmounts.isNotEmpty()) {
-            val largest = wordAmounts.maxByOrNull { it.second }!!
-            Log.d(TAG, "extractTotal: FALLBACK-ANY ${largest.second}")
-            return Pair(largest.second, largest.third)
+            val largest = wordAmounts
+                .filter { it.second >= 10.0 }
+                .maxByOrNull { it.second }
+            if (largest != null) {
+                Log.d(TAG, "extractTotal: FALLBACK-ANY ${largest.second}")
+                return Pair(largest.second, largest.third)
+            }
         }
 
         Log.w(TAG, "extractTotal: no amounts found")

@@ -159,7 +159,8 @@ class API {
         category: String?,
         latitude: Double?,
         longitude: Double?,
-        qrUrl: String? = nil
+        qrUrl: String? = nil,
+        ocrText: String? = nil
     ) async throws -> UploadReceiptsResponse {
         let url = URL(string: "\(baseURL)/mobile/receipts/upload")!
         var lastReportId: String?
