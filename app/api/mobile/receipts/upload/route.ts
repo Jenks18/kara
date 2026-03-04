@@ -1,23 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { corsHeaders } from '@/lib/auth/mobile-auth';
 import { createMobileClient } from '@/lib/supabase/mobile-client';
 import { receiptProcessor } from '@/lib/receipt-processing/orchestrator';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
-
-// Service-role client for storage uploads only.
-// Clerk user IDs are NOT UUIDs, so auth.uid() (which casts sub→UUID) fails
-// in Supabase Storage RLS policies.  We've already authenticated the user via
-// Clerk JWT, so using the service role here is safe — all database operations
-// still go through the RLS-bound mobile client.
-function getStorageClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  );
-}
 
 // Max file size: 10MB (production guard for Play Store users)
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -154,17 +141,17 @@ export async function POST(request: NextRequest) {
       // No OCR, no Gemini, no KRA scraping, no raw text stored.
       console.log('[receipt-upload] MOBILE: on-device data only — server-side pipeline DISABLED');
       const imageBuffer = Buffer.from(await imageFile.arrayBuffer());
-      const fileName = `receipts/${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+      // Path: {userId}/{timestamp}.jpg — folder[1] must match auth.jwt()->>'sub'
+      // to satisfy the receipts_insert_mobile RLS policy (migration 023).
+      const fileName = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
 
-      // Use service-role client for storage (Clerk IDs aren't UUIDs → auth.uid() fails in Storage RLS)
-      const storageClient = getStorageClient();
-      const { error: storageError } = await storageClient.storage
+      const { error: storageError } = await supabase.storage
         .from('receipts')
         .upload(fileName, imageBuffer, { contentType: imageFile.type, upsert: false });
 
       let imageUrl: string | null = null;
       if (!storageError) {
-        const { data: urlData } = storageClient.storage.from('receipts').getPublicUrl(fileName);
+        const { data: urlData } = supabase.storage.from('receipts').getPublicUrl(fileName);
         imageUrl = urlData?.publicUrl || null;
       } else {
         console.error('[receipt-upload] Storage upload failed:', storageError.message);
