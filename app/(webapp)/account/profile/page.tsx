@@ -120,15 +120,48 @@ export default function ProfilePage() {
     setShowAvatarPicker(false)
   }
 
+  /**
+   * Compress image client-side before upload.
+   * Phone cameras produce 3-10MB photos; Vercel limits request bodies to 4.5MB.
+   * We resize to 512px max dimension and compress to JPEG ~85% quality (~50-150KB).
+   */
+  const compressImage = (file: File, maxSize = 512, quality = 0.85): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        let { width, height } = img
+        if (width > height) {
+          if (width > maxSize) { height = (height * maxSize) / width; width = maxSize }
+        } else {
+          if (height > maxSize) { width = (width * maxSize) / height; height = maxSize }
+        }
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')!
+        ctx.drawImage(img, 0, 0, width, height)
+        canvas.toBlob(
+          (blob) => blob ? resolve(blob) : reject(new Error('Compression failed')),
+          'image/jpeg',
+          quality
+        )
+      }
+      img.onerror = () => reject(new Error('Failed to load image'))
+      img.src = URL.createObjectURL(file)
+    })
+  }
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || !user?.id) return
 
     setUploadingAvatar(true)
     try {
-      // Upload file to storage
+      // Compress client-side: 512px max, JPEG 85% (~50-150KB)
+      const compressed = await compressImage(file)
+
       const formData = new FormData()
-      formData.append('file', file)
+      formData.append('file', new File([compressed], 'avatar.jpg', { type: 'image/jpeg' }))
 
       const response = await fetch('/api/upload-avatar', {
         method: 'POST',
@@ -136,6 +169,8 @@ export default function ProfilePage() {
       })
 
       if (!response.ok) {
+        const errBody = await response.text().catch(() => '')
+        console.error('Avatar upload failed:', response.status, errBody)
         throw new Error('Upload failed')
       }
 
@@ -202,7 +237,9 @@ export default function ProfilePage() {
           <div className="flex justify-center py-4">
             <div className="relative">
               <div className={`w-32 h-32 rounded-full bg-gradient-to-br ${avatar.imageUrl ? 'bg-gray-100' : avatar.color} flex items-center justify-center overflow-hidden shadow-lg`}>
-                {avatar.imageUrl ? (
+                {uploadingAvatar ? (
+                  <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+                ) : avatar.imageUrl ? (
                   <img 
                     src={avatar.imageUrl} 
                     alt="Profile" 
@@ -328,17 +365,30 @@ export default function ProfilePage() {
 
             {/* Content */}
             <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(85vh - 160px)' }}>
-              {/* Upload button */}
-              <label className="w-full mb-6 px-6 py-4 bg-blue-600 hover:bg-blue-500 rounded-2xl text-white font-medium flex items-center justify-center gap-3 transition-colors touch-manipulation cursor-pointer">
-                <Upload size={24} />
-                Upload photo
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-              </label>
+              {/* Upload buttons — separate camera and gallery for better mobile UX */}
+              <div className="flex gap-3 mb-6">
+                <label className="flex-1 px-4 py-4 bg-blue-600 hover:bg-blue-500 rounded-2xl text-white font-medium flex items-center justify-center gap-2 transition-colors touch-manipulation cursor-pointer">
+                  <Camera size={20} />
+                  Camera
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="user"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                </label>
+                <label className="flex-1 px-4 py-4 bg-blue-600 hover:bg-blue-500 rounded-2xl text-white font-medium flex items-center justify-center gap-2 transition-colors touch-manipulation cursor-pointer">
+                  <Upload size={20} />
+                  Gallery
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                </label>
+              </div>
 
               <p className="text-gray-600 text-sm mb-4">Or choose a custom avatar</p>
 
