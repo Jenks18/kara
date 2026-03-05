@@ -3,7 +3,7 @@
 import { useUser, useClerk } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import { useAvatar } from '@/contexts/AvatarContext'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { webCache, CacheKey } from '@/lib/webCache'
 import BottomNav from '@/components/navigation/BottomNav'
 import { 
@@ -27,6 +27,18 @@ export default function AccountPage() {
   const [displayName, setDisplayName] = useState('')
   const [displayEmail, setDisplayEmail] = useState('')
 
+  // Navigation guard — prevents race condition where back gesture/button
+  // and a menu-item tap both fire before the page transitions.
+  const isNavigating = useRef(false)
+  const safeNavigate = useCallback((href: string) => {
+    if (isNavigating.current) return
+    isNavigating.current = true
+    router.push(href)
+    // Safety reset: if navigation is interrupted or the component isn't
+    // unmounted (e.g. same-page hash change), re-enable after 1.5 s.
+    setTimeout(() => { isNavigating.current = false }, 1500)
+  }, [router])
+
   // Load display data: seed instantly from userId-namespaced cache, then
   // confirm/update with authoritative Clerk data once Clerk is ready.
   // Cross-account safety: different userId → automatic cache miss — no
@@ -49,8 +61,9 @@ export default function AccountPage() {
   }, [isLoaded, user?.id])
 
   const handleSignOut = async () => {
+    if (isNavigating.current) return
+    isNavigating.current = true
     // Optional: wipe current user's cached data from disk (privacy cleanup).
-    // Not needed for cross-account safety — different userId = automatic cache miss.
     if (user) {
       try { webCache(user.id).clearAll() } catch {}
     }
@@ -128,7 +141,8 @@ export default function AccountPage() {
                 return (
                   <button
                     key={itemIdx}
-                    onClick={item.onClick || (() => router.push(item.href))}
+                    onClick={item.onClick || (() => safeNavigate(item.href))}
+                    disabled={isNavigating.current}
                     className="
                       w-full flex items-center justify-between
                       px-4 py-4 min-h-[60px]

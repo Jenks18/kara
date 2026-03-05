@@ -13,7 +13,7 @@ export interface Avatar {
 
 interface AvatarContextType {
   avatar: Avatar
-  setAvatar: (avatar: Avatar) => void
+  setAvatar: (avatar: Avatar, options?: { localOnly?: boolean }) => void
   isLoading: boolean
 }
 
@@ -88,13 +88,15 @@ export function AvatarProvider({ children }: { children: ReactNode }) {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [isLoaded, user?.id])
 
-  // Save avatar to database and localStorage when it changes
-  const setAvatar = async (newAvatar: Avatar) => {
+  // Save avatar to database and localStorage when it changes.
+  // Pass { localOnly: true } to skip the DB write (e.g. when the caller
+  // already persisted via updateUserProfile in a single round trip).
+  const setAvatar = async (newAvatar: Avatar, options?: { localOnly?: boolean }) => {
     setAvatarState(newAvatar)
     localStorage.setItem('user-avatar', JSON.stringify(newAvatar))
     
-    // Save to database if user is logged in
-    if (user?.id) {
+    // Save to database if user is logged in and not local-only
+    if (user?.id && !options?.localOnly) {
       try {
         const userEmail = user.emailAddresses[0]?.emailAddress || ''
         await updateAvatarInDB(user.id, newAvatar, userEmail)

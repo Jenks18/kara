@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server'
 import { auth, currentUser } from '@clerk/nextjs/server'
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+import { createServerClient } from '@/lib/supabase/server-client'
 
 // Animal avatars for random selection
 const ANIMAL_AVATARS = [
@@ -28,8 +25,8 @@ export async function POST() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     
-    // Use service role key for server-side operations
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    // Clerk-authenticated Supabase client — RLS enforced, no service role bypass
+    const supabase = await createServerClient()
     
     // Check if profile exists
     const { data: existingProfile, error: fetchError } = await supabase

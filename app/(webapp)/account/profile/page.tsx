@@ -176,20 +176,22 @@ export default function ProfilePage() {
 
       const { url } = await response.json()
 
-      // Update user profile with image URL
+      // Single DB round trip: persist image URL + emoji/color together
       const { updateUserProfile } = await import('@/lib/api/user-profiles')
       await updateUserProfile(user.id, {
         avatar_image_url: url,
+        avatar_emoji: '📷',
+        avatar_color: 'from-gray-400 to-gray-500',
         user_email: user.emailAddresses[0]?.emailAddress || '',
       })
 
-      // Update avatar context with the image URL
+      // Update local state only — DB already has the data (skip second upsert)
       setAvatar({
         emoji: '📷',
         color: 'from-gray-400 to-gray-500',
         label: 'Custom',
         imageUrl: url,
-      })
+      }, { localOnly: true })
 
       setShowAvatarPicker(false)
       showToast('Profile picture updated successfully!', 'success')

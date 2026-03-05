@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+import { createServerClient } from '@/lib/supabase/server-client'
 
 const BUCKET = 'profile-pictures'
 
@@ -22,24 +19,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
     }
 
-    // Create admin client for storage access (bypasses RLS)
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    // Clerk-authenticated Supabase client — RLS enforced, no service role bypass
+    const supabase = await createServerClient()
 
-    // Ensure the bucket exists (auto-create if missing)
-    const { data: buckets } = await supabase.storage.listBuckets()
-    if (!buckets?.find(b => b.id === BUCKET)) {
-      const { error: createErr } = await supabase.storage.createBucket(BUCKET, {
-        public: true,
-        fileSizeLimit: 5 * 1024 * 1024, // 5MB
-        allowedMimeTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif'],
-      })
-      if (createErr) {
-        console.error(`Failed to create ${BUCKET} bucket:`, createErr.message)
-        // Continue anyway — bucket might have been created by another request
-      }
-    }
-
-    // Create unique filename
+    // Create unique filename scoped to the user's folder
+    // Storage RLS policy enforces: folder must match auth.jwt()->>'sub'
     const fileExt = file.name.split('.').pop() || 'jpg'
     const fileName = `${userId}/${Date.now()}.${fileExt}`
 
@@ -47,7 +31,7 @@ export async function POST(request: NextRequest) {
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
 
-    // Upload to Supabase Storage
+    // Upload to Supabase Storage (RLS checks folder ownership)
     const { error: uploadError } = await supabase.storage
       .from(BUCKET)
       .upload(fileName, buffer, {
