@@ -1,5 +1,7 @@
 package com.mafutapass.app.viewmodel
 
+import android.content.Context
+import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -7,16 +9,22 @@ import com.mafutapass.app.data.ApiService
 import com.mafutapass.app.data.Workspace
 import com.mafutapass.app.data.WorkspaceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.ByteArrayOutputStream
 import javax.inject.Inject
 
 @HiltViewModel
 class WorkspaceOverviewViewModel @Inject constructor(
     private val apiService: ApiService,
-    private val workspaceRepository: WorkspaceRepository
+    private val workspaceRepository: WorkspaceRepository,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
     private val TAG = "WorkspaceOverviewVM"
 
@@ -50,6 +58,35 @@ class WorkspaceOverviewViewModel @Inject constructor(
                 Log.d(TAG, "✅ Updated $field")
             } catch (e: Exception) {
                 Log.e(TAG, "❌ Failed to update $field: ${e.message}", e)
+            }
+        }
+    }
+
+    /**
+     * Upload an image from [uri] to the CDN, then persist the returned HTTPS URL as
+     * the workspace avatar. Falls back gracefully on any error.
+     */
+    fun uploadWorkspaceAvatar(workspaceId: String, uri: Uri, onSuccess: () -> Unit = {}, onError: (String) -> Unit = {}) {
+        viewModelScope.launch {
+            try {
+                val inputStream = context.contentResolver.openInputStream(uri)
+                val buffer = ByteArrayOutputStream()
+                inputStream?.use { it.copyTo(buffer) }
+                val bytes = buffer.toByteArray()
+                if (bytes.isEmpty()) { onError("Could not read image"); return@launch }
+                val requestBody = bytes.toRequestBody("image/jpeg".toMediaType())
+                val filePart = MultipartBody.Part.createFormData("file", "workspace_avatar.jpg", requestBody)
+                // Single call: server uploads to storage + patches the workspace row atomically
+                val uploadResponse = apiService.uploadWorkspaceAvatar(workspaceId, filePart)
+                // Re-fetch workspace to get the updated avatar URL
+                val response = apiService.getWorkspace(workspaceId)
+                _workspace.value = response.workspace
+                workspaceRepository.refresh()   // propagate new avatar to WorkspacePicker + Confirm
+                Log.d(TAG, "✅ Workspace avatar updated: ${uploadResponse.url}")
+                onSuccess()
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Failed to upload workspace avatar: ${e.message}", e)
+                onError(e.message ?: "Upload failed")
             }
         }
     }

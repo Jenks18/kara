@@ -5,6 +5,8 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
@@ -26,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.mafutapass.app.ui.components.BottomNavBar
 import com.mafutapass.app.data.AvatarManager
@@ -89,34 +92,67 @@ fun MafutaPassApp(themeViewModel: ThemeViewModel, avatarManager: AvatarManager) 
             val navController = rememberNavController()
             var profileRefreshKey by remember { mutableIntStateOf(0) }
             var accountRefreshKey by remember { mutableIntStateOf(0) }
+            // Navbar visibility is driven purely by the current nav route — no callbacks needed.
+            // When the user is on the Create (scan) screen the navbar and its padding must not exist.
+            val navBackStackEntry by navController.currentBackStackEntryAsState()
+            val onScanScreen = navBackStackEntry?.destination?.route == Screen.Create.route
             Scaffold(
-                bottomBar = { BottomNavBar(navController, avatarManager) },
+                bottomBar = { if (!onScanScreen) BottomNavBar(navController, avatarManager) },
                 contentWindowInsets = WindowInsets(0, 0, 0, 0)
             ) { paddingValues ->
                 NavHost(navController = navController, startDestination = Screen.Home.route,
-                    modifier = Modifier.padding(paddingValues)) {
+                    modifier = if (onScanScreen) Modifier.fillMaxSize() else Modifier.padding(paddingValues)) {
 
                     composable(Screen.Home.route) {
                         HomeScreen(
                             onViewAllExpenses = { navController.navigate(Screen.Reports.route) },
-                            onViewAllReports = { navController.navigate("${Screen.Reports.route}?initialTab=1") }
+                            onViewAllReports = { navController.navigate("${Screen.Reports.route}?initialTab=1") },
+                            onExpenseClick = { id -> navController.navigate("expenses/$id") },
+                            onReportClick = { id -> navController.navigate("reports/$id") }
                         )
                     }
-                    composable("${Screen.Reports.route}?initialTab={initialTab}",
-                        arguments = listOf(androidx.navigation.navArgument("initialTab") {
-                            type = androidx.navigation.NavType.IntType; defaultValue = 0
-                        })
+                    composable("${Screen.Reports.route}?initialTab={initialTab}&highlight={highlight}",
+                        arguments = listOf(
+                            androidx.navigation.navArgument("initialTab") {
+                                type = androidx.navigation.NavType.IntType; defaultValue = 0
+                            },
+                            androidx.navigation.navArgument("highlight") {
+                                type = androidx.navigation.NavType.StringType; nullable = true; defaultValue = null
+                            }
+                        )
                     ) { backStackEntry ->
                         val initialTab = backStackEntry.arguments?.getInt("initialTab") ?: 0
+                        val highlight = backStackEntry.arguments?.getString("highlight")
                         ReportsScreen(
                             initialTab = initialTab,
+                            highlightReportId = highlight,
                             onNavigateToExpenseDetail = { id -> navController.navigate("expenses/$id") },
                             onNavigateToReportDetail = { id -> navController.navigate("reports/$id") }
                         )
                     }
-                    composable(Screen.Create.route) {
+                    composable(
+                        Screen.Create.route,
+                        // Zero-duration exit so the Create screen vanishes instantly — eliminates
+                        // the transition window where the navbar is already visible but the scan
+                        // screen is still drawing its outgoing animation.
+                        exitTransition = { fadeOut(tween(durationMillis = 0)) },
+                        popExitTransition = { fadeOut(tween(durationMillis = 0)) }
+                    ) {
                         AddReceiptScreen(
-                            onNavigateToReport = { reportId -> navController.navigate("reports/$reportId") }
+                            onDone = { reportId ->
+                                if (reportId != null) {
+                                    // Upload completed — go to Reports with the new expense highlighted.
+                                    navController.navigate("${Screen.Reports.route}?initialTab=0&highlight=$reportId") {
+                                        popUpTo(Screen.Create.route) { inclusive = true }
+                                        launchSingleTop = true
+                                    }
+                                } else {
+                                    // User cancelled — return to wherever they came from (Home, Reports, etc.).
+                                    // Using popBackStack preserves the prior screen's state and avoids
+                                    // the two-part render caused by navigating to a fresh Reports instance.
+                                    navController.popBackStack()
+                                }
+                            }
                         )
                     }
                     composable(Screen.Workspaces.route) {

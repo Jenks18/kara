@@ -33,6 +33,13 @@ interface ApiService {
 
     @PATCH("api/mobile/workspaces/{id}")
     suspend fun updateWorkspace(@Path("id") id: String, @Body body: Map<String, String>): WorkspaceDetailResponse
+
+    @Multipart
+    @POST("api/mobile/workspaces/{id}/upload-avatar")
+    suspend fun uploadWorkspaceAvatar(
+        @Path("id") id: String,
+        @Part file: okhttp3.MultipartBody.Part
+    ): UploadAvatarResponse
     
     // ============= Expense Reports =============
     

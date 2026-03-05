@@ -2,7 +2,11 @@
 package com.mafutapass.app.ui.screens
 
 import android.widget.Toast
-import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -15,6 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Warning
@@ -46,6 +51,7 @@ fun ReportsScreen(
     onNavigateToExpenseDetail: (String) -> Unit = {},
     onNavigateToReportDetail: (String) -> Unit = {},
     initialTab: Int = 0,
+    highlightReportId: String? = null,
     viewModel: ReportsViewModel = hiltViewModel()
 ) {
     var selectedTab by remember { mutableStateOf(initialTab) }
@@ -55,7 +61,17 @@ fun ReportsScreen(
     val reports by viewModel.expenseReports.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
-    // Auto-refresh when this tab re-enters composition (e.g. after scanning)
+    // Track which expense to highlight (matched by reportId or, if null, the most recently added)
+    var activeHighlightId by remember { mutableStateOf(highlightReportId) }
+    LaunchedEffect(highlightReportId) {
+        if (highlightReportId != null) {
+            activeHighlightId = highlightReportId
+            kotlinx.coroutines.delay(3000)
+            activeHighlightId = null
+        }
+    }
+
+    // Auto-refresh when this screen re-enters composition (e.g. after scanning)
     LaunchedEffect(Unit) {
         viewModel.refresh()
     }
@@ -162,7 +178,7 @@ fun ReportsScreen(
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
         } else if (selectedTab == 0) {
-            ExpensesTab(expenses, onNavigateToExpenseDetail)
+            ExpensesTab(expenses, onNavigateToExpenseDetail, activeHighlightId)
         } else {
             ReportsTab(reports, onNavigateToReportDetail)
         }
@@ -170,7 +186,7 @@ fun ReportsScreen(
 }
 
 @Composable
-fun ExpensesTab(expenses: List<ExpenseItem>, onNavigateToDetail: (String) -> Unit = {}) {
+fun ExpensesTab(expenses: List<ExpenseItem>, onNavigateToDetail: (String) -> Unit = {}, highlightReportId: String? = null) {
     if (expenses.isEmpty()) {
         EmptyState(
             message = "No expenses yet",
@@ -182,7 +198,8 @@ fun ExpensesTab(expenses: List<ExpenseItem>, onNavigateToDetail: (String) -> Uni
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(expenses) { expense ->
-                ExpenseCard(expense, onNavigateToDetail)
+                val isNew = highlightReportId != null && expense.reportId == highlightReportId
+                ExpenseCard(expense, onNavigateToDetail, isNew = isNew)
             }
         }
     }
@@ -208,230 +225,205 @@ fun ReportsTab(reports: List<ExpenseReport>, onNavigateToDetail: (String) -> Uni
 }
 
 @Composable
-fun ExpenseCard(expense: ExpenseItem, onNavigateToDetail: (String) -> Unit = {}) {
+fun ExpenseCard(expense: ExpenseItem, onNavigateToDetail: (String) -> Unit = {}, isNew: Boolean = false) {
     val displayDate = DateUtils.formatMedium(expense.transactionDate ?: expense.createdAt)
 
     val needsReview = expense.processingStatus == "error" || expense.processingStatus == "needs_review"
     val isScanning = expense.processingStatus == "scanning"
 
-    // Accent colour: blue (default), orange (needs review), gray (scanning)
+    // Halo: pulse border alpha between 0.3 and 1.0 when isNew, invisible otherwise.
+    // rememberInfiniteTransition is always created (composables must not be called conditionally)
+    // but only its value is used when isNew = true.
+    val infiniteTransition = rememberInfiniteTransition(label = "halo")
+    val haloPulse by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(600),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "haloAlpha"
+    )
+    val haloAlpha = if (isNew) haloPulse else 0f
+    val haloColor = MaterialTheme.colorScheme.primary.copy(alpha = haloAlpha)
+
     val accentColor = when {
         isScanning -> MaterialTheme.colorScheme.onSurfaceVariant
-        needsReview -> Color(0xFFE6A817) // amber
+        needsReview -> Color(0xFFE6A817)
         else -> MaterialTheme.colorScheme.primary
+    }
+
+    val scanningBorderColor = Color(0xFF7B5B27)
+    val borderModifier = when {
+        isNew     -> Modifier.border(2.dp, haloColor, RoundedCornerShape(12.dp))
+        isScanning -> Modifier.border(1.5.dp, scanningBorderColor, RoundedCornerShape(12.dp))
+        else       -> Modifier
     }
 
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surface,
+        color = if (isScanning) Color(0xFF2A1F0C) else MaterialTheme.colorScheme.surface,
         shadowElevation = 2.dp,
         modifier = Modifier
             .fillMaxWidth()
+            .then(borderModifier)
             .clickable { onNavigateToDetail(expense.id) }
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
-            // ── Main row: receipt thumbnail · merchant+meta · amount+KRA ──────
+            // ── Top row: workspace name + View chip ───────────────────────────
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (expense.workspaceName.isNotBlank()) {
+                    // Workspace avatar (emoji or initials)
+                    Box(
+                        modifier = Modifier
+                            .size(20.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primaryContainer),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(expense.workspaceName.firstOrNull()?.uppercaseChar()?.toString() ?: "W", fontSize = 10.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = expense.workspaceName,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                } else {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+                // "View" chip
+                Surface(
+                    shape = RoundedCornerShape(50),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.2f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)),
+                    onClick = { onNavigateToDetail(expense.id) }
+                ) {
+                    Text(
+                        "View",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // ── Main row: thumbnail · merchant+meta · amount ──────────────────
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.Top
             ) {
-                // Receipt thumbnail or category icon
+                // Receipt thumbnail or placeholder
                 val imageUrl = expense.imageUrl
                 if (!imageUrl.isNullOrBlank() && imageUrl.startsWith("http")) {
                     AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(imageUrl)
-                            .crossfade(true)
-                            .build(),
+                        model = ImageRequest.Builder(LocalContext.current).data(imageUrl).crossfade(true).build(),
                         contentDescription = "Receipt",
                         contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.primaryContainer)
+                        modifier = Modifier.size(52.dp).clip(RoundedCornerShape(8.dp)).background(Color.Black)
                     )
                 } else {
                     Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.primaryContainer),
+                        modifier = Modifier.size(52.dp).clip(RoundedCornerShape(8.dp)).background(Color.Black),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Filled.Receipt,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(18.dp)
-                        )
+                        if (!isScanning) {
+                            Icon(Icons.Filled.Receipt, null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f), modifier = Modifier.size(22.dp))
+                        }
                     }
                 }
 
                 Spacer(modifier = Modifier.width(12.dp))
 
-                // Merchant + category/date
+                // Merchant + meta
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = expense.cleanMerchantName() ?: "Unknown Merchant",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = accentColor,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = expense.category.replaceFirstChar { it.uppercase() },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    // Date row
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         if (displayDate.isNotEmpty()) {
+                            Text(displayDate, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text("·", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(
-                                text = displayDate,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
                         }
+                        Text("Cash", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Spacer(modifier = Modifier.height(2.dp))
+                    // Merchant name
+                    if (isScanning) {
+                        Text("Scanning...", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
+                    } else {
+                        Text(
+                            expense.cleanMerchantName() ?: "Unknown Merchant",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = accentColor,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
 
-                // Amount + KRA pill
-                Column(horizontalAlignment = Alignment.End) {
-                    if (isScanning) {
-                        Text(
-                            text = "Scanning...",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                        )
-                    } else {
-                        Text(
-                            text = CurrencyFormatter.formatSimple(expense.amount),
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = accentColor
-                        )
-                    }
-
-                    // KRA pill
-                    if (expense.kraVerified == true) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = MaterialTheme.colorScheme.primaryContainer
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(3.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.CheckCircle,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(10.dp)
-                                )
-                                Text(
-                                    text = "KRA",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontSize = 10.sp
-                                )
+                // Amount
+                if (isScanning) {
+                    Text("Scanning...", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
+                } else {
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(CurrencyFormatter.formatSimple(expense.amount), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = accentColor)
+                        if (expense.kraVerified == true) {
+                            Spacer(modifier = Modifier.height(3.dp))
+                            Surface(shape = RoundedCornerShape(6.dp), color = MaterialTheme.colorScheme.primaryContainer) {
+                                Row(Modifier.padding(horizontal = 6.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                                    Icon(Icons.Filled.CheckCircle, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(10.dp))
+                                    Text("KRA", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary, fontSize = 10.sp)
+                                }
                             }
                         }
                     }
                 }
             }
 
-            // ── Review warning banner ────────────────────────────
+            // ── Category chip ─────────────────────────────────────────────────
+            if (!isScanning && expense.category.isNotBlank() && expense.category != "Uncategorized") {
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Filled.Folder, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(12.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(expense.category.replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+
+            // ── Error / needs-review message ─────────────────────────────────
             if (needsReview) {
-                Spacer(modifier = Modifier.height(10.dp))
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = Color(0xFFE6A817).copy(alpha = 0.08f),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .border(1.dp, Color(0xFFE6A817).copy(alpha = 0.25f), RoundedCornerShape(8.dp))
-                ) {
-                    Row(
-                        modifier = Modifier.padding(8.dp),
-                        verticalAlignment = Alignment.Top,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Warning,
-                            contentDescription = null,
-                            tint = Color(0xFFE6A817),
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Column {
-                            Text(
-                                text = "Please Review",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFFE6A817)
-                            )
-                            Text(
-                                text = "Some fields may need correction.",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Color(0xFFE6A817).copy(alpha = 0.8f),
-                                fontSize = 11.sp
-                            )
-                        }
-                    }
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Box(modifier = Modifier.size(8.dp).padding(top = 4.dp).clip(CircleShape).background(MaterialTheme.colorScheme.error))
+                    Text(
+                        text = buildString {
+                            if (expense.cleanMerchantName() == null) append("Missing merchant. ")
+                            append("Receipt scanning failed. Enter details manually.")
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error.copy(alpha = 0.9f),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
 
-            // ── Scanning indicator ───────────────────────────────
-            if (isScanning) {
-                val scanGreen = Color(0xFF22C55E)
-                Spacer(modifier = Modifier.height(10.dp))
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = scanGreen.copy(alpha = 0.08f)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .clip(CircleShape)
-                                .background(scanGreen)
-                        )
-                        Text(
-                            text = "Scanning receipt...",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = scanGreen,
-                            fontSize = 11.sp
-                        )
-                    }
-                }
-            }
-
-            // ── Notes preview ────────────────────────────────────
-            if (!expense.description.isNullOrBlank() && !expense.description.startsWith("AI confidence")) {
+            // ── Description preview ───────────────────────────────────────────
+            if (!isScanning && !expense.description.isNullOrBlank() && !expense.description.startsWith("AI confidence")) {
                 Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = "\uD83D\uDCDD ${expense.description}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Text("\uD83D\uDCDD ${expense.description}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
     }
 }
-
 @Composable
 fun ReportCard(report: ExpenseReport, onNavigateToDetail: (String) -> Unit = {}) {
     val context = LocalContext.current

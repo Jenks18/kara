@@ -20,7 +20,9 @@ data class ExpenseItem(
     val workspaceName: String = "",
     @SerializedName("processing_status")
     val processingStatus: String = "processed",
-    val description: String? = null
+    val description: String? = null,
+    @SerializedName("report_id")
+    val reportId: String? = null
 ) {
     /** Filter garbage merchant names returned by AI extraction */
     fun cleanMerchantName(): String? {

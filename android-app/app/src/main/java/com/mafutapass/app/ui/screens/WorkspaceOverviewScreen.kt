@@ -71,9 +71,12 @@ fun WorkspaceOverviewScreen(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
         uri?.let {
-            // For now, update avatar to the URI string — full upload would need multipart API
-            viewModel.updateField(workspaceId, "avatar", it.toString())
-            Toast.makeText(context, "Avatar updated", Toast.LENGTH_SHORT).show()
+            viewModel.uploadWorkspaceAvatar(
+                workspaceId = workspaceId,
+                uri = it,
+                onSuccess = { Toast.makeText(context, "Avatar updated", Toast.LENGTH_SHORT).show() },
+                onError   = { msg -> Toast.makeText(context, "Upload failed: $msg", Toast.LENGTH_SHORT).show() }
+            )
         }
     }
 
