@@ -93,6 +93,7 @@ export async function POST() {
             currency: 'KES',
             currency_symbol: 'KSh',
             is_active: true,
+            is_default: true,
           })
 
         if (wsError) {

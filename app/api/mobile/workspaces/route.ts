@@ -10,6 +10,7 @@ export async function OPTIONS() {
  * GET /api/mobile/workspaces
  * List workspaces for the authenticated mobile user.
  * RLS auto-filters by user_id — no manual filtering needed.
+ * Excludes the default workspace unless ?include_default=true.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -20,6 +21,8 @@ export async function GET(request: NextRequest) {
         { status: 401, headers: corsHeaders }
       );
     }
+
+    const includeDefault = request.nextUrl.searchParams.get('include_default') === 'true';
 
     const { supabase } = mobileClient;
     const { data, error } = await supabase
@@ -36,7 +39,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ workspaces: data || [] }, { headers: corsHeaders });
+    const workspaces = data || [];
+    const filtered = includeDefault
+      ? workspaces
+      : workspaces.filter((ws: any) => !ws.is_default);
+
+    return NextResponse.json({ workspaces: filtered }, { headers: corsHeaders });
   } catch (error: any) {
     console.error('Error in mobile workspaces:', error instanceof Error ? error.message : String(error));
     return NextResponse.json(

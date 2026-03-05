@@ -158,10 +158,12 @@ export async function POST(request: NextRequest) {
           let resolvedWorkspaceName = 'Personal';
           
           if (!resolvedWorkspaceId) {
+            // Prefer the default workspace, fall back to oldest active
             const { data: userWorkspace } = await supabase
               .from('workspaces')
               .select('id, name')
               .eq('is_active', true)
+              .order('is_default', { ascending: false })
               .order('created_at', { ascending: true })
               .limit(1)
               .maybeSingle();
@@ -183,6 +185,7 @@ export async function POST(request: NextRequest) {
                   currency: 'KES',
                   currency_symbol: 'KSh',
                   is_active: true,
+                  is_default: true,
                 })
                 .select('id, name')
                 .maybeSingle();

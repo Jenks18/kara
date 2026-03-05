@@ -3,7 +3,9 @@ import { auth } from '@clerk/nextjs/server'
 import { getWorkspaces, createWorkspace } from '@/lib/api/workspaces'
 
 // GET /api/workspaces - Get all workspaces for the current user
-export async function GET() {
+// By default, excludes the default (personal) workspace from the list.
+// Pass ?include_default=true to include it.
+export async function GET(request: NextRequest) {
   try {
     const { userId } = await auth()
     
@@ -11,8 +13,19 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const includeDefault = request.nextUrl.searchParams.get('include_default') === 'true'
+
     const workspaces = await getWorkspaces(userId)
-    return NextResponse.json({ workspaces })
+
+    // Filter out the default workspace unless explicitly requested.
+    // This lets the workspace management page show an "empty" state
+    // so users learn to create workspaces, while the default workspace
+    // still silently receives receipts/expenses.
+    const filtered = includeDefault
+      ? workspaces
+      : workspaces.filter(ws => !ws.is_default)
+
+    return NextResponse.json({ workspaces: filtered })
   } catch (error: any) {
     console.error('Error fetching workspaces:', error instanceof Error ? error.message : String(error))
     

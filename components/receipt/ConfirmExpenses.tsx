@@ -51,11 +51,11 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
     reimbursable: false,
   })
 
-  // Fetch workspaces on mount
+  // Fetch workspaces on mount (include default so receipt always has a workspace)
   useEffect(() => {
     const fetchWorkspaces = async () => {
       try {
-        const res = await fetch('/api/workspaces')
+        const res = await fetch('/api/workspaces?include_default=true')
         if (res.ok) {
           const data = await res.json()
           const ws = data.workspaces || data || []
@@ -299,11 +299,11 @@ export default function ConfirmExpenses({ images, onConfirm, onCancel }: Confirm
                     </div>
                     <div className="text-left">
                       <div className="text-gray-900 font-medium">
-                        {expenseData.workspaceName || (workspaces.length === 0 ? 'Personal (auto-created)' : 'Select workspace')}
+                        {expenseData.workspaceName || (workspaces.length === 0 ? 'Default workspace' : 'Select workspace')}
                       </div>
                       <div className="text-sm text-gray-600">
                         {workspaces.length === 0
-                          ? 'A workspace will be created automatically'
+                          ? 'Expenses will be saved to your account'
                           : 'Submit expenses to this workspace'}
                       </div>
                     </div>

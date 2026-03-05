@@ -68,6 +68,21 @@ export async function DELETE(
     }
 
     const { supabase } = mobileClient;
+
+    // Check if this is the default workspace — block deletion
+    const { data: ws } = await supabase
+      .from('workspaces')
+      .select('is_default')
+      .eq('id', id)
+      .single();
+
+    if (ws?.is_default) {
+      return NextResponse.json(
+        { error: 'Cannot delete the default workspace' },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
     const { error } = await supabase
       .from('workspaces')
       .update({ is_active: false, updated_at: new Date().toISOString() })

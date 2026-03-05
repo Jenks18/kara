@@ -96,7 +96,9 @@ export async function DELETE(
     const result = await deleteWorkspace(id, userId)
 
     if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 500 })
+      // Return 400 for business rule violations (e.g. default workspace)
+      const status = result.error?.includes('default') ? 400 : 500
+      return NextResponse.json({ error: result.error }, { status })
     }
 
     return NextResponse.json({ success: true })

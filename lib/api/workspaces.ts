@@ -13,6 +13,7 @@ export interface Workspace {
   address?: string
   plan_type?: string
   is_active: boolean
+  is_default?: boolean
 }
 
 export interface CreateWorkspaceInput {
@@ -21,6 +22,7 @@ export interface CreateWorkspaceInput {
   avatar?: string
   currency?: string
   currencySymbol?: string
+  isDefault?: boolean
 }
 
 /**
@@ -42,6 +44,7 @@ export async function createWorkspace(
         avatar: data.avatar || data.name.charAt(0).toUpperCase(),
         currency: data.currency || 'USD',
         currency_symbol: data.currencySymbol || '$',
+        ...(data.isDefault ? { is_default: true } : {}),
       })
       .select()
       .single()
@@ -62,6 +65,22 @@ export async function createWorkspace(
         
         if (workspaces && workspaces.length > 0) {
           return { success: true, workspace: workspaces[0] }
+        }
+      }
+      
+      // Unique constraint violation on is_default — another path already
+      // created the default workspace. Fetch and return the existing one.
+      if (data.isDefault && (error.code === '23505' || error.message?.includes('idx_workspaces_one_default_per_user'))) {
+        const { data: existing } = await supabase
+          .from('workspaces')
+          .select('*')
+          .eq('user_id', data.userId)
+          .eq('is_default', true)
+          .eq('is_active', true)
+          .limit(1)
+        
+        if (existing && existing.length > 0) {
+          return { success: true, workspace: existing[0] }
         }
       }
       
@@ -94,7 +113,7 @@ export async function getWorkspaces(
       return []
     }
 
-    // Safety net: If user has zero workspaces, auto-create a "Personal" one.
+    // Safety net: If user has zero workspaces, auto-create a default "Personal" one.
     // This handles edge cases where the init trigger failed or migration
     // wasn't applied, ensuring users always have at least one workspace.
     if (!data || data.length === 0) {
@@ -106,11 +125,22 @@ export async function getWorkspaces(
           avatar: '💼',
           currency: 'KES',
           currencySymbol: 'KSh',
+          isDefault: true,
         })
         if (created.workspace) {
           return [created.workspace as Workspace]
         }
-      } catch (autoCreateErr) {
+      } catch (autoCreateErr: any) {
+        // Unique constraint violation means another code path already created
+        // the default workspace (race condition). Re-fetch instead of failing.
+        if (autoCreateErr?.code === '23505' || autoCreateErr?.message?.includes('unique')) {
+          const { data: retryData } = await supabase
+            .from('workspaces')
+            .select('*')
+            .eq('is_active', true)
+            .order('created_at', { ascending: false })
+          if (retryData && retryData.length > 0) return retryData
+        }
         console.error('Failed to auto-create workspace:', autoCreateErr)
       }
       return []
@@ -183,7 +213,8 @@ export async function updateWorkspace(
 }
 
 /**
- * Delete a workspace — soft delete (RLS-enforced)
+ * Delete a workspace — soft delete (RLS-enforced).
+ * Default workspaces cannot be deleted.
  */
 export async function deleteWorkspace(
   workspaceId: string,
@@ -191,6 +222,18 @@ export async function deleteWorkspace(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const supabase = await createServerClient()
+
+    // Check if this is the default workspace — block deletion
+    const { data: ws } = await supabase
+      .from('workspaces')
+      .select('is_default')
+      .eq('id', workspaceId)
+      .single()
+
+    if (ws?.is_default) {
+      return { success: false, error: 'Cannot delete the default workspace' }
+    }
+
     const { error } = await supabase
       .from('workspaces')
       .update({ is_active: false })
@@ -205,5 +248,40 @@ export async function deleteWorkspace(
   } catch (error: any) {
     console.error('Error deleting workspace:', error)
     return { success: false, error: error.message }
+  }
+}
+
+/**
+ * Get the user's default workspace (for receipt uploads, etc.).
+ * Always returns one — auto-creates if missing.
+ */
+export async function getDefaultWorkspace(
+  userId: string
+): Promise<Workspace | null> {
+  try {
+    const supabase = await createServerClient()
+    const { data } = await supabase
+      .from('workspaces')
+      .select('*')
+      .eq('is_active', true)
+      .eq('is_default', true)
+      .limit(1)
+      .maybeSingle()
+
+    if (data) return data
+
+    // Fallback: oldest active workspace
+    const { data: oldest } = await supabase
+      .from('workspaces')
+      .select('*')
+      .eq('is_active', true)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle()
+
+    return oldest || null
+  } catch (error) {
+    console.error('Error getting default workspace:', error)
+    return null
   }
 }
