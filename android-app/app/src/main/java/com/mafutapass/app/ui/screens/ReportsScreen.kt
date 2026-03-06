@@ -532,27 +532,20 @@ fun ReportCard(report: ExpenseReport, onNavigateToDetail: (String) -> Unit = {})
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            // ── Title row: report name + item count ··· amount ────────────────
+            // ── Title row: report name ··· amount ────────────────────────
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = report.title,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = "${report.itemsCount} item${if (report.itemsCount != 1) "s" else ""}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                Text(
+                    text = report.title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
 
                 // Amount
                 if (report.totalAmount > 0) {
@@ -617,6 +610,14 @@ fun ReportCard(report: ExpenseReport, onNavigateToDetail: (String) -> Unit = {})
                     Icon(Icons.Filled.Folder, null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f), modifier = Modifier.size(22.dp))
                 }
             }
+
+            // ── Item count (below filmstrip) ──────────────────────────────────
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "${report.itemsCount} item${if (report.itemsCount != 1) "s" else ""}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
             // ── Status badge row ──────────────────────────────────────────────
             if (report.status != "draft") {

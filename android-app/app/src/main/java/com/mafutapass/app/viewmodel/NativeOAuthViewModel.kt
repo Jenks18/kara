@@ -6,10 +6,10 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialException
-import androidx.credentials.exceptions.NoCredentialException
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -89,7 +89,15 @@ class NativeOAuthViewModel @Inject constructor(
 
     /**
      * Sign in with Google using native Android Credential Manager.
-     * Shows native Google account picker - NO browser.
+     * NO browser, NO deep links.
+     *
+     * Adds two credential options to a SINGLE request:
+     *   1. GetGoogleIdOption — one-tap device account picker (best UX)
+     *   2. GetSignInWithGoogleOption — Google's own sign-in sheet (always works)
+     *
+     * The Credential Manager merges both into one UI. When the credential
+     * store has accounts, you get the fast one-tap picker. When it doesn't
+     * (e.g. right after sign-out), Google's sign-in sheet handles it.
      */
     fun signInWithGoogle(context: Context) {
         viewModelScope.launch {
@@ -97,59 +105,44 @@ class NativeOAuthViewModel @Inject constructor(
                 Log.d(TAG, "🚀 Starting NATIVE Google Sign-In")
                 _oauthState.value = NativeOAuthState.Loading
 
-                // Configure Google ID option
+                // Primary: one-tap device account picker (pulls Google accounts on device)
                 val googleIdOption = GetGoogleIdOption.Builder()
                     .setFilterByAuthorizedAccounts(false)
                     .setServerClientId(GOOGLE_CLIENT_ID)
-                    .setAutoSelectEnabled(true)
                     .build()
 
-                // Build credential request
+                // Secondary: Google's own sign-in sheet (always available)
+                val signInOption = GetSignInWithGoogleOption.Builder(GOOGLE_CLIENT_ID)
+                    .build()
+
                 val request = GetCredentialRequest.Builder()
                     .addCredentialOption(googleIdOption)
+                    .addCredentialOption(signInOption)
                     .build()
 
                 Log.d(TAG, "📱 Showing native Google account picker...")
 
-                // Show native Google account picker
                 val result = credentialManager.getCredential(
                     context = context,
                     request = request
                 )
 
-                // Extract Google ID token
-                val credential = GoogleIdTokenCredential.createFrom(result.credential.data)
-                val idToken = credential.idToken
-
+                val idToken = GoogleIdTokenCredential.createFrom(result.credential.data).idToken
                 Log.d(TAG, "✅ Got Google ID token")
 
                 // Send to backend for verification and Clerk session creation
                 authenticateWithBackend(idToken)
 
-            } catch (e: NoCredentialException) {
-                Log.e(TAG, "❌ No credential available: ${e.message}", e)
-                Log.e(TAG, "💡 This usually means:")
-                Log.e(TAG, "   1. No Google account is signed in on this device")
-                Log.e(TAG, "   2. Google Play Services needs updating")
-                Log.e(TAG, "   3. SHA-1 fingerprint not registered in Google Cloud Console")
-                _oauthState.value = NativeOAuthState.Error(
-                    "No Google account available. Please ensure you are signed into a Google account on this device and Google Play Services is up to date."
-                )
             } catch (e: GetCredentialCancellationException) {
                 Log.d(TAG, "ℹ️ User cancelled Google Sign-In")
                 _oauthState.value = NativeOAuthState.Idle
             } catch (e: GetCredentialException) {
                 Log.e(TAG, "❌ Credential error (${e.type}): ${e.message}", e)
-                Log.e(TAG, "💡 Exception type: ${e.javaClass.simpleName}")
-                Log.e(TAG, "💡 Error type string: ${e.type}")
                 val userMessage = when {
-                    e.message?.contains("no credentials available", ignoreCase = true) == true ||
-                    e.message?.contains("credentials lacking", ignoreCase = true) == true ->
-                        "No Google credentials found. Please sign into a Google account in your device Settings > Accounts."
                     e.message?.contains("cancelled", ignoreCase = true) == true ||
                     e.message?.contains("canceled", ignoreCase = true) == true ->
                         "Sign-in was cancelled."
-                    else -> "Google Sign-In failed: ${e.message}"
+                    else -> "Google Sign-In failed. Please try again."
                 }
                 _oauthState.value = NativeOAuthState.Error(userMessage)
             } catch (e: Exception) {

@@ -63,7 +63,6 @@ fun WorkspaceOverviewScreen(
     var showEditAddressDialog by remember { mutableStateOf(false) }
     var showAvatarMenu by remember { mutableStateOf(false) }
 
-    val shareUrl = "https://web.kachalabs.com/workspaces/$workspaceId/join"
     var dynamicShareUrl by remember { mutableStateOf("") }
 
     // Image picker for workspace avatar
@@ -326,16 +325,21 @@ fun WorkspaceOverviewScreen(
     if (showInviteDialog) {
         LaunchedEffect(Unit) {
             val inviteUrl = viewModel.createInviteLink(workspaceId)
-            dynamicShareUrl = inviteUrl
-            val inviteMessage = "Hey! Join me on Kacha \u2014 we're using it to track expenses and manage receipts. Join my workspace \"${workspace?.name ?: ""}\" here: $inviteUrl"
-            val sendIntent = Intent().apply {
-                action = Intent.ACTION_SEND
-                putExtra(Intent.EXTRA_TEXT, inviteMessage)
-                putExtra(Intent.EXTRA_SUBJECT, "Join ${workspace?.name ?: "my workspace"} on Kacha")
-                type = "text/plain"
+            if (inviteUrl != null) {
+                dynamicShareUrl = inviteUrl
+                val wsName = workspace?.name ?: "my workspace"
+                val inviteMessage = "Hey! Join me on Kacha \u2014 we're using it to track expenses and manage receipts. Join my workspace \"$wsName\" here: $inviteUrl"
+                val sendIntent = Intent().apply {
+                    action = Intent.ACTION_SEND
+                    putExtra(Intent.EXTRA_TEXT, inviteMessage)
+                    putExtra(Intent.EXTRA_SUBJECT, "Join ${workspace?.name ?: "my workspace"} on Kacha")
+                    type = "text/plain"
+                }
+                val shareIntent = Intent.createChooser(sendIntent, "Invite to workspace")
+                context.startActivity(shareIntent)
+            } else {
+                Toast.makeText(context, "Failed to create invite link", Toast.LENGTH_SHORT).show()
             }
-            val shareIntent = Intent.createChooser(sendIntent, "Invite to workspace")
-            context.startActivity(shareIntent)
             showInviteDialog = false
         }
     }
@@ -418,10 +422,10 @@ fun WorkspaceOverviewScreen(
         // Preload real invite URL when dialog opens
         LaunchedEffect(Unit) {
             if (dynamicShareUrl.isEmpty()) {
-                dynamicShareUrl = viewModel.createInviteLink(workspaceId)
+                dynamicShareUrl = viewModel.createInviteLink(workspaceId) ?: ""
             }
         }
-        val activeShareUrl = dynamicShareUrl.ifEmpty { shareUrl }
+        val activeShareUrl = dynamicShareUrl
         Dialog(onDismissRequest = { showShareDialog = false }) {
             Surface(
                 shape = RoundedCornerShape(24.dp),

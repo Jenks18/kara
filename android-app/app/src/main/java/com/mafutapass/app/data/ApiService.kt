@@ -120,7 +120,7 @@ interface ApiService {
 
     // ============= Workspace Invites =============
 
-    @POST("api/workspaces/{id}/invites")
+    @POST("api/mobile/workspaces/{id}/invites")
     suspend fun createWorkspaceInvite(@Path("id") workspaceId: String, @Body body: Map<String, String>): WorkspaceInviteResponse
 
     // ============= Account Management =============

@@ -50,7 +50,6 @@ fun WorkspaceMembersScreen(
     var showMoreMenu by remember { mutableStateOf(false) }
     var showShareDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
-    val fallbackShareUrl = "https://web.kachalabs.com/workspaces/$workspaceId/join"
     var dynamicShareUrl by remember { mutableStateOf("") }
 
     // Fetch workspace and members
@@ -276,14 +275,18 @@ fun WorkspaceMembersScreen(
     if (showInviteDialog) {
         LaunchedEffect(Unit) {
             val inviteUrl = viewModel.createInviteLink(workspaceId)
-            dynamicShareUrl = inviteUrl
-            val inviteMessage = "Hey! Join my workspace on Kacha. Click here to join: $inviteUrl"
-            val sendIntent = Intent().apply {
-                action = Intent.ACTION_SEND
-                putExtra(Intent.EXTRA_TEXT, inviteMessage)
-                type = "text/plain"
+            if (inviteUrl != null) {
+                dynamicShareUrl = inviteUrl
+                val inviteMessage = "Hey! Join my workspace on Kacha. Click here to join: $inviteUrl"
+                val sendIntent = Intent().apply {
+                    action = Intent.ACTION_SEND
+                    putExtra(Intent.EXTRA_TEXT, inviteMessage)
+                    type = "text/plain"
+                }
+                context.startActivity(Intent.createChooser(sendIntent, "Invite to workspace"))
+            } else {
+                Toast.makeText(context, "Failed to create invite link", Toast.LENGTH_SHORT).show()
             }
-            context.startActivity(Intent.createChooser(sendIntent, "Invite to workspace"))
             showInviteDialog = false
         }
     }
@@ -293,10 +296,10 @@ fun WorkspaceMembersScreen(
         // Preload the invite URL when share dialog opens
         LaunchedEffect(Unit) {
             if (dynamicShareUrl.isEmpty()) {
-                dynamicShareUrl = viewModel.createInviteLink(workspaceId)
+                dynamicShareUrl = viewModel.createInviteLink(workspaceId) ?: ""
             }
         }
-        val shareUrl = dynamicShareUrl.ifEmpty { fallbackShareUrl }
+        val shareUrl = dynamicShareUrl
         Dialog(onDismissRequest = { showShareDialog = false }) {
             Surface(
                 shape = RoundedCornerShape(24.dp),

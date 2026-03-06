@@ -121,13 +121,13 @@ class WorkspaceOverviewViewModel @Inject constructor(
     }
 
     /** Creates a real workspace invite link via the API, with a fallback join URL. */
-    suspend fun createInviteLink(workspaceId: String): String {
+    suspend fun createInviteLink(workspaceId: String): String? {
         return try {
             val response = apiService.createWorkspaceInvite(workspaceId, mapOf("contact" to "share"))
-            response.inviteUrl ?: "https://web.kachalabs.com/workspaces/$workspaceId/join"
+            response.inviteUrl
         } catch (e: Exception) {
-            Log.e(TAG, "⚠️ Failed to create invite link, using fallback: ${e.message}")
-            "https://web.kachalabs.com/workspaces/$workspaceId/join"
+            Log.e(TAG, "\u26a0\ufe0f Failed to create invite link: ${e.message}")
+            null
         }
     }
 }

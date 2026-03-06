@@ -89,6 +89,8 @@ data class Workspace(
     @SerializedName("currency_symbol")
     val currencySymbol: String = "KSh",
     val avatar: String? = null,
+    @SerializedName("avatar_url")
+    val avatarUrl: String? = null,
     val description: String? = null,
     @SerializedName("plan_type")
     val planType: String? = null,

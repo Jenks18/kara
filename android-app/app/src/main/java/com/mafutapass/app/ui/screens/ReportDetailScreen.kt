@@ -3,6 +3,7 @@ package com.mafutapass.app.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import com.mafutapass.app.util.CurrencyFormatter
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -20,6 +21,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -218,8 +220,10 @@ private fun ReportDetailContent(
                     .fillMaxWidth()
                     .clickable { onNavigateToExpense(item.id) }
             ) {
+                val needsReview = item.processingStatus == "error" || item.processingStatus == "needs_review"
+                Column {
                 Row(
-                    modifier = Modifier.padding(12.dp).fillMaxWidth(),
+                    modifier = Modifier.padding(start = 12.dp, end = 12.dp, top = 12.dp, bottom = if (needsReview) 0.dp else 12.dp).fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Thumbnail or icon
@@ -274,11 +278,6 @@ private fun ReportDetailContent(
                                 Icon(Icons.Filled.CheckCircle, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(12.dp))
                                 Text("Verified", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                             }
-                        } else if (item.processingStatus == "error") {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Icon(Icons.Filled.Warning, null, tint = Color(0xFFE6A817), modifier = Modifier.size(12.dp))
-                                Text("Needs Review", style = MaterialTheme.typography.labelSmall, color = Color(0xFFE6A817))
-                            }
                         }
                     }
 
@@ -289,6 +288,28 @@ private fun ReportDetailContent(
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
+
+                // Scanning failed message — full width below the row
+                if (needsReview) {
+                    Row(
+                        modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 10.dp, top = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(MaterialTheme.colorScheme.error))
+                        Text(
+                            text = buildString {
+                                if (item.cleanMerchantName() == null) append("Missing merchant. ")
+                                append("Receipt scanning failed. Enter details manually.")
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error.copy(alpha = 0.9f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+                } // Column
             }
         }
 

@@ -23,7 +23,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.mafutapass.app.ui.theme.*
 import com.mafutapass.app.viewmodel.WorkspacesViewModel
+import com.mafutapass.app.data.ApiService
 import android.content.Intent
+import android.widget.Toast
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,6 +43,8 @@ fun WorkspaceDetailScreen(
     val workspace = workspaces.find { it.id == workspaceId }
     var showMoreMenu by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var isSharing by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
 
     // Refresh on appear
     LaunchedEffect(workspaceId) {
@@ -84,14 +90,24 @@ fun WorkspaceDetailScreen(
                             leadingIcon = { Icon(Icons.Filled.People, null, tint = MaterialTheme.colorScheme.primary) }
                         )
                         DropdownMenuItem(
-                            text = { Text("Share workspace") },
+                            text = { Text(if (isSharing) "Creating invite..." else "Share workspace") },
                             onClick = {
+                                if (isSharing) return@DropdownMenuItem
                                 showMoreMenu = false
-                                val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                    type = "text/plain"
-                                    putExtra(Intent.EXTRA_TEXT, "https://web.kachalabs.com/workspaces/$workspaceId/join")
+                                isSharing = true
+                                coroutineScope.launch {
+                                    val inviteUrl = viewModel.createInviteLink(workspaceId)
+                                    isSharing = false
+                                    if (inviteUrl != null) {
+                                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                            type = "text/plain"
+                                            putExtra(Intent.EXTRA_TEXT, "Join my workspace \"${workspace?.name}\" on Kacha:\n$inviteUrl")
+                                        }
+                                        context.startActivity(Intent.createChooser(shareIntent, "Share workspace"))
+                                    } else {
+                                        Toast.makeText(context, "Failed to create invite link", Toast.LENGTH_SHORT).show()
+                                    }
                                 }
-                                context.startActivity(Intent.createChooser(shareIntent, "Share workspace"))
                             },
                             leadingIcon = { Icon(Icons.Filled.Share, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }
                         )

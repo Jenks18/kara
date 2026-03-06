@@ -115,6 +115,9 @@ fun AddReceiptScreen(
     var showManual by remember { mutableStateOf(false) }
     var hasCameraPermission by remember { mutableStateOf(false) }
 
+    // Guard: prevents double-launching gallery/camera pickers on rapid taps
+    var launcherInFlight by remember { mutableStateOf(false) }
+
     // Camera permission launcher — declared before galleryLauncher so the gallery callback
     // can reference it for the "cancel with no permission" edge case.
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -129,6 +132,7 @@ fun AddReceiptScreen(
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetMultipleContents()
     ) { uris: List<Uri> ->
+        launcherInFlight = false
         // Always clear camera mode now that we're back from the gallery activity.
         // (showCamera may have been left true to keep the navbar hidden while gallery was open.)
         showCamera = false
@@ -250,8 +254,11 @@ fun AddReceiptScreen(
                     showCamera = true
                 },
                 onReplaceFromGallery = {
-                    showImageFullscreenIdx = -1
-                    galleryLauncher.launch("image/*")
+                    if (!launcherInFlight) {
+                        launcherInFlight = true
+                        showImageFullscreenIdx = -1
+                        galleryLauncher.launch("image/*")
+                    }
                 }
             )
             return
@@ -311,7 +318,7 @@ fun AddReceiptScreen(
             onSwitchToManual = { showCamera = false; showManual = true },
             // Do NOT set showCamera=false here — keep it true so the navbar stays hidden
             // while the gallery activity is open. showCamera is cleared in the galleryLauncher callback.
-            onOpenGallery = { galleryLauncher.launch("image/*") }
+            onOpenGallery = { if (!launcherInFlight) { launcherInFlight = true; galleryLauncher.launch("image/*") } }
         )
         return
     }

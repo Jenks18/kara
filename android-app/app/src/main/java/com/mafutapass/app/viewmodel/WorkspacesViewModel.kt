@@ -117,4 +117,15 @@ class WorkspacesViewModel @Inject constructor(
             }
         }
     }
+
+    /** Creates a real workspace invite link via the API. Returns the invite URL or null on failure. */
+    suspend fun createInviteLink(workspaceId: String): String? {
+        return try {
+            val response = apiService.createWorkspaceInvite(workspaceId, mapOf("contact" to "share"))
+            response.inviteUrl
+        } catch (e: Exception) {
+            Log.e(TAG, "⚠️ Failed to create invite link: ${e.message}")
+            null
+        }
+    }
 }

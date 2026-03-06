@@ -266,12 +266,21 @@ export async function POST(request: NextRequest) {
           // Look up workspace if client didn't send one
           let resolvedWorkspaceId: string | null = workspaceId || null;
           let resolvedWorkspaceName = workspaceName || 'Personal';
+          let resolvedWorkspaceAvatarUrl: string | null = null;
           
-          if (!resolvedWorkspaceId) {
+          if (resolvedWorkspaceId) {
+            // Client sent a workspace ID — look up its avatar
+            const { data: ws } = await supabase
+              .from('workspaces')
+              .select('avatar_url')
+              .eq('id', resolvedWorkspaceId)
+              .maybeSingle();
+            resolvedWorkspaceAvatarUrl = ws?.avatar_url || null;
+          } else {
             // Prefer the default workspace, fall back to oldest active
             const { data: userWorkspace } = await supabase
               .from('workspaces')
-              .select('id, name')
+              .select('id, name, avatar_url')
               .eq('is_active', true)
               .order('is_default', { ascending: false })
               .order('created_at', { ascending: true })
@@ -281,6 +290,7 @@ export async function POST(request: NextRequest) {
             if (userWorkspace) {
               resolvedWorkspaceId = userWorkspace.id;
               resolvedWorkspaceName = userWorkspace.name;
+              resolvedWorkspaceAvatarUrl = userWorkspace.avatar_url || null;
             } else {
               // New user with no workspace yet — auto-create "Personal" so the
               // receipt isn't orphaned.  Mirrors the web upload route behaviour
@@ -313,6 +323,7 @@ export async function POST(request: NextRequest) {
               user_id: userId,
               user_email: userEmail,
               workspace_name: resolvedWorkspaceName,
+              ...(resolvedWorkspaceAvatarUrl ? { workspace_avatar: resolvedWorkspaceAvatarUrl } : {}),
               ...(resolvedWorkspaceId ? { workspace_id: resolvedWorkspaceId } : {}),
               title: `Expense Report - ${new Date().toLocaleDateString('en-GB')}`,
               status: 'draft',
