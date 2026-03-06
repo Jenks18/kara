@@ -140,6 +140,9 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:1.4.1")
     implementation("androidx.camera:camera-view:1.4.1")
 
+    // EXIF — correct camera JPEG orientation before OCR / display
+    implementation("androidx.exifinterface:exifinterface:1.3.7")
+
     // ML Kit Text Recognition
     implementation("com.google.mlkit:text-recognition:16.0.1")
 

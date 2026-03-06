@@ -1,6 +1,6 @@
 # Kacha — Architecture & Single Source of Truth
 
-> **Last updated:** 2026-03-05
+> **Last updated:** 2026-03-06
 > **Product name:** Kacha (by Kacha Labs)
 > **Domain:** kachalabs.com
 > **Brand color:** Blue (#0066FF)
@@ -22,10 +22,11 @@
 8. [Theming & Design System](#8-theming--design-system)
 9. [Mobile Apps](#9-mobile-apps)
 10. [Receipt Processing Pipeline](#10-receipt-processing-pipeline)
-11. [Infrastructure & Deployment](#11-infrastructure--deployment)
-12. [Security](#12-security)
-13. [Migrations](#13-migrations)
-14. [Planned Features](#14-planned-features)
+11. [Mobile Upload Flow — Phone vs Server Roles](#11-mobile-upload-flow--phone-vs-server-roles)
+12. [Infrastructure & Deployment](#12-infrastructure--deployment)
+13. [Security](#13-security)
+14. [Migrations](#14-migrations)
+15. [Planned Features](#15-planned-features)
 
 ---
 
@@ -55,7 +56,7 @@
 
 | Tab | Route | Description |
 |-----|-------|-------------|
-| Home | `/` | Dashboard with stats, recent expenses (tap → detail), active reports (tap → detail), category breakdown |
+| Home | `/` | Dashboard with stats, recent expenses (tap → detail), recent reports (5 most recent, sorted by createdAt desc, tap → detail), category breakdown |
 | Reports | `/reports` | Expense reports list + detail view |
 | Scan (FAB) | `/create` | Elevated center button — receipt capture |
 | Workspaces | `/workspaces` | Workspace list + management |
@@ -66,24 +67,56 @@
 ## 2. System Architecture
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                    Clients                           │
-│  Web (Next.js)  │  Android (Kotlin)  │  iOS (Swift) │
-└────────┬────────┴─────────┬──────────┴──────┬───────┘
-         │                  │                 │
-         ▼                  ▼                 ▼
-┌─────────────────────────────────────────────────────┐
-│              Next.js API Routes (Vercel)             │
-│  /api/auth/*  │  /api/receipts/*  │  /api/mobile/*  │
-│  /api/workspaces/*  │  /api/account/*               │
-└────────┬────────────────────┬───────────────────────┘
-         │                    │
-    ┌────▼────┐          ┌────▼─────┐
-    │  Clerk  │          │ Supabase │
-    │  Auth   │          │ Postgres │
-    │         │          │ Storage  │
-    └─────────┘          └──────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                       Clients                                │
+│                                                              │
+│  Web (Next.js)        Android (Kotlin)      iOS (Swift)      │
+│  ─ server-side OCR    ─ on-device OCR       ─ on-device OCR  │
+│  ─ Gemini Vision      ─ ML Kit v2           ─ MLKit / Vision │
+│  ─ no local ML        ─ no raw text sent    ─ no raw text    │
+│                       ─ x-client-platform:  ─ x-client-      │
+│                         android               platform: ios  │
+└──────┬────────────────────────┬─────────────────────┬────────┘
+       │                        │                     │
+       ▼                        ▼                     ▼
+┌──────────────────────────────────────────────────────────────┐
+│          Next.js API Routes (Vercel) — "Secure Store"        │
+│                                                              │
+│  Mobile path (x-client-platform: android|ios):               │
+│   ✓ Authenticate (Clerk JWT)                                 │
+│   ✓ Store image (Supabase Storage)                           │
+│   ✓ Create/link expense_report + expense_item (DB writes)    │
+│   ✓ Resolve workspace (if client omits workspaceId)          │
+│   ✓ Echo back IDs + processingStatus (phone-authoritative)   │
+│   ✗ NO OCR, NO Gemini, NO raw text stored                    │
+│                                                              │
+│  Web path (no x-client-platform header):                     │
+│   ✓ Full server-side pipeline (Gemini + Tesseract + KRA)     │
+│                                                              │
+│  /api/auth/*  │  /api/receipts/*  │  /api/mobile/*           │
+│  /api/workspaces/*  │  /api/account/*                        │
+└──────┬──────────────────────────┬────────────────────────────┘
+       │                          │
+  ┌────▼────┐                ┌────▼─────┐
+  │  Clerk  │                │ Supabase │
+  │  Auth   │                │ Postgres │
+  │         │                │ Storage  │
+  └─────────┘                └──────────┘
 ```
+
+### Design Principle: Phone Does the Thinking, Server Does the Storing
+
+For mobile uploads, the phone is the **single source of truth** for all extracted data. The server is a **secure storage proxy** — it authenticates, persists, and returns created IDs. This architecture was chosen for:
+
+| Reason | Detail |
+|--------|--------|
+| **Privacy** | Financial data (receipt text, amounts, merchant names) never leaves the device for AI processing |
+| **Cost** | No server-side ML inference costs (Gemini, Tesseract) for mobile users |
+| **Speed** | No server-side processing delay — upload is just storage + DB writes |
+| **Offline potential** | All intelligence runs locally; future offline mode only needs sync |
+| **Auditability** | Phone sends `processingStatus` ("processed" vs "needs_review") — server trusts it |
+
+The server DOES apply defensive guards (garbage merchant name filtering, date range validation) as a safety net, but never overrides the phone's extracted values.
 
 ### Key dependencies (package.json)
 
@@ -390,6 +423,7 @@ Mirror the web endpoints but authenticate via Bearer token:
 | UI | Jetpack Compose + Material3 |
 | DI | Hilt |
 | Auth | Google OAuth via Credential Manager → `/api/auth/google-native` |
+| HTTP | Retrofit + OkHttp with `AuthInterceptor` (adds `Authorization` + `x-client-platform: android` headers) |
 | Receipt scan | ML Kit Text Recognition v2 (on-device spatial OCR) |
 | Entity extraction | ML Kit Entity Extraction (money/date detection, on-device) |
 | QR / Barcode | ML Kit Barcode Scanner |
@@ -529,8 +563,8 @@ User taps "Create expense"
 
 | Class | Purpose |
 |-------|--------|
-| `BackgroundScanService` | `@Singleton` with `CoroutineScope(SupervisorJob() + Dispatchers.IO)`. Outlives ViewModel — never cancelled by navigation. Runs OCR + upload per image. |
-| `PendingExpensesRepository` | `@Singleton` `StateFlow<List<ExpenseItem>>` holding scanning placeholders. Includes a local image bytes cache (`Map<String, ByteArray>`) so the detail screen can display camera images before upload completes. `ReportsViewModel` merges these with fetched items via `combine()`. |
+| `BackgroundScanService` | `@Singleton` with `CoroutineScope(SupervisorJob() + Dispatchers.IO)`. Outlives ViewModel — never cancelled by navigation. Runs OCR + upload per image. Computes `processingStatus` on-device ("processed" if good merchant+amount, else "needs_review") and sends it to server. Calls `notifyBatchCompleted()` when done so `ReportsViewModel` auto-refreshes. |
+| `PendingExpensesRepository` | `@Singleton` `StateFlow<List<ExpenseItem>>` holding scanning placeholders. Includes: local image bytes cache (`Map<String, ByteArray>`), `newlyCompletedId` signal (halo animation), `batchCompleted` counter (`StateFlow<Long>`, drives auto-refresh). `ReportsViewModel` merges pending items with fetched items via `combine()`. |
 
 **ReportsScreen behavior:**
 - Scanning items show dark blue card (`Color(0xFF0D1F2D)`) with blue border (`Color(0xFF1A3A5C)`) and "Scanning…" placeholders for empty fields only
@@ -559,15 +593,15 @@ Full-screen overlay composable. Triggered by tapping the image box in `ConfirmDe
 
 ### ExpenseCard Scanning / Error States (`ReportsScreen.kt`)
 
-`ExpenseCard` updated to fully reflect server-side `processing_status`:
+`ExpenseCard` updated to fully reflect `processing_status` (phone-authoritative for mobile uploads):
 
 | Status | Visual |
 |--------|--------|
 | `scanning` | Dark blue card (`Color(0xFF0D1F2D)`) + blue border (`Color(0xFF1A3A5C)`) + "Scanning…" placeholders only for fields not yet filled by OCR |
-| `error` / `needs_review` | Normal card + red-dot + inline error message: "Missing merchant. Receipt scanning failed. Enter details manually." |
-| `processed` | Normal card with full merchant, amount, KRA badge |
+| `error` / `needs_review` | Normal card style (no red border) + red-dot indicator + inline error message. Red dots appear on Amount, Merchant, Category fields in `ExpenseDetailScreen`. |
+| `processed` | Normal card with full merchant, amount, KRA badge. 1.5s highlight halo animation on arrival. |
 
-Each card now: **workspace name + avatar** in top-left; **"View" chip** in top-right; **date · Cash** meta row; larger **52dp image thumbnail**.
+Each card now: **workspace name + avatar** in top-left; **"View" chip** in top-right; title + item count + amount in a row below workspace; receipt filmstrip thumbnails below that; optional status badge at bottom.
 
 ### ExpenseDetailScreen — Per-Field Edit + Scanning-Aware Flow (`ui/screens/ExpenseDetailScreen.kt`)
 
@@ -662,7 +696,7 @@ App Launch
 │
 └─ Item tap navigation:
     ├─ Recent Expenses: onExpenseClick(id) → navController.navigate("expenses/$id")
-    └─ Active Reports:  onReportClick(id) → navController.navigate("reports/$id")
+    └─ Recent Reports:  onReportClick(id) → navController.navigate("reports/$id")
 ```
 
 ### Android On-Device Receipt Processing (`receipt/ReceiptProcessor.kt`)
@@ -743,7 +777,6 @@ Store in raw_receipts table
 ### Mobile (on-device) — `android-app/.../receipt/ReceiptProcessor.kt`
 
 Used by Android/iOS. All processing runs on-device via ML Kit. No financial data leaves the phone. Server-side pipeline is **disabled** for mobile uploads (`route.ts` skips orchestrator). See Section 9 for the full on-device flow.
-```
 
 ### Key modules
 
@@ -764,7 +797,184 @@ Used by Android/iOS. All processing runs on-device via ML Kit. No financial data
 
 ---
 
-## 11. Infrastructure & Deployment
+## 11. Mobile Upload Flow — Phone vs Server Roles
+
+This section documents the complete data flow for mobile receipt uploads, including what the phone computes, what the server stores, and how data flows back to the client. **iOS must replicate this exact contract.**
+
+### What the Phone Sends (multipart form data → `POST /api/mobile/receipts/upload`)
+
+| Field | Type | Source | Required |
+|-------|------|--------|----------|
+| `image` | File (JPEG) | Camera/gallery capture | No (null for manual entries) |
+| `reportId` | String | Previous upload's response (batch chaining) | No |
+| `workspaceId` | String (UUID) | User's selected workspace | No (server resolves default) |
+| `workspaceName` | String | Display name of selected workspace | Yes |
+| `amount` | String (decimal) | On-device OCR or user-typed | Yes |
+| `merchant` | String | On-device OCR merchant name or user description | No |
+| `transactionDate` | String (ISO date) | On-device OCR or today | No |
+| `currency` | String (3-letter code) | User-selected or OCR | Yes (default: "KES") |
+| `category` | String | Auto-classified or user-selected | No |
+| `description` | String | User-typed only (never auto-filled) | No |
+| `reimbursable` | String ("true"/"false") | User toggle | Yes |
+| `qrUrl` | String (URL) | Per-image eTIMS QR from ML Kit barcode scan | No |
+| `processingStatus` | String | Phone-determined: "processed" or "needs_review" | Yes |
+| `latitude` / `longitude` | String (decimal) | Device GPS at scan time | No |
+
+**Headers:**
+- `Authorization: Bearer <clerk_jwt>` — added by `AuthInterceptor`
+- `x-client-platform: android` or `ios` — added by `AuthInterceptor`, used by server to route to mobile path and for analytics
+
+### How the Phone Computes `processingStatus`
+
+```kotlin
+// BackgroundScanService.kt — after OCR + merge
+val clientStatus = if (isManualEntry) {
+    "processed"          // user typed data = always good
+} else {
+    val hasMerchant = !finalMerchant.isNullOrBlank()
+    val hasAmount = finalAmount > 0
+    if (hasMerchant && hasAmount) "processed" else "needs_review"
+}
+```
+
+**Rule:** If OCR extracted a non-blank merchant AND a positive amount → "processed". Otherwise → "needs_review". Manual entries are always "processed" because the user typed the data.
+
+### What the Server Does (mobile path only)
+
+```
+Phone sends multipart form data
+    │
+    ▼
+1. Authenticate — Clerk JWT verification via createMobileClient()
+    │
+    ▼
+2. Store image — Supabase Storage: receipts/{userId}/{timestamp}.jpg
+    │             (skipped for manual entries with no image)
+    │
+    ▼
+3. Resolve workspace — if workspaceId missing:
+    │   ├─ Find default workspace (is_default = true)
+    │   ├─ Fall back to oldest active workspace
+    │   └─ Auto-create "Personal" workspace for new users
+    │
+    ▼
+4. Create report — if reportId missing:
+    │   └─ INSERT expense_reports (title: "Expense Report - DD/MM/YYYY")
+    │
+    ▼
+5. Create expense item — INSERT expense_items with:
+    │   ├─ processing_status = phone's processingStatus (trusted)
+    │   ├─ merchant_name, amount, transaction_date from phone
+    │   ├─ Garbage name filter (safety net, not override)
+    │   ├─ Date range validation (safety net: 2 years back, not future)
+    │   ├─ KRA fields: kra_invoice_number, kra_verified, has_etims_qr, etims_qr_url
+    │   └─ No raw OCR text stored
+    │
+    ▼
+6. Update report total — atomic RPC: update_report_total(report_id)
+    │
+    ▼
+7. Return JSON response → phone updates PendingExpensesRepository
+```
+
+### What the Server Returns (JSON response)
+
+| Field | Type | Source |
+|-------|------|--------|
+| `success` | boolean | Upload + DB write succeeded |
+| `reportId` | string | Created or existing report UUID |
+| `expenseItemId` | string | Created expense_items.id |
+| `imageUrl` | string | Supabase Storage public URL |
+| `merchant` | string | Echo of phone's merchant (garbage-filtered) |
+| `amount` | number | Echo of phone's amount |
+| `date` | string | Echo of phone's date |
+| `category` | string | Echo of phone's category |
+| `kraVerified` | boolean | Has KRA invoice number or eTIMS QR |
+| `hasEtimsQR` | boolean | QR URL contains kra.go.ke domain |
+| `qrUrl` | string | eTIMS QR URL |
+| `processing_status` | string | Echo of phone's processingStatus (authoritative) |
+| `processingTimeMs` | number | 0 for mobile (no server processing) |
+| `confidence` | object | null for mobile (no server-side confidence scoring) |
+
+### How `processingStatus` Flows End-to-End (Red Dots)
+
+```
+Phone OCR → "needs_review" or "processed"
+    │
+    ▼ (sent as processingStatus form field)
+Server stores in expense_items.processing_status
+    │
+    ▼ (returned as processing_status in JSON response)
+BackgroundScanService reads response.processingStatus
+    │
+    ▼ (sets ExpenseItem.processingStatus)
+PendingExpensesRepository.update(tempId, realItem)
+    │
+    ▼ (StateFlow emits)
+ReportsViewModel.expenseItems (merged pending + fetched)
+    │
+    ▼ (collectAsState in UI)
+ExpenseDetailScreen: needsReview = processingStatus == "needs_review" || "error"
+    │
+    ▼
+Red dots shown on Amount, Merchant, Category fields (showRedDot = needsReview)
+```
+
+### Per-Image KRA QR Badge (No Batch Fallback)
+
+Each image independently earns its KRA Verified badge. There is **no batch-level QR fallback** — if image #2 has a QR code, only image #2 gets the badge.
+
+**Resolution order per image:**
+1. OCR Pass 2 barcode scan on THIS image (most reliable — full-resolution ML Kit scan)
+2. `ExpenseEditState.qrUrl` — set at capture time by camera preview barcode scan
+3. `null` — no QR found, no badge
+
+```kotlin
+// BackgroundScanService.kt
+val imageQrUrl = imageQrUrls.firstOrNull()  // Pass 2
+    ?: state.qrUrl                           // capture-time scan
+// null if neither found → no badge
+```
+
+### Auto-Refresh After Background Upload (`PendingExpensesRepository.batchCompleted`)
+
+When `BackgroundScanService` finishes uploading a batch:
+1. It calls `pendingExpensesRepository.notifyBatchCompleted()` — increments a `StateFlow<Long>` counter
+2. `ReportsViewModel` observes `batchCompleted` in its `init` block
+3. When the counter increments, `fetchExpenseData()` fires — re-fetches reports + expenses + stats
+4. The new report appears in the reports list without manual pull-to-refresh
+
+```kotlin
+// ReportsViewModel.kt init block
+viewModelScope.launch {
+    var last = pendingExpensesRepository.batchCompleted.value
+    pendingExpensesRepository.batchCompleted.collect { counter ->
+        if (counter > last) {
+            last = counter
+            fetchExpenseData()  // re-fetches reports from server
+        }
+    }
+}
+```
+
+This is the standard Kotlin `StateFlow` signal pattern — zero-cost when idle, instant when batch completes.
+
+### iOS Implementation Contract
+
+To achieve feature parity, the iOS app MUST:
+
+1. **Send `x-client-platform: ios`** header on all API requests
+2. **Compute `processingStatus` on-device** using the same rule: `hasMerchant && hasAmount ? "processed" : "needs_review"`, manual = "processed"
+3. **Send all fields** listed in the "What the Phone Sends" table above
+4. **NOT send raw OCR text** — only structured fields
+5. **Handle `processing_status`** in the upload response to drive red dot indicators on fields
+6. **Per-image QR only** — no batch-level QR fallback
+7. **Auto-refresh reports** after background upload completes (signal pattern or equivalent)
+8. **Store local image bytes** for display during upload (equivalent of `PendingExpensesRepository.setImageBytes()`)
+
+---
+
+## 12. Infrastructure & Deployment
 
 | Service | Purpose | Config |
 |---------|---------|--------|
@@ -786,7 +996,7 @@ Used by Android/iOS. All processing runs on-device via ML Kit. No financial data
 
 ---
 
-## 12. Security
+## 13. Security
 
 ### Auth
 
@@ -827,7 +1037,7 @@ Mobile receipt processing runs entirely on-device via ML Kit. No receipt images 
 
 ---
 
-## 13. Migrations
+## 14. Migrations
 
 Applied in order. Located in `migrations/`.
 
@@ -871,7 +1081,7 @@ Migration 014 creates `workspace_members` and its (recursive) policies. Migratio
 
 ---
 
-## 14. Planned Features
+## 15. Planned Features
 
 These features are in the roadmap but NOT on the website. They should NOT appear as "coming soon" UI on any deployed page.
 

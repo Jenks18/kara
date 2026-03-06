@@ -28,6 +28,17 @@ class PendingExpensesRepository @Inject constructor() {
     val newlyCompletedId: StateFlow<String?> = _newlyCompletedId.asStateFlow()
 
     /**
+     * Incremented each time a background upload batch finishes.
+     * [ReportsViewModel] observes this to auto-refresh the reports list so
+     * newly-created reports (including from manual entries) appear immediately.
+     */
+    private val _batchCompleted = MutableStateFlow(0L)
+    val batchCompleted: StateFlow<Long> = _batchCompleted.asStateFlow()
+
+    /** Signal that a background upload batch has finished. */
+    fun notifyBatchCompleted() { _batchCompleted.value++ }
+
+    /**
      * Local image bytes cache, keyed by temp ID.
      * Lets the detail screen show the camera image before upload has finished.
      * Automatically cleaned up when the item is removed or cleared.

@@ -23,6 +23,7 @@ class AuthInterceptor @Inject constructor(
         private const val TAG = "AuthInterceptor"
         private const val HEADER_AUTHORIZATION = "Authorization"
         private const val HEADER_CONTENT_TYPE = "Content-Type"
+        private const val HEADER_CLIENT_PLATFORM = "x-client-platform"
     }
     
     override fun intercept(chain: Interceptor.Chain): Response {
@@ -40,6 +41,7 @@ class AuthInterceptor @Inject constructor(
         
         val newRequest = originalRequest.newBuilder()
             .addHeader(HEADER_CONTENT_TYPE, "application/json")
+            .addHeader(HEADER_CLIENT_PLATFORM, "android")
             .apply {
                 if (token != null) {
                     addHeader(HEADER_AUTHORIZATION, "Bearer $token")

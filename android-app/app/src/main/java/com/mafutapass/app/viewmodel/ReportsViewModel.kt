@@ -102,6 +102,21 @@ class ReportsViewModel @Inject constructor(
                 appDataCache.loadStats(userId)?.let { _stats.value = it }
             }
             fetchExpenseData()
+
+            // Auto-refresh reports+expenses when a background upload batch completes.
+            // This ensures newly-created reports (including from manual entries)
+            // appear in the reports list without requiring a manual pull-to-refresh.
+            viewModelScope.launch {
+                var last = pendingExpensesRepository.batchCompleted.value
+                pendingExpensesRepository.batchCompleted.collect { counter ->
+                    if (counter > last) {
+                        last = counter
+                        Log.d(TAG, "Background batch completed — refreshing reports")
+                        fetchExpenseData()
+                    }
+                }
+            }
+
             Log.d(TAG, "✅ ReportsViewModel initialized")
         } catch (e: Exception) {
             Log.e(TAG, "❌ Failed to start data fetch: ${e.message}", e)

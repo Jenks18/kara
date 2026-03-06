@@ -53,6 +53,8 @@ export async function POST(request: NextRequest) {
     const mobileMerchant   = (formData.get('merchant')        as string | null) || null;
     const mobileDate       = (formData.get('transactionDate') as string | null) || null;
     const mobileCurrency   = (formData.get('currency')        as string | null) || null;
+    // On-device processing status — phone determines if fields need review
+    const mobileProcessingStatus = (formData.get('processingStatus') as string | null) || null;
 
     // Legacy on-device fields (older app versions sent raw extracted data)
     const extractedText     = (formData.get('extractedText')     as string | null) || null;
@@ -67,12 +69,8 @@ export async function POST(request: NextRequest) {
     const hasMobileData   = !!(mobileAmount || mobileMerchant);
     const hasOnDeviceData = hasMobileData || !!extractedText;
 
-    if (!imageFile) {
-      return NextResponse.json(
-        { error: 'No image provided' },
-        { status: 400, headers: corsHeaders }
-      );
-    }
+    // Image is optional — manual entries (created without scanning) have no image.
+    // When missing, we skip storage upload and set imageUrl to null.
 
     // Verify the caller actually owns or is a member of the supplied workspace
     if (workspaceId) {
@@ -104,17 +102,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Production guard: reject oversized uploads
-    if (imageFile.size > MAX_FILE_SIZE) {
+    // Production guard: reject oversized uploads (skip for manual entries without images)
+    if (imageFile && imageFile.size > 0 && imageFile.size > MAX_FILE_SIZE) {
       return NextResponse.json(
         { error: `File too large (${(imageFile.size / 1024 / 1024).toFixed(1)}MB). Maximum is 10MB.` },
         { status: 413, headers: corsHeaders }
       );
     }
 
-    // Validate content type
+    // Validate content type (skip for manual entries without images)
     const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
-    if (!validTypes.includes(imageFile.type)) {
+    if (imageFile && imageFile.size > 0 && !validTypes.includes(imageFile.type)) {
       return NextResponse.json(
         { error: 'Invalid file type. Supported: JPEG, PNG, WebP, HEIC.' },
         { status: 400, headers: corsHeaders }
@@ -139,22 +137,29 @@ export async function POST(request: NextRequest) {
     if (isMobileUpload) {
       // MOBILE PATH: Upload image to storage, use on-device extracted data only.
       // No OCR, no Gemini, no KRA scraping, no raw text stored.
-      console.log('[receipt-upload] MOBILE: on-device data only — server-side pipeline DISABLED');
-      const imageBuffer = Buffer.from(await imageFile.arrayBuffer());
-      // Path: {userId}/{timestamp}.jpg — folder[1] must match auth.jwt()->>'sub'
-      // to satisfy the receipts_insert_mobile RLS policy (migration 023).
-      const fileName = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
-
-      const { error: storageError } = await supabase.storage
-        .from('receipts')
-        .upload(fileName, imageBuffer, { contentType: imageFile.type, upsert: false });
+      const clientPlatform = request.headers.get('x-client-platform') || 'unknown';
+      console.log(`[receipt-upload] MOBILE (${clientPlatform}): on-device data only — server-side pipeline DISABLED`);
 
       let imageUrl: string | null = null;
-      if (!storageError) {
-        const { data: urlData } = supabase.storage.from('receipts').getPublicUrl(fileName);
-        imageUrl = urlData?.publicUrl || null;
+
+      if (imageFile && imageFile.size > 0) {
+        const imageBuffer = Buffer.from(await imageFile.arrayBuffer());
+        // Path: {userId}/{timestamp}.jpg — folder[1] must match auth.jwt()->>'sub'
+        // to satisfy the receipts_insert_mobile RLS policy (migration 023).
+        const fileName = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+
+        const { error: storageError } = await supabase.storage
+          .from('receipts')
+          .upload(fileName, imageBuffer, { contentType: imageFile.type, upsert: false });
+
+        if (!storageError) {
+          const { data: urlData } = supabase.storage.from('receipts').getPublicUrl(fileName);
+          imageUrl = urlData?.publicUrl || null;
+        } else {
+          console.error('[receipt-upload] Storage upload failed:', storageError.message);
+        }
       } else {
-        console.error('[receipt-upload] Storage upload failed:', storageError.message);
+        console.log('[receipt-upload] MOBILE: Manual entry — no image to upload');
       }
 
       // Use on-device extracted fields (new path) or legacy fields (old app versions)
@@ -199,6 +204,12 @@ export async function POST(request: NextRequest) {
       });
     } else {
       // WEB PATH: Full server-side pipeline (web uploads only)
+      if (!imageFile || imageFile.size === 0) {
+        return NextResponse.json(
+          { success: false, error: 'No image provided for web upload' },
+          { status: 400, headers: corsHeaders }
+        );
+      }
       console.log('[receipt-upload] WEB: running server-side pipeline');
       result = await receiptProcessor.process(imageFile, {
         userEmail,
@@ -221,10 +232,32 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // uploadSucceeded only requires the image to have been stored.
+    // uploadSucceeded: image was stored (or no image was needed for a manual entry).
     // raw_receipts save failures are non-fatal — the expense_item is still created.
-    const uploadSucceeded = !!result.imageUrl;
+    const isManualEntry = !imageFile || imageFile.size === 0;
+    const uploadSucceeded = isManualEntry || !!result.imageUrl;
     let finalReportId: string | undefined = reportId || undefined;
+    // Hoisted so the response JSON can reference it outside the DB block.
+    // For mobile, the phone's value is authoritative; for web, computed below.
+    let initialStatus: string = (isMobileUpload && mobileProcessingStatus)
+      ? mobileProcessingStatus
+      : (isManualEntry ? 'processed' : 'needs_review');
+
+    // Hoisted KRA fields — computed once, used in both DB insert and response
+    const hasEtimsQR = !!(result.qrData?.url && (
+      result.qrData.url.includes('itax.kra.go.ke') || 
+      result.qrData.url.includes('etims.kra.go.ke') ||
+      result.qrData.url.includes('kra.go.ke')
+    )) || result.parsedData?.hasEtimsQR || result.aiEnhanced?.hasEtimsQR;
+
+    let kraInvoiceNumber: string | null = result.kraData?.invoiceNumber || null;
+    const etimsQrUrl: string | null = result.qrData?.url || null;
+    if (!kraInvoiceNumber && etimsQrUrl) {
+      try {
+        const qrUrlObj = new URL(etimsQrUrl);
+        kraInvoiceNumber = qrUrlObj.searchParams.get('invoiceNo') || null;
+      } catch { /* malformed URL — skip */ }
+    }
 
     if (uploadSucceeded) {
       try {
@@ -281,7 +314,7 @@ export async function POST(request: NextRequest) {
               user_email: userEmail,
               workspace_name: resolvedWorkspaceName,
               ...(resolvedWorkspaceId ? { workspace_id: resolvedWorkspaceId } : {}),
-              title: `Receipt - ${new Date().toLocaleDateString('en-GB')}`,
+              title: `Expense Report - ${new Date().toLocaleDateString('en-GB')}`,
               status: 'draft',
               total_amount: 0,
             })
@@ -329,36 +362,25 @@ export async function POST(request: NextRequest) {
           const needsReview = result.fieldConfidence?.merchantName?.needsReview ||
             result.fieldConfidence?.amount?.needsReview ||
             result.fieldConfidence?.date?.needsReview;
-          const initialStatus = hasExtractedData ? (needsReview ? 'needs_review' : 'processed') : 'needs_review';
+          // Manual entries (no image) are always "processed" since the user typed the data.
+          // For mobile uploads, trust the phone's processingStatus — it did the OCR.
+          // For web uploads, compute from server-side extraction results.
+          initialStatus = (isMobileUpload && mobileProcessingStatus)
+            ? mobileProcessingStatus
+            : (isManualEntry ? 'processed' : (hasExtractedData ? (needsReview ? 'needs_review' : 'processed') : 'needs_review'));
 
           // User-supplied category takes precedence; fall back to AI, then 'Other'.
           const category = userCategory || result.aiEnhanced?.category || result.parsedData?.category || 'Other';
 
-          // Compute overall confidence score (0-100)
+          // Compute overall confidence score (0-100) — web pipeline only
+          // Mobile uploads don't have fieldConfidence (OCR runs on-device).
           const confidenceScore = result.fieldConfidence
             ? Math.round(
                 ((result.fieldConfidence.merchantName?.confidence || 0) +
                  (result.fieldConfidence.amount?.confidence || 0) +
                  (result.fieldConfidence.date?.confidence || 0)) / 3
               )
-            : (result.kraData?.invoiceNumber ? 95 : 50);
-
-          // Check for eTIMS QR code
-          const hasEtimsQR = !!(result.qrData?.url && (
-            result.qrData.url.includes('itax.kra.go.ke') || 
-            result.qrData.url.includes('etims.kra.go.ke') ||
-            result.qrData.url.includes('kra.go.ke')
-          )) || result.parsedData?.hasEtimsQR || result.aiEnhanced?.hasEtimsQR;
-
-          // Extract KRA invoice number from QR URL (format: ...invoiceNo=XXXXXXXXX)
-          let kraInvoiceNumber: string | null = result.kraData?.invoiceNumber || null;
-          const etimsQrUrl: string | null = result.qrData?.url || null;
-          if (!kraInvoiceNumber && etimsQrUrl) {
-            try {
-              const qrUrlObj = new URL(etimsQrUrl);
-              kraInvoiceNumber = qrUrlObj.searchParams.get('invoiceNo') || null;
-            } catch { /* malformed URL — skip */ }
-          }
+            : null;
 
           // Build receipt_details for UI display
           const receiptDetails: any = {};
@@ -439,16 +461,10 @@ export async function POST(request: NextRequest) {
       amount: result.kraData?.totalAmount || result.parsedData?.totalAmount || 0,
       date: result.kraData?.invoiceDate || result.parsedData?.transactionDate || null,
       category: result.parsedData?.category || 'Other',
-      kraVerified: !!result.kraData?.invoiceNumber || !!(result.qrData?.url && (
-        result.qrData.url.includes('itax.kra.go.ke') || 
-        result.qrData.url.includes('etims.kra.go.ke') ||
-        result.qrData.url.includes('kra.go.ke')
-      )),
-      hasEtimsQR: !!(result.qrData?.url && (
-        result.qrData.url.includes('itax.kra.go.ke') || 
-        result.qrData.url.includes('etims.kra.go.ke')
-      )),
-      qrUrl: result.qrData?.url || null,
+      kraVerified: !!kraInvoiceNumber || hasEtimsQR,
+      hasEtimsQR: hasEtimsQR,
+      qrUrl: etimsQrUrl,
+      processing_status: initialStatus,
       processingTimeMs: result.processingTimeMs,
       confidence: result.fieldConfidence ? {
         merchantName: result.fieldConfidence.merchantName?.confidence || 0,

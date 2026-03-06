@@ -23,6 +23,8 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.HttpException
+import com.mafutapass.app.util.correctExifOrientation
+import com.mafutapass.app.util.rotateJpeg
 import java.io.ByteArrayOutputStream
 import javax.inject.Inject
 
@@ -37,7 +39,9 @@ data class ExpenseEditState(
     val currency: String = "KES",
     val category: String = "Automatic",
     val reimbursable: Boolean = false,
-    val ocrResult: ReceiptData? = null
+    val ocrResult: ReceiptData? = null,
+    /** eTIMS QR URL detected in THIS specific image (null if none found). */
+    val qrUrl: String? = null
 )
 
 @HiltViewModel
@@ -64,9 +68,9 @@ class ScanReceiptViewModel @Inject constructor(
     private val _currentUploadIndex = MutableStateFlow(0)
     val currentUploadIndex: StateFlow<Int> = _currentUploadIndex.asStateFlow()
     
-    /** eTIMS QR URL detected by the camera during scanning */
-    private val _detectedQrUrl = MutableStateFlow<String?>(null)
-    val detectedQrUrl: StateFlow<String?> = _detectedQrUrl.asStateFlow()
+    /** Per-image QR URLs: maps selected-image index → eTIMS QR URL.
+     *  Populated asynchronously by ML Kit barcode scan at capture time. */
+    private val _imageQrUrls = MutableStateFlow<Map<Int, String>>(emptyMap())
 
     /** Device location at time of scan (lat, lng) */
     private val _location = MutableStateFlow<Pair<Double, Double>?>(null)
@@ -168,7 +172,8 @@ class ScanReceiptViewModel @Inject constructor(
             val inputStream = context.contentResolver.openInputStream(uri) ?: return
             val buffer = ByteArrayOutputStream()
             inputStream.use { it.copyTo(buffer) }
-            _selectedImages.value = _selectedImages.value + buffer.toByteArray()
+            val corrected = correctExifOrientation(buffer.toByteArray())
+            _selectedImages.value = _selectedImages.value + corrected
             _uiState.value = ScanState.ReviewImages
         } catch (e: Exception) {
             Log.e(TAG, "Failed to read image: ${e.message}")
@@ -179,18 +184,59 @@ class ScanReceiptViewModel @Inject constructor(
         _selectedImages.value = _selectedImages.value + bytes
         _uiState.value = ScanState.ReviewImages
     }
+
+    /**
+     * Rotate the image at [index] by 90° clockwise.
+     * Updates both the selected-images list and the expense-edit state.
+     */
+    fun rotateImage(index: Int) {
+        val images = _selectedImages.value.toMutableList()
+        if (index !in images.indices) return
+        val rotated = rotateJpeg(images[index], 90f)
+        images[index] = rotated
+        _selectedImages.value = images
+        // Also update ExpenseEditState.imageBytes so the confirm screen shows rotated
+        val states = _expenseStates.value.toMutableList()
+        if (index in states.indices) {
+            states[index] = states[index].copy(imageBytes = rotated)
+            _expenseStates.value = states
+        }
+    }
     
     fun removeImage(index: Int) {
         _selectedImages.value = _selectedImages.value.filterIndexed { i, _ -> i != index }
+        // Re-index per-image QR URLs so they stay aligned with the image list
+        val oldMap = _imageQrUrls.value
+        if (oldMap.isNotEmpty()) {
+            val newMap = mutableMapOf<Int, String>()
+            for ((k, v) in oldMap) {
+                when {
+                    k < index -> newMap[k] = v
+                    k > index -> newMap[k - 1] = v
+                    // k == index — removed image, drop its QR entry
+                }
+            }
+            _imageQrUrls.value = newMap
+        }
         if (_selectedImages.value.isEmpty()) {
             _uiState.value = ScanState.ChooseMethod
         }
     }
-    
-    fun setDetectedQrUrl(url: String) {
-        if (_detectedQrUrl.value == null) {
-            Log.i(TAG, "eTIMS QR detected: $url")
-            _detectedQrUrl.value = url
+
+    /**
+     * Store a per-image QR URL detected asynchronously by ML Kit barcode scan.
+     * If [_expenseStates] already has an entry at [imageIndex], patch it immediately
+     * so the KRA badge appears on the confirm screen without re-navigation.
+     */
+    fun setImageQrUrl(imageIndex: Int, url: String) {
+        Log.i(TAG, "Per-image QR for image $imageIndex: $url")
+        _imageQrUrls.value = _imageQrUrls.value + (imageIndex to url)
+        // Also patch live ExpenseEditState if confirm screen is already showing
+        val states = _expenseStates.value
+        if (imageIndex in states.indices && states[imageIndex].qrUrl == null) {
+            val updated = states.toMutableList()
+            updated[imageIndex] = updated[imageIndex].copy(qrUrl = url)
+            _expenseStates.value = updated
         }
     }
 
@@ -237,8 +283,9 @@ class ScanReceiptViewModel @Inject constructor(
         val images = _selectedImages.value
         if (images.isEmpty()) return
 
+        val qrMap = _imageQrUrls.value
         _currentExpenseIndex.value = 0
-        _expenseStates.value = images.map { bytes ->
+        _expenseStates.value = images.mapIndexed { index, bytes ->
             ExpenseEditState(
                 imageBytes   = bytes,
                 description  = "",
@@ -246,7 +293,8 @@ class ScanReceiptViewModel @Inject constructor(
                 currency     = "KES",
                 category     = "Automatic",
                 reimbursable = false,
-                ocrResult    = null
+                ocrResult    = null,
+                qrUrl        = qrMap[index]   // per-image QR from async scan
             )
         }
         _uiState.value = ScanState.OcrResults
@@ -294,7 +342,6 @@ class ScanReceiptViewModel @Inject constructor(
             tempIds       = tempIds,
             workspaceId   = wsId,
             workspaceName = wsName,
-            qrUrl         = _detectedQrUrl.value,
             location      = _location.value
         )
 
@@ -335,7 +382,6 @@ class ScanReceiptViewModel @Inject constructor(
         viewModelScope.launch {
             var sharedReportId: String? = null
             val results = mutableListOf<ReceiptUploadResponse>()
-            val qrUrl = _detectedQrUrl.value
             val loc = _location.value
 
             val wsId = _selectedWorkspaceId.value.takeIf { it.isNotBlank() }
@@ -380,7 +426,8 @@ class ScanReceiptViewModel @Inject constructor(
                     val requestBody = imageBytes.toRequestBody("image/jpeg".toMediaType())
                     val imagePart = MultipartBody.Part.createFormData("image", "receipt_$index.jpg", requestBody)
                     val reportIdPart = sharedReportId?.toRequestBody("text/plain".toMediaType())
-                    val qrUrlPart = if (index == 0 && qrUrl != null) qrUrl.toRequestBody("text/plain".toMediaType()) else null
+                    // Per-image QR only — no batch fallback
+                    val qrUrlPart = state.qrUrl?.toRequestBody("text/plain".toMediaType())
 
                     val response = apiService.uploadReceipt(
                         image = imagePart,
@@ -432,7 +479,7 @@ class ScanReceiptViewModel @Inject constructor(
         _expenseStates.value = emptyList()
         _currentExpenseIndex.value = 0
         _currentUploadIndex.value = 0
-        _detectedQrUrl.value = null
+        _imageQrUrls.value = emptyMap()
         _location.value = null
         _selectedWorkspaceId.value = workspaceRepository.activeWorkspace.value?.id ?: ""
         _uiState.value = ScanState.ChooseMethod

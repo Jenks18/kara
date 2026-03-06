@@ -26,6 +26,7 @@ function flattenItems(data: any[]) {
     processing_status: item.processing_status || 'processed',
     report_id: item.report_id,
     workspace_name: item.expense_reports?.workspace_name || '',
+    workspace_avatar: item.expense_reports?.workspace_avatar || '',
   }));
 }
 
@@ -67,7 +68,7 @@ export async function GET(request: NextRequest) {
         id, image_url, amount, category, merchant_name,
         transaction_date, created_at, kra_verified, description,
         processing_status, report_id, etims_qr_url,
-        expense_reports ( user_id, workspace_name )
+        expense_reports ( user_id, workspace_name, workspace_avatar )
       `)
       .order('created_at', { ascending: false })
       .limit(limit + 1);

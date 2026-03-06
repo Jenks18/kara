@@ -62,6 +62,8 @@ import com.mafutapass.app.data.ReceiptUploadResponse
 import com.mafutapass.app.receipt.ReceiptData
 import com.mafutapass.app.ui.theme.*
 import com.mafutapass.app.util.CurrencyFormatter
+import com.mafutapass.app.util.correctExifOrientation
+import com.mafutapass.app.util.rotateJpeg
 import com.mafutapass.app.viewmodel.ExpenseEditState
 import com.mafutapass.app.viewmodel.ScanReceiptViewModel
 import com.mafutapass.app.viewmodel.ScanReceiptViewModel.ScanState
@@ -100,8 +102,6 @@ fun AddReceiptScreen(
     val editedAmount by viewModel.editedAmount.collectAsState()
     val editedCategory by viewModel.editedCategory.collectAsState()
     val editedReimbursable by viewModel.editedReimbursable.collectAsState()
-    val detectedQrUrl by viewModel.detectedQrUrl.collectAsState()
-
     val expenseStates by viewModel.expenseStates.collectAsState()
     val currentExpenseIndex by viewModel.currentExpenseIndex.collectAsState()
 
@@ -135,8 +135,9 @@ fun AddReceiptScreen(
         val validUris = uris.filterNotNull().take(10)
         validUris.forEach { uri ->
             viewModel.addImageFromUri(uri)
+            val imageIndex = viewModel.selectedImages.value.size - 1
             scanForQrCode(context, uri) { qrUrl ->
-                viewModel.setDetectedQrUrl(qrUrl)
+                viewModel.setImageQrUrl(imageIndex, qrUrl)
             }
         }
         if (validUris.isNotEmpty()) {
@@ -241,7 +242,17 @@ fun AddReceiptScreen(
             ReceiptFullscreenView(
                 imageBytes = imgBytes,
                 onBack = { showImageFullscreenIdx = -1 },
-                onReplace = { showCamera = false; galleryLauncher.launch("image/*"); showImageFullscreenIdx = -1 }
+                onRotate = {
+                    viewModel.rotateImage(showImageFullscreenIdx)
+                },
+                onReplaceFromCamera = {
+                    showImageFullscreenIdx = -1
+                    showCamera = true
+                },
+                onReplaceFromGallery = {
+                    showImageFullscreenIdx = -1
+                    galleryLauncher.launch("image/*")
+                }
             )
             return
         } else {
@@ -281,8 +292,9 @@ fun AddReceiptScreen(
         ReceiptCamera(
             onImageCaptured = { bytes ->
                 viewModel.addImageBytes(bytes)
+                val imageIndex = viewModel.selectedImages.value.size - 1
                 scanBytesForQrCode(context, bytes) { qrUrl ->
-                    viewModel.setDetectedQrUrl(qrUrl)
+                    viewModel.setImageQrUrl(imageIndex, qrUrl)
                 }
             },
             captureCount = selectedImages.size,
@@ -313,7 +325,6 @@ fun AddReceiptScreen(
                 currentIndex = currentExpenseIndex,
                 workspaces = workspaces,
                 selectedWorkspaceId = selectedWorkspaceId,
-                hasQrCode = detectedQrUrl != null,
                 onNavigateIndex = { viewModel.setCurrentExpenseIndex(it) },
                 onUpdateExpense = { idx, update -> viewModel.updateExpenseField(idx, update) },
                 onRemoveExpense = { viewModel.removeExpenseAtIndex(it) },
@@ -629,7 +640,6 @@ private fun ConfirmDetailsSection(
     currentIndex: Int,
     workspaces: List<com.mafutapass.app.data.Workspace>,
     selectedWorkspaceId: String,
-    hasQrCode: Boolean,
     onNavigateIndex: (Int) -> Unit,
     onUpdateExpense: (Int, (com.mafutapass.app.viewmodel.ExpenseEditState) -> com.mafutapass.app.viewmodel.ExpenseEditState) -> Unit,
     onRemoveExpense: (Int) -> Unit,
@@ -834,8 +844,8 @@ private fun ConfirmDetailsSection(
                             }
                         }
                     }
-                    // KRA badge
-                    if (hasQrCode && currentIndex == 0) {
+                    // KRA badge — only on images where eTIMS QR was actually detected
+                    if (state.qrUrl != null) {
                         Surface(
                             shape = RoundedCornerShape(5.dp),
                             color = Blue50,
@@ -1183,10 +1193,13 @@ private fun WorkspacePickerRow(
 private fun ReceiptFullscreenView(
     imageBytes: ByteArray,
     onBack: () -> Unit,
-    onReplace: () -> Unit
+    onRotate: () -> Unit,
+    onReplaceFromCamera: () -> Unit,
+    onReplaceFromGallery: () -> Unit
 ) {
     val bitmap = remember(imageBytes) { BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size) }
     var showMenu by remember { mutableStateOf(false) }
+    var showReplaceChooser by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -1220,7 +1233,7 @@ private fun ReceiptFullscreenView(
                     DropdownMenuItem(
                         text = { Text("Replace image") },
                         leadingIcon = { Icon(Icons.Filled.CameraAlt, null) },
-                        onClick = { showMenu = false; onReplace() }
+                        onClick = { showMenu = false; showReplaceChooser = true }
                     )
                 }
             }
@@ -1247,28 +1260,63 @@ private fun ReceiptFullscreenView(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            listOf(
-                Pair(Icons.Filled.RotateRight, "Rotate"),
-                Pair(Icons.Filled.Crop, "Crop"),
-                Pair(Icons.Filled.CameraAlt, "Replace")
-            ).forEachIndexed { i, (icon, label) ->
-                Surface(
-                    onClick = { if (i == 2) onReplace() },
-                    shape = RoundedCornerShape(50),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.2f),
-                    modifier = Modifier.weight(1f).height(48.dp)
+            // Rotate
+            Surface(
+                onClick = onRotate,
+                shape = RoundedCornerShape(50),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.2f),
+                modifier = Modifier.weight(1f).height(48.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(icon, null, tint = Color.White, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text(label, style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.Medium)
-                    }
+                    Icon(Icons.Filled.RotateRight, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Rotate", style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.Medium)
                 }
             }
+            // Replace
+            Surface(
+                onClick = { showReplaceChooser = true },
+                shape = RoundedCornerShape(50),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.2f),
+                modifier = Modifier.weight(1f).height(48.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Filled.CameraAlt, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Replace", style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.Medium)
+                }
+            }
+        }
+
+        // Replace image chooser dialog
+        if (showReplaceChooser) {
+            AlertDialog(
+                onDismissRequest = { showReplaceChooser = false },
+                title = { Text("Replace image") },
+                text = { Text("Choose a new image source") },
+                confirmButton = {
+                    TextButton(onClick = { showReplaceChooser = false; onReplaceFromCamera() }) {
+                        Icon(Icons.Filled.CameraAlt, null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Camera")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showReplaceChooser = false; onReplaceFromGallery() }) {
+                        Icon(Icons.Filled.Photo, null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Gallery")
+                    }
+                }
+            )
         }
     }
 }
@@ -1659,8 +1707,12 @@ private fun ReceiptCamera(
             ContextCompat.getMainExecutor(context),
             object : ImageCapture.OnImageSavedCallback {
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                    val bytes = outputFile.readBytes()
+                    val rawBytes = outputFile.readBytes()
                     outputFile.delete()
+                    // CameraX saves JPEG with EXIF rotation tags but does NOT
+                    // physically rotate pixels. Correct here so OCR and display
+                    // see the image the way the user held the phone.
+                    val bytes = correctExifOrientation(rawBytes)
                     onImageCaptured(bytes)
                     localCaptureCount++
                     when (scanMode) {

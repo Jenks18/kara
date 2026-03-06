@@ -35,7 +35,7 @@ export async function GET(
         id, image_url, amount, category, merchant_name,
         transaction_date, created_at, kra_verified, description,
         processing_status, report_id, kra_invoice_number, etims_qr_url,
-        expense_reports!inner ( user_id, workspace_name, title )
+        expense_reports!inner ( user_id, workspace_name, workspace_avatar, title )
       `)
       .eq('id', id)
       .single();
@@ -62,6 +62,7 @@ export async function GET(
       processing_status: data.processing_status || 'processed',
       report_id: data.report_id,
       workspace_name: (data as any).expense_reports?.workspace_name || '',
+      workspace_avatar: (data as any).expense_reports?.workspace_avatar || '',
       report_title: (data as any).expense_reports?.title || '',
     }, { headers: corsHeaders });
   } catch (error: any) {

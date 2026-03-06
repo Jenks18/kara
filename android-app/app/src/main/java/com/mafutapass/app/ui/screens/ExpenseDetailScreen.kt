@@ -515,27 +515,37 @@ private fun ExpenseDetailContent(expense: ExpenseItem, localImageBytes: ByteArra
         }
 
         if (expense.kraVerified == true) {
-            val context = LocalContext.current
             Surface(
                 shape = RoundedCornerShape(8.dp),
                 color = MaterialTheme.colorScheme.primaryContainer,
-                modifier = Modifier.clickable(enabled = !expense.etimsQrUrl.isNullOrBlank()) {
-                    expense.etimsQrUrl?.let { url ->
-                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
+                modifier = if (expense.etimsQrUrl != null) {
+                    Modifier.clickable {
+                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(expense.etimsQrUrl))
                         context.startActivity(intent)
                     }
-                }
+                } else Modifier
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Icon(Icons.Filled.CheckCircle, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Filled.VerifiedUser, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
                     Text("KRA Verified", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
-                    if (!expense.etimsQrUrl.isNullOrBlank()) {
-                        Icon(Icons.Filled.OpenInNew, "View on KRA", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
-                    }
+                }
+            }
+        } else if (!isScanning && expense.processingStatus == "processed") {
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.primaryContainer
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(Icons.Filled.CheckCircle, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
+                    Text("Verified", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
                 }
             }
         }
@@ -679,6 +689,31 @@ private fun AmountEditContent(expense: ExpenseItem, isSaving: Boolean, onSave: (
         modifier = Modifier.fillMaxSize().padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // KRA verified warning
+        if (expense.kraVerified == true) {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0xFFFFF3CD),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.Top,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(Icons.Filled.VerifiedUser, null, tint = Color(0xFF856404), modifier = Modifier.size(18.dp))
+                    Column {
+                        Text("KRA Verified Amount", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = Color(0xFF856404))
+                        Text(
+                            "This amount was verified via eTIMS QR code. Editing it may cause a mismatch with the KRA record.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF856404).copy(alpha = 0.85f)
+                        )
+                    }
+                }
+            }
+        }
+
         Spacer(modifier = Modifier.weight(0.3f))
 
         Text(

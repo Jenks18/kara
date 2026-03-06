@@ -1,7 +1,6 @@
 
 package com.mafutapass.app.ui.screens
 
-import android.widget.Toast
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -10,19 +9,18 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -55,7 +53,7 @@ fun ReportsScreen(
     highlightReportId: String? = null,
     viewModel: ReportsViewModel = hiltViewModel()
 ) {
-    var selectedTab by remember { mutableStateOf(initialTab) }
+    var selectedTab by rememberSaveable { mutableIntStateOf(initialTab) }
     val tabs = listOf("Expenses", "Reports")
 
     val expenses by viewModel.expenseItems.collectAsState()
@@ -274,7 +272,7 @@ fun ExpenseCard(expense: ExpenseItem, onNavigateToDetail: (String) -> Unit = {},
 
     val scanningBorderColor = Color(0xFF1A3A5C)
     val borderModifier = when {
-        isNew     -> Modifier.border(2.dp, haloColor, RoundedCornerShape(12.dp))
+        isNew      -> Modifier.border(2.dp, haloColor, RoundedCornerShape(12.dp))
         isScanning -> Modifier.border(1.5.dp, scanningBorderColor, RoundedCornerShape(12.dp))
         else       -> Modifier
     }
@@ -295,22 +293,32 @@ fun ExpenseCard(expense: ExpenseItem, onNavigateToDetail: (String) -> Unit = {},
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (expense.workspaceName.isNotBlank()) {
-                    // Workspace avatar (emoji or initials)
-                    Box(
-                        modifier = Modifier
-                            .size(20.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primaryContainer),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            expense.workspaceName.firstOrNull()?.uppercaseChar()?.toString() ?: "W",
-                            fontSize = 10.sp,
-                            lineHeight = 10.sp,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center
+                    // Workspace avatar (image, emoji, or initials)
+                    val avatarUrl = expense.workspaceAvatar
+                    if (avatarUrl != null && avatarUrl.startsWith("http")) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current).data(avatarUrl).crossfade(true).build(),
+                            contentDescription = expense.workspaceName,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.size(20.dp).clip(CircleShape)
                         )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .size(20.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primaryContainer),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                expense.workspaceName.firstOrNull()?.uppercaseChar()?.toString() ?: "W",
+                                fontSize = 10.sp,
+                                lineHeight = 10.sp,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
@@ -449,7 +457,6 @@ fun ExpenseCard(expense: ExpenseItem, onNavigateToDetail: (String) -> Unit = {},
 @Composable
 fun ReportCard(report: ExpenseReport, onNavigateToDetail: (String) -> Unit = {}) {
     val context = LocalContext.current
-    val displayDate = DateUtils.formatMedium(report.createdAt)
 
     Surface(
         shape = RoundedCornerShape(12.dp),
@@ -461,35 +468,104 @@ fun ReportCard(report: ExpenseReport, onNavigateToDetail: (String) -> Unit = {})
     ) {
         Column(
             modifier = Modifier
-                .padding(16.dp)
+                .padding(14.dp)
                 .fillMaxWidth()
         ) {
+            // ── Top row: workspace avatar + name ··· View chip ────────────────
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = report.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.weight(1f)
-                )
-                // Always show the amount — show muted dash when zero so new
-                // reports (before AI extraction completes) are clearly empty
-                // rather than invisibly missing the field.
+                if (report.workspaceName.isNotBlank()) {
+                    val avatarUrl = report.workspaceAvatar
+                    if (avatarUrl != null && avatarUrl.startsWith("http")) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(context).data(avatarUrl).crossfade(true).build(),
+                            contentDescription = report.workspaceName,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.size(20.dp).clip(CircleShape)
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .size(20.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primaryContainer),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                report.workspaceName.firstOrNull()?.uppercaseChar()?.toString() ?: "W",
+                                fontSize = 10.sp, lineHeight = 10.sp,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = report.workspaceName,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                } else {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+                // "View" chip
+                Surface(
+                    shape = RoundedCornerShape(50),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.2f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)),
+                    onClick = { onNavigateToDetail(report.id) }
+                ) {
+                    Text(
+                        "View",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // ── Title row: report name + item count ··· amount ────────────────
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = report.title,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "${report.itemsCount} item${if (report.itemsCount != 1) "s" else ""}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                // Amount
                 if (report.totalAmount > 0) {
                     Text(
                         text = CurrencyFormatter.formatSimple(report.totalAmount),
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
                 } else {
                     Text(
                         text = "—",
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Normal,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )
@@ -498,89 +574,70 @@ fun ReportCard(report: ExpenseReport, onNavigateToDetail: (String) -> Unit = {})
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Receipt thumbnails row
+            // ── Filmstrip row (below title) ───────────────────────────────────
             if (report.thumbnails.isNotEmpty()) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy((-8).dp)
                 ) {
-                    report.thumbnails.forEach { url ->
+                    report.thumbnails.take(3).forEach { url ->
                         if (url.startsWith("http")) {
                             AsyncImage(
-                                model = ImageRequest.Builder(context)
-                                    .data(url)
-                                    .crossfade(true)
-                                    .build(),
-                                contentDescription = "Receipt thumbnail",
+                                model = ImageRequest.Builder(context).data(url).crossfade(true).build(),
+                                contentDescription = "Receipt",
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
-                                    .size(48.dp)
+                                    .size(44.dp)
                                     .clip(RoundedCornerShape(6.dp))
                                     .background(MaterialTheme.colorScheme.background)
                             )
                         }
                     }
+                    if (report.thumbnails.size > 3) {
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                "+${report.thumbnails.size - 3}",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
-                Spacer(modifier = Modifier.height(8.dp))
+            } else {
+                Box(
+                    modifier = Modifier.size(44.dp).clip(RoundedCornerShape(6.dp)).background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Filled.Folder, null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f), modifier = Modifier.size(22.dp))
+                }
             }
 
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Status badge - hide draft
-                if (report.status != "draft") {
-                    val statusColor = when (report.status) {
-                        "approved" -> MaterialTheme.colorScheme.primary
-                        "submitted" -> Color(0xFF2563EB) // blue
-                        "rejected" -> MaterialTheme.colorScheme.error
-                        else -> Color(0xFFE6A817) // amber
-                    }
-                    val statusLabel = report.status.replaceFirstChar { it.uppercase() }
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = statusColor.copy(alpha = 0.12f)
-                    ) {
-                        Text(
-                            text = statusLabel,
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.Medium,
-                            color = statusColor,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
-                        )
-                    }
+            // ── Status badge row ──────────────────────────────────────────────
+            if (report.status != "draft") {
+                Spacer(modifier = Modifier.height(8.dp))
+                val statusColor = when (report.status) {
+                    "approved" -> MaterialTheme.colorScheme.primary
+                    "submitted" -> Color(0xFF2563EB)
+                    "rejected" -> MaterialTheme.colorScheme.error
+                    else -> Color(0xFFE6A817)
                 }
-
-                // Workspace name
-                if (report.workspaceName.isNotBlank()) {
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer
-                    ) {
-                        Text(
-                            text = report.workspaceName,
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
-                        )
-                    }
-                }
-
-                Text(
-                    text = "${report.itemsCount} items",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                if (displayDate.isNotEmpty()) {
-                    Text("•", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                val statusLabel = report.status.replaceFirstChar { it.uppercase() }
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = statusColor.copy(alpha = 0.12f)
+                ) {
                     Text(
-                        text = displayDate,
+                        text = statusLabel,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        fontWeight = FontWeight.Medium,
+                        color = statusColor,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                     )
                 }
             }

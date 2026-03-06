@@ -19,22 +19,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
 import com.mafutapass.app.ui.theme.*
 import com.mafutapass.app.util.CurrencyFormatter
 import com.mafutapass.app.viewmodel.ReportsViewModel
 import java.time.LocalDate
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
-import java.time.temporal.TemporalAdjusters
+
 
 @Composable
 fun HomeScreen(
@@ -51,10 +47,10 @@ fun HomeScreen(
 
     // ── Stats: use server-side values when available (accurate across all pages),
     //          fall back to client-side computation on the loaded page 1 data.
-    val now = LocalDate.now()
-    val firstOfMonth = now.withDayOfMonth(1)
-    val firstOfLastMonth = firstOfMonth.minusMonths(1)
-    val isoFmt = DateTimeFormatter.ISO_OFFSET_DATE_TIME
+    val now = remember { LocalDate.now() }
+    val firstOfMonth = remember(now) { now.withDayOfMonth(1) }
+    val firstOfLastMonth = remember(firstOfMonth) { firstOfMonth.minusMonths(1) }
+    val isoFmt = remember { DateTimeFormatter.ISO_OFFSET_DATE_TIME }
 
     // Parse a date string that may be full ISO-8601 ("2026-02-21T10:00:00+00:00")
     // OR a plain Postgres DATE ("2026-02-21").  ZonedDateTime.parse only handles
@@ -180,229 +176,114 @@ fun HomeScreen(
                 }
 
                 // ── Recent Expenses ────────────────────────────────
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    color = MaterialTheme.colorScheme.surface,
-                    shadowElevation = 1.dp
-                ) {
-                    Column(modifier = Modifier.padding(20.dp)) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Recent Expenses",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                            modifier = Modifier.clickable { onViewAllExpenses() },
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
                             Text(
-                                text = "Recent Expenses",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold
+                                text = "View All",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = Blue600
                             )
-                            Row(
-                                modifier = Modifier.clickable { onViewAllExpenses() },
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(2.dp)
-                            ) {
-                                Text(
-                                    text = "View All",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Medium,
-                                    color = Blue600
-                                )
-                                Icon(
-                                    imageVector = Icons.Filled.ChevronRight,
-                                    contentDescription = null,
-                                    tint = Blue600,
-                                    modifier = Modifier.size(16.dp)
-                                )
+                            Icon(
+                                imageVector = Icons.Filled.ChevronRight,
+                                contentDescription = null,
+                                tint = Blue600,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+
+                    if (expenses.isEmpty()) {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            color = MaterialTheme.colorScheme.surface,
+                            shadowElevation = 1.dp
+                        ) {
+                            Column(modifier = Modifier.padding(20.dp)) {
+                                EmptyState(icon = Icons.Filled.Receipt, message = "No expenses yet", sub = "Scan a receipt to get started")
                             }
                         }
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        if (expenses.isEmpty()) {
-                            EmptyState(icon = Icons.Filled.Receipt, message = "No expenses yet", sub = "Scan a receipt to get started")
-                        } else {
-                            expenses.take(5).forEachIndexed { index, expense ->
-                                Column(modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .clickable { onExpenseClick(expense.id) }
-                                    .padding(vertical = 8.dp)
-                                ) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.Top
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.weight(1f),
-                                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                        ) {
-                                            val imgUrl = expense.imageUrl
-                                            if (!imgUrl.isNullOrBlank() && imgUrl.startsWith("http")) {
-                                                AsyncImage(
-                                                    model = ImageRequest.Builder(LocalContext.current)
-                                                        .data(imgUrl)
-                                                        .crossfade(true)
-                                                        .build(),
-                                                    contentDescription = "Receipt",
-                                                    contentScale = ContentScale.Crop,
-                                                    modifier = Modifier
-                                                        .size(40.dp)
-                                                        .clip(RoundedCornerShape(8.dp))
-                                                        .background(Color(0xFFF3F4F6))
-                                                )
-                                            } else {
-                                                Box(
-                                                    modifier = Modifier
-                                                        .size(40.dp)
-                                                        .clip(RoundedCornerShape(8.dp))
-                                                        .background(Color(0xFFF3F4F6)),
-                                                    contentAlignment = Alignment.Center
-                                                ) {
-                                                    Icon(Icons.Filled.Receipt, contentDescription = null, tint = Color(0xFF6B7280), modifier = Modifier.size(20.dp))
-                                                }
-                                            }
-                                            Column {
-                                                Text(
-                                                    text = expense.cleanMerchantName() ?: "Unknown",
-                                                    style = MaterialTheme.typography.bodyLarge,
-                                                    fontWeight = FontWeight.SemiBold,
-                                                    maxLines = 1, overflow = TextOverflow.Ellipsis
-                                                )
-                                                Text(
-                                                    text = "${expense.category.ifBlank { "Uncategorized" }} · ${shortDate(expense.transactionDate ?: expense.createdAt)}",
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                            }
-                                        }
-                                        Column(horizontalAlignment = Alignment.End) {
-                                            Text(
-                                                text = CurrencyFormatter.formatSimple(expense.amount),
-                                                style = MaterialTheme.typography.bodyLarge,
-                                                fontWeight = FontWeight.SemiBold
-                                            )
-                                            Spacer(modifier = Modifier.height(4.dp))
-                                            ExpenseStatusBadge(expense.processingStatus)
-                                            if (expense.kraVerified == true) {
-                                                Spacer(modifier = Modifier.height(3.dp))
-                                                Surface(
-                                                    shape = RoundedCornerShape(5.dp),
-                                                    color = Blue50
-                                                ) {
-                                                    Row(
-                                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
-                                                        verticalAlignment = Alignment.CenterVertically,
-                                                        horizontalArrangement = Arrangement.spacedBy(2.dp)
-                                                    ) {
-                                                        Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = Blue500, modifier = Modifier.size(8.dp))
-                                                        Text("KRA", style = MaterialTheme.typography.labelSmall, color = Blue500, fontSize = 9.sp)
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                    if (index < minOf(expenses.size, 5) - 1) {
-                                        HorizontalDivider(modifier = Modifier.padding(top = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
-                                    }
-                                }
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            expenses.take(5).forEach { expense ->
+                                ExpenseCard(
+                                    expense = expense,
+                                    onNavigateToDetail = onExpenseClick
+                                )
                             }
                         }
                     }
                 }
 
-                // ── Active Reports ─────────────────────────────────
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    color = MaterialTheme.colorScheme.surface,
-                    shadowElevation = 1.dp
-                ) {
-                    Column(modifier = Modifier.padding(20.dp)) {
+                // ── Recent Reports ─────────────────────────────────
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Recent Reports",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                            modifier = Modifier.clickable { onViewAllReports() },
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
                             Text(
-                                text = "Active Reports",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold
+                                text = "View All",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = Blue600
                             )
-                            Row(
-                                modifier = Modifier.clickable { onViewAllReports() },
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(2.dp)
-                            ) {
-                                Text(
-                                    text = "View All",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Medium,
-                                    color = Blue600
-                                )
-                                Icon(
-                                    imageVector = Icons.Filled.ChevronRight,
-                                    contentDescription = null,
-                                    tint = Blue600,
-                                    modifier = Modifier.size(16.dp)
-                                )
+                            Icon(
+                                imageVector = Icons.Filled.ChevronRight,
+                                contentDescription = null,
+                                tint = Blue600,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+
+                    if (reports.isEmpty()) {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            color = MaterialTheme.colorScheme.surface,
+                            shadowElevation = 1.dp
+                        ) {
+                            Column(modifier = Modifier.padding(20.dp)) {
+                                EmptyState(icon = Icons.Filled.FolderOpen, message = "No recent reports", sub = "Reports you create will appear here")
                             }
                         }
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        if (reports.isEmpty()) {
-                            EmptyState(icon = Icons.Filled.FolderOpen, message = "No active reports", sub = "Reports you create will appear here")
-                        } else {
-                            reports.take(3).forEach { report ->
-                                Surface(
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
-                                    shape = RoundedCornerShape(12.dp),
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE5E7EB)),
-                                    color = MaterialTheme.colorScheme.surface,
-                                    onClick = { onReportClick(report.id) }
-                                ) {
-                                    Column(modifier = Modifier.padding(16.dp)) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.Top
-                                        ) {
-                                            Column(modifier = Modifier.weight(1f)) {
-                                                Text(
-                                                    text = report.title.ifBlank { "Untitled Report" },
-                                                    style = MaterialTheme.typography.bodyLarge,
-                                                    fontWeight = FontWeight.SemiBold,
-                                                    maxLines = 1, overflow = TextOverflow.Ellipsis
-                                                )
-                                                Text(
-                                                    text = shortDate(report.createdAt),
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                                if (!report.status.equals("draft", ignoreCase = true)) {
-                                                    Spacer(modifier = Modifier.height(2.dp))
-                                                    ReportStatusBadge(report.status)
-                                                }
-                                            }
-                                        }
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween
-                                        ) {
-                                            Text(
-                                                text = "${report.itemsCount} expense${if (report.itemsCount != 1) "s" else ""}",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                            Text(
-                                                text = CurrencyFormatter.formatSimple(report.totalAmount),
-                                                style = MaterialTheme.typography.bodyLarge,
-                                                fontWeight = FontWeight.SemiBold
-                                            )
-                                        }
-                                    }
-                                }
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            reports.sortedByDescending { it.createdAt }.take(5).forEach { report ->
+                                ReportCard(
+                                    report = report,
+                                    onNavigateToDetail = onReportClick
+                                )
                             }
                         }
                     }
@@ -438,11 +319,13 @@ fun HomeScreen(
                         if (thisMonthExpenses.isEmpty()) {
                             EmptyState(icon = Icons.Filled.BarChart, message = "No spending data", sub = "Your category breakdown will appear here")
                         } else {
-                            val categoryTotals = thisMonthExpenses
-                                .groupBy { it.category ?: "Other" }
-                                .mapValues { (_, list) -> list.sumOf { it.amount } }
-                                .toList().sortedByDescending { it.second }.take(5)
-                            val maxAmount = categoryTotals.maxOfOrNull { it.second } ?: 1.0
+                            val categoryTotals = remember(thisMonthExpenses) {
+                                thisMonthExpenses
+                                    .groupBy { it.category ?: "Other" }
+                                    .mapValues { (_, list) -> list.sumOf { it.amount } }
+                                    .toList().sortedByDescending { it.second }.take(5)
+                            }
+                            val maxAmount = remember(categoryTotals) { categoryTotals.maxOfOrNull { it.second } ?: 1.0 }
                             val barColors = listOf(Color(0xFF3B82F6), Color(0xFF8B5CF6), Color(0xFFF59E0B), Color(0xFF10B981), Color(0xFFEC4899))
                             fun categoryColor(cat: String): Color = when (cat.lowercase()) {
                                 "fuel", "transport", "transportation", "commute" -> barColors[0]
@@ -628,65 +511,6 @@ fun EmptyState(icon: ImageVector, message: String, sub: String) {
         Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.size(36.dp))
         Text(message, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(sub, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
-    }
-}
-
-fun shortDate(isoStr: String): String {
-    return try {
-        val d = ZonedDateTime.parse(isoStr, DateTimeFormatter.ISO_OFFSET_DATE_TIME).toLocalDate()
-        val today = LocalDate.now()
-        when {
-            d == today               -> "Today"
-            d == today.minusDays(1)  -> "Yesterday"
-            d.year == today.year     -> d.format(DateTimeFormatter.ofPattern("MMM d"))
-            else                     -> d.format(DateTimeFormatter.ofPattern("MMM d, yyyy"))
-        }
-    } catch (e: Exception) {
-        // Fallback for timestamps without timezone (e.g. "2026-02-21T10:30:00")
-        try {
-            val d = java.time.LocalDateTime.parse(isoStr).toLocalDate()
-            val today = LocalDate.now()
-            when {
-                d == today              -> "Today"
-                d == today.minusDays(1) -> "Yesterday"
-                d.year == today.year    -> d.format(DateTimeFormatter.ofPattern("MMM d"))
-                else                    -> d.format(DateTimeFormatter.ofPattern("MMM d, yyyy"))
-            }
-        } catch (e2: Exception) { "" }
-    }
-}
-
-// Old StatCard kept for compilation safety — not used on Home any more
-@Composable
-fun StatCard(
-    icon: ImageVector,
-    iconColor: Color,
-    iconBackground: Color,
-    value: String,
-    label: String,
-    sublabel: String,
-    trend: String? = null,
-    trendUp: Boolean = true
-) {
-    Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surface, shadowElevation = 1.dp) {
-        Row(modifier = Modifier.fillMaxWidth().padding(20.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.Top) {
-                Box(modifier = Modifier.size(56.dp).clip(RoundedCornerShape(12.dp)).background(iconBackground), contentAlignment = Alignment.Center) {
-                    Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(28.dp))
-                }
-                Column {
-                    Text(value, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                    Text(sublabel, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                }
-            }
-            if (trend != null) {
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(if (trendUp) Icons.AutoMirrored.Filled.TrendingUp else Icons.AutoMirrored.Filled.TrendingDown, contentDescription = null, tint = if (trendUp) Color(0xFF10B981) else Color(0xFFEF4444), modifier = Modifier.size(16.dp))
-                    Text(trend, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = if (trendUp) Color(0xFF10B981) else Color(0xFFEF4444))
-                }
-            }
-        }
     }
 }
 

@@ -20,6 +20,8 @@ data class ExpenseItem(
     val etimsQrUrl: String? = null,
     @SerializedName("workspace_name")
     val workspaceName: String = "",
+    @SerializedName("workspace_avatar")
+    val workspaceAvatar: String? = null,
     @SerializedName("processing_status")
     val processingStatus: String = "processed",
     val description: String? = null,
@@ -229,6 +231,8 @@ data class ReceiptUploadResponse(
     val qrUrl: String? = null,
     val confidence: Map<String, Int>? = null,
     val processingTimeMs: Long = 0,
+    @SerializedName("processing_status")
+    val processingStatus: String? = null,
     val warning: String? = null,
     val error: String? = null
 ) {

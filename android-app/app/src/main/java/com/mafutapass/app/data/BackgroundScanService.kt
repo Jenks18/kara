@@ -46,11 +46,15 @@ class BackgroundScanService @Inject constructor(
     /**
      * Submit a batch for background OCR + upload.
      *
+     * Per-image QR detection is handled at two levels:
+     *   1. [ExpenseEditState.qrUrl] — set at capture time by ML Kit barcode scan.
+     *   2. OCR Pass 2 — barcode scan on the full-resolution image during background processing.
+     * No batch-level QR fallback — each image independently earns its KRA badge.
+     *
      * @param states        User-edited expense entries (one per image).
      * @param tempIds       Placeholder IDs already added to [PendingExpensesRepository].
      * @param workspaceId   Selected workspace UUID.
      * @param workspaceName Selected workspace display name.
-     * @param qrUrl         eTIMS QR URL detected by the live camera analyser (may be null).
      * @param location      Device GPS coordinates at scan time (may be null).
      */
     fun submit(
@@ -58,12 +62,10 @@ class BackgroundScanService @Inject constructor(
         tempIds: List<String>,
         workspaceId: String?,
         workspaceName: String,
-        qrUrl: String?,
         location: Pair<Double, Double>?
     ) {
         scope.launch {
             var sharedReportId: String? = null
-            var detectedQrUrl: String? = qrUrl
 
             val wsIdPart   = workspaceId?.toRequestBody("text/plain".toMediaType())
             val wsNamePart = workspaceName.toRequestBody("text/plain".toMediaType())
@@ -72,38 +74,39 @@ class BackgroundScanService @Inject constructor(
 
             for ((index, state) in states.withIndex()) {
                 val tempId     = tempIds[index]
-                val imageBytes = state.imageBytes ?: run {
-                    Log.w(TAG, "Image $index has no bytes (manual entry) — skipping OCR, no upload")
-                    pendingExpensesRepository.remove(tempId)
-                    continue
-                }
+                val imageBytes = state.imageBytes  // null for manual entries
+                val isManualEntry = imageBytes == null
 
                 try {
-                    // ── Pass 1 + 2: OCR + Entity Extraction + Barcode ─────────────────
-                    Log.i(TAG, "OCR image $index (${imageBytes.size / 1024} KB) — running both passes")
+                    // ── OCR (skipped for manual entries) ──────────────────────────
+                    var ocr: com.mafutapass.app.receipt.ReceiptData? = null
+                    var imageQrUrls: List<String> = emptyList()
 
-                    // Store local image bytes so the detail screen can display them immediately
-                    pendingExpensesRepository.setImageBytes(tempId, imageBytes)
+                    if (!isManualEntry) {
+                        Log.i(TAG, "OCR image $index (${imageBytes!!.size / 1024} KB) — running both passes")
+                        pendingExpensesRepository.setImageBytes(tempId, imageBytes)
 
-                    val bitmap = android.graphics.BitmapFactory
-                        .decodeByteArray(imageBytes, 0, imageBytes.size)
-                    val ocr = if (bitmap != null) {
-                        val multiPass = receiptProcessor.processAllPasses(
-                            bitmap, System.currentTimeMillis()
-                        )
-                        if (multiPass.qrUrls.isNotEmpty() && detectedQrUrl == null) {
-                            detectedQrUrl = multiPass.qrUrls.first()
-                            Log.i(TAG, "eTIMS QR from Pass 2: $detectedQrUrl")
+                        val bitmap = android.graphics.BitmapFactory
+                            .decodeByteArray(imageBytes, 0, imageBytes.size)
+                        if (bitmap != null) {
+                            val multiPass = receiptProcessor.processAllPasses(
+                                bitmap, System.currentTimeMillis()
+                            )
+                            imageQrUrls = multiPass.qrUrls
+                            if (multiPass.qrUrls.isNotEmpty()) {
+                                Log.i(TAG, "eTIMS QR from Pass 2 for image $index: ${multiPass.qrUrls.first()}")
+                            }
+                            Log.i(TAG, "OCR $index: merchant=${multiPass.bestResult.merchantName}, " +
+                                "amount=${multiPass.bestResult.totalAmount}, " +
+                                "category=${multiPass.bestResult.category}, " +
+                                "currency=${multiPass.bestResult.currency}, " +
+                                "date=${multiPass.bestResult.date}")
+                            ocr = multiPass.bestResult
+                        } else {
+                            Log.e(TAG, "Failed to decode image $index")
                         }
-                        Log.i(TAG, "OCR $index: merchant=${multiPass.bestResult.merchantName}, " +
-                            "amount=${multiPass.bestResult.totalAmount}, " +
-                            "category=${multiPass.bestResult.category}, " +
-                            "currency=${multiPass.bestResult.currency}, " +
-                            "date=${multiPass.bestResult.date}")
-                        multiPass.bestResult
                     } else {
-                        Log.e(TAG, "Failed to decode image $index")
-                        null
+                        Log.i(TAG, "Manual entry $index — skipping OCR, uploading user data only")
                     }
 
                     // ── Merge user edits + OCR ────────────────────────────────────────
@@ -131,13 +134,29 @@ class BackgroundScanService @Inject constructor(
                     ))
 
                     // ── Upload ─────────────────────────────────────────────────────────
-                    val imagePart = MultipartBody.Part.createFormData(
-                        "image", "receipt_$index.jpg",
-                        imageBytes.toRequestBody("image/jpeg".toMediaType())
-                    )
+                    val imagePart = if (imageBytes != null) {
+                        MultipartBody.Part.createFormData(
+                            "image", "receipt_$index.jpg",
+                            imageBytes.toRequestBody("image/jpeg".toMediaType())
+                        )
+                    } else null
                     val reportIdPart = sharedReportId?.toRequestBody("text/plain".toMediaType())
-                    val qrUrlPart = if (index == 0 && detectedQrUrl != null)
-                        detectedQrUrl!!.toRequestBody("text/plain".toMediaType()) else null
+                    // Per-image QR — no batch fallback. Each image earns its own badge.
+                    //   1. OCR Pass 2 barcode scan on THIS image (most reliable)
+                    //   2. On-device QR scan stored in ExpenseEditState.qrUrl (from capture time)
+                    val imageQrUrl = imageQrUrls.firstOrNull() ?: state.qrUrl
+                    val qrUrlPart = imageQrUrl?.toRequestBody("text/plain".toMediaType())
+
+                    // Phone determines processingStatus — no server-side re-derivation needed.
+                    // Manual entries are always "processed" (user typed the data).
+                    // Scanned: "processed" if we got good merchant + amount, else "needs_review".
+                    val clientStatus = if (isManualEntry) {
+                        "processed"
+                    } else {
+                        val hasMerchant = !finalMerchant.isNullOrBlank()
+                        val hasAmount = finalAmount > 0
+                        if (hasMerchant && hasAmount) "processed" else "needs_review"
+                    }
 
                     val response = apiService.uploadReceipt(
                         image           = imagePart,
@@ -154,9 +173,11 @@ class BackgroundScanService @Inject constructor(
                             .toRequestBody("text/plain".toMediaType()),
                         amount          = finalAmount.toString()
                             .toRequestBody("text/plain".toMediaType()),
-                        merchant        = finalMerchant?.toRequestBody("text/plain".toMediaType()),
+                        merchant        = (finalMerchant ?: finalDescription)
+                            ?.toRequestBody("text/plain".toMediaType()),
                         transactionDate = finalDate?.toRequestBody("text/plain".toMediaType()),
-                        currency        = finalCurrency.toRequestBody("text/plain".toMediaType())
+                        currency        = finalCurrency.toRequestBody("text/plain".toMediaType()),
+                        processingStatus = clientStatus.toRequestBody("text/plain".toMediaType())
                     )
 
                     if (response.success) {
@@ -168,7 +189,8 @@ class BackgroundScanService @Inject constructor(
                             imageUrl         = response.imageUrl ?: "",
                             amount           = response.amount.takeIf { it > 0 } ?: finalAmount,
                             merchantName     = response.merchant?.takeIf { it.isNotBlank() }
-                                ?: finalMerchant,
+                                ?: finalMerchant
+                                ?: finalDescription?.takeIf { it.isNotBlank() },
                             transactionDate  = response.date ?: finalDate,
                             category         = response.category ?: finalCategory ?: "Uncategorized",
                             workspaceName    = workspaceName,
@@ -176,7 +198,7 @@ class BackgroundScanService @Inject constructor(
                             etimsQrUrl       = response.qrUrl,
                             description      = finalDescription,
                             reportId         = response.reportId,
-                            processingStatus = "processed"
+                            processingStatus = response.processingStatus ?: "processed"
                         )
                         pendingExpensesRepository.update(tempId, realItem)
                         Log.i(TAG, "✅ Upload $index complete: reportId=${response.reportId}, " +
@@ -196,6 +218,8 @@ class BackgroundScanService @Inject constructor(
                 }
             }
             Log.i(TAG, "Background scan+upload batch complete. sharedReportId=$sharedReportId")
+            // Signal ReportsViewModel to re-fetch reports so the new report appears.
+            pendingExpensesRepository.notifyBatchCompleted()
         }
     }
 }

@@ -416,6 +416,15 @@ class ReceiptProcessor @Inject constructor() {
             Regex("""^eTIMS""", RegexOption.IGNORE_CASE),
             Regex("""(?:START|END)\s+OF\s+LEGAL""", RegexOption.IGNORE_CASE),
             Regex("""^KE\s"""),
+            // Financial / tax lines that are NOT merchant names
+            Regex("""(?i)\b(TOTAL|SUB\s*TOTAL|SUBTOTAL|GRAND\s*TOTAL)\b"""),
+            Regex("""(?i)\b(TAX|VAT|EXCISE|LEVY|DUTY|EXEMPT|TAXABLE)\b"""),
+            Regex("""(?i)\b(CASH|CHANGE|BALANCE|AMOUNT|PAYMENT|PAID|MPESA|M-PESA|DISCOUNT)\b"""),
+            Regex("""(?i)\b(GROSS|NET|TENDER|RECEIVED)\b"""),
+            // Lines that are just numbers with currency prefix/suffix
+            Regex("""^(?:KSh|Ksh|KES)?\s*[\d,]+\.?\d*\s*$"""),
+            // PIN numbers (P-prefixed or A-prefixed)
+            Regex("""^[PA]\d{9,}"""),
         )
 
         for (line in topLines) {

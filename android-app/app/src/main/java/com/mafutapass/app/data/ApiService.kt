@@ -80,7 +80,7 @@ interface ApiService {
     @Multipart
     @POST("api/mobile/receipts/upload")
     suspend fun uploadReceipt(
-        @Part image: okhttp3.MultipartBody.Part,
+        @Part image: okhttp3.MultipartBody.Part? = null,
         @Part("reportId") reportId: okhttp3.RequestBody? = null,
         @Part("workspaceId") workspaceId: okhttp3.RequestBody? = null,
         @Part("workspaceName") workspaceName: okhttp3.RequestBody? = null,
@@ -96,7 +96,9 @@ interface ApiService {
         @Part("amount") amount: okhttp3.RequestBody? = null,
         @Part("merchant") merchant: okhttp3.RequestBody? = null,
         @Part("transactionDate") transactionDate: okhttp3.RequestBody? = null,
-        @Part("currency") currency: okhttp3.RequestBody? = null
+        @Part("currency") currency: okhttp3.RequestBody? = null,
+        // On-device processing status — phone determines if fields need review
+        @Part("processingStatus") processingStatus: okhttp3.RequestBody? = null
     ): ReceiptUploadResponse
     
     // ============= Workspace Members =============
