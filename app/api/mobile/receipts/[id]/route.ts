@@ -34,7 +34,7 @@ export async function GET(
       .select(`
         id, image_url, amount, category, merchant_name,
         transaction_date, created_at, kra_verified, description,
-        processing_status, report_id, kra_invoice_number,
+        processing_status, report_id, kra_invoice_number, etims_qr_url,
         expense_reports!inner ( user_id, workspace_name, title )
       `)
       .eq('id', id)
@@ -57,6 +57,7 @@ export async function GET(
       created_at: data.created_at,
       kra_verified: data.kra_verified,
       kra_invoice_number: data.kra_invoice_number,
+      etims_qr_url: data.etims_qr_url,
       description: data.description,
       processing_status: data.processing_status || 'processed',
       report_id: data.report_id,

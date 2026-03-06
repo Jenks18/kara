@@ -386,6 +386,7 @@ export async function POST(request: NextRequest) {
               kra_invoice_number: kraInvoiceNumber,
               kra_verified: !!kraInvoiceNumber || hasEtimsQR,
               has_etims_qr: hasEtimsQR, // NEW: Flag for KRA Verified badge
+              etims_qr_url: etimsQrUrl, // Full KRA QR code URL
               receipt_details: Object.keys(receiptDetails).length > 0 ? receiptDetails : null, // NEW: Store items and metadata
               receipt_full_text: result.ocrData?.rawText || '', // NEW: Full OCR text for search
               reimbursable: userReimbursable,
@@ -447,6 +448,7 @@ export async function POST(request: NextRequest) {
         result.qrData.url.includes('itax.kra.go.ke') || 
         result.qrData.url.includes('etims.kra.go.ke')
       )),
+      qrUrl: result.qrData?.url || null,
       processingTimeMs: result.processingTimeMs,
       confidence: result.fieldConfidence ? {
         merchantName: result.fieldConfidence.merchantName?.confidence || 0,

@@ -21,6 +21,7 @@ function flattenItems(data: any[]) {
     transaction_date: item.transaction_date,
     created_at: item.created_at,
     kra_verified: item.kra_verified,
+    etims_qr_url: item.etims_qr_url,
     description: item.description,
     processing_status: item.processing_status || 'processed',
     report_id: item.report_id,
@@ -65,7 +66,7 @@ export async function GET(request: NextRequest) {
       .select(`
         id, image_url, amount, category, merchant_name,
         transaction_date, created_at, kra_verified, description,
-        processing_status, report_id,
+        processing_status, report_id, etims_qr_url,
         expense_reports ( user_id, workspace_name )
       `)
       .order('created_at', { ascending: false })

@@ -173,6 +173,7 @@ class BackgroundScanService @Inject constructor(
                             category         = response.category ?: finalCategory ?: "Uncategorized",
                             workspaceName    = workspaceName,
                             kraVerified      = response.kraVerified,
+                            etimsQrUrl       = response.qrUrl,
                             description      = finalDescription,
                             reportId         = response.reportId,
                             processingStatus = "processed"

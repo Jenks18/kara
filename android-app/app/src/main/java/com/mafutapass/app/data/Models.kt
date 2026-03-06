@@ -16,6 +16,8 @@ data class ExpenseItem(
     val createdAt: String = "",
     @SerializedName("kra_verified")
     val kraVerified: Boolean? = null,
+    @SerializedName("etims_qr_url")
+    val etimsQrUrl: String? = null,
     @SerializedName("workspace_name")
     val workspaceName: String = "",
     @SerializedName("processing_status")
@@ -224,6 +226,7 @@ data class ReceiptUploadResponse(
     val category: String? = null,
     val kraVerified: Boolean = false,
     val hasEtimsQR: Boolean = false,
+    val qrUrl: String? = null,
     val confidence: Map<String, Int>? = null,
     val processingTimeMs: Long = 0,
     val warning: String? = null,

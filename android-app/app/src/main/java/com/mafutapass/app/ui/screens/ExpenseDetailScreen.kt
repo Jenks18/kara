@@ -515,7 +515,17 @@ private fun ExpenseDetailContent(expense: ExpenseItem, localImageBytes: ByteArra
         }
 
         if (expense.kraVerified == true) {
-            Surface(shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.primaryContainer) {
+            val context = LocalContext.current
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.primaryContainer,
+                modifier = Modifier.clickable(enabled = !expense.etimsQrUrl.isNullOrBlank()) {
+                    expense.etimsQrUrl?.let { url ->
+                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
+                        context.startActivity(intent)
+                    }
+                }
+            ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -523,6 +533,9 @@ private fun ExpenseDetailContent(expense: ExpenseItem, localImageBytes: ByteArra
                 ) {
                     Icon(Icons.Filled.CheckCircle, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
                     Text("KRA Verified", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+                    if (!expense.etimsQrUrl.isNullOrBlank()) {
+                        Icon(Icons.Filled.OpenInNew, "View on KRA", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
+                    }
                 }
             }
         }
