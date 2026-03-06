@@ -40,6 +40,8 @@ import java.time.temporal.TemporalAdjusters
 fun HomeScreen(
     onViewAllExpenses: () -> Unit = {},
     onViewAllReports: () -> Unit = {},
+    onExpenseClick: (String) -> Unit = {},
+    onReportClick: (String) -> Unit = {},
     viewModel: ReportsViewModel = hiltViewModel()
 ) {
     val expenses by viewModel.expenseItems.collectAsState()
@@ -89,7 +91,10 @@ fun HomeScreen(
     val receiptCountThisMonth = serverStats?.receiptCountThisMonth ?: thisMonthExpenses.size
     val totalReceiptsAllTime  = serverStats?.totalReceipts         ?: expenses.size
 
-    LaunchedEffect(Unit) { viewModel.refresh() }
+    // Refresh only if ViewModel has stale/empty data (init already fetches once)
+    LaunchedEffect(Unit) {
+        if (expenses.isEmpty()) viewModel.refresh()
+    }
 
     val scrollState = rememberScrollState()
     val headerElevation by animateDpAsState(
@@ -217,7 +222,12 @@ fun HomeScreen(
                             EmptyState(icon = Icons.Filled.Receipt, message = "No expenses yet", sub = "Scan a receipt to get started")
                         } else {
                             expenses.take(5).forEachIndexed { index, expense ->
-                                Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                                Column(modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { onExpenseClick(expense.id) }
+                                    .padding(vertical = 8.dp)
+                                ) {
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -348,7 +358,8 @@ fun HomeScreen(
                                     modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
                                     shape = RoundedCornerShape(12.dp),
                                     border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE5E7EB)),
-                                    color = MaterialTheme.colorScheme.surface
+                                    color = MaterialTheme.colorScheme.surface,
+                                    onClick = { onReportClick(report.id) }
                                 ) {
                                     Column(modifier = Modifier.padding(16.dp)) {
                                         Row(

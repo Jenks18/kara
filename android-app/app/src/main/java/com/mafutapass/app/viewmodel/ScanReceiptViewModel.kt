@@ -6,6 +6,8 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mafutapass.app.data.ApiService
+import com.mafutapass.app.data.BackgroundScanService
+import com.mafutapass.app.data.PendingExpensesRepository
 import com.mafutapass.app.data.ReceiptUploadResponse
 import com.mafutapass.app.data.WorkspaceRepository
 import com.mafutapass.app.receipt.MultiPassResult
@@ -43,6 +45,8 @@ class ScanReceiptViewModel @Inject constructor(
     private val apiService: ApiService,
     private val workspaceRepository: WorkspaceRepository,
     private val receiptProcessor: ReceiptProcessor,
+    private val backgroundScanService: BackgroundScanService,
+    private val pendingExpensesRepository: PendingExpensesRepository,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
     
@@ -221,41 +225,104 @@ class ScanReceiptViewModel @Inject constructor(
     }
 
     /**
-     * Step 1: Run 2-pass scanning on all captured images:
-     *   Pass 1 — Text Recognition with spatial/structural analysis
-     *   Pass 2 — QR / Barcode scan
-     * Financial data stays on-device — no LLM processing.
+     * Create blank [ExpenseEditState] entries for each captured image and navigate
+     * immediately to the confirm screen — no OCR at this point.
+     *
+     * OCR (Pass 1: Text Recognition + Entity Extraction, Pass 2: KRA eTIMS barcode)
+     * runs entirely in the background AFTER the user presses “Create expense”, via
+     * [submitAndScanInBackground] → [BackgroundScanService].  This keeps the confirm
+     * screen instant and never shows a spinner between capture and confirm.
      */
     fun processOnDevice() {
         val images = _selectedImages.value
         if (images.isEmpty()) return
 
-        // Show the confirm page immediately with blank fields — one placeholder per captured image.
-        // No on-device OCR before the user confirms. The server handles AI/OCR processing after upload.
         _currentExpenseIndex.value = 0
-        _expenseStates.value = images.map { imgBytes ->
+        _expenseStates.value = images.map { bytes ->
             ExpenseEditState(
-                imageBytes = imgBytes,
-                description = "",
-                amount = "",
-                currency = "KES",
-                category = "Automatic",
+                imageBytes   = bytes,
+                description  = "",
+                amount       = "",
+                currency     = "KES",
+                category     = "Automatic",
                 reimbursable = false,
-                ocrResult = null
+                ocrResult    = null
             )
         }
         _uiState.value = ScanState.OcrResults
     }
 
     /**
+     * Called when the user presses “Create expense”:
+     *   1. Register scanning placeholder [ExpenseItem]s in [PendingExpensesRepository]
+     *      so [ReportsViewModel] surfaces them in the expense list immediately.
+     *   2. Call [onNavigate] — screen navigates to Reports right away (no spinner).
+     *   3. Hand off OCR + upload to [BackgroundScanService] whose [CoroutineScope]
+     *      is NOT tied to this ViewModel and keeps running after the Create route
+     *      is popped from the back stack.
+     *   4. Reset this ViewModel so it is ready for the next scan.
+     */
+    fun submitAndScanInBackground(onNavigate: () -> Unit) {
+        val states = _expenseStates.value
+        if (states.isEmpty()) return
+
+        val wsId   = _selectedWorkspaceId.value.takeIf { it.isNotBlank() }
+        val wsName = workspaceRepository.workspaces.value
+            .firstOrNull { it.id == wsId }?.name ?: "Personal"
+
+        // 1. Build placeholder entries (shown immediately with scanning indicator)
+        val tempIds = states.map { java.util.UUID.randomUUID().toString() }
+        val placeholders = states.mapIndexed { i, state ->
+            com.mafutapass.app.data.ExpenseItem(
+                id               = tempIds[i],
+                amount           = state.amount.toDoubleOrNull() ?: 0.0,
+                description      = state.description.takeIf { it.isNotBlank() },
+                category         = state.category.takeIf { it != "Automatic" } ?: "Uncategorized",
+                workspaceName    = wsName,
+                processingStatus = "scanning"
+            )
+        }
+        // Newest first so they appear at the top of the expense list
+        pendingExpensesRepository.addAll(placeholders.reversed())
+
+        // 2. Navigate immediately
+        onNavigate()
+
+        // 3. OCR + upload in an app-scoped coroutine (survives ViewModel destruction)
+        backgroundScanService.submit(
+            states        = states,
+            tempIds       = tempIds,
+            workspaceId   = wsId,
+            workspaceName = wsName,
+            qrUrl         = _detectedQrUrl.value,
+            location      = _location.value
+        )
+
+        // 4. Reset for next scan
+        reset()
+    }
+
+    /**
      * Called when the user presses "Create expense".
      *
-     * Step 1 — ML Kit OCR: runs on-device 2-pass scan on every image.
-     * Step 2 — Merge: OCR supplies amount / merchant / date / currency.
-     *           User-edited description, category, reimbursable always win.
-     * Step 3 — Upload: sends image + merged fields to the backend.
+     * At this point all OCR work is already done:
+     *   Pass 1 — Text Recognition v2 (ML Kit) with spatial bounding-box analysis.
+     *            Full receipt text is fed through ML Kit Entity Extraction to
+     *            find money amounts (locale-aware: KSh, 1,000.00, 1.000,00, etc.)
+     *            and dates.  Merchant name comes from the top-of-page spatial heuristic.
+     *            Category is auto-guessed from merchant + item keywords.
+     *   Pass 2 — Barcode scan (QR_CODE + DATA_MATRIX) looking for the KRA eTIMS
+     *            URL printed at the bottom of Kenyan tax invoices.
      *
-     * Financial data is read entirely on-device — raw OCR text never leaves the phone.
+     * Both passes ran in [processOnDevice] before the confirm screen was shown,
+     * so [ExpenseEditState.ocrResult] is already populated per image.
+     *
+     * Here we only:
+     *   Step 1 — Read: pull cached [ReceiptData] from each [ExpenseEditState].
+     *   Step 2 — Merge: user-edited fields always win over OCR-detected values.
+     *   Step 3 — Upload: send image + merged fields to the backend API.
+     *
+     * No raw OCR text ever leaves the device.
      */
     fun uploadAll() {
         val states = _expenseStates.value
@@ -282,32 +349,27 @@ class ScanReceiptViewModel @Inject constructor(
             for ((index, state) in states.withIndex()) {
                 _currentUploadIndex.value = index
 
-                // ── Step 1: ML Kit OCR ────────────────────────────────────────
-                var ocr: ReceiptData? = null
+                // ── Step 1: Read cached OCR result (computed in processOnDevice) ──
+                // Pass 1 (Text Recognition + spatial analysis + Entity Extraction) and
+                // Pass 2 (KRA eTIMS QR/barcode scan) both already completed before the
+                // confirm screen was shown.  No re-scan needed.
+                val ocr: ReceiptData? = state.ocrResult
                 val imageBytes = state.imageBytes
-
-                if (imageBytes != null) {
-                    Log.i(TAG, "══════ OCR for image $index (${imageBytes.size / 1024}KB) ══════")
-                    val bitmap = android.graphics.BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
-                    if (bitmap != null) {
-                        val multiPass = receiptProcessor.processAllPasses(bitmap, System.currentTimeMillis())
-                        ocr = multiPass.bestResult
-                        if (multiPass.qrUrls.isNotEmpty() && _detectedQrUrl.value == null) {
-                            _detectedQrUrl.value = multiPass.qrUrls.first()
-                        }
-                        Log.i(TAG, "OCR $index: merchant=${ocr.merchantName}, amount=${ocr.totalAmount}, date=${ocr.date}, currency=${ocr.currency}")
-                    } else {
-                        Log.e(TAG, "Failed to decode image $index for OCR")
-                    }
+                if (ocr != null) {
+                    Log.i(TAG, "Upload $index: merchant=${ocr.merchantName}, " +
+                        "amount=${ocr.totalAmount}, category=${state.category}, " +
+                        "currency=${ocr.currency}, date=${ocr.date}")
+                } else {
+                    Log.w(TAG, "Upload $index: no cached OCR result (manual entry or OCR failed)")
                 }
 
                 // ── Step 2: Merge user edits + OCR ───────────────────────────
-                // User values (description, category, reimbursable) always take priority.
-                // OCR fills in amount, merchant name (if user left description blank), date, currency.
+                // User-edited fields (description, category, reimbursable) always win.
+                // OCR fields (amount, currency, merchant, date) are used as-stored.
                 val finalDescription = state.description.takeIf { it.isNotBlank() }
                     ?: ocr?.merchantName ?: ""
-                val finalAmount = ocr?.totalAmount ?: state.amount.toDoubleOrNull() ?: 0.0
-                val finalCurrency = ocr?.currency?.takeIf { it.isNotBlank() } ?: state.currency
+                val finalAmount = state.amount.toDoubleOrNull() ?: ocr?.totalAmount ?: 0.0
+                val finalCurrency = state.currency.takeIf { it.isNotBlank() } ?: "KES"
                 val finalCategory = state.category.takeIf { it != "Automatic" && it.isNotBlank() }
                 val finalMerchant = ocr?.merchantName
                 val finalDate = ocr?.date

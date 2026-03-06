@@ -66,7 +66,8 @@ fun CreateWorkspaceScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = androidx.compose.ui.graphics.Color.Transparent
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
     Column(
         modifier = Modifier

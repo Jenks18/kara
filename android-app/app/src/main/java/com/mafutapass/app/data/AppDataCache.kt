@@ -43,7 +43,10 @@ class AppDataCache @Inject constructor(
     private fun key(userId: String, dataKey: String) = "$userId:$dataKey"
 
     private fun <T> save(userId: String, dataKey: String, value: T) {
-        prefs.edit { putString(key(userId, dataKey), gson.toJson(value)) }
+        prefs.edit {
+            putString(key(userId, dataKey), gson.toJson(value))
+            putLong(key(userId, "${dataKey}_ts"), System.currentTimeMillis())
+        }
     }
 
     private fun <T> loadObj(userId: String, dataKey: String, clazz: Class<T>): T? {
@@ -90,4 +93,21 @@ class AppDataCache @Inject constructor(
 
     fun loadExpenseReports(userId: String): List<ExpenseReport>? =
         loadList(userId, "expense_reports", ExpenseReport::class.java)
+    // ── Mobile Stats ("This Month" balance) ───────────────────────────────
+
+    fun saveStats(userId: String, stats: MobileStats) =
+        save(userId, "mobile_stats", stats)
+
+    fun loadStats(userId: String): MobileStats? =
+        loadObj(userId, "mobile_stats", MobileStats::class.java)
+
+    /**
+     * Check if a cached entry is stale (older than [maxAgeMs]).
+     * Returns true if stale or if no timestamp is recorded.
+     */
+    fun isStale(userId: String, dataKey: String, maxAgeMs: Long): Boolean {
+        val ts = prefs.getLong(key(userId, "${dataKey}_ts"), 0L)
+        if (ts == 0L) return true
+        return (System.currentTimeMillis() - ts) > maxAgeMs
+    }
 }

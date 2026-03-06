@@ -9,23 +9,59 @@ import com.mafutapass.app.data.AppDataCache
 import com.mafutapass.app.data.ExpenseItem
 import com.mafutapass.app.data.ExpenseReport
 import com.mafutapass.app.data.MobileStats
+import com.mafutapass.app.data.PendingExpensesRepository
 import com.mafutapass.app.data.UserSession
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 import javax.inject.Inject
 
 @HiltViewModel
 class ReportsViewModel @Inject constructor(
     private val apiService: ApiService,
     private val appDataCache: AppDataCache,
-    private val userSession: UserSession
+    private val userSession: UserSession,
+    private val pendingExpensesRepository: PendingExpensesRepository
 ) : ViewModel() {
     private val TAG = "ReportsViewModel"
 
-    private val _expenseItems = MutableStateFlow<List<ExpenseItem>>(emptyList())
-    val expenseItems: StateFlow<List<ExpenseItem>> = _expenseItems
+    /**
+     * Fetched (server-side) expense items.  Do not expose directly — use [expenseItems]
+     * which merges this with [PendingExpensesRepository.items] so in-flight scanning
+     * entries appear immediately at the top of the list.
+     */
+    private val _fetchedExpenseItems = MutableStateFlow<List<ExpenseItem>>(emptyList())
+
+    /**
+     * Merged list: pending (scanning / uploading) items first, then server-fetched items.
+     * De-duplicates by reportId so a completed upload doesn't appear twice after a refresh.
+     */
+    val expenseItems: StateFlow<List<ExpenseItem>> = combine(
+        pendingExpensesRepository.items,
+        _fetchedExpenseItems
+    ) { pending, fetched ->
+        val fetchedReportIds = fetched.mapNotNull { it.reportId }.toSet()
+        // Keep a pending item only while it is still scanning / errored OR its reportId
+        // hasn't shown up in the server-fetched list yet.
+        val filteredPending = pending.filter { p ->
+            p.processingStatus == "scanning" ||
+            p.processingStatus == "error" ||
+            (p.reportId == null || p.reportId !in fetchedReportIds)
+        }
+        filteredPending + fetched
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    /** Fires when a background upload finishes — drives the halo in ReportsScreen. */
+    val newlyCompletedExpenseId: StateFlow<String?> = pendingExpensesRepository.newlyCompletedId
+
+    /** Call after the halo timer has expired. */
+    fun clearNewlyCompleted() = pendingExpensesRepository.clearNewlyCompleted()
 
     private val _expenseReports = MutableStateFlow<List<ExpenseReport>>(emptyList())
     val expenseReports: StateFlow<List<ExpenseReport>> = _expenseReports
@@ -61,8 +97,9 @@ class ReportsViewModel @Inject constructor(
             Log.d(TAG, "Initializing ReportsViewModel...")
             val userId = userSession.userId.value
             if (userId != null) {
-                appDataCache.loadExpenseItems(userId)?.let { _expenseItems.value = it }
+                appDataCache.loadExpenseItems(userId)?.let { _fetchedExpenseItems.value = it }
                 appDataCache.loadExpenseReports(userId)?.let { _expenseReports.value = it }
+                appDataCache.loadStats(userId)?.let { _stats.value = it }
             }
             fetchExpenseData()
             Log.d(TAG, "✅ ReportsViewModel initialized")
@@ -75,7 +112,7 @@ class ReportsViewModel @Inject constructor(
 
     private fun fetchExpenseData() {
         Log.d(TAG, "🔄 Fetching expense data...")
-        if (_expenseItems.value.isEmpty() && _expenseReports.value.isEmpty()) {
+        if (_fetchedExpenseItems.value.isEmpty() && _expenseReports.value.isEmpty()) {
             _isLoading.value = true
         }
         _error.value = null
@@ -84,42 +121,46 @@ class ReportsViewModel @Inject constructor(
             try {
                 val userId = userSession.userId.value
 
-                // Fetch page 1 of reports
-                val pagedReports = try {
-                    apiService.getExpenseReports()
-                } catch (e: Exception) {
-                    Log.e(TAG, "⚠️ Failed to fetch reports: ${e.message}")
-                    null
-                }
-                if (pagedReports != null) {
-                    _expenseReports.value = pagedReports.items
-                    _reportsHasMore.value = pagedReports.hasMore
-                    nextReportCursor = pagedReports.nextCursor
-                    userId?.let { appDataCache.saveExpenseReports(it, pagedReports.items) }
-                    Log.d(TAG, "✅ Fetched ${pagedReports.items.size} expense reports (hasMore=${pagedReports.hasMore})")
-                }
+                // Fire all 3 API calls in parallel — cuts latency from ~3x to ~1x
+                supervisorScope {
+                    val reportsDeferred = async {
+                        try { apiService.getExpenseReports() }
+                        catch (e: Exception) { Log.e(TAG, "⚠️ Failed to fetch reports: ${e.message}"); null }
+                    }
+                    val expensesDeferred = async {
+                        try { apiService.getReceipts() }
+                        catch (e: Exception) { Log.e(TAG, "⚠️ Failed to fetch receipts: ${e.message}"); null }
+                    }
+                    val statsDeferred = async {
+                        try { apiService.getStats() }
+                        catch (e: Exception) { Log.w(TAG, "⚠️ Stats fetch failed: ${e.message}"); null }
+                    }
 
-                // Fetch page 1 of expenses
-                val pagedExpenses = try {
-                    apiService.getReceipts()
-                } catch (e: Exception) {
-                    Log.e(TAG, "⚠️ Failed to fetch receipts: ${e.message}")
-                    null
-                }
-                if (pagedExpenses != null) {
-                    _expenseItems.value = pagedExpenses.items
-                    _expensesHasMore.value = pagedExpenses.hasMore
-                    nextExpenseCursor = pagedExpenses.nextCursor
-                    userId?.let { appDataCache.saveExpenseItems(it, pagedExpenses.items) }
-                    Log.d(TAG, "✅ Fetched ${pagedExpenses.items.size} expense items (hasMore=${pagedExpenses.hasMore})")
-                }
+                    val pagedReports = reportsDeferred.await()
+                    val pagedExpenses = expensesDeferred.await()
+                    val freshStats = statsDeferred.await()
 
-                // Fetch accurate server-side stats (counts across full history)
-                try {
-                    _stats.value = apiService.getStats()
-                    Log.d(TAG, "✅ Fetched server stats")
-                } catch (e: Exception) {
-                    Log.w(TAG, "⚠️ Stats fetch failed (client-side totals will be used): ${e.message}")
+                    if (pagedReports != null) {
+                        _expenseReports.value = pagedReports.items
+                        _reportsHasMore.value = pagedReports.hasMore
+                        nextReportCursor = pagedReports.nextCursor
+                        userId?.let { appDataCache.saveExpenseReports(it, pagedReports.items) }
+                        Log.d(TAG, "✅ Fetched ${pagedReports.items.size} expense reports (hasMore=${pagedReports.hasMore})")
+                    }
+
+                    if (pagedExpenses != null) {
+                        _fetchedExpenseItems.value = pagedExpenses.items
+                        _expensesHasMore.value = pagedExpenses.hasMore
+                        nextExpenseCursor = pagedExpenses.nextCursor
+                        userId?.let { appDataCache.saveExpenseItems(it, pagedExpenses.items) }
+                        Log.d(TAG, "✅ Fetched ${pagedExpenses.items.size} expense items (hasMore=${pagedExpenses.hasMore})")
+                    }
+
+                    if (freshStats != null) {
+                        _stats.value = freshStats
+                        userId?.let { appDataCache.saveStats(it, freshStats) }
+                        Log.d(TAG, "✅ Fetched server stats")
+                    }
                 }
 
             } catch (e: Exception) {
@@ -139,7 +180,7 @@ class ReportsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val paged = apiService.getReceipts(cursor = cursor)
-                _expenseItems.value = _expenseItems.value + paged.items
+                _fetchedExpenseItems.value = _fetchedExpenseItems.value + paged.items
                 _expensesHasMore.value = paged.hasMore
                 nextExpenseCursor = paged.nextCursor
                 Log.d(TAG, "✅ Loaded ${paged.items.size} more expenses")

@@ -68,12 +68,70 @@ class TokenRepository private constructor(context: Context) {
     }
 
     // Encrypted SharedPreferences (FALLBACK)
+    //
+    // Android Keystore keys can become corrupted after reinstall, OS update,
+    // or backup restore — causing AEADBadTagException on decrypt.
+    // The production-grade fix (used by Signal, Tink samples, etc.) is:
+    //   1. Catch the exception
+    //   2. Delete BOTH the prefs file AND the Keystore alias
+    //   3. Recreate from scratch (user must re-authenticate)
+    //   4. If that still fails, fall back to plain prefs to prevent crash
+    private var usingPlaintextFallback = false
+
     private val encryptedPrefs: SharedPreferences by lazy {
+        try {
+            val prefs = createEncryptedPrefs()
+            // If we previously fell back to plaintext, migrate back now
+            if (appContext.getSharedPreferences("${PREFS_NAME}_fallback", Context.MODE_PRIVATE)
+                    .all.isNotEmpty()) {
+                Log.d(TAG, "Clearing stale plaintext fallback prefs")
+                appContext.getSharedPreferences("${PREFS_NAME}_fallback", Context.MODE_PRIVATE)
+                    .edit().clear().apply()
+            }
+            prefs
+        } catch (e: Exception) {
+            Log.w(TAG, "EncryptedSharedPreferences corrupted (${e.javaClass.simpleName}), " +
+                "clearing prefs + Keystore alias and recreating: ${e.message}")
+            // 1. Delete the corrupted SharedPreferences XML file
+            try {
+                appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().clear().apply()
+                val prefsFile = java.io.File(appContext.filesDir.parent, "shared_prefs/${PREFS_NAME}.xml")
+                if (prefsFile.exists()) prefsFile.delete()
+            } catch (cleanup: Exception) {
+                Log.w(TAG, "Prefs file cleanup failed: ${cleanup.message}")
+            }
+            // 2. Delete the corrupted MasterKey from Android Keystore
+            try {
+                val keyStore = java.security.KeyStore.getInstance("AndroidKeyStore")
+                keyStore.load(null)
+                val alias = MasterKey.DEFAULT_MASTER_KEY_ALIAS
+                if (keyStore.containsAlias(alias)) {
+                    keyStore.deleteEntry(alias)
+                    Log.d(TAG, "Deleted corrupted Keystore alias: $alias")
+                }
+            } catch (ks: Exception) {
+                Log.w(TAG, "Keystore alias cleanup failed: ${ks.message}")
+            }
+            // 3. Retry with a fresh MasterKey + fresh prefs
+            try {
+                createEncryptedPrefs()
+            } catch (e2: Exception) {
+                Log.e(TAG, "EncryptedSharedPreferences still failing after full cleanup, " +
+                    "using plain prefs as crash-prevention fallback: ${e2.message}")
+                // Last resort: plain prefs so the app doesn't crash.
+                // Token data is already protected by AccountManager as primary storage.
+                usingPlaintextFallback = true
+                appContext.getSharedPreferences("${PREFS_NAME}_fallback", Context.MODE_PRIVATE)
+            }
+        }
+    }
+
+    private fun createEncryptedPrefs(): SharedPreferences {
         val masterKey = MasterKey.Builder(appContext)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
             .build()
-            
-        EncryptedSharedPreferences.create(
+
+        return EncryptedSharedPreferences.create(
             appContext,
             PREFS_NAME,
             masterKey,

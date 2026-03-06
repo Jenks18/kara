@@ -3,6 +3,7 @@ package com.mafutapass.app
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.core.tween
@@ -17,6 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -58,6 +60,30 @@ class MainActivity : ComponentActivity() {
                 ThemeViewModel.ThemeMode.Light -> false
                 ThemeViewModel.ThemeMode.Dark -> true
                 ThemeViewModel.ThemeMode.System -> isSystemInDarkTheme()
+            }
+
+            // Re-apply edge-to-edge whenever the in-app theme flips so the
+            // status-bar / nav-bar icon tint (light ↔ dark) stays correct.
+            val activity = this@MainActivity
+            LaunchedEffect(isDark) {
+                activity.enableEdgeToEdge(
+                    statusBarStyle = if (isDark) {
+                        SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+                    } else {
+                        SystemBarStyle.light(
+                            android.graphics.Color.TRANSPARENT,
+                            android.graphics.Color.TRANSPARENT
+                        )
+                    },
+                    navigationBarStyle = if (isDark) {
+                        SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+                    } else {
+                        SystemBarStyle.light(
+                            android.graphics.Color.TRANSPARENT,
+                            android.graphics.Color.TRANSPARENT
+                        )
+                    }
+                )
             }
 
             MafutaPassTheme(darkTheme = isDark) {
@@ -139,18 +165,16 @@ fun MafutaPassApp(themeViewModel: ThemeViewModel, avatarManager: AvatarManager) 
                         popExitTransition = { fadeOut(tween(durationMillis = 0)) }
                     ) {
                         AddReceiptScreen(
-                            onDone = { reportId ->
-                                if (reportId != null) {
-                                    // Upload completed — go to Reports with the new expense highlighted.
-                                    navController.navigate("${Screen.Reports.route}?initialTab=0&highlight=$reportId") {
-                                        popUpTo(Screen.Create.route) { inclusive = true }
-                                        launchSingleTop = true
-                                    }
-                                } else {
-                                    // User cancelled — return to wherever they came from (Home, Reports, etc.).
-                                    // Using popBackStack preserves the prior screen's state and avoids
-                                    // the two-part render caused by navigating to a fresh Reports instance.
-                                    navController.popBackStack()
+                            onDone = { _ ->
+                                // User cancelled (back button) — return to wherever they were.
+                                navController.popBackStack()
+                            },
+                            onNavigateToReports = {
+                                // "Create expense" pressed — go to Expenses tab immediately.
+                                // Scanning + upload continues in BackgroundScanService.
+                                navController.navigate("${Screen.Reports.route}?initialTab=0") {
+                                    popUpTo(Screen.Create.route) { inclusive = true }
+                                    launchSingleTop = true
                                 }
                             }
                         )

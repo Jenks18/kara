@@ -29,7 +29,8 @@ data class ExpenseItem(
         val raw = merchantName?.trim() ?: return null
         val garbageNames = setOf(
             "processing...", "unknown", "unknown merchant", "n/a", "null",
-            "< receipt", "<receipt", "receipt", "merchant"
+            "< receipt", "<receipt", "receipt", "merchant",
+            "add receipt", "add merchant", "scanning...", "scanning"
         )
         return if (raw.isBlank() || raw.lowercase() in garbageNames) null else raw
     }
@@ -215,6 +216,7 @@ data class UpdateProfileResponse(
 data class ReceiptUploadResponse(
     val success: Boolean = false,
     val reportId: String? = null,
+    val expenseItemId: String? = null,
     val imageUrl: String? = null,
     val merchant: String? = null,
     val amount: Double = 0.0,
@@ -232,7 +234,8 @@ data class ReceiptUploadResponse(
         val raw = merchant?.trim() ?: return "Unknown Merchant"
         val garbageNames = setOf(
             "processing...", "unknown", "unknown merchant", "n/a", "null",
-            "< receipt", "<receipt", "receipt", "merchant"
+            "< receipt", "<receipt", "receipt", "merchant",
+            "add receipt", "add merchant", "scanning...", "scanning"
         )
         return if (raw.isBlank() || raw.lowercase() in garbageNames) "Unknown Merchant" else raw
     }

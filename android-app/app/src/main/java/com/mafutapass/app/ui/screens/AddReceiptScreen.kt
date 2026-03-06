@@ -84,6 +84,7 @@ private const val TAG = "AddReceiptScreen"
 @Composable
 fun AddReceiptScreen(
     onDone: (reportId: String?) -> Unit = {},
+    onNavigateToReports: () -> Unit = {},
     viewModel: ScanReceiptViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -149,14 +150,6 @@ fun AddReceiptScreen(
         }
     }
 
-    // Auto-navigate when upload completes (Results state). By doing it here — after upload is fully
-    // done — we guarantee the ViewModel coroutine is not cancelled mid-upload.
-    LaunchedEffect(uiState) {
-        if (uiState is ScanState.Results) {
-            onDone((uiState as ScanState.Results).reportId)
-        }
-    }
-
     // Location (best-effort)
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -216,9 +209,14 @@ fun AddReceiptScreen(
                 viewModel.reset()
                 onDone(null)
             }
-            // Confirm or Review screens: re-open the camera so the user can add/retake images
-            // without losing any captures they already have.
+            // Confirm or Review screens: clear all captured state and re-open the camera
+            // for a completely fresh scan. Without reset() here, the next capture appends
+            // to the existing _selectedImages/_expenseStates list, causing duplicate receipts.
+            // reset() sets uiState → ChooseMethod; the LaunchedEffect(uiState) camera guard
+            // (!showCamera) stays false because showCamera=true is set in the same block,
+            // so the permission launcher won't double-fire.
             uiState is ScanState.OcrResults || uiState is ScanState.ReviewImages -> {
+                viewModel.reset()
                 showCamera = true
             }
             else -> { /* ChooseMethod — isAtScanRoot guards this; should not occur */ }
@@ -322,49 +320,18 @@ fun AddReceiptScreen(
                 onShowWorkspacePicker = { showWorkspacePicker = true },
                 onShowImageFullscreen = { idx -> showImageFullscreenIdx = idx },
                 onShowDescriptionEditor = { idx -> showDescriptionEditorIdx = idx },
-                // Only start the upload — navigation happens via LaunchedEffect(uiState) when
-                // ScanState.Results fires, so the ViewModel coroutine isn't cancelled mid-upload.
-                onConfirmUpload = { viewModel.uploadAll() },
+                // Press "Create expense": create scanning placeholders immediately and
+                // navigate to Reports. OCR + upload runs in BackgroundScanService (app-scoped
+                // coroutine — survives this ViewModel being cleared on navigation).
+                onConfirmUpload = { viewModel.submitAndScanInBackground(onNavigateToReports) },
                 onRetake = { viewModel.reset() }
             )
         }
         return
     }
 
-    // Full-screen uploading — brief spinner while upload completes.
-    if (uiState is ScanState.Uploading) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(AppTheme.colors.backgroundGradient),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                CircularProgressIndicator(
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(48.dp)
-                )
-                Spacer(Modifier.height(20.dp))
-                Text(
-                    "Saving expense\u2026",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-        }
-        return
-    }
-
-    // Results state is handled entirely by the LaunchedEffect above (navigates immediately).
-    // Render a blank dark screen for the single frame it might be visible.
-    if (uiState is ScanState.Results) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(AppTheme.colors.backgroundGradient)
-        )
-        return
-    }
+    // Uploading + Results states are never reached: submitAndScanInBackground()
+    // navigates immediately and hands off to BackgroundScanService before any upload runs.
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
@@ -945,14 +912,6 @@ private fun ConfirmDetailsSection(
                                 color = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.weight(1f)
                             )
-                            if (state.category == "Automatic") {
-                                Icon(
-                                    Icons.Filled.AutoAwesome, null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(15.dp)
-                                )
-                                Spacer(Modifier.width(4.dp))
-                            }
                             Text(
                                 state.category,
                                 style = MaterialTheme.typography.bodyMedium,
@@ -974,10 +933,6 @@ private fun ConfirmDetailsSection(
                             DropdownMenuItem(
                                 text = {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        if (cat == "Automatic") {
-                                            Icon(Icons.Filled.AutoAwesome, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
-                                            Spacer(Modifier.width(6.dp))
-                                        }
                                         Text(cat, color = if (cat == state.category) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
                                     }
                                 },
@@ -1027,7 +982,8 @@ private fun ConfirmDetailsSection(
             Column(
                 modifier = Modifier
                     .padding(horizontal = 20.dp)
-                    .padding(bottom = 28.dp),
+                    .navigationBarsPadding()
+                    .padding(bottom = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 // Remove this expense — only shown when there are multiple
@@ -1546,7 +1502,8 @@ private fun SwipeableModeSelector(
     selectedMode: ScanMode,
     onModeSelected: (ScanMode) -> Unit
 ) {
-    val modes = ScanMode.entries
+    // STITCH is hidden until the stitch-and-merge pipeline is built.
+    val modes = ScanMode.entries.filter { it != ScanMode.STITCH }
     var dragAccumulator by remember { mutableFloatStateOf(0f) }
 
     Row(
@@ -1772,7 +1729,8 @@ private fun ReceiptCamera(
         Box(
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .padding(start = 16.dp, top = 48.dp)
+                .statusBarsPadding()
+                .padding(start = 16.dp, top = 8.dp)
                 .size(40.dp)
                 .background(Color.Black.copy(alpha = 0.5f), CircleShape)
                 .clickable { onDone() },
@@ -1785,7 +1743,7 @@ private fun ReceiptCamera(
         Surface(
             shape = RoundedCornerShape(50),
             color = Color.Black.copy(alpha = 0.5f),
-            modifier = Modifier.align(Alignment.TopCenter).padding(top = 48.dp)
+            modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(top = 8.dp)
         ) {
             Row(Modifier.padding(4.dp)) {
                 Surface(shape = RoundedCornerShape(50), color = Color.Transparent, onClick = onSwitchToManual) {
@@ -1809,7 +1767,8 @@ private fun ReceiptCamera(
         Box(
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .padding(start = 16.dp, top = 108.dp)
+                .statusBarsPadding()
+                .padding(start = 16.dp, top = 56.dp)
                 .size(42.dp)
                 .background(
                     if (flashEnabled) MaterialTheme.colorScheme.primary
@@ -1862,7 +1821,8 @@ private fun ReceiptCamera(
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 28.dp),
+                .navigationBarsPadding()
+                .padding(bottom = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             SwipeableModeSelector(
@@ -1996,7 +1956,8 @@ private fun ManualEntrySection(
         Box(
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .padding(start = 16.dp, top = 48.dp)
+                .statusBarsPadding()
+                .padding(start = 16.dp, top = 8.dp)
                 .size(40.dp)
                 .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), CircleShape)
                 .clickable { onClose() },
@@ -2009,7 +1970,7 @@ private fun ManualEntrySection(
         Surface(
             shape = RoundedCornerShape(50),
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-            modifier = Modifier.align(Alignment.TopCenter).padding(top = 48.dp)
+            modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(top = 8.dp)
         ) {
             Row(Modifier.padding(4.dp)) {
                 Surface(shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.primary, onClick = {}) {
@@ -2079,7 +2040,8 @@ private fun ManualEntrySection(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(horizontal = 16.dp)
-                .padding(bottom = 32.dp),
+                .navigationBarsPadding()
+                .padding(bottom = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {

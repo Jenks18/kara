@@ -1,6 +1,6 @@
 # Kacha — Architecture & Single Source of Truth
 
-> **Last updated:** 2025-01-20
+> **Last updated:** 2026-03-05
 > **Product name:** Kacha (by Kacha Labs)
 > **Domain:** kachalabs.com
 > **Brand color:** Blue (#0066FF)
@@ -55,7 +55,7 @@
 
 | Tab | Route | Description |
 |-----|-------|-------------|
-| Home | `/` | Dashboard with stats, recent expenses, category breakdown |
+| Home | `/` | Dashboard with stats, recent expenses (tap → detail), active reports (tap → detail), category breakdown |
 | Reports | `/reports` | Expense reports list + detail view |
 | Scan (FAB) | `/create` | Elevated center button — receipt capture |
 | Workspaces | `/workspaces` | Workspace list + management |
@@ -182,8 +182,11 @@ All tables use RLS. User identification via `auth.jwt()->>'sub'` (Clerk user ID)
 
 ### Storage: Supabase Storage
 
-- `receipt-images` bucket — raw receipt photos
-- `workspace-avatars` bucket — workspace avatar images
+| Bucket | Purpose | Public | Notes |
+|--------|---------|--------|-------|
+| `receipt-images` | Raw receipt photos | No | Folder-scoped RLS: `{userId}/*` matches email OR Clerk sub |
+| `workspace-avatars` | Workspace avatar images | Yes | |
+| `profile-pictures` | User profile photos | Yes | Folder-scoped RLS: `{userId}/*` via `auth.jwt()->>'sub'` (migration 031) |
 
 ---
 
@@ -386,9 +389,10 @@ Mirror the web endpoints but authenticate via Bearer token:
 | Language | Kotlin |
 | UI | Jetpack Compose + Material3 |
 | DI | Hilt |
-| Auth | Google OAuth → `/api/auth/google-native` |
-| Receipt scan | ML Kit Document Scanner |
-| QR scan | ML Kit Barcode Scanner |
+| Auth | Google OAuth via Credential Manager → `/api/auth/google-native` |
+| Receipt scan | ML Kit Text Recognition v2 (on-device spatial OCR) |
+| Entity extraction | ML Kit Entity Extraction (money/date detection, on-device) |
+| QR / Barcode | ML Kit Barcode Scanner |
 | API base | `https://kachalabs.com/api/mobile/` |
 
 ### iOS (`ios-app/`)
@@ -402,11 +406,315 @@ Mirror the web endpoints but authenticate via Bearer token:
 
 Both mobile apps use `/api/mobile/*` endpoints with Bearer token authentication.
 
+### Android Navigation (`MainActivity.kt` — Jetpack Navigation Compose)
+
+| Route | Screen | Navigated From |
+|-------|--------|----------------|
+| `Screen.Home` | `HomeScreen` | Bottom nav |
+| `Screen.Reports?initialTab={0\|1}` | `ReportsScreen` | Bottom nav / "View All" links on Home |
+| `Screen.Create` | `AddReceiptScreen` | Bottom nav (center FAB) |
+| `Screen.Workspaces` | `WorkspacesScreen` | Bottom nav |
+| `Screen.Account` | `AccountScreen` | Bottom nav |
+| `expenses/{expenseId}` | `ExpenseDetailScreen` | HomeScreen item tap / ReportsScreen row tap (including scanning items) |
+| `reports/{reportId}` | `ReportDetailScreen` | HomeScreen report tap / ReportsScreen row tap |
+| `workspaces/{id}` | `WorkspaceDetailScreen` | WorkspacesScreen row tap |
+| `workspaces/new` | `CreateWorkspaceScreen` | WorkspacesScreen create button |
+| `profile` | `ProfileScreen` | AccountScreen |
+| `profile/edit-*` | Edit field screens | ProfileScreen |
+| `preferences` | `PreferencesScreen` | AccountScreen |
+| `preferences/theme` | `ThemeScreen` | PreferencesScreen |
+| `security` | `SecurityScreen` | AccountScreen |
+| `about` | `AboutScreen` | AccountScreen |
+
+HomeScreen passes four navigation callbacks: `onViewAllExpenses`, `onViewAllReports`, `onExpenseClick(id)`, and `onReportClick(id)`. Tapping any individual expense or report card navigates directly to its detail screen.
+
+### Android Scan UI (`AddReceiptScreen` — `ui/screens/AddReceiptScreen.kt`)
+
+The scan screen opens the camera immediately on launch (auto-requests permission via `LaunchedEffect`). It is structured as an immersive full-screen camera experience.
+
+**Top bar (overlaid on viewfinder)**
+- Floating X button (top-left, circular, `Icons.Filled.Close`) — closes camera, returns to previous state
+- `[ ✏️ Manual ] [ 🧾 Scan ]` pill toggle (top-center) — tapping Manual switches to `ManualEntrySection`
+
+**Flash toggle** — circular button, top-left below the X. Toggles `flashEnabled` flag. Flash fires only at the moment of capture (`imageCapture.flashMode = FLASH_MODE_ON/OFF`) — no persistent torch.
+
+**Full-screen / hide bottom nav** — `AddReceiptScreen` accepts `onFullscreenChanged: (Boolean) -> Unit`. `SideEffect` fires it whenever `showCamera` or `showManual` is true. `MainActivity` holds `var cameraFullscreen` and conditionally renders `bottomBar = {}` and `Modifier.fillMaxSize()` (no scaffold padding) when true.
+
+**Swipeable mode selector** — above the shutter button, horizontally swipeable with `detectHorizontalDragGestures`:
+
+| Mode | Behavior |
+|------|----------|
+| `SINGLE` | One shot → auto-advances to Review. Left slot shows Gallery icon. Right slot hidden. |
+| `BATCH` | Multiple separate receipts. Each shutter tap adds a new filmstrip thumbnail. Right slot shows green `>` when ≥1 capture. |
+| `STITCH` | One long receipt across multiple frames. Each shutter tap increments frameCount on the single thumbnail (no new entry). Right slot shows green `>` when ≥1 capture. |
+
+**Bottom control panel (3 slots)**
+
+| Slot | SINGLE mode | BATCH / STITCH mode |
+|------|-------------|---------------------|
+| Left | Gallery icon → opens photo picker | Filmstrip thumbnail (stacked squares with count badge) |
+| Center | Shutter (always) | Shutter (always) |
+| Right | Hidden | Green `>` arrow → triggers `onDone()` to advance to Review |
+
+**Filmstrip logic** (UI state only — no stitching yet):
+- `FilmstripEntry(thumbnailBytes, frameCount)` — one entry per receipt in BATCH, one shared entry in STITCH
+- BATCH: `filmstrip = filmstrip + FilmstripEntry(bytes)`
+- STITCH: `filmstrip[0].frameCount++` (no new entry, visually communicates "same receipt")
+
+**State management** — all scan mode / filmstrip / torch state is local to `ReceiptCamera`. Images are forwarded to `ScanReceiptViewModel.addImageBytes()` as before. The full ViewModel state machine (`ChooseMethod → ReviewImages → Processing → OcrResults → Uploading → Results`) is unchanged.
+
+### Manual Entry Flow (`ManualEntrySection`)
+
+Full-screen composable (triggered when user taps "Manual" from the camera view). Hides bottom nav via the same `onFullscreenChanged` mechanism.
+
+- **X button** (top-left) — returns to camera
+- **`[ ✏️ Manual ] [ 🧾 Scan ]` toggle** — Manual highlighted; tapping Scan re-launches camera permissoin request
+- **Large amount display** — `KES 0` style, updates live as digits are entered
+- **Currency pill** — cycles through KES → USD → EUR → GBP on tap
+- **Flip +/- pill** — prepends/removes `-` sign
+- **Custom numpad** — 3×4 grid: 1–9, `.`, `0`, `⌫ (Backspace)`. Each key is a `Surface(onClick)` at 64dp height.
+- **"Next" button** — enabled only when amount is non-zero. Calls `viewModel.beginManualFlow(amount)` which sets `editedAmount`, clears images/OCR, and advances state to `OcrResults` → shows `ConfirmDetailsSection` (same confirm screen as scan flow).
+
+### Confirm Details Flow (`ConfirmDetailsSection`)
+
+Redesigned per-expense confirmation screen (all flows: scan, batch, stitch, gallery, manual). Hidden bottom nav via `onFullscreenChanged` since `OcrResults` is now included in the fullscreen check in `SideEffect`.
+
+**Architecture:**
+- `ScanReceiptViewModel` now holds `expenseStates: StateFlow<List<ExpenseEditState>>` — one entry per image/receipt
+- `ExpenseEditState(imageBytes, description, amount, currency, category, reimbursable, ocrResult)`
+- `currentExpenseIndex: StateFlow<Int>` — which expense is being reviewed
+- `uploadAll()` now iterates `expenseStates` instead of a flat `selectedImages` list — fully per-expense
+
+**Screen layout (matches UI spec):**
+- **Top bar** — back arrow + "Confirm details" title + "X of Y" subtitle (multi-receipt) + `<` `>` circle chevrons (multi-receipt navigation)
+- **"To" row** — workspace avatar + name + description + right chevron → taps to open `WorkspacePickerView`
+- **Receipt image box** — 200–340dp height, `ContentScale.Fit`, tappable → opens `ReceiptFullscreenView`; shows KRA badge if QR detected; shows "No image — manual entry" placeholder for manual flow
+- **Concierge hint** — sparkle (✨) icon + "Concierge will automatically enter the expense details for you, or you can add them manually."
+- **Amount row** — tappable row → opens `AmountEditorView`; shows `currency + amount` or "Add amount"
+- **Description row** — tappable row → opens `DescriptionEditorView`
+- **Category row** — tappable row → dropdown with sparkle icon for "Automatic" option
+- **Reimbursable** — `Switch` toggle
+- **"Remove this expense"** — muted pill button, only shown when `total > 1`; calls `viewModel.removeExpenseAtIndex(currentIndex)`
+- **"Create N expenses" / "Create expense"** — primary green pill button; calls `viewModel.uploadAll()` then `onDone()` (navigates to Expenses tab immediately, upload continues in background)
+
+**Gallery skip:** `galleryLauncher` callback now calls `viewModel.processOnDevice()` immediately after adding images → skips `ReviewImages` state entirely.
+
+**Camera skip:** Camera's `onDone` callback now calls `viewModel.processOnDevice()` → same skip.
+
+### Background Scan Architecture (`data/BackgroundScanService.kt` + `data/PendingExpensesRepository.kt`)
+
+OCR happens **after** the user taps "Create expense" — never before. The user sees instant navigation to the Reports tab while scanning continues in the background.
+
+```
+User taps "Create expense"
+    │
+    ├─ ScanReceiptViewModel.processOnDevice()
+    │   └─ Creates BLANK ExpenseEditState per image (ocrResult = null)
+    │
+    ├─ ScanReceiptViewModel.submitAndScanInBackground()
+    │   ├─ Creates scanning placeholders in PendingExpensesRepository
+    │   ├─ Navigates to Reports tab immediately
+    │   └─ Hands off to BackgroundScanService.submit()
+    │
+    └─ BackgroundScanService (singleton, SupervisorJob + Dispatchers.IO)
+        └─ For each image:
+            ├─ Pass 1: ML Kit OCR + Entity Extraction (on-device)
+            ├─ Pass 2: Barcode scan (eTIMS QR)
+            ├─ Update placeholder with OCR data (still "scanning" status)
+            ├─ Upload to /api/mobile/receipts/upload
+            └─ Replace placeholder with real ExpenseItem ("processed" status)
+```
+
+**Key singletons:**
+
+| Class | Purpose |
+|-------|--------|
+| `BackgroundScanService` | `@Singleton` with `CoroutineScope(SupervisorJob() + Dispatchers.IO)`. Outlives ViewModel — never cancelled by navigation. Runs OCR + upload per image. |
+| `PendingExpensesRepository` | `@Singleton` `StateFlow<List<ExpenseItem>>` holding scanning placeholders. Includes a local image bytes cache (`Map<String, ByteArray>`) so the detail screen can display camera images before upload completes. `ReportsViewModel` merges these with fetched items via `combine()`. |
+
+**ReportsScreen behavior:**
+- Scanning items show dark blue card (`Color(0xFF0D1F2D)`) with blue border (`Color(0xFF1A3A5C)`) and "Scanning…" placeholders for empty fields only
+- When `processingStatus` changes to `"processed"`, the card transitions to normal style with a 1.5s highlight halo
+- `ReportsViewModel` auto-switches to Expenses tab when a newly completed expense arrives
+- Scanning cards are tappable — navigate to detail with live-updating scanning state (no 404)
+
+### Workspace Picker (`WorkspacePickerView`)
+
+Full-screen overlay composable. Triggered by tapping the "To" row in `ConfirmDetailsSection`; returned to via back button or selection.
+
+- Dark background (`AppTheme.colors.backgroundGradient`)
+- Back arrow + "Choose recipient" title
+- Workspaces grouped: **Personal** (entries where `planType == null` or name contains "personal") → **Workspaces** (all others)
+- Each row: square-rounded avatar (emoji / initials) + name + description/currency symbol + checkmark when selected
+- Tapping a row → calls `viewModel.setWorkspaceId(id)` + closes picker
+
+### Receipt Full-Screen Viewer (`ReceiptFullscreenView`)
+
+Full-screen overlay composable. Triggered by tapping the image box in `ConfirmDetailsSection`.
+
+- Deep dark green background (`Color(0xFF0C1F14)`)
+- Top: back arrow + "Receipt" title + 3-dot overflow menu (Replace option)
+- Image fills screen with padding for top/bottom bars (`ContentScale.Fit`)
+- Bottom bar: **Rotate** / **Crop** / **Replace** pill buttons — Replace calls `onReplace()` which re-launches gallery picker
+
+### ExpenseCard Scanning / Error States (`ReportsScreen.kt`)
+
+`ExpenseCard` updated to fully reflect server-side `processing_status`:
+
+| Status | Visual |
+|--------|--------|
+| `scanning` | Dark blue card (`Color(0xFF0D1F2D)`) + blue border (`Color(0xFF1A3A5C)`) + "Scanning…" placeholders only for fields not yet filled by OCR |
+| `error` / `needs_review` | Normal card + red-dot + inline error message: "Missing merchant. Receipt scanning failed. Enter details manually." |
+| `processed` | Normal card with full merchant, amount, KRA badge |
+
+Each card now: **workspace name + avatar** in top-left; **"View" chip** in top-right; **date · Cash** meta row; larger **52dp image thumbnail**.
+
+### ExpenseDetailScreen — Per-Field Edit + Scanning-Aware Flow (`ui/screens/ExpenseDetailScreen.kt`)
+
+`ExpenseDetailScreen` uses an `editingField` state variable to switch between the read-only detail view and per-field edit sub-screens (Amount, Description, Merchant, Date, Category). Each edit sub-screen has a field-specific UI (number pad for amount, search list for categories, date picker calendar, etc.).
+
+**System back button** is intercepted via `BackHandler` when `editingField != null` — returns to the detail view instead of popping the navigation stack.
+
+**Scanning-aware detail flow:**
+
+```
+User taps scanning card in ReportsScreen
+    │
+    ├─ ExpenseDetailViewModel.loadExpense(tempId)
+    │   ├─ Checks PendingExpensesRepository FIRST (no API call)
+    │   ├─ Shows pending item immediately with local camera image
+    │   └─ Starts observePendingUpdates(tempId) Flow collector
+    │
+    ├─ While scanning (Flow emits updates):
+    │   ├─ OCR fills in merchant/amount/category → UI updates live
+    │   ├─ Only truly empty fields show "Scanning..." placeholder
+    │   └─ Local camera image displayed via PendingExpensesRepository.getImageBytes()
+    │
+    └─ Upload completes (tempId replaced with real server ID):
+        ├─ Flow detects tempId gone, reads newlyCompletedId
+        ├─ Sets resolvedId for future API calls
+        ├─ Fetches fresh data from API using real server ID
+        └─ Cancels observation Job
+```
+
+**Key design decisions:**
+- `PendingExpensesRepository` stores local image bytes (`ByteArray`) keyed by temp ID — detail screen uses Coil’s `ByteArray` data support to display them before upload
+- Description is **user-only** — never auto-filled from merchant name (prevents duplicate data)
+- `resolvedId` used by `updateExpense()` so edits after scanning completes target the real server ID
+- Per-field edit sub-screens: `AmountEditContent` (custom number pad), `DescriptionEditContent` (text field), `MerchantEditContent` (text field), `DateEditContent` (Material3 DatePicker), `CategoryEditContent` (searchable list of 13 categories)
+
+### Android Token Storage (`auth/TokenRepository.kt`)
+
+Three-tier token storage with automatic failover:
+
+| Priority | Storage | Purpose |
+|----------|---------|---------|
+| 1 (Primary) | Android AccountManager | System-level account, survives app updates |
+| 2 (Fallback) | EncryptedSharedPreferences | AES-256-GCM via AndroidKeystore MasterKey |
+| 3 (Legacy) | Plain SharedPreferences | Old app versions, auto-migrated to tier 1 |
+
+**Keystore corruption recovery:** `EncryptedSharedPreferences` can throw `AEADBadTagException` when Android Keystore keys become corrupted (reinstall, OS update, backup restore). Recovery flow:
+
+1. Catch exception on `EncryptedSharedPreferences.create()`
+2. Delete corrupted prefs XML file from `shared_prefs/`
+3. Delete corrupted MasterKey alias from Android Keystore (`_androidx_security_master_key_`)
+4. Recreate both from scratch — user must re-authenticate
+5. If still failing, fall back to plain SharedPreferences (crash prevention)
+6. On next successful encrypted init, stale plaintext fallback prefs are auto-cleared
+
+### Android Disk Cache (`data/AppDataCache.kt`)
+
+Unified per-user disk cache using SharedPreferences + Gson serialization. Keys are namespaced: `"<userId>:<dataKey>"`.
+
+| Data | Key | Cached on |
+|------|-----|-----------|
+| User profile | `profile` | Login, profile update |
+| Workspaces | `workspaces` | Workspace list fetch |
+| Expense items (page 1) | `expense_items` | Dashboard load |
+| Expense reports (page 1) | `expense_reports` | Dashboard load |
+| Monthly stats | `mobile_stats` | Dashboard load |
+
+Every write records a `<key>_ts` staleness timestamp. `isStale(userId, key, maxAgeMs)` available for TTL-based cache invalidation.
+
+**Cache-first pattern:** On ViewModel init, cached data is loaded synchronously into StateFlows (instant UI). Network fetch runs in parallel behind it. UI updates atomically when fresh data arrives — no zero-flash.
+
+### Android Dashboard Data Flow (`HomeScreen` + `ReportsViewModel`)
+
+```
+App Launch
+│
+├─ ReportsViewModel.init()
+│   ├─ Synchronous: Load cached expenses, reports, stats from AppDataCache
+│   │   └─ StateFlows emit immediately → UI shows last-known values
+│   │
+│   └─ Async: fetchExpenseData() fires 3 parallel API calls:
+│       ├─ async { apiService.getExpenseReports() }
+│       ├─ async { apiService.getReceipts() }
+│       └─ async { apiService.getStats() }
+│       └─ supervisorScope: each call independent, one failure ≠ all fail
+│       └─ Results update StateFlows + save to AppDataCache
+│
+├─ HomeScreen collects StateFlows:
+│   ├─ serverStats?.totalThisMonth  (preferred)
+│   └─ ?: clientTotalThisMonth      (fallback: sum from page-1 expenses)
+│
+├─ HeroSpendingCard renders "This Month" balance
+│
+└─ Item tap navigation:
+    ├─ Recent Expenses: onExpenseClick(id) → navController.navigate("expenses/$id")
+    └─ Active Reports:  onReportClick(id) → navController.navigate("reports/$id")
+```
+
+### Android On-Device Receipt Processing (`receipt/ReceiptProcessor.kt`)
+
+**Privacy-first:** No receipt image or financial data leaves the device. All OCR and extraction run on-device via ML Kit.
+
+**No heuristic fallbacks.** Entity Extraction always awaits `downloadModelIfNeeded()` synchronously before annotating — even on first launch. The user sees a "scanning" placeholder card in Reports, so blocking on the model download is acceptable UX. Returns empty lists only if the model genuinely cannot be downloaded (no connectivity and no cache).
+
+```
+BackgroundScanService hands off bitmap
+    │
+    ▼
+Pass 1: runSpatialOcr(bitmap) — 3-step suspend function
+    │
+    ├─ Step 1: ML Kit Text Recognition v2 (suspendCoroutine wrapper)
+    │   └─ Returns: fullText + lineElements + wordElements with bounding boxes
+    │
+    ├─ Step 2: extractEntities(fullText) — proper suspend call
+    │   └─ downloadModelIfNeeded() → annotate() → money + date entities
+    │   └─ No heuristic regex fallback. Empty lists if model unavailable.
+    │
+    └─ Step 3: Spatial field extraction using OCR + entity results
+        ├──► extractMerchantSpatial() — Top 30%, skip noise lines
+        ├──► extractTotalSpatial() — Keyword-first, bottom-to-top
+        │     Tier 1: CASH, GRAND TOTAL, TOTAL DUE, AMOUNT PAID
+        │     Tier 2: bare TOTAL, NET AMOUNT
+        │     Tier 3: AMOUNT, BALANCE
+        │     Tier 4: Sum, SUBTOTAL
+        │     Cross-validates: CASH vs TOTAL agreement
+        │     No keyword match → returns null → user enters amount
+        ├──► extractDateSpatial() — DD/MM/YYYY patterns, 2020..current+1
+        │     (fallback when Entity Extraction returns no valid dates)
+        └──► guessCategory() — 13 Kenyan categories, keyword scoring
+    │
+    ▼
+Pass 2: runBarcodeScan(bitmap) — ML Kit Barcode Scanner
+    └─ eTIMS QR code detection (QR_CODE + DATA_MATRIX)
+    └─ rawValue ?: displayValue (handles both QR payload formats)
+    │
+    ▼
+Returns MultiPassResult → BackgroundScanService merges with user edits → uploads
+```
+
+**Amount parsing (`parseLocaleAmount`):** Handles Kenyan locale (comma = thousands, dot = decimal). Multi-dot strings treat last dot as decimal (`"1.000.00"` → 1000.0). Phone numbers (8+ digits, `+` prefix) are filtered. Cap at 10M.
+
 ---
 
 ## 10. Receipt Processing Pipeline
 
-Located in `lib/receipt-processing/`:
+### Web (server-side) — `lib/receipt-processing/`
+
+Used by the web app. Image uploaded → server processes with Gemini Vision + Tesseract.js.
 
 ```
 Image Upload
@@ -430,6 +738,11 @@ Data Normalization + Vendor Matching
     │
     ▼
 Store in raw_receipts table
+```
+
+### Mobile (on-device) — `android-app/.../receipt/ReceiptProcessor.kt`
+
+Used by Android/iOS. All processing runs on-device via ML Kit. No financial data leaves the phone. Server-side pipeline is **disabled** for mobile uploads (`route.ts` skips orchestrator). See Section 9 for the full on-device flow.
 ```
 
 ### Key modules
@@ -488,6 +801,18 @@ Store in raw_receipts table
 - `workspace_members` uses `SECURITY DEFINER` functions to prevent infinite recursion
 - User ID from Clerk JWT (`auth.jwt()->>'sub'`) — never trust client-submitted user_id
 
+### Storage RLS (Supabase `receipts` bucket)
+
+Upload path: `<userId>/timestamp.jpg`. RLS policy (migration 023) allows access when `foldername[1]` matches EITHER the user's email (`auth.jwt()->>'email'`) OR their Clerk sub (`auth.jwt()->>'sub'`). Web uses email-based folders; mobile uses userId-based folders.
+
+### Android Token Security
+
+Three-tier storage: AccountManager (primary) → EncryptedSharedPreferences (AES-256-GCM via AndroidKeystore) → legacy SharedPreferences (auto-migrated). Keystore corruption handled with full cleanup + graceful fallback (see Section 9).
+
+### On-Device Receipt Privacy
+
+Mobile receipt processing runs entirely on-device via ML Kit. No receipt images or extracted financial data are sent to any AI/cloud service. Only the final user-confirmed structured data (merchant, amount, date, category) is uploaded to the server.
+
 ### Report submission
 
 - Suspicious activity and bug reports stored in `support_tickets` table
@@ -517,13 +842,32 @@ Applied in order. Located in `migrations/`.
 | `007-user-profiles-rls.sql` | User profiles RLS policies |
 | `008-fix-rls-clerk-user-id.sql` | Fix RLS for Clerk non-UUID user IDs |
 | `009-create-support-tickets.sql` | Support tickets table for bugs + security reports |
-| `010-fix-workspace-rls-recursion.sql` | Fix infinite recursion in workspace_members RLS using SECURITY DEFINER functions |
-| `011-workspace-collaboration.sql` | workspace_members table, roles, triggers |
-| `013-remove-unused-tables.sql` | Clean up unused tables/triggers |
+| `010-deploy-enhanced-receipt-schema.sql` | Enhanced receipt schema with structured fields |
+| `011-receipt-templates.sql` | Receipt template patterns for vendor matching |
+| `012-add-enhanced-receipt-tables.sql` | Additional enhanced receipt tables |
+| `013-fix-workspace-rls-recursion.sql` | Fix infinite recursion in workspace_members RLS using SECURITY DEFINER functions |
+| `014-workspace-collaboration.sql` | workspace_members table, roles, triggers |
+| `015-add-etims-qr-fields.sql` | eTIMS QR URL and data fields on receipts |
+| `016-add-etims-tracking.sql` | eTIMS verification tracking |
+| `017-create-storage-buckets.sql` | Storage bucket policies (profile-avatars — superseded by 031) |
+| `018-remove-unused-tables.sql` | Clean up unused tables/triggers |
+| `019-support-tickets-updated-at-trigger.sql` | Auto-update `updated_at` on support_tickets |
+| `020-fix-workspace-member-rls.sql` | Fix workspace_members RLS policies |
+| `021-backfill-workspace-members-and-link-receipts.sql` | Backfill workspace_members + link receipts |
+| `022-consolidate-workspace-rls.sql` | Consolidate workspace RLS to single policy set |
+| `023-fix-receipts-storage-policy.sql` | Fix Storage RLS for mobile — folder[1] matches email OR Clerk sub |
+| `024-stats-rpc-functions.sql` | RPC functions for dashboard statistics |
+| `025-atomic-report-total.sql` | Atomic report total recalculation |
+| `026-workspace-member-data-access.sql` | Workspace members can read shared data |
+| `027-stores-rls-and-nearby-rpc.sql` | Stores table RLS + nearby store lookup RPC |
+| `028-fix-bucket-mime-types.sql` | Fix allowed MIME types on storage buckets |
+| `029-stats-rpc-security-invoker.sql` | Stats RPC functions use SECURITY INVOKER |
+| `030-add-is-default-workspace.sql` | `is_default` flag on workspaces |
+| `031-profile-pictures-storage-policies.sql` | Storage RLS for `profile-pictures` bucket (folder-scoped, replaces 017) |
 
-### Important: Migration 010 must be applied AFTER 011
+### Important: Migration 013 must be applied AFTER 014
 
-Migration 011 creates `workspace_members` and its (recursive) policies. Migration 010 replaces those policies with non-recursive versions using `is_workspace_member()` and `is_workspace_admin()` security definer functions.
+Migration 014 creates `workspace_members` and its (recursive) policies. Migration 013 replaces those policies with non-recursive versions using `is_workspace_member()` and `is_workspace_admin()` security definer functions.
 
 ---
 

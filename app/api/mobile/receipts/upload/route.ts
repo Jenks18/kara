@@ -195,6 +195,7 @@ export async function POST(request: NextRequest) {
         date: resolvedDate,
         category: resolvedCategory,
         currency: resolvedCurrency,
+        qrUrl: qrUrl || null,
       });
     } else {
       // WEB PATH: Full server-side pipeline (web uploads only)
@@ -349,6 +350,16 @@ export async function POST(request: NextRequest) {
             result.qrData.url.includes('kra.go.ke')
           )) || result.parsedData?.hasEtimsQR || result.aiEnhanced?.hasEtimsQR;
 
+          // Extract KRA invoice number from QR URL (format: ...invoiceNo=XXXXXXXXX)
+          let kraInvoiceNumber: string | null = result.kraData?.invoiceNumber || null;
+          const etimsQrUrl: string | null = result.qrData?.url || null;
+          if (!kraInvoiceNumber && etimsQrUrl) {
+            try {
+              const qrUrlObj = new URL(etimsQrUrl);
+              kraInvoiceNumber = qrUrlObj.searchParams.get('invoiceNo') || null;
+            } catch { /* malformed URL — skip */ }
+          }
+
           // Build receipt_details for UI display
           const receiptDetails: any = {};
           if (result.parsedData?.items && result.parsedData.items.length > 0) {
@@ -357,8 +368,11 @@ export async function POST(request: NextRequest) {
           if (result.parsedData?.metadata || result.aiEnhanced?.metadata) {
             receiptDetails.metadata = result.parsedData?.metadata || result.aiEnhanced?.metadata;
           }
+          if (etimsQrUrl) {
+            receiptDetails.etimsQrUrl = etimsQrUrl;
+          }
 
-          const { error: itemError } = await supabase
+          const { data: insertedItem, error: itemError } = await supabase
             .from('expense_items')
             .insert({
               report_id: finalReportId,
@@ -369,18 +383,22 @@ export async function POST(request: NextRequest) {
               processing_status: initialStatus,
               merchant_name: merchantName,
               transaction_date: transactionDate,
-              kra_invoice_number: result.kraData?.invoiceNumber || null,
-              kra_verified: !!result.kraData?.invoiceNumber,
+              kra_invoice_number: kraInvoiceNumber,
+              kra_verified: !!kraInvoiceNumber || hasEtimsQR,
               has_etims_qr: hasEtimsQR, // NEW: Flag for KRA Verified badge
               receipt_details: Object.keys(receiptDetails).length > 0 ? receiptDetails : null, // NEW: Store items and metadata
               receipt_full_text: result.ocrData?.rawText || '', // NEW: Full OCR text for search
               reimbursable: userReimbursable,
-              // User-supplied description takes precedence; fall back to auto-generated review prompt.
-              description: userDescription
-                || (initialStatus === 'needs_review'
-                  ? 'Some details could not be verified — please review and update'
-                  : null),
-            });
+              // Description is user-only — never auto-generated.
+              description: userDescription || null,
+            })
+            .select('id')
+            .single();
+
+          // Store the expense_items.id so we can return it in the response
+          if (insertedItem?.id) {
+            (result as any)._expenseItemId = insertedItem.id;
+          }
 
           if (!itemError && amount > 0) {
             // Atomic total update — avoids read-then-write race on concurrent batch uploads
@@ -394,6 +412,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
           success: true,
           reportId: finalReportId,
+          expenseItemId: null,
           imageUrl: result.imageUrl,
           merchant: null,
           amount: 0,
@@ -409,6 +428,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: uploadSucceeded,
       reportId: finalReportId,
+      expenseItemId: (result as any)._expenseItemId || null,
       imageUrl: result.imageUrl,
       merchant: (() => {
         const raw = result.kraData?.merchantName || result.parsedData?.merchantName || null;
@@ -418,7 +438,11 @@ export async function POST(request: NextRequest) {
       amount: result.kraData?.totalAmount || result.parsedData?.totalAmount || 0,
       date: result.kraData?.invoiceDate || result.parsedData?.transactionDate || null,
       category: result.parsedData?.category || 'Other',
-      kraVerified: !!result.kraData?.invoiceNumber,
+      kraVerified: !!result.kraData?.invoiceNumber || !!(result.qrData?.url && (
+        result.qrData.url.includes('itax.kra.go.ke') || 
+        result.qrData.url.includes('etims.kra.go.ke') ||
+        result.qrData.url.includes('kra.go.ke')
+      )),
       hasEtimsQR: !!(result.qrData?.url && (
         result.qrData.url.includes('itax.kra.go.ke') || 
         result.qrData.url.includes('etims.kra.go.ke')

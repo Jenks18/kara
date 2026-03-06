@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -61,12 +62,30 @@ fun ReportsScreen(
     val reports by viewModel.expenseReports.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
-    // Track which expense to highlight (matched by reportId or, if null, the most recently added)
+    // newlyCompletedId fires when BackgroundScanService finishes uploading an expense.
+    // We apply the halo for 3 s then clear it so it only pulses once.
+    val newlyCompletedId by viewModel.newlyCompletedExpenseId.collectAsState()
+
+    // Track which expense to highlight — seeded from nav arg (legacy) or background upload signal.
     var activeHighlightId by remember { mutableStateOf(highlightReportId) }
+
     LaunchedEffect(highlightReportId) {
         if (highlightReportId != null) {
             activeHighlightId = highlightReportId
-            kotlinx.coroutines.delay(3000)
+            kotlinx.coroutines.delay(1500)
+            activeHighlightId = null
+        }
+    }
+
+    LaunchedEffect(newlyCompletedId) {
+        if (newlyCompletedId != null) {
+            // Switch to Expenses tab so the user sees their newly uploaded receipt.
+            selectedTab = 0
+            activeHighlightId = newlyCompletedId
+            viewModel.clearNewlyCompleted()
+            // Refresh from server to pick up latest data
+            viewModel.refresh()
+            kotlinx.coroutines.delay(1500)
             activeHighlightId = null
         }
     }
@@ -197,8 +216,9 @@ fun ExpensesTab(expenses: List<ExpenseItem>, onNavigateToDetail: (String) -> Uni
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(expenses) { expense ->
-                val isNew = highlightReportId != null && expense.reportId == highlightReportId
+            items(expenses, key = { it.id }) { expense ->
+                val isNew = highlightReportId != null &&
+                    (expense.reportId == highlightReportId || expense.id == highlightReportId)
                 ExpenseCard(expense, onNavigateToDetail, isNew = isNew)
             }
         }
@@ -217,7 +237,7 @@ fun ReportsTab(reports: List<ExpenseReport>, onNavigateToDetail: (String) -> Uni
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(reports) { report ->
+            items(reports, key = { it.id }) { report ->
                 ReportCard(report, onNavigateToDetail)
             }
         }
@@ -249,11 +269,10 @@ fun ExpenseCard(expense: ExpenseItem, onNavigateToDetail: (String) -> Unit = {},
 
     val accentColor = when {
         isScanning -> MaterialTheme.colorScheme.onSurfaceVariant
-        needsReview -> Color(0xFFE6A817)
         else -> MaterialTheme.colorScheme.primary
     }
 
-    val scanningBorderColor = Color(0xFF7B5B27)
+    val scanningBorderColor = Color(0xFF1A3A5C)
     val borderModifier = when {
         isNew     -> Modifier.border(2.dp, haloColor, RoundedCornerShape(12.dp))
         isScanning -> Modifier.border(1.5.dp, scanningBorderColor, RoundedCornerShape(12.dp))
@@ -262,7 +281,7 @@ fun ExpenseCard(expense: ExpenseItem, onNavigateToDetail: (String) -> Unit = {},
 
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = if (isScanning) Color(0xFF2A1F0C) else MaterialTheme.colorScheme.surface,
+        color = if (isScanning) Color(0xFF0D1F2D) else MaterialTheme.colorScheme.surface,
         shadowElevation = 2.dp,
         modifier = Modifier
             .fillMaxWidth()
@@ -284,7 +303,14 @@ fun ExpenseCard(expense: ExpenseItem, onNavigateToDetail: (String) -> Unit = {},
                             .background(MaterialTheme.colorScheme.primaryContainer),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(expense.workspaceName.firstOrNull()?.uppercaseChar()?.toString() ?: "W", fontSize = 10.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                        Text(
+                            expense.workspaceName.firstOrNull()?.uppercaseChar()?.toString() ?: "W",
+                            fontSize = 10.sp,
+                            lineHeight = 10.sp,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
+                        )
                     }
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
@@ -314,7 +340,7 @@ fun ExpenseCard(expense: ExpenseItem, onNavigateToDetail: (String) -> Unit = {},
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
             // ── Main row: thumbnail · merchant+meta · amount ──────────────────
             Row(
@@ -416,11 +442,7 @@ fun ExpenseCard(expense: ExpenseItem, onNavigateToDetail: (String) -> Unit = {},
                 }
             }
 
-            // ── Description preview ───────────────────────────────────────────
-            if (!isScanning && !expense.description.isNullOrBlank() && !expense.description.startsWith("AI confidence")) {
-                Spacer(modifier = Modifier.height(6.dp))
-                Text("\uD83D\uDCDD ${expense.description}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
+            // Description preview removed — cleaner card design
         }
     }
 }

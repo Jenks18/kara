@@ -100,22 +100,6 @@ class ReceiptProcessor @Inject constructor() {
         EntityExtractorOptions.Builder(EntityExtractorOptions.ENGLISH).build()
     )
 
-    // Track whether the Entity Extraction model has been downloaded
-    @Volatile
-    private var entityModelReady = false
-
-    init {
-        // Eagerly download the Entity Extraction model in background
-        entityExtractor.downloadModelIfNeeded()
-            .addOnSuccessListener {
-                entityModelReady = true
-                Log.i(TAG, "Entity Extraction model ready")
-            }
-            .addOnFailureListener { e ->
-                Log.w(TAG, "Entity Extraction model download failed: ${e.message}")
-            }
-    }
-
     // -- Public API -----------------------------------------------------------
 
     suspend fun processBytes(imageBytes: ByteArray): ReceiptData {
@@ -150,12 +134,19 @@ class ReceiptProcessor @Inject constructor() {
 
     // -- Pass 1: Spatial OCR + Entity Extraction ------------------------------
 
-    private suspend fun runSpatialOcr(bitmap: Bitmap): ReceiptData =
-        suspendCoroutine { continuation ->
-            try {
-                val image = InputImage.fromBitmap(bitmap, 0)
-                val imageHeight = bitmap.height.toFloat()
+    private suspend fun runSpatialOcr(bitmap: Bitmap): ReceiptData {
+        val imageHeight = bitmap.height.toFloat()
 
+        // Step 1: ML Kit Text Recognition — wraps Task callback in a coroutine
+        data class OcrRaw(
+            val fullText: String,
+            val lineElements: List<PositionedText>,
+            val wordElements: List<PositionedText>
+        )
+
+        val raw: OcrRaw = try {
+            suspendCoroutine { continuation ->
+                val image = InputImage.fromBitmap(bitmap, 0)
                 textRecognizer.process(image)
                     .addOnSuccessListener { visionText ->
                         val fullText = visionText.text
@@ -163,7 +154,7 @@ class ReceiptProcessor @Inject constructor() {
                             "${visionText.textBlocks.size} blocks")
 
                         if (visionText.textBlocks.isEmpty()) {
-                            continuation.resume(ReceiptData(rawText = fullText))
+                            continuation.resume(OcrRaw(fullText, emptyList(), emptyList()))
                             return@addOnSuccessListener
                         }
 
@@ -202,163 +193,145 @@ class ReceiptProcessor @Inject constructor() {
                                 "\"${el.text.take(100)}\"")
                         }
 
-                        // Run entity extraction on the full text to find money & dates
-                        extractEntities(fullText) { moneyEntities, dateEntities ->
-                            Log.i(TAG, "[EntityExtraction] Found ${moneyEntities.size} money, " +
-                                "${dateEntities.size} date entities")
-                            moneyEntities.forEach { m ->
-                                Log.d(TAG, "[EntityExtraction] Money: ${m.amount} " +
-                                    "${m.unnormalizedCurrency} from '${m.sourceText}'")
-                            }
-                            dateEntities.forEach { d ->
-                                Log.d(TAG, "[EntityExtraction] Date: '$d'")
-                            }
-
-                            // Extract fields using spatial analysis + entity extraction
-                            val merchant = extractMerchantSpatial(lineElements)
-                            val (totalAmount, currency) = extractTotalSpatial(
-                                lineElements, wordElements, imageHeight, moneyEntities
-                            )
-                            val detectedCurrency = currency ?: detectCurrency(fullText)
-                            val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
-                            val validDates = dateEntities.filter { d ->
-                                val yearMatch = Regex("""^(\d{4})-""").find(d)
-                                val year = yearMatch?.groupValues?.get(1)?.toIntOrNull()
-                                year != null && year in 2020..(currentYear + 1)
-                            }
-                            val date = validDates.firstOrNull()
-                                ?: extractDateSpatial(lineElements)
-                            val items = extractItemsSpatial(lineElements)
-                            val itemTexts = items.joinToString(" ") { it.description }
-                            val category = guessCategory(merchant, fullText, itemTexts)
-                            val hasEtims = fullText.contains("eTIMS", ignoreCase = true) ||
-                                fullText.contains("Tax Invoice", ignoreCase = true) ||
-                                fullText.contains("KRA", ignoreCase = false) ||
-                                fullText.contains("PIN:", ignoreCase = true) ||
-                                fullText.contains("CU Invoice", ignoreCase = true)
-
-                            val result = ReceiptData(
-                                merchantName = merchant,
-                                totalAmount = totalAmount,
-                                currency = detectedCurrency,
-                                date = date,
-                                category = category,
-                                items = items,
-                                rawText = fullText,
-                                hasEtimsMarkers = hasEtims
-                            )
-
-                            Log.i(TAG, "[Result] merchant='$merchant', " +
-                                "total=$totalAmount, currency=$detectedCurrency, " +
-                                "date=$date, items=${items.size}")
-                            continuation.resume(result)
-                        }
+                        continuation.resume(OcrRaw(fullText, lineElements, wordElements))
                     }
                     .addOnFailureListener { e ->
                         Log.e(TAG, "[OCR] ML Kit failed: ${e.message}")
-                        continuation.resume(ReceiptData(rawText = "OCR error: ${e.message}"))
+                        continuation.resume(OcrRaw("", emptyList(), emptyList()))
                     }
-            } catch (e: Exception) {
-                Log.e(TAG, "[OCR] error: ${e.message}")
-                continuation.resume(ReceiptData(rawText = "Error: ${e.message}"))
             }
+        } catch (e: Exception) {
+            Log.e(TAG, "[OCR] error: ${e.message}")
+            return ReceiptData(rawText = "Error: ${e.message}")
         }
+
+        if (raw.lineElements.isEmpty()) return ReceiptData(rawText = raw.fullText)
+
+        // Step 2: Entity Extraction — awaits model download on first launch
+        val (moneyEntities, dateEntities) = extractEntities(raw.fullText)
+
+        Log.i(TAG, "[EntityExtraction] Found ${moneyEntities.size} money, " +
+            "${dateEntities.size} date entities")
+        moneyEntities.forEach { m ->
+            Log.d(TAG, "[EntityExtraction] Money: ${m.amount} " +
+                "${m.unnormalizedCurrency} from '${m.sourceText}'")
+        }
+        dateEntities.forEach { d ->
+            Log.d(TAG, "[EntityExtraction] Date: '$d'")
+        }
+
+        // Step 3: Spatial field extraction using OCR + entity results
+        val merchant = extractMerchantSpatial(raw.lineElements)
+        val (totalAmount, currency) = extractTotalSpatial(
+            raw.lineElements, raw.wordElements, imageHeight, moneyEntities
+        )
+        val detectedCurrency = currency ?: detectCurrency(raw.fullText)
+        val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
+        val today = java.util.Calendar.getInstance()
+        val validDates = dateEntities.filter { d ->
+            val yearMatch = Regex("""^(\d{4})-""").find(d)
+            val year = yearMatch?.groupValues?.get(1)?.toIntOrNull()
+            if (year == null || year !in 2020..currentYear) return@filter false
+            // Reject dates in the future
+            try {
+                val parts = d.split("-")
+                if (parts.size == 3) {
+                    val cal = java.util.Calendar.getInstance().apply {
+                        set(parts[0].toInt(), parts[1].toInt() - 1, parts[2].toInt(), 23, 59, 59)
+                    }
+                    !cal.after(today)
+                } else false
+            } catch (_: Exception) { false }
+        }
+        val date = validDates.firstOrNull()
+            ?: extractDateSpatial(raw.lineElements)
+        val items = extractItemsSpatial(raw.lineElements)
+        val itemTexts = items.joinToString(" ") { it.description }
+        val category = guessCategory(merchant, raw.fullText, itemTexts)
+        val hasEtims = raw.fullText.contains("eTIMS", ignoreCase = true) ||
+            raw.fullText.contains("Tax Invoice", ignoreCase = true) ||
+            raw.fullText.contains("KRA", ignoreCase = false) ||
+            raw.fullText.contains("PIN:", ignoreCase = true) ||
+            raw.fullText.contains("CU Invoice", ignoreCase = true)
+
+        val result = ReceiptData(
+            merchantName = merchant,
+            totalAmount = totalAmount,
+            currency = detectedCurrency,
+            date = date,
+            category = category,
+            items = items,
+            rawText = raw.fullText,
+            hasEtimsMarkers = hasEtims
+        )
+
+        Log.i(TAG, "[Result] merchant='$merchant', " +
+            "total=$totalAmount, currency=$detectedCurrency, " +
+            "date=$date, items=${items.size}")
+        return result
+    }
 
     // -- Entity Extraction (money & dates) ------------------------------------
 
     /**
-     * Use ML Kit Entity Extraction to find money amounts and dates in text.
-     * This handles locale-aware formats ("1.000,00", "1,000.00", "KSh 2800")
-     * without any regex.
+     * Awaits [EntityExtractor.downloadModelIfNeeded] before annotating — even on first launch.
+     * This means we always use ML Kit, never heuristic regex.
+     * [downloadModelIfNeeded] is a no-op (~0 ms) once the model is on-device.
+     * Returns empty lists only if the model genuinely cannot be downloaded (no connectivity
+     * and no cache) — in that case the spatial keyword approach still finds the total,
+     * and the date spatial regex finds the date.
      */
-    private fun extractEntities(
-        text: String,
-        callback: (money: List<DetectedMoney>, dates: List<String>) -> Unit
-    ) {
-        if (!entityModelReady) {
-            Log.w(TAG, "[EntityExtraction] Model not ready, falling back to heuristic parsing")
-            val money = heuristicMoneyExtract(text)
-            val dates = heuristicDateExtract(text)
-            callback(money, dates)
-            return
-        }
-
-        val params = EntityExtractionParams.Builder(text)
-            .setEntityTypesFilter(setOf(Entity.TYPE_MONEY, Entity.TYPE_DATE_TIME))
-            .build()
-
-        entityExtractor.annotate(params)
-            .addOnSuccessListener { annotations ->
-                val moneyEntities = mutableListOf<DetectedMoney>()
-                val dateEntities = mutableListOf<String>()
-
-                for (annotation in annotations) {
-                    val annotatedText = text.substring(annotation.start, annotation.end)
-                    for (entity in annotation.entities) {
-                        when (entity) {
-                            is MoneyEntity -> {
-                                moneyEntities.add(DetectedMoney(
-                                    integerPart = entity.integerPart,
-                                    fractionalPart = entity.fractionalPart,
-                                    unnormalizedCurrency = entity.unnormalizedCurrency,
-                                    sourceText = annotatedText
-                                ))
-                            }
-                            is com.google.mlkit.nl.entityextraction.DateTimeEntity -> {
-                                // Convert to ISO date
-                                val ts = entity.timestampMillis
-                                val cal = java.util.Calendar.getInstance()
-                                cal.timeInMillis = ts
-                                val y = cal.get(java.util.Calendar.YEAR)
-                                val m = cal.get(java.util.Calendar.MONTH) + 1
-                                val d = cal.get(java.util.Calendar.DAY_OF_MONTH)
-                                dateEntities.add("%04d-%02d-%02d".format(y, m, d))
+    private suspend fun extractEntities(
+        text: String
+    ): Pair<List<DetectedMoney>, List<String>> = suspendCoroutine { continuation ->
+        entityExtractor.downloadModelIfNeeded()
+            .addOnSuccessListener {
+                val params = EntityExtractionParams.Builder(text)
+                    .setEntityTypesFilter(setOf(Entity.TYPE_MONEY, Entity.TYPE_DATE_TIME))
+                    .build()
+                entityExtractor.annotate(params)
+                    .addOnSuccessListener { annotations ->
+                        val moneyEntities = mutableListOf<DetectedMoney>()
+                        val dateEntities  = mutableListOf<String>()
+                        for (annotation in annotations) {
+                            val annotatedText = text.substring(annotation.start, annotation.end)
+                            for (entity in annotation.entities) {
+                                when (entity) {
+                                    is MoneyEntity -> {
+                                        moneyEntities.add(DetectedMoney(
+                                            integerPart         = entity.integerPart,
+                                            fractionalPart      = entity.fractionalPart,
+                                            unnormalizedCurrency = entity.unnormalizedCurrency,
+                                            sourceText          = annotatedText
+                                        ))
+                                    }
+                                    is com.google.mlkit.nl.entityextraction.DateTimeEntity -> {
+                                        val cal = java.util.Calendar.getInstance().also {
+                                            it.timeInMillis = entity.timestampMillis
+                                        }
+                                        dateEntities.add("%04d-%02d-%02d".format(
+                                            cal.get(java.util.Calendar.YEAR),
+                                            cal.get(java.util.Calendar.MONTH) + 1,
+                                            cal.get(java.util.Calendar.DAY_OF_MONTH)
+                                        ))
+                                    }
+                                }
                             }
                         }
+                        continuation.resume(Pair(moneyEntities, dateEntities))
                     }
-                }
-
-                callback(moneyEntities, dateEntities)
+                    .addOnFailureListener { e ->
+                        Log.e(TAG, "[EntityExtraction] annotate failed: ${e.message}")
+                        continuation.resume(Pair(emptyList(), emptyList()))
+                    }
             }
             .addOnFailureListener { e ->
-                Log.w(TAG, "[EntityExtraction] Failed: ${e.message}, using heuristic fallback")
-                val money = heuristicMoneyExtract(text)
-                val dates = heuristicDateExtract(text)
-                callback(money, dates)
+                Log.e(TAG, "[EntityExtraction] model unavailable: ${e.message}")
+                continuation.resume(Pair(emptyList(), emptyList()))
             }
     }
 
-    // -- Heuristic fallbacks (used when Entity Extraction model not downloaded) --
-
-    /**
-     * Locale-aware money parser. Handles:
-     *   "1.000.00" (dot as thousands, 3-group pattern with final decimal)
-     *   "1,000.00" (US format)
-     *   "1.000,00" (European format)
-     *   "2800"     (plain integer)
-     *   "KSh 2,800" (with currency prefix)
-     */
-    private fun heuristicMoneyExtract(text: String): List<DetectedMoney> {
-        val results = mutableListOf<DetectedMoney>()
-        // Match patterns that look like money amounts in text
-        val moneyPattern = Regex(
-            """(?:KSh|Ksh|KES|Kes|USD|\$|UGX|TZS)?\s*""" +
-            """(\d{1,3}(?:[.,\s]\d{3})*(?:[.,]\d{1,2})?)""" +
-            """|(\d{4,7}(?:\.\d{1,2})?)""",
-            RegexOption.IGNORE_CASE
-        )
-        for (match in moneyPattern.findAll(text)) {
-            val raw = (match.groupValues[1].ifBlank { match.groupValues[2] }).trim()
-            if (raw.isBlank()) continue
-            val amount = parseLocaleAmount(raw) ?: continue
-            if (amount < 1 || amount > 9_999_999) continue
-            val cur = detectCurrencyInWord(match.value) ?: ""
-            val intPart = amount.toInt()
-            val fracPart = ((amount - intPart) * 100).toInt()
-            results.add(DetectedMoney(intPart, fracPart, cur, match.value, amount))
-        }
-        return results
-    }
+    // -- Locale-aware amount parsing ------------------------------------------
 
     /**
      * Parse a locale-ambiguous number string like "1.000.00", "1,000.00",
@@ -376,9 +349,14 @@ class ReceiptProcessor @Inject constructor() {
         val commaCount = cleaned.count { it == ',' }
 
         return when {
-            // "1.000.00" — multiple dots, all are thousands separators
+            // "1.000.00" — multiple dots: last dot is decimal, earlier dots are thousands.
+            // Kenyan receipts use comma for thousands, but OCR often reads "1,000.00"
+            // as "1.000.00". Treating all dots as thousands gives 100000 — wrong!
+            // Correct: "1.000.00" → strip dots before lastDot → "1000.00" → 1000.0
             dotCount > 1 && commaCount == 0 -> {
-                cleaned.replace(".", "").toDoubleOrNull()
+                val beforeLast = cleaned.substring(0, lastDot).replace(".", "")
+                val afterLast = cleaned.substring(lastDot) // includes the dot
+                (beforeLast + afterLast).toDoubleOrNull()
             }
             // "1,000,000" — multiple commas, all are thousands separators
             commaCount > 1 && dotCount == 0 -> {
@@ -405,42 +383,15 @@ class ReceiptProcessor @Inject constructor() {
                     cleaned.replace(",", "").toDoubleOrNull()
                 }
             }
-            // Single dot only
+            // Single dot only — always treat as decimal separator.
+            // Kenyan receipts use commas for thousands (1,000) not dots.
+            // "1.000" is a quantity (1.000 kg), "2800.00" is a price.
             dotCount == 1 && commaCount == 0 -> {
-                val afterDot = cleaned.length - 1 - lastDot
-                val beforeDot = cleaned.substring(0, lastDot)
-                if (afterDot == 3 && beforeDot.length <= 3) {
-                    // "1.000" — European thousands (ambiguous, but common on Kenyan receipts)
-                    cleaned.replace(".", "").toDoubleOrNull()
-                } else {
-                    // "2800.00" or "10.5" — dot is decimal
-                    cleaned.toDoubleOrNull()
-                }
+                cleaned.toDoubleOrNull()
             }
             // No separators: "2800"
             else -> cleaned.toDoubleOrNull()
         }
-    }
-
-    private fun heuristicDateExtract(text: String): List<String> {
-        val dates = mutableListOf<String>()
-        // DD/MM/YYYY or DD-MM-YYYY or DD.MM.YYYY
-        val datePattern = Regex("""(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})""")
-        for (match in datePattern.findAll(text)) {
-            val a = match.groupValues[1].toIntOrNull() ?: continue
-            val b = match.groupValues[2].toIntOrNull() ?: continue
-            val y = match.groupValues[3].toIntOrNull() ?: continue
-            if (y < 2020 || y > 2030) continue
-            // Kenyan format is DD/MM/YYYY
-            val day = if (a > 12) a else if (b > 12) b else a
-            val month = if (a > 12) b else if (b > 12) a else b
-            dates.add("%04d-%02d-%02d".format(y, month, day))
-        }
-        // YYYY-MM-DD
-        Regex("""(\d{4})-(\d{2})-(\d{2})""").findAll(text).forEach { m ->
-            dates.add(m.value)
-        }
-        return dates
     }
 
     // -- Spatial field extraction ----------------------------------------------
@@ -481,27 +432,17 @@ class ReceiptProcessor @Inject constructor() {
     }
 
     /**
-     * TOTAL AMOUNT: Combines spatial proximity (bounding box overlap near
-     * "TOTAL" keyword) with Entity Extraction money results.
+     * TOTAL AMOUNT: keyword-first, bottom-to-top approach.
      *
      * Strategy:
-     * AMOUNTS-FIRST approach: instead of starting from keywords and hoping
-     * we find the right amount nearby, we start from ALL amounts, sort them
-     * largest-first, and confirm the winner has an aggregate keyword
-     * (TOTAL, CASH, AMOUNT, SUM) on the same visual row or adjacent line.
-     *
-     * On any receipt the grand total is always the LARGEST amount that sits
-     * next to an aggregate keyword.  This avoids keyword confusion where
-     * "TOTAL A-16.66%" or "ITEMS NUMBER: 2" would steal the match.
-     *
-     * Steps:
-     *   1. Parse ALL word-level amounts with bounding boxes.
-     *   2. Sort by amount DESC (largest first).
-     *   3. For each amount, check if an aggregate keyword sits on the same
-     *      visual row (within Y tolerance) or on the line immediately
-     *      above / below.
-     *   4. First confirmed match = grand total.
-     *   5. Fallback: largest amount in bottom 50% of the receipt.
+     *   1. Find ALL keyword lines (CASH, TOTAL, AMOUNT, etc.), reject noise
+     *      (TOTAL TAX, ITEMS NUMBER, CASH BACK, TOTAL A-16%, etc.)
+     *   2. For each keyword, find the nearest amount on the same row.
+     *   3. Build a list of (keyword, amount, position) pairs.
+     *   4. Sort bottom-to-top.  Prefer CASH over TOTAL.
+     *   5. Cross-validate: if CASH and TOTAL agree → high confidence.
+     *      If they differ, trust CASH (it's the payment line).
+     *   6. Return the winning amount.
      */
     private fun extractTotalSpatial(
         lines: List<PositionedText>,
@@ -512,150 +453,177 @@ class ReceiptProcessor @Inject constructor() {
 
         Log.d(TAG, "extractTotal: ${entityMoney.size} entity-extracted money amounts")
 
-        // ── 1. Build ALL word-level amounts ──
+        // ── 1. Build ALL word-level amounts (for lookup) ──
+        data class WordAmount(
+            val word: PositionedText,
+            val amount: Double,
+            val currency: String?,
+        )
+
         val wordAmounts = words.mapNotNull { word ->
-            val amount = parseLocaleAmount(
-                word.text.replace(Regex("""(?i)KSh|Ksh|KES|Kes|/=|=-"""), "").trim()
-            )
-            if (amount != null && amount > 0) Triple(word, amount, detectCurrencyInWord(word.text))
+            val raw = word.text.trim()
+            // Skip phone numbers, account numbers, and other non-monetary digit strings:
+            //  - starts with +  (e.g. "+254 794888372")
+            //  - 8+ consecutive digits (phone numbers, serial numbers)
+            //  - looks like a date (dd/mm/yyyy, dd-mm-yyyy)
+            if (raw.startsWith("+")) return@mapNotNull null
+            if (Regex("""\d{8,}""").containsMatchIn(raw)) return@mapNotNull null
+            if (Regex("""\d{1,2}[/\-]\d{1,2}[/\-]\d{2,4}""").matches(raw)) return@mapNotNull null
+
+            val cleaned = raw.replace(Regex("""(?i)KSh|Ksh|KES|Kes|/=|=-"""), "").trim()
+            val amount = parseLocaleAmount(cleaned)
+            // Cap at 10 million — anything larger is almost certainly not a receipt total
+            if (amount != null && amount > 0 && amount <= 10_000_000.0)
+                WordAmount(word, amount, detectCurrencyInWord(word.text))
             else null
         }
 
         Log.d(TAG, "extractTotal: ${wordAmounts.size} word-level amounts found")
-        wordAmounts.forEach { (w, amt, cur) ->
-            Log.d(TAG, "  WordAmt: '${w.text}' -> $amt ($cur) " +
-                "y=${"%.2f".format(w.normalisedY)}, x=${w.centreX}")
+        wordAmounts.forEach { wa ->
+            Log.d(TAG, "  WordAmt: '${wa.word.text}' -> ${wa.amount} (${wa.currency}) " +
+                "y=${"%.2f".format(wa.word.normalisedY)}, x=${wa.word.centreX}")
         }
 
-        // ── 2. Aggregate keywords to look for near amounts ──
-        // These words indicate the number next to them is a total/sum
-        val aggregatePattern = Regex(
+        // ── 2. Find keyword lines ──
+        // Keywords we look for, with priority tiers:
+        //   Tier 1 (strongest): CASH, GRAND TOTAL, TOTAL DUE, TOTAL PAYABLE, AMOUNT DUE/PAID
+        //   Tier 2 (medium):    bare TOTAL, AMOUNT, NET AMOUNT, BALANCE
+        //   Tier 3 (weakest):   Sum, SUBTOTAL
+        val keywordPattern = Regex(
             """(?i)\b(GRAND\s*TOTAL|TOTAL\s*DUE|TOTAL\s*PAYABLE|TOTAL\s*AMOUNT|""" +
             """AMOUNT\s*DUE|AMOUNT\s*PAID|TOTAL|CASH|AMOUNT|Sum|SUBTOTAL|""" +
             """NET\s*AMOUNT|BALANCE)\b"""
         )
-        // These are NOT aggregate keywords — they're counters/breakdowns
+        // Reject patterns: tax breakdowns, item counts, change, receipt type headers
         val rejectPattern = Regex(
             """(?i)(TOTAL\s*(TAX|VAT|ITEMS?|QTY|DISC|QUANTITY|NUMBER|""" +
-            """SAVINGS|[A-C][\s\-]\d)|ITEMS\s*(NUMBER|QTY|COUNT|NO)|""" +
-            """CASH\s*(BACK|CHANGE|RETURN|RECEIVED|TENDERED)|""" +
+            """SAVINGS|[A-C][\s\-]\s*\d)|ITEMS\s*(NUMBER|QTY|COUNT|NO)|""" +
+            """CASH\s*(SALE|BACK|CHANGE|RETURN|RECEIVED|TENDERED)|""" +
             """TAX\s*(AMOUNT|RATE|A\b|B\b|C\b))"""
         )
 
-        fun isAggregateKeyword(text: String): Boolean {
-            return aggregatePattern.containsMatchIn(text) &&
-                !rejectPattern.containsMatchIn(text)
-        }
-
-        // ── 3. Sort amounts largest-first, confirm with nearby keyword ──
-        val candidateAmounts = wordAmounts
-            .filter { (w, amt, _) ->
-                // Only consider amounts in the bottom 70% (skip header region)
-                w.normalisedY > 0.30f && amt >= 10.0
-            }
-            .sortedByDescending { it.second } // largest first
-
-        for ((amtWord, amount, currency) in candidateAmounts) {
-            val amtBox = amtWord.boundingBox
-            val tolerance = (amtBox.height() * 0.6f).toInt().coerceAtLeast(20)
-
-            // Check: is there an aggregate keyword on the SAME visual row?
-            val sameRowKeyword = lines.firstOrNull { line ->
-                val yOverlap = line.centreY in
-                    (amtBox.top - tolerance)..(amtBox.bottom + tolerance)
-                yOverlap && isAggregateKeyword(line.text)
-            }
-
-            if (sameRowKeyword != null) {
-                Log.d(TAG, "extractTotal: WINNER amount=${amount} " +
-                    "from '${amtWord.text}' (y=${"%.2f".format(amtWord.normalisedY)}) " +
-                    "confirmed by '${sameRowKeyword.text}' on same row")
-                return Pair(amount, currency)
-            }
-
-            // Check: keyword on the line IMMEDIATELY above
-            val lineAbove = lines
-                .filter { it.boundingBox.bottom <= amtBox.top &&
-                    it.boundingBox.bottom > amtBox.top - amtBox.height() * 2 }
-                .maxByOrNull { it.boundingBox.bottom }
-
-            if (lineAbove != null && isAggregateKeyword(lineAbove.text)) {
-                Log.d(TAG, "extractTotal: WINNER amount=${amount} " +
-                    "from '${amtWord.text}' (y=${"%.2f".format(amtWord.normalisedY)}) " +
-                    "confirmed by '${lineAbove.text}' on line above")
-                return Pair(amount, currency)
-            }
-
-            // Check: keyword on the line IMMEDIATELY below
-            val lineBelow = lines
-                .filter { it.boundingBox.top >= amtBox.bottom &&
-                    it.boundingBox.top < amtBox.bottom + amtBox.height() * 2 }
-                .minByOrNull { it.boundingBox.top }
-
-            if (lineBelow != null && isAggregateKeyword(lineBelow.text)) {
-                Log.d(TAG, "extractTotal: WINNER amount=${amount} " +
-                    "from '${amtWord.text}' (y=${"%.2f".format(amtWord.normalisedY)}) " +
-                    "confirmed by '${lineBelow.text}' on line below")
-                return Pair(amount, currency)
-            }
-
-            Log.d(TAG, "extractTotal: candidate ${amount} ('${amtWord.text}') " +
-                "y=${"%.2f".format(amtWord.normalisedY)} — no adjacent keyword, skipping")
-        }
-
-        // ── 4. Entity Extraction fallback ──
-        if (entityMoney.isNotEmpty()) {
-            val largest = entityMoney
-                .filter { it.amount >= 10.0 }
-                .maxByOrNull { it.amount }
-            if (largest != null) {
-                Log.d(TAG, "extractTotal: ENTITY-FALLBACK ${largest.amount} " +
-                    "from '${largest.sourceText}'")
-                return Pair(largest.amount,
-                    largest.unnormalizedCurrency.ifBlank { null })
+        fun keywordTier(text: String): Int {
+            return when {
+                rejectPattern.containsMatchIn(text) -> -1  // rejected
+                Regex("""(?i)\b(CASH)\b""").containsMatchIn(text) -> 1
+                Regex("""(?i)\b(GRAND\s*TOTAL|TOTAL\s*DUE|TOTAL\s*PAYABLE|TOTAL\s*AMOUNT|AMOUNT\s*DUE|AMOUNT\s*PAID)\b""")
+                    .containsMatchIn(text) -> 1
+                Regex("""(?i)\b(NET\s*AMOUNT)\b""").containsMatchIn(text) -> 2
+                Regex("""(?i)\bTOTAL\b""").containsMatchIn(text) -> 2
+                Regex("""(?i)\b(AMOUNT|BALANCE)\b""").containsMatchIn(text) -> 3
+                Regex("""(?i)\b(Sum|SUBTOTAL)\b""").containsMatchIn(text) -> 4
+                else -> -1
             }
         }
 
-        // ── 5. Last resort: largest amount in bottom 50% (no keyword needed) ──
-        Log.d(TAG, "extractTotal: no keyword-confirmed match, " +
-            "fallback to largest in bottom 50%")
-        val bottomAmounts = wordAmounts
-            .filter { (w, amt, _) -> w.normalisedY > 0.45f && amt >= 10.0 }
-        if (bottomAmounts.isNotEmpty()) {
-            val largest = bottomAmounts.maxByOrNull { it.second }!!
-            Log.d(TAG, "extractTotal: FALLBACK ${largest.second} " +
-                "from '${largest.first.text}'")
-            return Pair(largest.second, largest.third)
+        // ── 3. Pair each keyword with its nearest amount on the same row ──
+        data class KeywordAmountPair(
+            val keyword: String,
+            val tier: Int,
+            val amount: Double,
+            val currency: String?,
+            val normY: Float,     // y-position on receipt (0 = top, 1 = bottom)
+            val confidence: Float, // OCR confidence of the amount word
+        )
+
+        val pairs = mutableListOf<KeywordAmountPair>()
+
+        // Scan lines for keywords
+        val keywordLines = lines.filter { line ->
+            keywordPattern.containsMatchIn(line.text) && keywordTier(line.text) > 0
         }
 
-        // ── 6. Absolute last resort: largest anywhere ──
-        if (wordAmounts.isNotEmpty()) {
-            val largest = wordAmounts
-                .filter { it.second >= 10.0 }
-                .maxByOrNull { it.second }
-            if (largest != null) {
-                Log.d(TAG, "extractTotal: FALLBACK-ANY ${largest.second}")
-                return Pair(largest.second, largest.third)
+        Log.d(TAG, "extractTotal: ${keywordLines.size} keyword lines found")
+
+        for (kwLine in keywordLines) {
+            val tier = keywordTier(kwLine.text)
+            val kwBox = kwLine.boundingBox
+            val tolerance = (kwBox.height() * 0.6f).toInt().coerceAtLeast(20)
+
+            // Find amounts on the SAME visual row as this keyword
+            val sameRowAmounts = wordAmounts.filter { wa ->
+                val yOverlap = wa.word.centreY in
+                    (kwBox.top - tolerance)..(kwBox.bottom + tolerance)
+                yOverlap && wa.amount >= 10.0
+            }
+
+            if (sameRowAmounts.isNotEmpty()) {
+                // Pick the amount furthest to the right (amounts are usually right-aligned)
+                val best = sameRowAmounts.maxByOrNull { it.word.centreX }!!
+                Log.d(TAG, "extractTotal: keyword '${kwLine.text}' (tier=$tier, " +
+                    "y=${"%.2f".format(kwLine.normalisedY)}) → " +
+                    "amount=${best.amount} from '${best.word.text}' " +
+                    "(conf=${"%.2f".format(best.word.confidence)})")
+                pairs.add(KeywordAmountPair(
+                    kwLine.text, tier, best.amount, best.currency,
+                    kwLine.normalisedY, best.word.confidence,
+                ))
+            } else {
+                Log.d(TAG, "extractTotal: keyword '${kwLine.text}' (tier=$tier, " +
+                    "y=${"%.2f".format(kwLine.normalisedY)}) → no amount on same row")
             }
         }
 
-        Log.w(TAG, "extractTotal: no amounts found")
+        Log.d(TAG, "extractTotal: ${pairs.size} keyword–amount pairs built")
+        pairs.forEach { p ->
+            Log.d(TAG, "  Pair: '${p.keyword}' tier=${p.tier} → ${p.amount} " +
+                "y=${"%.2f".format(p.normY)}")
+        }
+
+        if (pairs.isEmpty()) {
+            // No keyword pairs — fall through to fallbacks
+            Log.d(TAG, "extractTotal: no keyword pairs, trying fallbacks")
+        } else {
+            // ── 4. Pick winner: sort by tier (lower=better), then by Y (bottom first) ──
+            val sorted = pairs.sortedWith(
+                compareBy<KeywordAmountPair> { it.tier }
+                    .thenByDescending { it.normY }  // bottom first within same tier
+            )
+
+            val best = sorted.first()
+
+            // ── 5. Cross-validate: do multiple keywords agree on the same amount? ──
+            val agreeing = pairs.filter {
+                kotlin.math.abs(it.amount - best.amount) < 0.01
+            }
+            if (agreeing.size > 1) {
+                Log.d(TAG, "extractTotal: ${agreeing.size} keywords agree on ${best.amount}")
+            }
+
+            // If there's a tier-1 (CASH) match and a tier-2 (TOTAL) match with
+            // different amounts, trust CASH — it's the actual payment.
+            // But also log it for debugging.
+            val cashPairs = pairs.filter {
+                it.keyword.contains("CASH", ignoreCase = true) && it.tier == 1
+            }
+            val totalPairs = pairs.filter {
+                it.keyword.contains("TOTAL", ignoreCase = true) && it.tier <= 2
+                    && !it.keyword.contains("CASH", ignoreCase = true)
+            }
+            if (cashPairs.isNotEmpty() && totalPairs.isNotEmpty()) {
+                val cashAmt = cashPairs.maxByOrNull { it.normY }!!.amount
+                val totalAmt = totalPairs.maxByOrNull { it.normY }!!.amount
+                if (kotlin.math.abs(cashAmt - totalAmt) > 0.01) {
+                    Log.w(TAG, "extractTotal: CASH (${cashAmt}) ≠ TOTAL (${totalAmt}) " +
+                        "— trusting CASH")
+                } else {
+                    Log.d(TAG, "extractTotal: CASH and TOTAL agree: ${cashAmt}")
+                }
+            }
+
+            Log.d(TAG, "extractTotal: WINNER amount=${best.amount} " +
+                "keyword='${best.keyword}' tier=${best.tier} " +
+                "y=${"%.2f".format(best.normY)} " +
+                "conf=${"%.2f".format(best.confidence)}")
+            return Pair(best.amount, best.currency)
+        }
+
+        // ── 6. No keyword-confirmed amount → requires human input ──
+        //   Rather than guessing from unconfirmed amounts (which leads to
+        //   picking phone numbers, serial numbers, or garbled OCR fragments),
+        //   return null so the UI prompts the user to enter the amount.
+        Log.w(TAG, "extractTotal: no keyword-confirmed amount found — requires user input")
         return Pair(null, null)
-    }
-
-    /**
-     * Extract the first money amount from a line of mixed text using
-     * locale-aware parsing.
-     */
-    private fun extractInlineAmount(text: String): Double? {
-        // Strip keyword noise
-        val cleaned = text
-            .replace(Regex("""(?i)(GRAND\s*)?TOTAL\s*(DUE|PAYABLE|AMOUNT)?"""), "")
-            .replace(Regex("""(?i)KSh|Ksh|KES|Kes"""), "")
-            .trim()
-
-        // Try parsing the remaining text as a number
-        return parseLocaleAmount(cleaned.replace(Regex("""[^0-9.,]"""), ""))
     }
 
     /**
@@ -740,13 +708,21 @@ class ReceiptProcessor @Inject constructor() {
                 val image = InputImage.fromBitmap(bitmap, 0)
                 barcodeScanner.process(image)
                     .addOnSuccessListener { barcodes ->
+                        // Prefer rawValue (full binary payload); fall back to displayValue
+                        // (human-readable string) which ML Kit sometimes populates instead.
+                        // Both should carry the full KRA eTIMS URL.
                         val urls = barcodes.mapNotNull { bc ->
-                            val raw = bc.rawValue
+                            val value = bc.rawValue?.takeIf { it.isNotBlank() }
+                                ?: bc.displayValue?.takeIf { it.isNotBlank() }
                             Log.d(TAG, "[QR] format=${bc.format}, " +
-                                "type=${bc.valueType}, raw=${raw?.take(120)}")
-                            raw
+                                "type=${bc.valueType}, " +
+                                "rawValue=${bc.rawValue?.take(80)}, " +
+                                "displayValue=${bc.displayValue?.take(80)}, " +
+                                "resolved=${value?.take(80)}")
+                            value
                         }
-                        Log.i(TAG, "[QR] Found ${urls.size} barcodes/QR codes")
+                        Log.i(TAG, "[QR] ${barcodes.size} barcode(s) detected, " +
+                            "${urls.size} with usable value")
                         continuation.resume(urls)
                     }
                     .addOnFailureListener { e ->
@@ -789,6 +765,10 @@ class ReceiptProcessor @Inject constructor() {
      * receipt footer. Covers 20+ common Kenyan merchant categories.
      */
     private fun guessCategory(merchant: String?, text: String, itemTexts: String = ""): String {
+        // Not enough text to classify — likely a blank or unreadable image
+        val totalText = "${merchant.orEmpty()} $text $itemTexts".trim()
+        if (totalText.length < 20) return "Other"
+
         // Items get mentioned twice for stronger signal
         val combined = "${merchant.orEmpty()} $text $itemTexts $itemTexts".lowercase()
         return when {
@@ -855,5 +835,13 @@ class ReceiptProcessor @Inject constructor() {
     }
 
     private fun String.containsAny(vararg keywords: String): Boolean =
-        keywords.any { this.contains(it) }
+        keywords.any { kw ->
+            // Short keywords (< 5 chars) use word-boundary regex to avoid false positives
+            // e.g. "wear" matching "hardware", "spa" matching "space", "bar" matching "barcode"
+            if (kw.length < 5) {
+                Regex("\\b${Regex.escape(kw)}\\b").containsMatchIn(this)
+            } else {
+                this.contains(kw)
+            }
+        }
 }
